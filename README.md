@@ -1,5 +1,3 @@
-# R-RANSAC
-
 - [Introduction](#introduction)
 - [Terminology](#terminology)
 - [Overview of R-RANSAC](#overview-of-r-ransac)
@@ -10,6 +8,8 @@
 - [Documentation](#documentation)
 - [Developer's Guide](#developer-s-guide)
 - [References](#references)
+
+
 
 ## Introduction
 R-RANSAC stands for recursive random sample consensus. It is a modular multiple target tracking (MTT) paradigm that autonomously initializes tracks without knowing the number of tracks a priori. 
@@ -98,9 +98,9 @@ into the web browser.
 
 Another method is to point a HTML browser to the index.html file. To do this, open up a search engine and type the following in the web browser
 ```
-@file://localhost/<path_to_rransac>/rransac/documentation/html/index.html
+file://localhost/<path_to_rransac>/rransac/documentation/html/index.html
 ```
-
+The main page is the README.md file seen on github. The tabs Classes and Files can be used to navigate through the code. 
 
 
 ## Developer's Guide
