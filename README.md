@@ -1,8 +1,15 @@
 # R-RANSAC
 
 - [Introduction](#introduction)
-- [Terminology](#terminology)  
+- [Terminology](#terminology)
 - [Overview of R-RANSAC](#overview-of-r-ransac)
+  * [Data Management](#data-management)
+  * [Model Initialization](#model-initialization)
+  * [Model Management](#model-management)
+- [Setup](#setup)
+- [Documentation](#documentation)
+- [Developer's Guide](#developer-s-guide)
+- [References](#references)
 
 ## Introduction
 R-RANSAC stands for recursive random sample consensus. It is a modular multiple target tracking (MTT) paradigm that autonomously initializes tracks without knowing the number of tracks a priori. 
@@ -45,7 +52,60 @@ The figure below gives a high level depiction of the data dn process flow of R-R
 
 ![RRANSAC Overview: A depiction of the data and process flow](/images/Overview.png )
 
+### Data Management
 
+All of the new measurements and transformation are passed into the data manager. The data manager removes old measurements (measurements whose time stamps are beyond the time window) from the data tree, clusters and consensus sets. The data tree is a data structure based on the R*-tree data structure and stores all measurements that do not pertain to clusters or a consensus sets. There is only one data tree. A cluster is a data structure that contains a set of neighboring measurements. There can be multiple clusters, one for each set of neighboring measurements. The consensus set is a data structure that contains measurements affiliated with a model. Each model has one consensus set. 
+
+Once all of the old measurements are removed, all of the measurements in the data tree, clusters, and consensus sets, except for the newly received measurements, and models are transformed to the new global frame provided that a transformation was given. If no transformation was given, it is assumed that the global frame did not move. 
+
+Once all of the measurements and models are transformed to the current global frame, the new measurements are associated with existing models. Typically, each measurement is checked to see if it falls within a validation region of a model using a data association method. Associated measurements are used to update the model they are associated with, and then are added to the model's consensus set.
+
+The measurements not associated with any model are checked to see if they pertain to a cluster. If they do, they are added to the cluster. The remaining measurements are used to seed a potential new cluster. Taking a new measurements, we find all of the neighboring measurements and add them to the cluster. We then find all of the neighboring measurements to the measurements just added to the cluster and add them to the cluster. We repeat the process recursively until there are no other neighboring measurements to add to the cluster. If the cluster is large enough, then it is kept and the associated measurements are removed from the tree; otherwise, the cluster is discarded. 
+
+All remaining new measurements are added to the data tree. This completes the data management process. 
+
+### Model Initialization 
+
+The model initializer is based on the RANSAC algorithm. For each cluster, measurements are randomly sampled to form a model hypothesis. Each model hypothesis is validated using other measurements from the same cluster. The best model hypothesis that reaches certain criteria, from each cluster, is used to create a new model, and all of the measurements that supported the model hypothesis are added to the model's consensus set and removed from the cluster they came from. 
+
+Any cluster that had measurements removed from it, is checked to see if it is still a valid cluster. If not, it is dissolved and the measurements are put back onto the data tree. 
+
+### Model Management
+
+With the generation of new models or additional information gathered from the new measurements, existing models can begin to coalesce. The coalescing models are merged together. Models that are no longer probable models (usually the models that haven't received new measurements for a while), are pruned from the list of models. The model's probability is then checked to see if it should be escalated to a good model or demoted to a regular model. Any model that is promoted to the status of a good model receives a unique ID number to identify it. 
+
+
+## Setup
+
+## Documentation
+
+The code is documented using Doxygen. To generate the documentation, navigate to the root directory of the project and run the following command in a terminal
+```
+doxygen Doxyfile
+```
+
+The documentation folder should now be populated with a sub-folder named html. There are many ways to view the documentation. One method uses phython 3. In the same terminal, enter the command
+
+```
+cd documentation/html
+python3 -m http.server
+```
+Then open up a web browser and type in 
+```
+localhost:8000
+```
+into the web browser.
+
+Another method is to point a HTML browser to the index.html file. To do this, open up a search engine and type the following in the web browser
+```
+@file://localhost/<path_to_rransac>/rransac/documentation/html/index.html
+```
+
+
+
+## Developer's Guide
+
+Google style guide.
 
 ## References 
 
