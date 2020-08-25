@@ -55,7 +55,7 @@ float meas_time_window_; /**< The duration of time in seconds from the current m
 float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a sensor during
                                       a single scan. This value must be between 0 and 1.*/                                                               
 
-float lambda_; /**< The expected number of false measurements inside the entire surveillance region 
+float expected_num_false_meas_; /**< The expected number of false measurements inside the entire surveillance region 
                    per measurement scan.*/
 
 // RANSAC Parameters

@@ -13,7 +13,7 @@ Parameters::Parameters()
     transform_consensus_set_ = false;
     meas_time_window_ = 1;
     probability_of_detection_ = 0.8;
-    lambda_ = 10;
+    expected_num_false_meas_ = 10;
     max_RANSAC_iters_ = 5000;
     RANSAC_stopping_criteria_ = 0.5;
 }
@@ -65,15 +65,15 @@ bool Parameters::SetParameters(const Parameters &new_params) {
         probability_of_detection_ = new_params.probability_of_detection_;
     }
 
-    // Ensure that lambda_ has a realistic value.
-    if (new_params.lambda_ <=0)
+    // Ensure that expected_num_false_meas_ has a realistic value.
+    if (new_params.expected_num_false_meas_ <0)
     {
-        std::cerr << "Parameters: The provided value of lambda_ is not greater than 0. Keeping the current value of " << lambda_ << std::endl;
+        std::cerr << "Parameters: The provided value of expected_num_false_meas_ is not greater than or equal to 0. Keeping the current value of " << expected_num_false_meas_ << std::endl;
         successfull = false;
     }
     else
     {
-        lambda_ = new_params.lambda_;
+        expected_num_false_meas_ = new_params.expected_num_false_meas_;
     }
 
     // Ensure that max_RANSAC_iters_ has a realistic value.
