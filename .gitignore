@@ -33,4 +33,5 @@
 
 # Folders
 documentation/*
+build/*
 !documentation/README.md 
