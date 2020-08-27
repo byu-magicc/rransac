@@ -27,6 +27,9 @@ Parameters();
  */ 
 Parameters(const Parameters &new_params);
 
+// Deconstructor
+~Parameters();
+
 /**
  * \detail Sets the values of the member variables of this object to the 
  * values of the member variables of the passed in object. Some values are checked to ensure that
@@ -36,8 +39,6 @@ Parameters(const Parameters &new_params);
  */
 bool SetParameters(const Parameters &new_params);
 
-// Deconstructor
-~Parameters();
 
 bool fixed_time_interval_; /**< A flag that indicates if measurements are given to R-RANSAC at fixed time intervals. */
 
@@ -55,6 +56,9 @@ float meas_time_window_; /**< The duration of time in seconds from the current m
 float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a sensor during
                                       a single scan. This value must be between 0 and 1.*/                                                               
 
+
+
+// TODO Remove this
 float expected_num_false_meas_; /**< The expected number of false measurements inside the entire surveillance region 
                    per measurement scan.*/
 
@@ -65,6 +69,13 @@ float RANSAC_stopping_criteria_; /**< During any iteration, if the probability o
                                       a valid model is above this threshold, RANSAC stops early and
                                       uses the current model hypothesis to generate a new model.
                                       This value must be between 0 and 1.*/
+
+//
+// TODO create A vector of sources
+
+// TODO A method to add a sources
+
+// TODO A method to remove a source
 
 };
 

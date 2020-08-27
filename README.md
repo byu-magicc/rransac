@@ -41,7 +41,13 @@ Before giving an overview of R-RANSAC, we will present some common terminology t
 
 * **Good Model**: A model that is deemed very likely to correctly describe a phenomenon, based on predefined criteria, becomes a good model. In regards to target tracking, a good model is referred to as a **good track**. 
 
+* **Poor Model**: A model that is not a good model. In regards to target tracking, a poor model is referred to as a **poor track**. 
+
 * **Time Window**: An interval of time extending into the past from the current time. 
+
+* **Expired Measurement**: A measurement that was observed in the past outside the time window. 
+
+* **Measurement Source**: An algorithm that takes sensor data and produces a measurement. We will often refer to a measurement source as just a source. 
 
 
 
