@@ -41,11 +41,14 @@ struct Meas
     double time_stamp;          /**< The time the measurement was taken. */
     unsigned int source_id;     /**< A unique identifier that indicates which source the measurement came from. */
     Eigen::MatrixXf meas_cov;   /**< The measurement covariance. Only used if the measurement covariance changes with different measurements; otherwise, the 
-                                     measurement covariance given to the Source class is used for every measurement. */    
+                                     measurement covariance given to the Source class is used for every measurement. */ 
+
+
     double likelihood;          /**< The likelihood that the measurement came from the phenomenon it was associated with. This value is set during the data 
                                       association process.*/
     double weight;              /**< The weight of the measurement when updating the model is was associated with. This value is set during the data association 
                                      process. */
+    bool associated=false;      /**< Indicates if the measurement has been associated with a model. It should only be modified by the Model Initializer.;
 
 };
 
@@ -185,22 +188,14 @@ public:
 
 
 //////////////////////////////////////////////////
-//          source_base.h
+//          source.h
 //////////////////////////////////////////////////
 
 #include <Eigen/Core>
 
 
-/** \enum DerivedSources
- * Used to indicate what type of derived source class to create. 
-*/
-enum DerivedSources
-{
-    kSourceCOF=0 /**< This source detects point measurements using optical flow. */
-}
 
-
-/** \class SourceBase 
+/** \class Source 
  * A source is an algorithm that takes data from a sensor and extracts measurements from it. Due to the nature of
  * the source, there is measurement noise and false measurements. The measurement noise is assumed to be sampled from
  * a white-noise, zero-mean, Gaussian distribution. If the measurement covariance is fixed, then it should be added to 
@@ -210,12 +205,11 @@ enum DerivedSources
  * 
  * Since there can be many different sources, we need to be able to distinguish the different sources using a unique ID.
  * When a measurement is received, the measurement indicates which source it came from using the source ID tag @see Meas.
- * We also need to know the dimension of the measurement and how to compute the linearized observation matrix that is used
- * in a Kalman update step. This is used to update the model. 
+ * We also need to know the dimension of the measurement.
  * 
  */ 
 
-class SourceBase
+class Source
 {
 
 public:
@@ -233,66 +227,10 @@ public:
                                   For example, if the measurement containted the position of a 2D object in the
                                   xy-plane, then the dimension of the measurement would be two. This is used by RANSAC when creating model hypotheses. */
 
-    /** Given the current state of the system, this function returns the linearized observation matrix. This
-     * Is the same linearized observation matrix that is used in the Kalman update step. 
-     * @param state The current state of the system. 
-     * @return The function returns the linearized observation matrix.
-     * @see ModelBase
-    */
-    virtual Eigen::MatrixXd GetLinObsMat(Eigen::MatrixXd state)=0;
-
-    /**
-     * When a source is added by the user, we need to verify that the variables were set correctly.
-     * This function verifies that they member variables are correct.
-     * @return Returns true if the member variables are set correctly; otherwise, returns false.
-     */ 
-    bool VerifyMemberVariables();
     
 };
 
-//////////////////////////////////////////////////
-//          source_cof.h
-//////////////////////////////////////////////////
 
-#include "rransac/common/sources/source_base.h"
-
-/**
- * \class SourceCOF
- * The name stands for source camera optical flow.
- * This is a derived class of SourceBase. The measurement source
- * uses optical flow to calculate the position and velocity of a moving target
- * in the normalized image plane.
- */ 
-
-class SourceCOF : SourceBase
-{
-
-public:
-
-    Eigen::MatrixXd GetLinObsMat(Eigen::MatrixXd state)=0
-};
-
-//////////////////////////////////////////////////
-//          source_factory.h
-//////////////////////////////////////////////////
-
-#include "rransac/common/sources/source_cof.h"
-
-/** \class SourceFactory
- * Creates a new instant of a derived source class.
-*/
-
-class SourceFactory 
-{
-public:
-
-    /**
-     * Returns a unique pointer to a derived source class.
-     * @param[in] type The type of derived source class to use. 
-     * @see DerivedSource
-     */
-    std::unique_ptr<SourceBase> CreateMeasurementClass(const DerivedSource type);
-};
 
 
 
@@ -347,6 +285,34 @@ std::list<std::vector<Meas>> consensus_set_; /** < Contains the measurements ass
 #include "rransac/data_structures/consensus_set.h"
 #include "rransac/common/measurement/measurement_base.h"
 
+
+/**
+ * \struct SimilarSources
+ * A phenomenon or target has a number of degrees of freedom (or generalized coordinates). For example, an airplane has 6 generalized coordinates; 3
+ * for position and 3 for attitude. The state of the model consists of the generalized coordinates \f$ q_i\f$ and their temporal derivatives. A sensor
+ * measures some or all of the generalized coordinates. 
+ */ 
+struct SimilarSources
+{
+    std::vector<unsigned int> id;
+    unsigned int num_samples;
+};
+
+
+
+/**
+ * \enum DerivedModels
+ * Lists the different types of models available.
+ */ 
+enum DerivedModels
+{
+    kModelLCV=0, /**< Indicates that the linear constant velocity model should be used.*/
+    kModelLCA=1, /**< Indicates that the linear constant acceleration model should be used. */
+    kModelSE2=2, /**< Indicates that the SE2 model should be used. Note that this is a constant velocity model.*/
+    kModelSE3=3  /**< Indicates that the SE3 model should be used. Note that this is a constant velocity model. */
+};
+
+
 /**
  * \class ModelBase
  * R-RANSAC is designed to be modular and work with a variety of models. However,
@@ -390,6 +356,8 @@ std::list<std::vector<Meas>> consensus_set_; /** < Contains the measurements ass
 class ModelBase: ConsensusSet
 {
 
+//TODO:: Allow the user to add constraints for the states. 
+
 public:
     Eigen::MatrixXd state_;    /** < The estimated state of the phenomenon or target.*/
     Eigen::MatrixXd err_cov_;  /** < The error covariance. */
@@ -397,14 +365,43 @@ public:
     std::vector<Meas> new_assoc_meas_; /** < Measurements recently associated with the model. These measurements have not been used to update 
                                                      the model. Once an associated measurement has been used to update the model, they are added to the 
                                                      consensus set and removed from this vector.*/
+    bool linear_model_;        /** < If the variable is set to true, it is assumed that the system is linear; otherwise, non-linear.*/
+    
+    
+    
 
+     /**
+     * Propagates the state according to the provided time interval. This function can be used to 
+     * propagate the model. It might also be used in the RANSAC algorithm.
+     * @param[in] dt  The amount of time the state needs to be propagated. The value of dt can be positive or negative. 
+     *                a positive value would indicate forward propagation and a negative value would indicate backward propagation.
+     * @return Returns the propagated state.
+     */ 
+    virtual Eigen::MatrixXd PropagateState(const Eigen::MatrixXd& state, const double dt)=0;
+
+
+    /**
+     * A state transition function propagates a state from one point in time to another. In the special 
+     * case that the model is linear, the state transition function is a linear function. This means that we can represent
+     * it using a matrix such that
+     * \f]
+     *      x_k = \Phi x_0 
+     * \f]
+     * Where \f$ x_0\f$ is the given state, \f$ x_k\f$ is the propagated state, and \f$ \Phi \f$ is the linear mapping. 
+     * This function generates and returns the linear mapping \f$ \Phi \f$. The mapping is used with R-RANSAC.
+     * This function is intended to be used only with linear models. If the user is implementing a non-linear model,
+     * this function should not be implemented at the flag ModelBase::linear_model_ should be set to true.
+     * @param[in] dt The amount of time the state needs to be propagated. The value of dt can be positive or negative. 
+     *                a positive value would indicate forward propagation and a negative value would indicate backward propagation.
+     * @return The linear map. 
+     */ 
+    virtual Eigen::MatrixXd GetLinearStateTransitionMatrix(const double dt)=0;
 
     /**
      * Propagates the model and error covariance to the current time.
      * @param[in] dt  The amount of time the model needs to be propagated.
-     * @param[in] sys 
      */ 
-    virtual void PropagateModel(const double dt, const System& sys)=0; 
+    virtual void PropagateModel(const double dt)=0; 
 
 
     /**
@@ -416,21 +413,215 @@ public:
 
     /**
      * Calculates and returns the matrix \f$F\f$.
-     * @param[in] dt  The amount of time the model needs to be propagated.
-     * @param[in] sys 
+     * @param[in] dt  The amount of time the model needs to be propagated. The value of dt can be positive or negative. 
+     *                a positive value would indicate forward propagation and a negative value would indicate backward propagation. 
+     * @return Returns the matrix \f$F\f
      */ 
-    virtual Eigen::MatrixXd GetLinSysMatState(const double dt, const System& sys)=0;
+    virtual Eigen::MatrixXd GetLinSysMatState(const double dt)=0;
 
 
     /**
      * Calculates and returns the matrix \f$G\f$.
-     * @param[in] dt  The amount of time the model needs to be propagated.
-     * @param[in] sys 
+     * @param[in] dt  The amount of time the model needs to be propagated. The value of dt can be positive or negative. 
+     *                a positive value would indicate forward propagation and a negative value would indicate backward propagation.
+     * @return Returns the matrix \f$F\f
      */
-    virtual Eigen::MatrixXd GetLinSysMatNoise(const double dt, const System& sys)=0;
+    virtual Eigen::MatrixXd GetLinSysMatNoise(const double dt)=0;
 
 
-private:
+    /**
+     * Calculates the linearized observation matrix \f$H\f$ defined by the source.
+     * Since \f$H\f$ is dependent on the model and source, this function might have to 
+     * claculate a unique \f$H\f$ for each source.  
+     * @param source_ID A unique identifier to identify the source. 
+     * @return Returns the matrix \f$H\f$
+     */ 
+    virtual Eigen::MatrixXd GetLinObsMatState(const unsigned int source_ID)=0;
+
+
+    /**
+     * Calculates an estimated measurement given a state of the model and the source ID.
+     * Since there can be multiple sources, the measurement can be different based on the source. 
+     * @param source_ID A unique identifier to identify the source. 
+     * @return Returns a measurement \f$ y \f$ based on the state and source.
+     */ 
+    virtual Eigen::MatrixXd GetEstMeas(const Eigen::MatrixXd& state, const unsigned int source_ID)=0
+
+    /**
+     * Using the transformation data provided by the user, this function transforms the model from the previous global frame to the current global frame.
+     * The previous global frame is the model is expressed in before the transformation is applied.
+     * @param[in] T The transformation data provided by the user. The data should contain the information needed to transform the model.
+     * @param[in] dt The time interval between the previous global frame and the current global frame. 
+     */ 
+    virtual void TransformModel(const Transformation& T, const double dt)=0;
 
 };
 
+//////////////////////////////////////////////////
+//          model_lcv.h
+//////////////////////////////////////////////////
+
+#include "rransac/common/models/model_base.h"
+
+// Of course add comments.
+
+class ModelLCV : ModelBase{
+
+public:
+
+    ModelLCV();
+    ~ModelLCV();
+
+    Eigen::MatrixXd PropagateState(const Eigen::MatrixXd& state, const double dt);
+
+    Eigen::MatrixXd GetLinearStateTransitionMatrix(const double dt);
+
+    void PropagateModel(const double dt, const System& sys);
+
+    void UpdateModel(const Parameters& param);
+
+    Eigen::MatrixXd GetLinSysMatState(const double dt, const System& sys);
+
+    Eigen::MatrixXd GetLinSysMatNoise(const double dt, const System& sys);
+
+    void TransformModel(const Transformation& T, const double dt);
+
+    Eigen::MatrixXd GetLinObsMatState(const unsigned int source_ID);
+
+    Eigen::MatrixXd GetEstMeas(const Eigen::MatrixXd& state, const unsigned int source_ID);
+
+
+};
+
+
+//////////////////////////////////////////////////
+//          model_factory.h
+//////////////////////////////////////////////////
+
+#include "rransac/common/models/model_lcv.h"
+
+/** \class ModelFactory
+ * Creates a new instant of a derived source class.
+*/
+
+class ModelFactory 
+{
+public:
+
+    /**
+     * Returns a unique pointer to a derived model class.
+     * @param[in] type The type of derived model class to use. 
+     * @see DerivedModel
+     */
+    std::unique_ptr<SourceBase> CreateMeasurementClass(const DerivedModels type);
+};
+
+
+//////////////////////////////////////////////////
+//          model_data_association_base.h
+//////////////////////////////////////////////////
+
+enum DerivedModelDataAssociation
+{
+    kModelDataAssociationPDAF=0 /**< Uses the PDAF to associate measurements to the model and to update the model. */
+};
+
+class ModelDataAssociation
+{
+    /**
+     * Associates the new measurements to existing models and updates the models using the newly associated
+     * measurements. If a measurement is associated, it must be removed from the std::list of new measurements.
+     * We supply this function full access to the system object. Terrible things could happen if this function
+     * is not implemented properly.
+     * @param sys The system object contains the models and new measurements.
+     * @param dt The time elapsed since the last update.
+     */ 
+    virtual AssociateMeasurements(System& sys, const double dt)=0;
+};
+
+
+
+//////////////////////////////////////////////////
+//          data_manager.h
+//////////////////////////////////////////////////
+
+class DataManager
+{
+
+public:
+
+
+    /**
+     * Removes expired measurements from the data tree, consensus set and clusters.
+     * If removing expired measurements from the cluster causes the cluster to not have enough
+     * measurements to be a cluster, the cluster with it measurements are deleted. We delete the measurements 
+     * since all of their time stamps are close to being expired as well. 
+     * @param sys The system object contains the data tree, models and clusters
+     */  
+    void RemoveExpiredMeasurements(System& sys);
+
+    /**
+     * Transforms all measurements and models from the previous global frame to the current global frame.
+     * @param sys The system object contains the models
+     */ 
+    void TransformMeasAndModels(System& sys, const Transformation T, const double dt);
+
+    /**
+     * Associates the new measurements to existing models and updates the models using the newly associated
+     * measurements. If a measurement is associated, it must be removed from the std::list of new measurements.
+     * In order to associate new measurements, it will use a data association class.
+     * @param sys The system object contains the models and new measurements.
+     * @param dt The time elapsed since the last update.
+     */ 
+    virtual AssociateNewMeasurementsToModels(System& sys, const double dt);
+
+
+    /**
+     * After new measurements are associated with existing models, the remaining new measurements are associated
+     * with clusters. They are simply added to the cluster.
+     * @param sys The system object contains the clusters and remaining new measurements.
+     */ 
+    void AssociateRemainingNewMeasurementsToClusters(System& sys);
+
+    /**
+     * After new measurements are associated with existing models and existing clusters, the remaining new measurements are 
+     * used to seed new clusters. 
+     * @param sys The system object contains the clusters and remaining new measurements.
+     */ 
+    void GenereateNewClusters(System& sys);
+
+
+    /**
+     * Creates a data association object based on the mehtod given.
+     * @param method The data association method that should be used.  @see DerivedDataAssociation
+     */ 
+    void CreateDataAssociationObject(const DerivedDataAssociation method);
+
+    std::unique_ptr<DataAssociationBase> data_assoc_; /** < A pointer to the data association class to be used to associate new measurements with a model. */
+
+};
+
+//////////////////////////////////////////////////
+//          model_initializer.h
+//////////////////////////////////////////////////
+
+
+/**
+ * \class ModelInitializer
+ * Uses the RANSAC algorithm to initialize a new model. When the model initializer is ran, it will
+ * try to create a new model from every cluster. 
+ */ 
+class ModelInitializer
+{
+public:
+
+
+    void GenerateModelHypotheses(const System& sys);
+
+private:
+
+    std::vector<std::unique_ptr<ModelBase>> best_model_hypotheses_; /**< During the generation of model hypotheses, the best hypothsis from from each cluster will
+                                                                         be added to this data structure provided that the hypothesis is good enough. Once a model 
+                                                                        hypothesis is becomes a model, the model hypothesis is removed from this vector.*/
+    
+};

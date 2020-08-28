@@ -58,7 +58,7 @@ float probability_of_detection_; /**< The probability that the phenomenon of int
 
 
 
-// TODO Remove this
+// TODO:: Remove this
 float expected_num_false_meas_; /**< The expected number of false measurements inside the entire surveillance region 
                    per measurement scan.*/
 
@@ -70,12 +70,18 @@ float RANSAC_stopping_criteria_; /**< During any iteration, if the probability o
                                       uses the current model hypothesis to generate a new model.
                                       This value must be between 0 and 1.*/
 
-//
-// TODO create A vector of sources
 
-// TODO A method to add a sources
+std::vector<Source> sources_; /** < Contains all of the instantiated sources. */
 
-// TODO A method to remove a source
+/**
+ * This method adds a source to the vector Parameters::sources_. Before adding a source,
+ * it verifies that the source has a unique ID and that the member variables of the source
+ * are set properly.
+ */ 
+void AddSource(Source& src);
+
+// TODO:: Write the definition of the function AddSource().
+
 
 };
 
