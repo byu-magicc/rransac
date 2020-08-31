@@ -616,7 +616,41 @@ class ModelInitializer
 public:
 
 
+    /**
+     * Depending on the model and whether or not the time steps are fixed, RANSAC can 
+     * optimize its performance by initializing variables that will be frequently used. 
+     * For example, given a linear system with fixed time steps, we can compute before hand
+     * the state transition matrices for the different times steps, the linearized system matrix
+     * with respect to noise, and the linearized observation matrix with respect to the system state. 
+     * @param System Contains the models and parameters.
+     */ 
+    void InitializeRANSAC(const System& sys);
+
+    /**
+     * For every cluster, RANSAC generates many different model hypotheses, constructs the consensus
+     * set for each model hypotheses. The consensus set only contains pointers to the measurements which
+     * are in the cluster. The model hypotheses with the largest consensus set (provided that it meets
+     * some minimum criteria) is kept. The measurements', associated to best model hypotheses, flag Meas::associated
+     * is set to true using the consensus set. The measurements are then removed from the consensus set and added to the 
+     * model hypotheses. 
+     */ 
     void GenerateModelHypotheses(const System& sys);
+
+    /**
+     * This function generates new models from the model hypotheses by incorporated all of the measurements
+     * in its consensus set into the model using the Kalman Smoothing technique. 
+     */ 
+    void GenerateModels(System& sys);
+
+
+    /**
+     * When creating a new model from a cluster, associated measurements are removed from the cluster. We must
+     * verify that the remaining measurements in the cluster still form a cluster. If it still forms a cluster,
+     * then the cluster remains. Otherwise,  if the left over measurements are 
+     * older measurements, the cluster and measurements are deleted since they will not be incorporated into any future model, 
+     * and if the left over measurements are newer, they are added back onto the tree because they could be incorporated into a new cluster. 
+     */ 
+    void ManageClusters(System& sys);
 
 private:
 
@@ -625,3 +659,22 @@ private:
                                                                         hypothesis is becomes a model, the model hypothesis is removed from this vector.*/
     
 };
+
+
+
+//////////////////////////////////////////////////
+//          merge_models_base.h
+//////////////////////////////////////////////////
+
+
+
+
+
+
+//////////////////////////////////////////////////
+//          model_manager.h
+//////////////////////////////////////////////////
+
+#include
+
+class
