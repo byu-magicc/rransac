@@ -1,5 +1,5 @@
-#ifndef RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_H_
-#define RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_H_
+#ifndef RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_CV_H_
+#define RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_CV_H_
 
 #include "rransac/common/measurement/measurement_base.h"
 
@@ -8,12 +8,12 @@ namespace rransac
 /** \class Measurement
  * The default derived measurement class.
 */
-class Measurement: public MeasurementBase
+class Measurement_CV: public MeasurementBase
 {
 public:
 
-  Measurement();
-  ~Measurement();
+  Measurement_CV();
+  ~Measurement_CV();
 
   /**
    * Transforms a measurement from the previous global frame to the current global frame.
@@ -61,4 +61,4 @@ private:
 };
 } // namespace rransac
 
-#endif RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_H_
+#endif RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_CV_H_

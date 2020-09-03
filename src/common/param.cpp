@@ -1,7 +1,6 @@
+#include "rransac/common/param.h"
+
 #include <iostream>
-
-#include "common/param.h"
-
 
 namespace rransac {
 
@@ -44,7 +43,7 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     transform_consensus_set_ = new_params.transform_consensus_set_;
 
     //Ensure that the new measurement time window is greater than 0.
-    if (new_params.meas_time_window_ <= 0) 
+    if (new_params.meas_time_window_ <= 0)
     {
         std::cerr << "Parameters: The provided value of meas_time_window_ is less than or equal to 0. It must be greater than 0. Keeping the current value of " << meas_time_window_ << std::endl;
         successfull = false;
@@ -86,7 +85,7 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     {
         max_RANSAC_iters_ = new_params.max_RANSAC_iters_;
     }
-    
+
     // Ensure that RANSAC_stopping_criteria_ has a realistic value.
     if (new_params.RANSAC_stopping_criteria_ <=0 || new_params.RANSAC_stopping_criteria_ >=1)
     {
@@ -97,7 +96,7 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     {
         RANSAC_stopping_criteria_ = new_params.RANSAC_stopping_criteria_;
     }
-        
+
 
     return successfull;
 
