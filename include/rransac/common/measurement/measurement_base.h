@@ -24,7 +24,6 @@ struct Meas
                                       association process.*/
     double weight;              /**< The weight of the measurement when updating the model is was associated with. This value is set during the data association
                                      process. */
-
 };
 
 
@@ -55,7 +54,7 @@ enum DerivedMeasurement
 class MeasurementBase
 {
 public:
-  
+
   MeasurementBase();
   ~MeasurementBase();
 
