@@ -13,7 +13,7 @@ namespace rransac
 
 struct Transformation
 {
-    Eigen::MatrixXf T;
+    Eigen::MatrixXd T;
 };
 } // namespace rransac
 

@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "rransac/common/measurement/measurement_cv.h"
 
 namespace rransac
@@ -5,22 +7,22 @@ namespace rransac
 
 //-----------------------------------------------------------------------------
 
-Measurement_CV::Measurement() = default;
+Measurement_CV::Measurement_CV() = default;
 
 //-----------------------------------------------------------------------------
 
-Measurement_CV::~Measurement() = default;
+Measurement_CV::~Measurement_CV() = default;
 
 //-----------------------------------------------------------------------------
 
-static void Measurement_CV::TransformMeasurement(Meas& meas, const Transformation& T, const double dt)
+void Measurement_CV::TransformMeasurement(Meas& meas, const Transformation& T, const double dt)
 {
-
+  meas.data = T.T * meas.data;
 }
 
 //-----------------------------------------------------------------------------
 
-static float Measurement_CV::GetDistance(const Meas& meas1, const Meas& meas2, const DistanceType& type, const Parameters& params)
+float Measurement_CV::GetDistance(const Meas& meas1, const Meas& meas2, const DistanceType& type, const Parameters& params)
 {
   switch (type) {
     case kSpatial:
@@ -34,7 +36,7 @@ static float Measurement_CV::GetDistance(const Meas& meas1, const Meas& meas2, c
 
 //-----------------------------------------------------------------------------
 
-static float Measurement_CV::GetSpatialDistance(Meas& meas1, Meas& meas2, const Parameters& params);
+float Measurement_CV::GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params)
 {
   // Euclidean/Frobenius norm distance between two points
   return (meas1.data - meas2.data).norm();
@@ -42,16 +44,16 @@ static float Measurement_CV::GetSpatialDistance(Meas& meas1, Meas& meas2, const 
 
 //-----------------------------------------------------------------------------
 
-static float Measurement_CV::GetTemporalDistance(Meas& meas1, Meas& meas2, const Parameters& params);
+float Measurement_CV::GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params)
 {
-  return meas1.time_stamp - meas2.time_stamp;
+  return abs(meas1.time_stamp - meas2.time_stamp);
 }
 
 //-----------------------------------------------------------------------------
 
-static float Measurement_CV::GetTotalDistance(Meas& meas1, Meas& meas2, const Parameters& params);
+float Measurement_CV::GetTotalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params)
 {
-  return sqrt(GetSpatialDistance(meas1,meas2,params) ^ 2 + GetTemporalDistance(meas1,meas2,params) ^ 2);
+  return sqrt(pow(GetSpatialDistance(meas1,meas2,params),2) + pow(GetTemporalDistance(meas1,meas2,params),2));
 }
 
 } // namespace rransac

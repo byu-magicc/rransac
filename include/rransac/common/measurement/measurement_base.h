@@ -43,7 +43,7 @@ enum DistanceType
 enum DerivedMeasurement
 {
     kMeasurement=0
-}
+};
 
 
 /** \class MeasurementBase
@@ -55,8 +55,8 @@ class MeasurementBase
 {
 public:
 
-  MeasurementBase();
-  ~MeasurementBase();
+  //MeasurementBase();
+  //~MeasurementBase();
 
   /**
    * Transforms a measurement from the previous global frame to the current global frame.

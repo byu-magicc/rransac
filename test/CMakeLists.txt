@@ -31,6 +31,11 @@ common/parameters_test.cpp
 ../src/common/parameters.cpp)
 target_link_libraries(parameterTest gtest_main)
 
+add_executable(measurement_cvTest
+common/measurement/measurement_cv_test.cpp
+../src/common/measurement/measurement_cv.cpp
+../src/common/parameters.cpp)
+target_link_libraries(measurement_cvTest gtest_main)
 
-
-add_custom_target(gtests parameterTest)
+add_custom_target(gtests_param parameterTest)
+add_custom_target(gtests_meas measurement_cvTest)

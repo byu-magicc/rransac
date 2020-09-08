@@ -21,7 +21,7 @@ public:
    * @param[in] Transformation The transformation object that contains the data necessary to transform the measurement.
    * @param[in] dt The time elapsed since the last transformation was received.
    */
-  static void TransformMeasurement(Meas& meas,const Transformation& T,const double dt);
+  void TransformMeasurement(Meas& meas,const Transformation& T,const double dt);
 
 
   /**
@@ -31,7 +31,7 @@ public:
    * @param[in] type The type of distance to be calculated: spatial, temporal, or total
    * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
    */
-  static float GetDistance(const Meas& meas1, const Meas& meas2, const DistanceType& type, const Parameters& params);
+  float GetDistance(const Meas& meas1, const Meas& meas2, const DistanceType& type, const Parameters& params);
 
 private:
 
@@ -41,7 +41,7 @@ private:
    * @param[in] meas2 A different measurement.
    * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
    */
-  static float GetSpatialDistance(Meas& meas1, Meas& meas2, const Parameters& params);
+  float GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params);
 
   /**
    * Calculates the temporal distance between two measurements using the 2-norm.
@@ -49,7 +49,7 @@ private:
    * @param[in] meas2 A different measurement.
    * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
    */
-  static float GetTemporalDistance(Meas& meas1, Meas& meas2, const Parameters& params);
+  float GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params);
 
   /**
    * Calculates the temporal and spatial distance between two measurements using the 2-norm.
@@ -57,7 +57,7 @@ private:
    * @param[in] meas2 A different measurement.
    * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
    */
-  static float GetTotalDistance(Meas& meas1, Meas& meas2, const Parameters& params);
+  float GetTotalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params);
 };
 } // namespace rransac
 
