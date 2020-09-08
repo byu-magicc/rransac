@@ -1,5 +1,10 @@
+#ifndef RRANSAC_DATA_STRUCTURES_CONSENSUS_SET_H_
+#define RRANSAC_DATA_STRUCTURES_CONSENSUS_SET_H_
+
 #include "rransac/common/measurement/measurement.h
 
+namespace rransac
+{
 /**
  * \class ConsensusSet
  * The consensus set of a model is the set of measurements associated with the model.
@@ -31,3 +36,6 @@ std::list<std::vector<Meas>> consensus_set; /** < Contains the measurements asso
                                                 contains measurements with the same time stamp. This allows us to efficiently remove expired measurements
                                                 by simply removing an entire vector. */
 };
+} // namespace rransac
+
+#endif // RRANSAC_DATA_STRUCTURES_CONSENSUS_SET_H_

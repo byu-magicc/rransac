@@ -1,7 +1,9 @@
-#ifndef RRANSAC_COMMON_PARAM_H_
-#define RRANSAC_COMMON_PARAM_H_
+#ifndef RRANSAC_COMMON_PARAMETERS_H_
+#define RRANSAC_COMMON_PARAMETERS_H_
 
 #include <vector>
+
+#include "rransac/common/Source.h"
 
 namespace rransac
 {
@@ -84,4 +86,4 @@ namespace rransac
   };
 } // namespace rransac
 
-#endif RRANSAC_COMMON_PARAM_H_
+#endif // RRANSAC_COMMON_PARAMETERS_H_

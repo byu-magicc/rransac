@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 
 #include "rransac/common/transformation.h"
-#include "rransac/common/param.h"
+#include "rransac/common/parameters.h"
 
 namespace rransac
 {

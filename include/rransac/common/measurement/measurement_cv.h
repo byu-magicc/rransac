@@ -61,4 +61,4 @@ private:
 };
 } // namespace rransac
 
-#endif RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_CV_H_
+#endif // RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_CV_H_

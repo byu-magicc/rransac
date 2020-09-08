@@ -1,4 +1,4 @@
-#include "rransac/common/param.h"
+#include "rransac/common/parameters.h"
 
 #include <iostream>
 

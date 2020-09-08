@@ -17,4 +17,4 @@ struct Transformation
 };
 } // namespace rransac
 
-#endif RRANSAC_COMMON_TRANSFORMATION_H_
+#endif // RRANSAC_COMMON_TRANSFORMATION_H_

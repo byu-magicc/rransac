@@ -27,8 +27,8 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 ########################################
 
 add_executable(parameterTest 
-common/param_test.cpp
-../src/common/param.cpp)
+common/parameters_test.cpp
+../src/common/parameters.cpp)
 target_link_libraries(parameterTest gtest_main)
 
 
