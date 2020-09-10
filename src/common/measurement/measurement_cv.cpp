@@ -7,7 +7,10 @@ namespace rransac
 
 //-----------------------------------------------------------------------------
 
-Measurement_CV::Measurement_CV() = default;
+Measurement_CV::Measurement_CV() 
+{
+  measurement_type_ = "measurement_cv";
+}
 
 //-----------------------------------------------------------------------------
 

@@ -1,7 +1,9 @@
 #ifndef RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_FACTORY_H_
 #define RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_FACTORY_H_
 
-#include "rransac/common/measurement/measurement.h
+#include <memory>
+
+#include "rransac/common/measurement/measurement_base.h"
 
 namespace rransac
 {

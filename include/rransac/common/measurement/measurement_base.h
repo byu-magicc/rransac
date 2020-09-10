@@ -2,6 +2,7 @@
 #define RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_BASE_H_
 
 #include <Eigen/Core>
+#include <string>
 
 #include "rransac/common/transformation.h"
 #include "rransac/common/parameters.h"
@@ -42,7 +43,7 @@ enum DistanceType
 */
 enum DerivedMeasurement
 {
-    kMeasurement=0
+    kMeasurementCV=0
 };
 
 
@@ -74,6 +75,8 @@ public:
    * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
    */
   virtual float GetDistance(const Meas& meas1, const Meas& meas2, const DistanceType& type, const Parameters& params)=0;
+
+  std::string measurement_type_;
 
 };
 } // namespace rransac
