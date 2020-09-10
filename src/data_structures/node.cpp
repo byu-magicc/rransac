@@ -5,7 +5,11 @@ namespace rransac
 
 //-----------------------------------------------------------------------------
 
-Node::Node() = default;
+Node::Node()
+{
+    overflow_treatment_was_called_ = false;
+    is_leaf_node_ = true;
+}
 
 //-----------------------------------------------------------------------------
 
@@ -21,7 +25,8 @@ Node::~Node()
 
 void Node::AddChildNode(Node* new_node)
 {
-    children_nodes_.push_back();
+    children_nodes_.push_back(new_node);
+    UpdateNodeBoundingBox();
 }
 
 //-----------------------------------------------------------------------------
@@ -36,6 +41,7 @@ void Node::RemoveAllChildNodes()
 void Node::AddMeasurement(Meas measurement)
 {
     measurements_.push_back(measurement);
+    UpdateNodeBoundingBox();
 }
 
 //-----------------------------------------------------------------------------
