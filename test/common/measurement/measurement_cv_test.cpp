@@ -16,28 +16,21 @@ TEST(Measurement_CVTest, transformmeasurement)
     DistanceType distType = kSpatial;
     Parameters P;
 
-    Meas m1, m2;
-    Transformation transformation;
-    double dt(1.0);
-    m1.data = Eigen::MatrixXd(3,1);
-    m1.data << 1,1,1;
-    m2.data = Eigen::MatrixXd(3,1);
-    m2.data << 1,1,1;
-    transformation.T = Eigen::MatrixXd(3,3);
-    transformation.T << 1,0,0,
-                        0,1,0,
-                        0,0,1;
+    for (int i = 0; i < 100; ++i) 
+    {
+        Meas m1;
+        Meas m2;
+        double dt(1.0);
+        Transformation transformation;
 
-    // Transformation is applied to m1 and should do nothing
-    test_obj.TransformMeasurement(m1,transformation,dt);
-    EXPECT_FLOAT_EQ((float)(m1.data-m2.data).norm(),0.0) << "Should be 0.";
+        m1.data = Eigen::MatrixXd::Random(3,1);
+        m2.data = Eigen::MatrixXd(3,1);
+        m2.data = m1.data;
+        transformation.T = Eigen::MatrixXd::Random(3,3);
 
-    // 90 degree X-direction rotation Transformation is applied to m1
-    transformation.T << 1,0,0,
-                        0,cos(M_PI),-sin(M_PI),
-                        0,sin(M_PI),cos(M_PI);
-    test_obj.TransformMeasurement(m1,transformation,dt);
-    EXPECT_FLOAT_EQ((float)(m1.data-m2.data).norm(),2*sqrt(2)) << "Should be 2*sqrt(2).";
+        test_obj.TransformMeasurement(m1,transformation,dt);
+        EXPECT_FLOAT_EQ(m1.data.norm(),(transformation.T * m2.data).norm()) << "Both transformations should be equal";
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -48,35 +41,16 @@ TEST(Measurement_CVTest, spatialdistance)
     DistanceType distType = kSpatial;
     Parameters P;
 
-    Meas m1;
-    Meas m2;
-    m1.data = Eigen::MatrixXd(3,1);
-    m1.data << 1,1,1;
-    m2.data= Eigen::MatrixXd(3,1);
-    m2.data << 1,1,1;
+    for (int i = 0; i < 100; ++i) 
+    {
+        Meas m1;
+        Meas m2;
 
-    // Testing same point location == 0.0 distance
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),0.0) << "Spatial distance should equal 0.";
-    
-    // Testing different points including negative data entry values
-    m2.data(0,0) = 2;
-    m2.data(1,0) = -3;
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),(m1.data-m2.data).norm()) << "Spatial distances should be equal.";
+        m1.data = Eigen::MatrixXd::Random(3,1);
+        m2.data= Eigen::MatrixXd::Random(3,1);
 
-    // nD Matrix tests:
-    Meas m3;
-    Meas m4;
-    m3.data = Eigen::MatrixXd(3,3);
-    m3.data << 1,4,1,
-                -2,3,1,
-                3,1,5;
-    m4.data= Eigen::MatrixXd(3,3);
-    m4.data << 3,-1,10,
-                1,1,1,
-                2,1,-12;
-    
-    // Testing different points nD including negative data entry values
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m3,m4,distType,P),(m3.data-m4.data).norm()) << "Spatial distances should be equal.";
+        EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),(m1.data - m2.data).norm()) << "Spatial distance should be equal";
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -87,22 +61,17 @@ TEST(Measurement_CVTest, temporaldistance)
     DistanceType distType = kTemporal;
     Parameters P;
 
-    Meas m1;
-    Meas m2;
-    m1.time_stamp = 0.0;
-    m2.time_stamp = 0.0;
+    for (int i = 0; i < 100; ++i) 
+    {
+        Meas m1;
+        Meas m2;
+        double X(500.0);
 
-    // Testing same temporal values == 0.0 distance
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),0.0) << "Temporal Distance should equal 0.";
-    
-    // Testing different integer time steps
-    m2.time_stamp = 4.0;
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),4) << "Temporal distance should equal 4.";
+        m1.time_stamp = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX / X));
+        m2.time_stamp = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX / X));
 
-    // Testing different decimal time steps
-    m1.time_stamp = 0.5;
-    m2.time_stamp = 4.25;
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),3.75) << "Temporal distance should equal 3.75.";
+        EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),abs(m1.time_stamp - m2.time_stamp)) << "Temporal distance should be equal";
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -113,47 +82,20 @@ TEST(Measurement_CVTest, totaldistance)
     DistanceType distType = kTotal;
     Parameters P;
 
-    Meas m1;
-    Meas m2;
-    m1.data = Eigen::MatrixXd(3,1);
-    m1.data << 1,1,1;
-    m1.time_stamp = 0.0;
-    m2.data = Eigen::MatrixXd(3,1);
-    m2.data << 1,1,1;
-    m2.time_stamp = 0.0;
-    
-    // Testing same temporal and spatial values == 0.0 distance
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),0.0) << "Total Distance should equal 0.";
-    
-    // Testing different integer temporal and spatial values
-    m2.time_stamp = 4.0;
-    m2.data(1,0) = 3.0;
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),sqrt(pow(4,2)+pow(2,2))) << "Total distance should equal sqrt(20).";
+    for (int i = 0; i < 100; ++i) 
+    {
+        Meas m1;
+        Meas m2;
+        double X(500.0);
+        
+        m1.data = Eigen::MatrixXd::Random(3,1);
+        m1.time_stamp = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX / X));
+        m2.data= Eigen::MatrixXd::Random(3,1);
+        m2.time_stamp = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX / X));
 
-    // Testing different decimal temporal and spatial values
-    m1.time_stamp = 0.5;
-    m1.data(0,0) = 1.5;
-    m2.time_stamp = 4.0;
-    m2.data(1,0) = 3.5;
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),sqrt(pow(3.5,2)+pow(sqrt(pow(2.5,2)+pow(.5,2)),2))) << "Total distance should be equal.";
-    
-    // nD Matrix tests:
-    Meas m3;
-    Meas m4;
-    m3.time_stamp = 1.5;
-    m4.time_stamp = 1;
-    m3.data = Eigen::MatrixXd(3,3);
-    m3.data << 1,4,1,
-                -2,3,1,
-                3,1,5;
-    m4.data= Eigen::MatrixXd(3,3);
-    m4.data << 3,-1,10,
-                1,1,1,
-                2,1,-12;
-    
-    // Testing different points nD including negative data entry values
-    EXPECT_FLOAT_EQ(test_obj.GetDistance(m3,m4,distType,P),sqrt(pow((m3.data-m4.data).norm(),2)+pow(.5,2))) << "Total distances should be equal.";
-
+        EXPECT_FLOAT_EQ(test_obj.GetDistance(m1,m2,distType,P),
+                        sqrt(pow((m1.data - m2.data).norm(),2) + pow(abs(m1.time_stamp - m2.time_stamp),2))) << "Total distance should be equal";
+    }
 }
 
 } // namespace rransac
