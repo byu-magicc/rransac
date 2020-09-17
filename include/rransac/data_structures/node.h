@@ -11,7 +11,7 @@ namespace rransac
  * \class Node
  * The Node class contains pointers to children nodes or measurement objects.
  * This class is only used by the DataTree class data structure, where each node
- * of the tree is a Node Object.
+ * of the tree is a Node object.
  */ 
 class Node
 {
@@ -28,7 +28,7 @@ public:
 
     /**
      * Adds Node to vector of children nodes
-     * @param[in] Pointer to new node
+     * @param[in] new_node pointer to new Node
      */
     void AddChildNode(std::shared_ptr<Node> new_node);
 
@@ -39,67 +39,66 @@ public:
     void RemoveAllChildNodes();
     
     /**
-     * Adds a measurement to this node.
-     * @param[in] Meas struct object to be added to node
+     * Adds a measurement to this Node.
+     * @param[in] Meas measurement struct object to be added to Node
      */
     void AddMeasurement(Meas measurement);
     
     /**
-     * Removes all measurements from node.
+     * Removes all measurements from Node.
      */
     void RemoveAllMeasurements();
 
     /**
      * Compresses or expands node_bounding_box_ depending on
-     * whether or not a child node/meas object was added to
-     * this node.
+     * whether or not a child Node/Meas object was added to
+     * this Node.
      */
     void UpdateNodeBoundingBox();
 
     /**
      * Sets the OverflowTreatment boolean variable.
-     * @param[in/out] Sets overflow_treatment_was_called_
+     * @param[in/out] sets overflow_treatment_was_called_ variable to true or false
      */
     void SetOverflowTreatment(bool overflow_treatment_setter);
 
     /**
-     * Returns vector of children nodes of this node.
+     * \return Returns vector of children nodes of this Node
      */
     std::vector<std::shared_ptr<Node>> GetNodeChildren();
 
     /**
-     * Returns number of children nodes.
+     * \return Returns number of children nodes.
      */
     int GetNumberOfChildren();
 
     /**
-     * Returns node_bounding_box_ around node.
+     * \return Returns node_bounding_box_ a round Node.
      */
     Eigen::MatrixXd GetNodeBounds();
 
     /**
-     * Returns all measurements contained in node.
+     * \return Returns all measurements contained in Node.
      */
     std::vector<Meas> GetMeasurements();
 
     /**
-     * Returns number of measurement objects in node.
+     * \return Returns number of measurement objects in Node.
      */
     int GetNumberOfMeasurements();
 
     /**
-     * Returns whether or not overflow treatment has 
-     * been called on this node from RRStarTree class.
+     * \return Returns whether or not the OverflowTreatment function from the RStarTree class was called on this Node
      */
     bool WasOverflowTreatmentCalled();
 
     /**
-     * Returns whether or not this node is a leaf node.
+     * \return Returns whether or not this Node is a leaf Node.
      */
     bool IsNodeALeafNode();
 
     /**
-     * Returns center coordinates of node_bounding_box_.
+     * \return Returns center coordinates of node_bounding_box_.
      */
     Eigen::MatrixXd GetCenterOfBoundingBox();
     

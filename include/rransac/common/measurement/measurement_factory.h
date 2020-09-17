@@ -19,7 +19,7 @@ public:
 
   /**
    * Returns a unique pointer to a derived measurement class.
-   * @param[in] type The type of derived measurement class to use.
+   * @param[in] type The type of DerivedMeasurement class to use.
    * @see DerivedMeasurement
    */
   std::unique_ptr<MeasurementBase> CreateMeasurementClass(const DerivedMeasurement type);
