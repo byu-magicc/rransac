@@ -30,7 +30,7 @@ public:
      * Adds Node to vector of children nodes
      * @param[in] Pointer to new node
      */
-    void AddChildNode(Node* new_node);
+    void AddChildNode(std::shared_ptr<Node> new_node);
 
     /**
      * Removes all children nodes, but doesn't delete them from memory.
@@ -65,7 +65,7 @@ public:
     /**
      * Returns vector of children nodes of this node.
      */
-    std::vector<Node*> GetNodeChildren();
+    std::vector<std::shared_ptr<Node>> GetNodeChildren();
 
     /**
      * Returns number of children nodes.
@@ -75,7 +75,7 @@ public:
     /**
      * Returns node_bounding_box_ around node.
      */
-    Eigen::MartixXd GetNodeBounds();
+    Eigen::MatrixXd GetNodeBounds();
 
     /**
      * Returns all measurements contained in node.
@@ -101,11 +101,11 @@ public:
     /**
      * Returns center coordinates of node_bounding_box_.
      */
-    Eigen::MartixXd GetCenterOfBoundingBox();
+    Eigen::MatrixXd GetCenterOfBoundingBox();
     
 private:
 
-    std::vector<Node*> children_nodes_; /**< Vector filled with pointers to children Nodes of this Node. */
+    std::vector<std::shared_ptr<Node>> children_nodes_; /**< Vector filled with pointers to children Nodes of this Node. */
     
     Eigen::MatrixXd node_bounding_box_; /** < Matrix containing outer bounds of each dimension.
                                             Formatted such that [first_dim_min_val, first_dim_max_val;
