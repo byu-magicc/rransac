@@ -315,37 +315,22 @@ enum DerivedModels
 
 /**
  * \class ModelBase
- * R-RANSAC is designed to be modular and work with a variety of models. However,
- * we assume that the dynamic model is a discrete, time-invariant system of the form 
- * \f[
- * x_k=f\left(x_{k^-},w_{k},\delta_k\right)
- * \f]
- * \f[
- * y_k=h\left(x_k\right)+v_k
- * \f]
- * with \f$x_k\f$ denoting the state of the system at time \f$k\f$, \f$x_{k^-}\f$ the previous state of the system, 
- * \f$y_k\f$ the system output at time \f$k\f$, \f$f\f$ the system model, \f$h\f$ the observation model, \f$w\f$ zero-mean 
- * Gaussian process noise with covariance \f$Q\f$, \f$v\f$ zero-mean Gaussian measurement noise with covariance 
- * \f$R\f$ and \f$\delta_k\f$ denoting the time between the previous state and the current state.
+ * R-RANSAC is designed to be modular and work with a variety of models. However, this 
+ * version of R-RANSAC is extended to work with any Lie group. 
  * 
- * The class is designed to facilitate propagating and updating the model using a method similar to the Kalman filter update.
- * Methods similar to the Kalman filter include the EKF, UKF, IF, EIF, PDA, JPDA, etc. Reglardless of the method used, the
- * system model \f$f\f$ needs to be linearized with respect to the state and the noise. Also, the observation model \f$h\f$
- * needs to be linearized with respect to the state. 
+ * The following notation is used throughout. We denote the current time
+ * using a subscript \f$k\f$, the next previous time using a subscript \f$k^{-}\f$,
+ * and an arbitrary previous time using the subscript \f$m\f$ such that
+ * \f$m\leq k\f$. We use \f$\delta_{k}\f$ to denote the time elapsed from \f$k^{-}\f$
+ * to \f$k\f$, and \f$\delta_{m:k}\f$ to denote the time elapsed from \f$m\f$
+ * to \f$k\f$ such that \f$\delta_{m:k},\delta_{k^{-}}\geq0\f$ and \f$\delta_{k:m}=-\delta_{m:k}\f$.
+ * Lastly, a subscript of \f$0\f$ is used to denote the the time at the
+ * beginning of the time window, e.g, \f$\delta_{0:k}=\delta_{k-T_{W}:k}\f$. 
+ *
+ * Let the state of the system at time \f$k\f$ be given by \f$x_{k}=\left(g_{k},u_{k}\right)\in G\times E\f$
+ * where \f$g_{k}\in G\f$ and \f$u_{k}\in E\f$. We assume the state transition
  * 
- * In most methods, the following matrices will be helpful. 
- * Let \f$F\f$ denote the linearized system model with respect to the state calculated as 
- * \f[
- *     F=\frac{\partial f}{\partial x}\bigg |_{x_k,\delta_t},
- * \f]
- * \f$G\f$ denote the linearized system model with respect to the noise calculated as 
- * \f[
- *     G=\frac{\partial f}{\partial w}\bigg |_{x_k,\delta_t},
- * \f] and
- * \f$H\f$ denote the linearized observation model with respect to the noise calculated as 
- * \f[
- *     H=\frac{\partial h}{\partial x}\bigg |_{x_k,\delta_t}.
- * \f]
+ * 
  * 
  *  
  * 
