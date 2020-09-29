@@ -21,6 +21,8 @@ Before giving an overview of R-RANSAC, we will present some common terminology t
 
 * **Phenomenon**: Something that produces an observable signal. In the case of target tracking, the phenomenon is referred to as a **target**, which is an object that can move physically.
 
+* **Measurement Source**: A sensor equipped with an algorithm that captures information from the environment and produces meaningful measurements used to observe the target.
+
 * **Surveillance Region**: The portion of the environment that is observable by the sensors. There is a local surveillance region for each sensor and a global surveillance region that is a union of all the local surveillance regions. For example, the surveillance region of a camera is everything in it's view, and the global surveillance region would be the area viewed by multiple cameras. Note that there can be many local surveillance regions but only one global surveillance region. 
 
 * **Frame of reference**: Consists of an abstract coordinate system and the set of physical reference points that uniquely fix (locate and orient) the coordinate system and standardize measurements within that frame. We will often refer to a frame of reference as just **frame**.

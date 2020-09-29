@@ -629,8 +629,8 @@ public:
     /**
      * For every cluster, RANSAC generates many different model hypotheses, constructs the consensus
      * set for each model hypotheses. The consensus set only contains pointers to the measurements which
-     * are in the cluster. The model hypotheses with the largest consensus set (provided that it meets
-     * some minimum criteria) is kept. The measurements', associated to best model hypotheses, flag Meas::associated
+     * are in the cluster. The model hypotheses with the largest consensus set (provided that the consensus
+     * set has a cardinality greater than some threshold) is kept. The measurements', associated to best model hypotheses, flag Meas::associated
      * is set to true using the consensus set. The measurements are then removed from the consensus set and added to the 
      * model hypotheses. 
      */ 
