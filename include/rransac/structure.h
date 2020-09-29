@@ -26,7 +26,7 @@ struct Transformation
 #include <Eigen/Core>
 
 #include "rransac/common/transformation.h"
-#include "rransac/common/param.h"
+#include "rransac/common/parameters.h"
 
 
 /** \struct Meas

@@ -7,7 +7,8 @@ find_package(Eigen3)
 
 include_directories(
     ${EIGEN3_INCLUDE_DIR}
-    include/rransac)
+    include/rransac
+    include)
 
 
 

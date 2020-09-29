@@ -27,10 +27,28 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 ########################################
 
 add_executable(parameterTest 
-common/param_test.cpp
-../src/common/param.cpp)
+common/parameters_test.cpp
+../src/common/parameters.cpp)
 target_link_libraries(parameterTest gtest_main)
 
+add_executable(measurement_cvTest
+common/measurement/measurement_cv_test.cpp
+../src/common/measurement/measurement_cv.cpp
+../src/common/parameters.cpp)
+target_link_libraries(measurement_cvTest gtest_main)
 
+add_executable(measurement_factoryTest
+common/measurement/measurement_factory_test.cpp
+../src/common/measurement/measurement_factory.cpp
+../src/common/measurement/measurement_cv.cpp)
+target_link_libraries(measurement_factoryTest gtest_main)
 
-add_custom_target(gtests parameterTest)
+add_executable(nodeTest
+data_structures/node_test.cpp
+../src/data_structures/node.cpp)
+target_link_libraries(nodeTest gtest_main)
+
+add_custom_target(gtests_param parameterTest)
+add_custom_target(gtests_meas measurement_cvTest)
+add_custom_target(gtests_factory measurement_factoryTest)
+add_custom_target(gtests_node nodeTest)

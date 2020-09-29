@@ -1,6 +1,6 @@
 #include <string>
 #include <gtest/gtest.h>
-#include "common/param.h"
+#include "common/parameters.h"
 
 
 namespace rransac {
