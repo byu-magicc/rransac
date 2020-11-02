@@ -1,7 +1,8 @@
 #ifndef RRANSAC_DATA_STRUCTURES_CONSENSUS_SET_H_
 #define RRANSAC_DATA_STRUCTURES_CONSENSUS_SET_H_
 
-#include "rransac/common/measurement/measurement.h
+#include "rransac/common/measurement/measurement_base.h"
+#include <list>
 
 namespace rransac
 {
@@ -13,6 +14,7 @@ namespace rransac
  * the measurements. Each vector of measurements contains measurements with the same time stamp. 
  */ 
 
+template <class M>
 class ConsensusSet
 {
 public:
@@ -21,7 +23,13 @@ public:
  * Add a measurement to the consensus set. 
  * @param[in] meas The measurement to be added.
 */
-void AddMeasToConsensusSet(Meas meas);
+void AddMeasToConsensusSet(const M& meas);
+
+/** < 
+ * Add a measurements to the consensus set. 
+ * @param[in] meas The measurement to be added.
+*/
+void AddMeasurementsToConsensusSet(const std::vector<M>& meas);
 
 /** <
  * Removes all of the measurements from the consensus_set with a time stamp that occurred before expiration_time. 
@@ -32,7 +40,7 @@ void AddMeasToConsensusSet(Meas meas);
 void PruneConsensusSet(double expiration_time);
 
 
-std::list<std::vector<Meas>> consensus_set; /** < Contains the measurements associated with the model that have not expired. Each vector of measurements 
+std::list<std::vector<M>> consensus_set; /** < Contains the measurements associated with the model that have not expired. Each vector of measurements 
                                                 contains measurements with the same time stamp. This allows us to efficiently remove expired measurements
                                                 by simply removing an entire vector. */
 };
