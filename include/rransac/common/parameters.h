@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "rransac/common/Source.h"
+#include "common/sources/source_base.h"
 
 namespace rransac
 {
@@ -72,14 +72,15 @@ float RANSAC_stopping_criteria_; /**< During any iteration, if the probability o
                                       This value must be between 0 and 1.*/
 
 
-std::vector<Source> sources_; /** < Contains all of the instantiated sources. */
+std::vector<SourceBase> sources_; /** < Contains all of the instantiated sources. */
 
 /**
  * This method adds a source to the vector Parameters::sources_. Before adding a source,
  * it verifies that the source has a unique ID and that the member variables of the source
  * are set properly.
+ * @return Returns true if the source was added.
  */
-void AddSource(Source& src);
+bool AddSource(const SourceParameters& params);
 
 // TODO:: Write the definition of the function AddSource().
 

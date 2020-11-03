@@ -26,20 +26,22 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Define Tests
 ########################################
 
-########################################
+#---------------------------------------
 # Source tests
+#---------------------------------------
 
-add_executable(source_R2_posTest
-common/sources/source_R2_pos_test.cpp
-../src/common/sources/source_R2_pos.cpp)
-add_dependencies(source_R2_posTest lie_groups)
-target_link_libraries(source_R2_posTest gtest_main lie_groups)
+add_executable(source_baseTest
+common/sources/source_base_test.cpp)
+# ../src/common/sources/source_R2_pos.cpp
+# ../src/common/sources/source_R2_pos_vel.cpp)
+add_dependencies(source_baseTest lie_groups)
+target_link_libraries(source_baseTest gtest_main lie_groups)
 
 
-# add_executable(parameterTest 
-# common/parameters_test.cpp
-# ../src/common/parameters.cpp)
-# target_link_libraries(parameterTest gtest_main)
+add_executable(parameterTest 
+common/parameters_test.cpp
+../src/common/parameters.cpp)
+target_link_libraries(parameterTest gtest_main)
 
 # add_executable(measurement_cvTest
 # common/measurement/measurement_cv_test.cpp

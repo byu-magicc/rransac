@@ -25,11 +25,11 @@ namespace rransac {
  * 
  * Note: You can use any model. 
  */ 
-template <class G, class U, class M> 
+template <class S, class M> 
 class ModelBase
 {
 
-typedef Eigen::Matrix<double, G::size1_ + U::size1_, G::size1_ + U::size1_> Mat;
+typedef Eigen::Matrix<double, S::G::size1_ + S::U::size1_, S.g_.size1_ + S.u_.size1_> Mat;
 
 public:
     lie_groups::State<G,U> state_;    /** < The estimated state of the phenomenon or target.*/
