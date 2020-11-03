@@ -30,8 +30,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Source tests
 
 add_executable(source_R2_posTest
+common/sources/source_R2_pos_test.cpp
 ../src/common/sources/source_R2_pos.cpp)
-target_link_libraries(source_R2_posTest gtest_main liegroups)
+add_dependencies(source_R2_posTest lie_groups)
+target_link_libraries(source_R2_posTest gtest_main lie_groups)
 
 
 # add_executable(parameterTest 
@@ -60,3 +62,4 @@ target_link_libraries(source_R2_posTest gtest_main liegroups)
 # add_custom_target(gtests_meas measurement_cvTest)
 # add_custom_target(gtests_factory measurement_factoryTest)
 # add_custom_target(gtests_node nodeTest)
+# add_custom_target(gtests_source_R2_posTest source_R2_posTest)

@@ -1,6 +1,7 @@
 #include <string>
 #include <gtest/gtest.h>
-#include "lie_groups/liegroups/include/state.h"
+#include "state.h"
+#include "Eigen/Core"
 #include "common/sources/source_R2_pos.h"
 
 
@@ -10,7 +11,7 @@ TEST(Source_R2_POS_TEST, ALL) {
 lie_groups::State<lie_groups::Rn<2>,lie_groups::rn<2>> state;
 
 // Construct a state
-Eigen::Matrix2d g;
+Eigen::Matrix<double,2,1> g;
 g << 1,2;
 state.g_.data_ = g;
 
