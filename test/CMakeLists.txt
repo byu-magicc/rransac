@@ -43,6 +43,12 @@ common/parameters_test.cpp
 ../src/common/parameters.cpp)
 target_link_libraries(parameterTest gtest_main)
 
+add_executable(consensus_setTest 
+data_structures/consensus_set_test.cpp)
+target_link_libraries(consensus_setTest gtest_main)
+
+
+
 # add_executable(measurement_cvTest
 # common/measurement/measurement_cv_test.cpp
 # ../src/common/measurement/measurement_cv.cpp
