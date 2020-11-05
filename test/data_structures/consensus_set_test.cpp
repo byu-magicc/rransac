@@ -20,7 +20,7 @@ for (auto it = cs.consensus_set_.begin(); it != cs.consensus_set_.end(); ++it) {
 
 TEST(CONSENSUS_TEST, ADD_MEASUREMENT) {
 
-Meas m1, m2,m3,m4,m5,m6;
+MeasBase<int,int> m1, m2,m3,m4,m5,m6;
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
 m3.time_stamp = 0.5;
@@ -29,7 +29,7 @@ m5.time_stamp = 0.2;
 m5.source_id = 1;
 m6.time_stamp = 0.2;
 m6.source_id = 2;
-ConsensusSet<Meas> cs;
+ConsensusSet<MeasBase<int,int>> cs;
 
 cs.AddMeasToConsensusSet(m1);
 ASSERT_EQ(cs.consensus_set_.size(), 1);
@@ -46,7 +46,7 @@ ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 
 // m3 should come after m1 and m2
 cs.AddMeasToConsensusSet(m3);
-std::list<std::vector<Meas>>::iterator iter = cs.consensus_set_.begin();
+std::list<std::vector<MeasBase<int,int>>>::iterator iter = cs.consensus_set_.begin();
 ASSERT_EQ(cs.consensus_set_.size(), 3);
 ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 ASSERT_EQ((*(++iter)).back().time_stamp, m2.time_stamp);
@@ -102,12 +102,12 @@ TEST(CONSENSUS_TEST, ADD_MEASUREMENTS) {
 
 
 int num_meas = 1000;
-ConsensusSet<Meas> cs;
+ConsensusSet<MeasBase<int,int>> cs;
 srand (time(NULL));
-std::vector<Meas> measurements;
+std::vector<MeasBase<int,int>> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    Meas m1;
+    MeasBase<int,int> m1;
     m1.time_stamp = rand() % 200 - 100;
     measurements.push_back(m1);
 }
@@ -144,9 +144,9 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 TEST(CONSENSUS_TEST, ADD_MEASUREMENTS_SAME_TIME_STAMP) {
 
 
-ConsensusSet<Meas> cs;
-Meas m1,m2,m3,m4,m5;
-std::vector<Meas> mv1, mv2, mv3, mv4, mv5, mv6;
+ConsensusSet<MeasBase<int,int>> cs;
+MeasBase<int,int> m1,m2,m3,m4,m5;
+std::vector<MeasBase<int,int>> mv1, mv2, mv3, mv4, mv5, mv6;
 m1.time_stamp = 0.1;
 m2.time_stamp = -0.1;
 m3.time_stamp = 0.4;
@@ -178,10 +178,10 @@ ASSERT_EQ(iter->size(), 4);
 int num_meas = 1000;
 
 srand (time(NULL));
-std::vector<Meas> measurements;
+std::vector<MeasBase<int,int>> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    Meas m;
+    MeasBase<int,int> m;
     m.time_stamp = rand() % 200 - 100;
     measurements.clear();
     measurements.push_back(m);
@@ -218,7 +218,7 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 
 TEST(CONSENSUS_TEST, PRUNE_CONSENSUS_SET) {
 
-Meas m1, m2,m3,m4,m5,m6;
+MeasBase<int,int> m1, m2,m3,m4,m5,m6;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -226,9 +226,9 @@ m3.time_stamp = 0.5;
 m4.time_stamp = -0.1;
 m5.time_stamp = 0.2;
 m6.time_stamp = 0.2;
-std::vector<Meas> meas {m1,m2,m3,m4,m5,m6};
+std::vector<MeasBase<int,int>> meas {m1,m2,m3,m4,m5,m6};
 
-ConsensusSet<Meas> cs;
+ConsensusSet<MeasBase<int,int>> cs;
 cs.AddMeasurementsToConsensusSet(meas);
 
 // Remove all measurements

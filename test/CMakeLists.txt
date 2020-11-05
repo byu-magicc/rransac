@@ -30,6 +30,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Source tests
 #---------------------------------------
 
+add_executable(parameterTest 
+parameters_test.cpp
+../src/parameters.cpp)
+target_link_libraries(parameterTest gtest_main)
+
 add_executable(source_baseTest
 common/sources/source_base_test.cpp)
 # ../src/common/sources/source_R2_pos.cpp
@@ -38,14 +43,21 @@ add_dependencies(source_baseTest lie_groups)
 target_link_libraries(source_baseTest gtest_main lie_groups)
 
 
-add_executable(parameterTest 
-common/parameters_test.cpp
-../src/common/parameters.cpp)
-target_link_libraries(parameterTest gtest_main)
+# add_executable(rransacTest
+# rransac_test.cpp
+# ../src/parameters.cpp
+# ../src/rransac.cpp)
+# target_link_libraries(rransacTest gtest_main lie_groups)
 
-add_executable(consensus_setTest 
-data_structures/consensus_set_test.cpp)
-target_link_libraries(consensus_setTest gtest_main)
+
+
+
+
+
+
+# add_executable(consensus_setTest 
+# data_structures/consensus_set_test.cpp)
+# target_link_libraries(consensus_setTest gtest_main)
 
 
 
