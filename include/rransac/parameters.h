@@ -3,8 +3,6 @@
 
 #include <vector>
 
-#include "common/sources/source_base.h"
-
 namespace rransac
 {
 /** \class Parameters
@@ -32,10 +30,8 @@ Parameters(const Parameters &new_params);
 ~Parameters();
 
 /**
- * \detail Sets the values of the member variables of this object to the
- * values of the member variables of the passed in object. Some values are checked to ensure that
- * they meet the prescribed requirements.
- * \param[in] new_params The object that contains the new parameters.
+ * \detail Sets all of the parameters
+ * \param[in] new_params The new parameters.
  * \return If the parameters were successfully set (i.e. met all of the prescibed requirements), it returns true. Otherwise false.
  */
 bool SetParameters(const Parameters &new_params);
@@ -52,17 +48,7 @@ bool transform_consensus_set_; /**< A flag that indicates if the measurements in
 float meas_time_window_; /**< The duration of time in seconds from the current moment and extending
                               into the past during which measurements should be considered. All
                               measurements outside of the time window will be discarded.*/
-
-// JPDAF parameters
-float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a sensor during
-                                      a single scan. This value must be between 0 and 1.*/
-
-
-
-// TODO:: Remove this
-float expected_num_false_meas_; /**< The expected number of false measurements inside the entire surveillance region
-                    per measurement scan.*/
-
+                              
 // RANSAC Parameters
 unsigned int max_RANSAC_iters_;  /**< The maximum number of RANSAC iterations per run. */
 
@@ -72,17 +58,11 @@ float RANSAC_stopping_criteria_; /**< During any iteration, if the probability o
                                       This value must be between 0 and 1.*/
 
 
-std::vector<SourceBase> sources_; /** < Contains all of the instantiated sources. */
 
-/**
- * This method adds a source to the vector Parameters::sources_. Before adding a source,
- * it verifies that the source has a unique ID and that the member variables of the source
- * are set properly.
- * @return Returns true if the source was added.
- */
-bool AddSource(const SourceParameters& params);
 
-// TODO:: Write the definition of the function AddSource().
+
+
+
 
 };
 } // namespace rransac

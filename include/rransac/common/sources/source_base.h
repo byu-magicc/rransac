@@ -3,17 +3,17 @@
 
 #include <Eigen/Core>
 #include "state.h"
+#include "common/measurement/measurement_base.h"
+#include "parameters.h"
 
 namespace rransac
 {
 
-// Lists the different types of sources available
-enum class SourceTypes {
-    R2_POS,                // The Target's manifold is R2 and only position is observed
-    R2_POS_VEL,            // The Target's manifold is R2 and position and velocity is observed
-    SE2_POS,               // The Target's manifold is SE2 and only position is observed
-    SE2_POS_ATT            // The target's manifold is SE2 and the position and attitude is observed
-};
+
+
+
+
+
 
 /** \class SourceParameters
  * This struct contains the parameters needed by a measurement source.
@@ -25,10 +25,18 @@ struct SourceParameters {
     Eigen::MatrixXd meas_cov_;       /** < The fixed measurement covariance.*/
     float expected_num_false_meas_;  /** < The expected number of false measurements. We assume that the expected number of false 
                                         measurements from a source per sensor scan can be modeled using a Poisson distribution. */
-    unsigned int source_id_;    /** < An identifier that is unique for every source. When a measurement is given, the measurement
-                                      indicates which source it came from using the source ID. @see Meas */
 
-    SourceTypes type_;          /** < The source type @see SourceTypes */
+    MeasurementTypes type_;     /** < The source type @see SourceTypes */
+
+    float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a source during
+                                      a single scan. This value must be between 0 and 1.*/
+
+    
+    unsigned int source_index_;  /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
+
+
+    // SourceParameters(MeasurementTypes type) : type_(type) {}
+    SourceParameters()=default;
 
 };
 
@@ -57,22 +65,43 @@ public:
 
     SourceParameters params_;  /** < The source parameters @see SourceParameters */
 
-    // unsigned int meas_dim_;     /** < The dimension of the measurement. You can also consider this as the number of generalized coordinates measured.
-    //                               For example, if the measurement containted the position of a 2D object in the
-    //                               xy-plane, then the dimension of the measurement would be two. This is used by RANSAC when creating model hypotheses. */
+    /** Initializes the measurement source */
+    template<MeasurementTypes type>
+    inline void Init(const SourceParameters& params);       
 
-    template<SourceTypes type>
-    inline void Init(const SourceParameters& params); /** Initializes the measurement source */
-    
-    template <SourceTypes type, class S>
-    inline Eigen::MatrixXd GetLinObsMatState(const S& state);                               /** Returns the jacobian of the observation function w.r.t. the states */
-    
-    template <SourceTypes type, class S>
-    inline Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state);                         /** Returns the jacobian of the observation function w.r.t. the sensor noise */
+    /** Returns the jacobian of the observation function w.r.t. the states */
+    template <MeasurementTypes type, class S>
+    inline Eigen::MatrixXd GetLinObsMatState(const S& state);                              
 
-    template <SourceTypes type, class S>
+    /** Returns the jacobian of the observation function w.r.t. the sensor noise */
+    template <MeasurementTypes type, class S>
+    inline Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state);                         
+
+    /** Computes the estimated measurement given a state */
+    template <MeasurementTypes type, class S>
     inline Eigen::MatrixXd GetEstMeas(const S& state); /** Returns an estimated measurement according to the state. */
-    
+
+    /**
+     * Calculates the temporal distance between two measurements.
+     * @param[in] meas1 A measurement.
+     * @param[in] meas2 A different measurement.
+     * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
+     * \return Returns temporal distance between two measurements
+     */
+   
+    static float GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas1.time_stamp); }
+
+    /**
+     * Calculates the spatial distance between two measurements depending on the type of measurement.
+     * @param[in] meas1 A measurement.
+     * @param[in] meas2 A different measurement.
+     * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
+     * \return Returns spatial distance between two measurements
+     */
+    template<MeasurementTypes M1, MeasurementTypes M2>
+    static float GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) {throw std::runtime_error("SourceBase: Spacial Distance is not implemented for the given measurements.");}
+
+
 private:
     Eigen::MatrixXd H_;
     Eigen::MatrixXd V_;
@@ -80,82 +109,11 @@ private:
 };
 
 
-///////////////////////////////////////////////////////////////////////
-//                             R2_POS
-///////////////////////////////////////////////////////////////////////
-template<>
-inline void SourceBase::Init<SourceTypes::R2_POS>(const SourceParameters& params) {
-    params_ = params;
-    Eigen::Matrix<double,2,4> H;
-    Eigen::Matrix<double, 2,2> V;
-    H.block(0,0,2,2).setIdentity();
-    H.block(0,2,2,2).setZero();
-    V.setIdentity();
 
-    H_ = H;
-    V_ = V;
-}
-
-//-------------------------------------------
-
-template <>
-inline Eigen::MatrixXd SourceBase::GetLinObsMatState<SourceTypes::R2_POS,lie_groups::R2_r2>(const lie_groups::R2_r2& state) {
-    return H_;
-}                             
-
-//-------------------------------------------
-
-template <>
-inline Eigen::MatrixXd SourceBase::GetLinObsMatSensorNoise<SourceTypes::R2_POS,lie_groups::R2_r2>(const lie_groups::R2_r2& state) {
-    return V_;
-}
-
-//-------------------------------------------
-
-template <>
-inline Eigen::MatrixXd SourceBase::GetEstMeas<SourceTypes::R2_POS,lie_groups::R2_r2>(const lie_groups::R2_r2& state) {
-    return state.g_.data_;
-}
-
-///////////////////////////////////////////////////////////////////////
-//                             R2_POS_VEL
-///////////////////////////////////////////////////////////////////////
-template<>
-inline void SourceBase::Init<SourceTypes::R2_POS_VEL>(const SourceParameters& params) {
-    params_ = params;
-    Eigen::Matrix<double,4,4> H;
-    Eigen::Matrix<double, 4,4> V;
-    H.setIdentity();
-    V.setIdentity();
-
-    H_ = H;
-    V_ = V;
-}
-
-//-------------------------------------------
-
-template <>
-inline Eigen::MatrixXd SourceBase::GetLinObsMatState<SourceTypes::R2_POS_VEL>(const lie_groups::R2_r2& state) {
-    return H_;
-}                             
-
-//-------------------------------------------
-
-template <>
-inline Eigen::MatrixXd SourceBase::GetLinObsMatSensorNoise<SourceTypes::R2_POS_VEL>(const lie_groups::R2_r2& state) {
-    return V_;
-}
-
-//-------------------------------------------
-
-template <>
-inline Eigen::MatrixXd SourceBase::GetEstMeas<SourceTypes::R2_POS_VEL>(const lie_groups::R2_r2& state) {
-    Eigen::Matrix<double,4,1> tmp;
-    tmp.block(0,0,2,1) = state.g_.data_;
-    tmp.block(2,0,2,1) = state.u_.data_;
-    return tmp;
-}
 
 } // namespace rransac
+
+#include "common/sources/source_R2_pos.h"
+#include "common/sources/source_R2_pos_vel.h"
 
 #endif // RRANSAC_COMMON_SOURCES_SOURCE_BASE_H_
