@@ -2,30 +2,56 @@
 #define RRANSAC_COMMON_MODELS_BASE_H_
 
 
+
+#include <Eigen/Dense>
+#include <vector>
+
+#include "state.h"
+#include "common/measurement/measurement_base.h"
+#include "data_structures/consensus_set.h"
+#include "common/parameters.h"
+
+namespace rransac {
+
+
 /**
  * \class ModelBase
  * R-RANSAC is designed to be modular and work with a variety of models. However, this 
  * version of R-RANSAC is extended to work with any Lie group. See the paper ___ for detailed
  * information regarding the system model. 
  * 
+ * In order to work with any Lie group, the model base is a template class that requires 
+ * The state S and the measurement M
+ * 
  * Note: You can use any model. 
  */ 
-
-class ModelBase: ConsensusSet
+template <class S, class M> 
+class ModelBase
 {
 
- 
+typedef Eigen::Matrix<double, S::G::size1_ + S::U::size1_, S.g_.size1_ + S.u_.size1_> Mat;
 
 public:
-    Eigen::MatrixXd state_;    /** < The estimated state of the phenomenon or target.*/
-    Eigen::MatrixXd err_cov_;  /** < The error covariance. */
-    double model_likelihood_;  /** < The likelihood that the model represents an actual phenomenon. This value will be between 0 and 1. */
-    std::vector<Meas> new_assoc_meas_; /** < Measurements recently associated with the model. These measurements have not been used to update 
+    S state_;                         /** < The estimated state of the phenomenon or target.*/
+    Mat err_cov_;                     /** < The error covariance. */
+    double model_likelihood_;         /** < The likelihood that the model represents an actual phenomenon. This value will be between 0 and 1. */
+    std::vector<std::vector<M>> new_assoc_meas_;   /** < Measurements recently associated with the model. These measurements have not been used to update 
                                                      the model. Once an associated measurement has been used to update the model, they are added to the 
-                                                     consensus set and removed from this vector.*/
-    bool linear_model_;        /** < If the variable is set to true, it is assumed that the system is linear; otherwise, non-linear.*/
+                                                     consensus set and removed from this vector. These measurements should have weights assigned to them. 
+                                                     Each vector of measurements corresponds to a unique source ID. */
     
-    
+    ConsensusSet<M> cs_;              /** < The consensus set. */
+
+    Mat Q_;  /** < Process noise covariance */
+
+
+
+
+     /**
+     * Initializes the model
+     * @param[in] params  The system parameters specified by the user
+     */ 
+    virtual void Init(const Parameters& params)=0;
     
 
      /**
@@ -34,22 +60,24 @@ public:
      *                a positive value would indicate forward propagation and a negative value would indicate backward propagation.
      * @return Returns the propagated state.
      */ 
-    virtual Eigen::MatrixXd PropagateState(const Eigen::MatrixXd& state, const double dt)=0;
-
-
+    virtual static S PropagateState(const S& state, const double dt)=0;
+    
+    
     /**
      * Computes the Jacobian of the state transition function with respect to the state evaluated at the current state estimate.
+     * @param[in] state The state to linearize about
      * @param[in] dt A time interval
      * @return The Jacobian \f$ F_k\f$. 
      */ 
-    virtual Eigen::MatrixXd GetLinTransFuncMatState(const double dt)=0;
+    virtual static Mat GetLinTransFuncMatState(const S& state, const double dt)=0;
 
     /**
-     * * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
+     * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
+     * @param[in] state The state to linearize about
      * @param[in] dt  A time interval
      * @return Returns the Jacobian \f$ G_k \f$
      */
-    virtual Eigen::MatrixXd GetLinTransFuncMatNoise(const double dt)=0;
+    virtual static Mat GetLinTransFuncMatNoise(const S& state, const double dt)=0;
 
     /**
      * Propagates the state estimate and error covariance to the current time.
@@ -72,7 +100,7 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns the Jacobian \f$H_k\f$
      */ 
-    virtual Eigen::MatrixXd GetLinObsMatState(const unsigned int source_ID)=0;
+    virtual static Eigen::MatrixXd GetLinObsMatState(const S& state, const unsigned int source_ID)=0;
 
     /**
      * Calculates the Jacobian of the observation matrix with respect to the measurement noise
@@ -81,18 +109,7 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns the Jacobian \f$V_k\f$
      */ 
-    virtual Eigen::MatrixXd GetLinObsMatMeasNoise(const unsigned int source_ID)=0;
-
-    /**
-     * Calculates the Jacobian of the observation matrix with respect to the process noise
-     * evaluated at the current state estimate.
-     * The Jacobian  is dependent on the measurement source.
-     * @param 
-     * @param source_ID A unique identifier to identify the source. 
-     * @return Returns the Jacobian \f$V_k\f$
-     */ 
-    virtual Eigen::MatrixXd GetLinObsMatProcessNoise(const double dt, const unsigned int source_ID)=0;
-
+    virtual static Eigen::MatrixXd GetLinObsMatMeasNoise(const S& state, const unsigned int source_ID)=0;
 
     /**
      * Calculates an estimated measurement given a state of the model and the source ID.
@@ -100,7 +117,7 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns a measurement \f$ y \f$ based on the state and source.
      */ 
-    virtual Eigen::MatrixXd GetEstMeas(const Eigen::MatrixXd& state, const unsigned int source_ID)=0
+    virtual Eigen::MatrixXd GetEstMeas(const S& state, const unsigned int source_ID)=0;
 
     /**
      * Using the transformation data provided by the user, this function transforms the state estimate and error covariance
@@ -111,6 +128,6 @@ public:
     virtual void TransformModel(const Transformation& T, const double dt)=0;
 
 };
-
+}
 
 #endif // RRANSAC_COMMON_MODEL_BASE_H_
