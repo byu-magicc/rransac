@@ -11,13 +11,15 @@ namespace rransac
 
 
 /** \class MeasurementTypes
- * Lists the different types of measurements available.
+ * Lists the different types of measurements available. These types are used for indexing so do not change the order of
+ * any existing ones except NUM_TYPES must be the last one. 
  */ 
-enum class MeasurementTypes {
+enum MeasurementTypes {
     R2_POSE,                  // The Measurement space is R2 and with position data
     R2_POSE_TWIST,            // The Measurement space is R2 and with position and velocity data
     SE2_POSE,                 // The Measurement space is SE2
-    SE2_POSE_TWIST            // The Measurement space is SE2 and se2
+    SE2_POSE_TWIST,            // The Measurement space is SE2 and se2
+    NUM_TYPES
     // SO3_ATT
 };
 
@@ -39,12 +41,15 @@ struct Meas
     double weight;              /**< The weight of the measurement when updating the model is was associated with. This value is set during the data association
                                      process. */
 
+    MeasurementTypes type;     /** < The measurement type @see MeasurementTypes */
+
     Eigen::MatrixXd data;       /**< The data that represents the measurement. */
     Eigen::MatrixXd meas_cov;  /**< The measurement covariance. Only used if the measurement covariance changes with different measurements; otherwise, the
                                      measurement covariance given to the Source class is used for every measurement. */
+    // auto data;
 
     // const MeasurementTypes type;
-    // Meas(MeasurementTypes type) : type{type} {}   
+    // Meas(auto datas) : data{datas} {}   
 
     // virtual ~MeasBase(){}
 };

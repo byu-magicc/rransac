@@ -26,7 +26,7 @@ struct SourceParameters {
     float expected_num_false_meas_;  /** < The expected number of false measurements. We assume that the expected number of false 
                                         measurements from a source per sensor scan can be modeled using a Poisson distribution. */
 
-    MeasurementTypes type_;     /** < The source type @see SourceTypes */
+    MeasurementTypes type_;     /** < The measurement type @see MeasurementTypes */
 
     float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a source during
                                       a single scan. This value must be between 0 and 1.*/
@@ -58,28 +58,28 @@ struct SourceParameters {
  */ 
 
 
+template<class S>
 class SourceBase
 {
 
 public:
 
+     SourceBase();
+    ~SourceBase();
+
     SourceParameters params_;  /** < The source parameters @see SourceParameters */
 
-    /** Initializes the measurement source */
-    template<MeasurementTypes type>
-    inline void Init(const SourceParameters& params);       
+    /** Initializes the measurement source. This function must set the parameters.  */
+    virtual void Init(const SourceParameters& params) {params_ = params;}       
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    template <MeasurementTypes type, class S>
-    inline Eigen::MatrixXd GetLinObsMatState(const S& state);                              
+    virtual Eigen::MatrixXd GetLinObsMatState(const S& state){return H_;};                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    template <MeasurementTypes type, class S>
-    inline Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state);                         
+    virtual Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){return V_;}                         
 
     /** Computes the estimated measurement given a state */
-    template <MeasurementTypes type, class S>
-    inline Eigen::MatrixXd GetEstMeas(const S& state); /** Returns an estimated measurement according to the state. */
+    virtual Eigen::MatrixXd GetEstMeas(const S& state){return state.g_.data_;} /** Returns an estimated measurement according to the state. */
 
     /**
      * Calculates the temporal distance between two measurements.
@@ -89,7 +89,7 @@ public:
      * \return Returns temporal distance between two measurements
      */
    
-    static float GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas1.time_stamp); }
+    static double GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
 
     /**
      * Calculates the spatial distance between two measurements depending on the type of measurement.
@@ -98,22 +98,71 @@ public:
      * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
      * \return Returns spatial distance between two measurements
      */
-    template<MeasurementTypes M1, MeasurementTypes M2>
-    static float GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) {throw std::runtime_error("SourceBase: Spacial Distance is not implemented for the given measurements.");}
+    
+    double GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
 
 private:
     Eigen::MatrixXd H_;
     Eigen::MatrixXd V_;
 
+    typedef double (*GSDFuncPTR)(const Meas&, const Meas&, const Parameters&);
+
+    GSDFuncPTR **gsd_ptr_;
+
+    static double GSDR2PoseR2Pose(const Meas& meas1, const Meas& meas2, const Parameters& params) {return (meas1.data - meas2.data).norm();}
+    static double GSDR2PoseR2PoseTwist(const Meas& meas1, const Meas& meas2, const Parameters& params) {return (meas1.data - meas2.data.block(0,0,2,1)).norm();}
+    static double GSDR2PoseTwistR2Pose(const Meas& meas1, const Meas& meas2, const Parameters& params) {return (meas1.data.block(0,0,2,1)-meas2.data).norm(); }
+    static double GSDR2PoseTwistR2PoseTwist(const Meas& meas1, const Meas& meas2, const Parameters& params) {return (meas1.data.block(0,0,2,1) -meas2.data.block(0,0,2,1)).norm();  }
 };
 
 
 
+template< class S>
+SourceBase<S>::SourceBase() {
+
+    // Generate two dimensional array of function pointers.
+    gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
+    for(int i = 0; i < MeasurementTypes::NUM_TYPES; ++i)
+    {
+        gsd_ptr_[i] = new GSDFuncPTR[MeasurementTypes::NUM_TYPES];
+    }
+
+    // Set each function pointer to null
+    for (int i = 0; i < MeasurementTypes::NUM_TYPES; ++i) {
+        for (int j = 0; j < MeasurementTypes::NUM_TYPES; ++j) {
+            gsd_ptr_[i][j] = NULL;
+        }
+    }
+
+
+    gsd_ptr_[MeasurementTypes::R2_POSE][MeasurementTypes::R2_POSE]             = &GSDR2PoseR2Pose;
+    gsd_ptr_[MeasurementTypes::R2_POSE][MeasurementTypes::R2_POSE_TWIST]       = &GSDR2PoseR2PoseTwist;
+    gsd_ptr_[MeasurementTypes::R2_POSE_TWIST][MeasurementTypes::R2_POSE]       = &GSDR2PoseTwistR2Pose;
+    gsd_ptr_[MeasurementTypes::R2_POSE_TWIST][MeasurementTypes::R2_POSE_TWIST] = &GSDR2PoseTwistR2PoseTwist;
+
+
+
+}
+
+//---------------------------------------------------
+
+template< class S>
+SourceBase<S>::~SourceBase() {
+
+    for (int i = 0; i < MeasurementTypes::NUM_TYPES; i++) {
+        delete [] gsd_ptr_[i];
+    }
+    delete [] gsd_ptr_;
+
+}
+
 
 } // namespace rransac
 
-#include "common/sources/source_R2_pos.h"
-#include "common/sources/source_R2_pos_vel.h"
+
+
+// #include "common/sources/source_R2_pos.h"
+// #include "common/sources/source_R2_pos_vel.h"
 
 #endif // RRANSAC_COMMON_SOURCES_SOURCE_BASE_H_

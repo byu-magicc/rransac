@@ -36,7 +36,9 @@ parameters_test.cpp
 target_link_libraries(parameterTest gtest_main)
 
 add_executable(source_baseTest
-common/sources/source_base_test.cpp)
+common/sources/source_base_test.cpp
+# ../src/common/sources/source_base.cpp
+../src/parameters.cpp)
 # ../src/common/sources/source_R2_pos.cpp
 # ../src/common/sources/source_R2_pos_vel.cpp)
 add_dependencies(source_baseTest lie_groups)

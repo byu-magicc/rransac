@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
 #include "common/measurement/measurement_base.h"
+#include "common/sources/source_base.h"
 #include <typeinfo>
+#include "state.h"
 
    
 // using namespace std;
@@ -39,8 +41,17 @@ int main(){
  
 // const Blah tmp = Blah::A;
 
+// rransac::Meas m1, m2;
+
+// m1.data = 5;
+// m2.data = Eigen::Matrix2d::Identity();
+// std::cout << m1.data << std::endl;
+// std::cout << m2.data << std::endl;
+
+rransac::SourceBase<lie_groups::R2_r2> source();
+
 // rransac::Meas test
-std::cout << Red << std::endl;
+// std::cout << Red << std::endl;
 
 // std::cout << rransac::MeasurementTypes::R2_POSE << std::endl;
 return 0;
