@@ -24,34 +24,169 @@ ASSERT_EQ(source.GetTemporalDistance(m1,m2,params_),fabs(m1.time_stamp-m2.time_s
 
 }
 
-TEST(SOURCE_BASE, SpatialDistance) {
+///////////////////////////////////////////////////////////////////////
+//                             SPATIAL DISTANCE R2 and R3
+///////////////////////////////////////////////////////////////////////
+
+TEST(SOURCE_BASE, SpatialDistance_RN) {
 
 /* initialize random seed: */
 srand (time(NULL));
 Parameters params_;
-SourceBase<lie_groups::R2_r2> source;
-Meas m_R2_Pose_1, m_R2_Pose_2, m_R2_Pose_Twist_1, m_R2_Pose_Twist_2;
-m_R2_Pose_1.data = Eigen::Matrix<double,2,1>::Random();
-m_R2_Pose_1.type = MeasurementTypes::R2_POSE;
-m_R2_Pose_2.data = Eigen::Matrix<double,2,1>::Random();
-m_R2_Pose_2.type = MeasurementTypes::R2_POSE;
 
-m_R2_Pose_Twist_1.data = Eigen::Matrix<double,4,1>::Random();
-m_R2_Pose_Twist_2.data = Eigen::Matrix<double,4,1>::Random();
-m_R2_Pose_Twist_1.type = MeasurementTypes::R2_POSE_TWIST;
-m_R2_Pose_Twist_2.type = MeasurementTypes::R2_POSE_TWIST;
+// R2
+SourceBase<lie_groups::R2_r2> source1;
+Meas m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
+m_R2_Pos_1.pose = Eigen::Matrix<double,2,1>::Random();
+m_R2_Pos_2.pose = Eigen::Matrix<double,2,1>::Random();
+m_R2_Pos_1.type = MeasurementTypes::RN_POS;
+m_R2_Pos_2.type = MeasurementTypes::RN_POS;
 
-ASSERT_DOUBLE_EQ(source.GetSpatialDistance( m_R2_Pose_1, m_R2_Pose_2,params_), (m_R2_Pose_1.data-m_R2_Pose_2.data).norm());
-ASSERT_DOUBLE_EQ(source.GetSpatialDistance( m_R2_Pose_1, m_R2_Pose_Twist_1,params_), (m_R2_Pose_1.data-m_R2_Pose_Twist_1.data.block(0,0,2,1)).norm());
-ASSERT_DOUBLE_EQ(source.GetSpatialDistance( m_R2_Pose_Twist_1, m_R2_Pose_Twist_2,params_), (m_R2_Pose_Twist_1.data.block(0,0,2,1)-m_R2_Pose_Twist_2.data.block(0,0,2,1)).norm());
-ASSERT_DOUBLE_EQ(source.GetSpatialDistance( m_R2_Pose_Twist_1, m_R2_Pose_1,params_), (m_R2_Pose_Twist_1.data.block(0,0,2,1)-m_R2_Pose_1.data).norm());
+
+m_R2_Pos_Vel_1.pose = Eigen::Matrix<double,2,1>::Random();
+m_R2_Pos_Vel_1.twist = Eigen::Matrix<double,2,1>::Random();
+m_R2_Pos_Vel_2.pose = Eigen::Matrix<double,2,1>::Random();
+m_R2_Pos_Vel_2.twist = Eigen::Matrix<double,2,1>::Random();
+m_R2_Pos_Vel_1.type = MeasurementTypes::RN_POS_VEL;
+m_R2_Pos_Vel_2.type = MeasurementTypes::RN_POS_VEL;
+
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_R2_Pos_1,     m_R2_Pos_2,params_),         (m_R2_Pos_1.pose-    m_R2_Pos_2.pose).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_R2_Pos_1,     m_R2_Pos_Vel_1,params_),     (m_R2_Pos_1.pose-    m_R2_Pos_Vel_1.pose).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_R2_Pos_Vel_1, m_R2_Pos_Vel_2,params_),     (m_R2_Pos_Vel_1.pose-m_R2_Pos_Vel_2.pose).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_R2_Pos_Vel_1, m_R2_Pos_1,params_),         (m_R2_Pos_Vel_1.pose-m_R2_Pos_1.pose).norm());
+
+// R3
+SourceBase<lie_groups::R3_r3> source2;
+Meas m_R3_Pos_1, m_R3_Pos_2, m_R3_Pos_Vel_1, m_R3_Pos_Vel_2;
+m_R3_Pos_1.pose  = Eigen::Matrix<double,3,1>::Random();
+m_R3_Pos_2.pose  = Eigen::Matrix<double,3,1>::Random();
+m_R3_Pos_1.type = MeasurementTypes::RN_POS;
+m_R3_Pos_2.type = MeasurementTypes::RN_POS;
+
+
+m_R3_Pos_Vel_1.pose  = Eigen::Matrix<double,3,1>::Random();
+m_R3_Pos_Vel_1.twist = Eigen::Matrix<double,3,1>::Random();
+m_R3_Pos_Vel_2.pose  = Eigen::Matrix<double,3,1>::Random();
+m_R3_Pos_Vel_2.twist = Eigen::Matrix<double,3,1>::Random();
+m_R3_Pos_Vel_1.type = MeasurementTypes::RN_POS_VEL;
+m_R3_Pos_Vel_2.type = MeasurementTypes::RN_POS_VEL;
+
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_R3_Pos_1,     m_R3_Pos_2,params_),         (m_R3_Pos_1.pose-    m_R3_Pos_2.pose).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_R3_Pos_1,     m_R3_Pos_Vel_1,params_),     (m_R3_Pos_1.pose-    m_R3_Pos_Vel_1.pose).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_R3_Pos_Vel_1, m_R3_Pos_Vel_2,params_),     (m_R3_Pos_Vel_1.pose-m_R3_Pos_Vel_2.pose).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_R3_Pos_Vel_1, m_R3_Pos_1,params_),         (m_R3_Pos_Vel_1.pose-m_R3_Pos_1.pose).norm());
+
 
 }
 
 ///////////////////////////////////////////////////////////////////////
-//                             R2_POS
+//             SPATIAL DISTANCE SE2 and SE3 POS with VEL
+///////////////////////////////////////////////////////////////////////
+TEST(SOURCE_BASE, SpatialDistance_SEN_POS) {
+
+/* initialize random seed: */
+srand (time(NULL));
+Parameters params_;
+
+// R2
+SourceBase<lie_groups::SE2_se2> source1;
+Meas m_SE2_Pos_1, m_SE2_Pos_2, m_SE2_Pos_Vel_1, m_SE2_Pos_Vel_2;
+m_SE2_Pos_1.pose  = Eigen::Matrix<double,2,1>::Random();
+m_SE2_Pos_2.pose  = Eigen::Matrix<double,2,1>::Random();
+m_SE2_Pos_1.type = MeasurementTypes::SEN_POS;
+m_SE2_Pos_2.type = MeasurementTypes::SEN_POS;
+
+
+m_SE2_Pos_Vel_1.pose  = Eigen::Matrix<double,2,1>::Random();
+m_SE2_Pos_Vel_1.twist = Eigen::Matrix<double,2,1>::Random();
+m_SE2_Pos_Vel_2.pose  = Eigen::Matrix<double,2,1>::Random();
+m_SE2_Pos_Vel_2.twist = Eigen::Matrix<double,2,1>::Random();
+m_SE2_Pos_Vel_1.type = MeasurementTypes::SEN_POS_VEL;
+m_SE2_Pos_Vel_2.type = MeasurementTypes::SEN_POS_VEL;
+
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pos_1,     m_SE2_Pos_2,params_),         (m_SE2_Pos_1.pose-    m_SE2_Pos_2.pose).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pos_1,     m_SE2_Pos_Vel_1,params_),     (m_SE2_Pos_1.pose-    m_SE2_Pos_Vel_1.pose).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pos_Vel_1, m_SE2_Pos_Vel_2,params_),     (m_SE2_Pos_Vel_1.pose-m_SE2_Pos_Vel_2.pose).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pos_Vel_1, m_SE2_Pos_1,params_),         (m_SE2_Pos_Vel_1.pose-m_SE2_Pos_1.pose).norm());
+
+// R3
+SourceBase<lie_groups::SE3_se3> source2;
+Meas m_SE3_Pos_1, m_SE3_Pos_2, m_SE3_Pos_Vel_1, m_SE3_Pos_Vel_2;
+m_SE3_Pos_1.pose  = Eigen::Matrix<double,3,1>::Random();
+m_SE3_Pos_2.pose  = Eigen::Matrix<double,3,1>::Random();
+m_SE3_Pos_1.type = MeasurementTypes::SEN_POS;
+m_SE3_Pos_2.type = MeasurementTypes::SEN_POS;
+
+
+m_SE3_Pos_Vel_1.pose  = Eigen::Matrix<double,3,1>::Random();
+m_SE3_Pos_Vel_1.twist = Eigen::Matrix<double,3,1>::Random();
+m_SE3_Pos_Vel_2.pose  = Eigen::Matrix<double,3,1>::Random();
+m_SE3_Pos_Vel_2.twist = Eigen::Matrix<double,3,1>::Random();
+m_SE3_Pos_Vel_1.type = MeasurementTypes::SEN_POS_VEL;
+m_SE3_Pos_Vel_2.type = MeasurementTypes::SEN_POS_VEL;
+
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pos_1,     m_SE3_Pos_2,params_),         (m_SE3_Pos_1.pose-    m_SE3_Pos_2.pose).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pos_1,     m_SE3_Pos_Vel_1,params_),     (m_SE3_Pos_1.pose-    m_SE3_Pos_Vel_1.pose).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pos_Vel_1, m_SE3_Pos_Vel_2,params_),     (m_SE3_Pos_Vel_1.pose-m_SE3_Pos_Vel_2.pose).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pos_Vel_1, m_SE3_Pos_1,params_),         (m_SE3_Pos_Vel_1.pose-m_SE3_Pos_1.pose).norm());
+
+
+}
+
+///////////////////////////////////////////////////////////////////////
+//             SPATIAL DISTANCE SE2 and SE3 POSE with TWIST
 ///////////////////////////////////////////////////////////////////////
 
+TEST(SOURCE_BASE, SpatialDistance_SEN_POSE) {
+
+/* initialize random seed: */
+srand (time(NULL));
+Parameters params_;
+
+// R2
+SourceBase<lie_groups::SE2_se2> source1;
+Meas m_SE2_Pose_1, m_SE2_Pose_2, m_SE2_Pose_Twist_1, m_SE2_Pose_Twist_2;
+m_SE2_Pose_1.pose  = lie_groups::se2::Exp(Eigen::Matrix<double,3,1>::Random());
+m_SE2_Pose_2.pose  = lie_groups::se2::Exp(Eigen::Matrix<double,3,1>::Random());
+m_SE2_Pose_1.type = MeasurementTypes::SEN_POSE;
+m_SE2_Pose_2.type = MeasurementTypes::SEN_POSE;
+
+
+m_SE2_Pose_Twist_1.pose  = lie_groups::se2::Exp(Eigen::Matrix<double,3,1>::Random());
+m_SE2_Pose_Twist_1.twist = Eigen::Matrix<double,3,1>::Random();
+m_SE2_Pose_Twist_2.pose  = lie_groups::se2::Exp(Eigen::Matrix<double,3,1>::Random());
+m_SE2_Pose_Twist_2.twist = Eigen::Matrix<double,3,1>::Random();
+m_SE2_Pose_Twist_1.type = MeasurementTypes::SEN_POSE_TWIST;
+m_SE2_Pose_Twist_2.type = MeasurementTypes::SEN_POSE_TWIST;
+
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_1,       m_SE2_Pose_2,params_),           (lie_groups::SE2::OMinus(m_SE2_Pose_1.pose,      m_SE2_Pose_2.pose)).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_1,       m_SE2_Pose_Twist_1,params_),     (lie_groups::SE2::OMinus(m_SE2_Pose_1.pose,      m_SE2_Pose_Twist_1.pose)).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_Twist_2,params_),     (lie_groups::SE2::OMinus(m_SE2_Pose_Twist_1.pose,m_SE2_Pose_Twist_2.pose)).norm());
+ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_1,params_),           (lie_groups::SE2::OMinus(m_SE2_Pose_Twist_1.pose,m_SE2_Pose_1.pose)).norm());
+
+// R3
+SourceBase<lie_groups::SE3_se3> source2;
+Meas m_SE3_Pose_1, m_SE3_Pose_2, m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2;
+m_SE3_Pose_1.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());
+m_SE3_Pose_2.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());
+m_SE3_Pose_1.type = MeasurementTypes::SEN_POSE;
+m_SE3_Pose_2.type = MeasurementTypes::SEN_POSE;
+
+
+m_SE3_Pose_Twist_1.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());
+m_SE3_Pose_Twist_1.twist = Eigen::Matrix<double,6,1>::Random();
+m_SE3_Pose_Twist_2.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());
+m_SE3_Pose_Twist_2.twist = Eigen::Matrix<double,6,1>::Random();
+m_SE3_Pose_Twist_1.type = MeasurementTypes::SEN_POSE_TWIST;
+m_SE3_Pose_Twist_2.type = MeasurementTypes::SEN_POSE_TWIST;
+
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pose_1,       m_SE3_Pose_2,params_),           (lie_groups::SE3::OMinus(m_SE3_Pose_1.pose,      m_SE3_Pose_2.pose)).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pose_1,       m_SE3_Pose_Twist_1,params_),     (lie_groups::SE3::OMinus(m_SE3_Pose_1.pose,      m_SE3_Pose_Twist_1.pose)).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2,params_),     (lie_groups::SE3::OMinus(m_SE3_Pose_Twist_1.pose,m_SE3_Pose_Twist_2.pose)).norm());
+ASSERT_DOUBLE_EQ(source2.GetSpatialDistance( m_SE3_Pose_Twist_1, m_SE3_Pose_1,params_),           (lie_groups::SE3::OMinus(m_SE3_Pose_Twist_1.pose,m_SE3_Pose_1.pose)).norm());
+
+
+}
 
 // TEST(SOURCE_BASE, R2_POS) {
 
