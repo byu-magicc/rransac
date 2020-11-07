@@ -6,34 +6,51 @@
 
 namespace rransac {
 
-
-// Dummy function needed to initialize SourceBase
-template<class S>
-class Dummy : SourceBase<S,Dummy<S>> 
+template<class Derived, class S>
+class Base
 {
 public:
+    void Init(S& state){
+        // std::static_cast<Derived*>(this)->Init(params_);
+        static_cast<Derived*>(this)->Init(params_);
+    }
+
+    SourceParameters params_;
+};
+
+// class test : public
+
+// Dummy function needed to initialize SourceBase
+template <class S>
+class Dummy : public SourceBase<S,Dummy<S>> 
+// class Dummy : public Base<Dummy<S>,S> 
+{
+public:
+
+    typedef S type_;
 
     /** Initializes the measurement source. This function must set the parameters.  */
     void Init(const SourceParameters& params) {
         this->params_ = params;
-        this->H_ = Eigen::Matrix2d::Identity();
-        this->V_ = Eigen::Matrix2d::Identity();}
+        // this->H_ = Eigen::Matrix2d::Identity();
+        // this->V_ = Eigen::Matrix2d::Identity();
+    }
 
 
-    /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd GetLinObsMatState(const S& state){
-        return this->H_;
-    }                              
+    // /** Returns the jacobian of the observation function w.r.t. the states */
+    // Eigen::MatrixXd GetLinObsMatState(const S& state){
+    //     return this->H_;
+    // }                              
 
-    /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){
-        return this->V_;
-    }                         
+    // /** Returns the jacobian of the observation function w.r.t. the sensor noise */
+    // Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){
+    //     return this->V_;
+    // }                         
 
-    /** Computes the estimated measurement given a state */
-    Eigen::MatrixXd GetEstMeas(const S& state){
-        return state.g_.data_;
-    } /** Returns an estimated measurement according to the state. */
+    // /** Computes the estimated measurement given a state */
+    // Eigen::MatrixXd GetEstMeas(const S& state){
+    //     return state.g_.data_;
+    // } /** Returns an estimated measurement according to the state. */
 
 
 };
@@ -52,13 +69,18 @@ TEST(SOURCE_BASE, TemporalDistance) {
 srand (time(NULL));
 Parameters params_;
 // SourceType* source = new Dummy<DummyType>;
-Dummy<DummyType> source;
+// Base<DummyType,lie_groups::R2_r2>* source = new DummyType;
+SourceBase<lie_groups::R2_r2,DummyType>* source = new Dummy<lie_groups::R2_r2>;
 // std::unique_ptr<SourceType> source { new Dummy<DummyType>() };
 Meas m1, m2;
 m1.time_stamp = rand() % 100 -50;
 m2.time_stamp = rand() % 100 -50;
 
-ASSERT_EQ(source.GetTemporalDistance(m1,m2,params_),fabs(m1.time_stamp-m2.time_stamp));
+// lie_groups::R2_r2 state;
+// SourceParameters params;
+// source->Init(params);
+
+ASSERT_EQ(source->GetTemporalDistance(m1,m2,params_),fabs(m1.time_stamp-m2.time_stamp));
 
 }
 
