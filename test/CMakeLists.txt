@@ -44,7 +44,8 @@ target_link_libraries(source_baseTest gtest_main lie_groups)
 add_executable(source_RNTest
 common/sources/source_RN_test.cpp
 ../src/parameters.cpp
-../src/common/sources/source_RN.cpp)
+# ../src/common/sources/source_RN.cpp
+)
 add_dependencies(source_RNTest lie_groups)
 target_link_libraries(source_RNTest gtest_main lie_groups)
 

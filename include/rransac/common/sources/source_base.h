@@ -67,30 +67,34 @@ struct SourceParameters {
  */ 
 
 
-template<class S>
+template<class S, class Derived>
 class SourceBase
 {
 
 public:
 
-    
-
-     SourceBase();
-    ~SourceBase();
 
     SourceParameters params_;  /** < The source parameters @see SourceParameters */
 
     /** Initializes the measurement source. This function must set the parameters.  */
-    virtual void Init(const SourceParameters& params) {params_ = params;}       
+    void Init(const SourceParameters& params) {
+        static_cast<Derived*>(this)->Init(params);
+    }       
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    virtual Eigen::MatrixXd GetLinObsMatState(const S& state){return H_;}                              
+    Eigen::MatrixXd GetLinObsMatState(const S& state){
+        return static_cast<Derived*>(this)->GetLinObsMatState(state);
+    }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    virtual Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){return V_;}                         
+    Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){
+        return static_cast<Derived*>(this)->GetLinObsMatSensorNoise(state);
+    }                         
 
     /** Computes the estimated measurement given a state */
-    virtual Eigen::MatrixXd GetEstMeas(const S& state){return state.g_.data_;} /** Returns an estimated measurement according to the state. */
+    Eigen::MatrixXd GetEstMeas(const S& state){
+        return static_cast<Derived*>(this)->GetEstMeas(state);
+    } /** Returns an estimated measurement according to the state. */
 
     /**
      * Calculates the temporal distance between two measurements.
@@ -100,7 +104,7 @@ public:
      * \return Returns temporal distance between two measurements
      */
    
-    static double GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
+    double GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
 
     /**
      * Calculates the spatial distance between two measurements depending on the type of measurement.
@@ -114,9 +118,14 @@ public:
 
 
 // protected:
-public:
     Eigen::MatrixXd H_;
     Eigen::MatrixXd V_;
+
+// private:
+     SourceBase();
+    ~SourceBase();
+    friend Derived;
+
 
     typedef double (*GSDFuncPTR)(const Meas&, const Meas&, const Parameters&);
 
@@ -131,8 +140,8 @@ public:
 
 
 
-template< class S>
-SourceBase<S>::SourceBase() {
+template< class S, class Derived>
+SourceBase<S,Derived>::SourceBase() {
 
     // Generate two dimensional array of function pointers.
     gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
@@ -167,8 +176,8 @@ SourceBase<S>::SourceBase() {
 
 //---------------------------------------------------
 
-template< class S>
-SourceBase<S>::~SourceBase() {
+template< class S, class Derived>
+SourceBase<S, Derived>::~SourceBase() {
 
     for (int i = 0; i < MeasurementTypes::NUM_TYPES; i++) {
         delete [] gsd_ptr_[i];
