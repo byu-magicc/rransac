@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "common/sources/source_base.h"
 #include <stdlib.h>     /* srand, rand */
+#include "memory.h"
 
 
 namespace rransac {

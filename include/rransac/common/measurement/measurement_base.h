@@ -12,13 +12,18 @@ namespace rransac
 
 /** \class MeasurementTypes
  * Lists the different types of measurements available. These types are used for indexing so do not change the order of
- * any existing ones except NUM_TYPES must be the last one. 
+ * any existing ones except that NUM_TYPES must be the last one. Currently RRANSAC doesn't support
+ * a mix of measurement types with different target spaces. For example, you cannot have 
+ * measurements that are both SEN_POSE and RN_POS; however, you can have measurements that are
+ * RN_POS and RN_POS_VEL. 
  */ 
 enum MeasurementTypes {
-    R2_POSE,                  // The Measurement space is R2 and with position data
-    R2_POSE_TWIST,            // The Measurement space is R2 and with position and velocity data
-    SE2_POSE,                 // The Measurement space is SE2
-    SE2_POSE_TWIST,            // The Measurement space is SE2 and se2
+    RN_POS,                   // The target space is RN and the position is measured
+    RN_POS_VEL,               // The target space is RN and the position and velocity is measured
+    SEN_POSE,                 // The target space is SEN and the pose is measured and is an element of SEN
+    SEN_POSE_TWIST,           // The target space is SEN and the pose and twist is measured and are elements of SEN and seN
+    SEN_POS,                  // The target space is SEN and the position is measured
+    SEN_POS_VEL,              // The target space is SEN and the position and velocity is measured
     NUM_TYPES
     // SO3_ATT
 };
@@ -41,10 +46,11 @@ struct Meas
     double weight;              /**< The weight of the measurement when updating the model is was associated with. This value is set during the data association
                                      process. */
 
-    MeasurementTypes type;     /** < The measurement type @see MeasurementTypes */
+    MeasurementTypes type;      /** < The measurement type @see MeasurementTypes */
 
-    Eigen::MatrixXd data;       /**< The data that represents the measurement. */
-    Eigen::MatrixXd meas_cov;  /**< The measurement covariance. Only used if the measurement covariance changes with different measurements; otherwise, the
+    Eigen::MatrixXd pose;       /**< The part of the measurement corresponding to the pose of the target. (position, attitude, or both). */
+    Eigen::MatrixXd twist;      /**< The part of the measurement corresponding to the derivative of the pose. (velocity, angular rates, or both). */
+    Eigen::MatrixXd meas_cov;   /**< The measurement covariance. Only used if the measurement covariance changes with different measurements; otherwise, the
                                      measurement covariance given to the Source class is used for every measurement. */
     // auto data;
 
