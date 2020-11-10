@@ -5,6 +5,8 @@
 #include "state.h"
 #include "common/measurement/measurement_base.h"
 #include "parameters.h"
+#include <typeinfo>
+
 
 namespace rransac
 {
@@ -67,12 +69,13 @@ struct SourceParameters {
  */ 
 
 
-template<class S, class Derived>
+template<class S, typename Derived>
 class SourceBase
 {
 
 public:
 
+    typedef S state_type_;
 
     SourceParameters params_;  /** < The source parameters @see SourceParameters */
 
@@ -83,6 +86,8 @@ public:
 
     /** Returns the jacobian of the observation function w.r.t. the states */
     Eigen::MatrixXd GetLinObsMatState(const S& state){
+       
+        // std::cout << typeid(M).name() << std::endl;
         return static_cast<Derived*>(this)->GetLinObsMatState(state);
     }                              
 
@@ -92,7 +97,7 @@ public:
     }                         
 
     /** Computes the estimated measurement given a state */
-    Eigen::MatrixXd GetEstMeas(const S& state){
+    Meas GetEstMeas(const S& state){
         return static_cast<Derived*>(this)->GetEstMeas(state);
     } /** Returns an estimated measurement according to the state. */
 
@@ -120,8 +125,9 @@ public:
 // protected:
     Eigen::MatrixXd H_;
     Eigen::MatrixXd V_;
+    
 
-// private:
+private:
      SourceBase();
     ~SourceBase();
     friend Derived;

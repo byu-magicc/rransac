@@ -5,6 +5,8 @@
 #include <typeinfo>
 #include "state.h"
 
+#include <chrono> 
+
    
 // using namespace std;
  
@@ -35,27 +37,67 @@
 //      std::cout << "A" << std::endl;
 //  }
 
+using namespace rransac;
+
 enum Color {Red, Blue, Green};
+
+
+
+Meas Func1() {
+    Meas&& m = Meas();
+    m.pose = Eigen::Matrix2d::Identity();
+    m.twist = Eigen::Matrix2d::Identity();
+    return m;
+
+}
+
+Meas Func2() {
+    Meas m;
+    m.pose = Eigen::Matrix2d::Identity();
+    m.twist = Eigen::Matrix2d::Identity();
+    return m;
+
+}
 
 int main(){
  
-// const Blah tmp = Blah::A;
+ unsigned long num_iter = 100000;
+auto start = std::chrono::high_resolution_clock::now();
 
-// rransac::Meas m1, m2;
+// Eigen::MatrixXd dynamic1 = Eigen::Matrix4d::Identity();
+// Eigen::MatrixXd dynamic2 = Eigen::Matrix4d::Identity();
 
-// m1.data = 5;
-// m2.data = Eigen::Matrix2d::Identity();
-// std::cout << m1.data << std::endl;
-// std::cout << m2.data << std::endl;
+for (unsigned long i=0; i < num_iter; ++i){
+   Meas m =  Func2();
+}
 
-rransac::SourceBase<lie_groups::R2_r2> source();
+auto finish = std::chrono::high_resolution_clock::now();
 
-// rransac::Meas test
-// std::cout << Red << std::endl;
+std::chrono::duration<double> elapsed = finish - start;
 
-// std::cout << rransac::MeasurementTypes::R2_POSE << std::endl;
+
+std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+
+start = std::chrono::high_resolution_clock::now();
+
+Eigen::Matrix4d static1 = Eigen::Matrix4d::Identity();
+Eigen::Matrix4d static2 = Eigen::Matrix4d::Identity();
+
+for (unsigned long i=0; i < num_iter; ++i){
+     Meas m =  Func1();
+}
+
+
+
+
+finish = std::chrono::high_resolution_clock::now();
+
+elapsed = finish - start;
+
+std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 return 0;
  
  
 
 } 
+

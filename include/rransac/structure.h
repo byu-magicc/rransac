@@ -1,4 +1,5 @@
-
+// Optimization possibilities
+// Replace Eigen dynamic matrices with fixed. This will require temlating
 
 //////////////////////////////////////////////////
 //          transformation.h
