@@ -15,16 +15,16 @@ include_directories(
     src)
 
 
-# add_library(lie_groups
-# lie_groups/liegroups/src/lie_algebras/so2.cpp
-# lie_groups/liegroups/src/lie_algebras/so3.cpp
-# lie_groups/liegroups/src/lie_algebras/se2.cpp
-# lie_groups/liegroups/src/lie_algebras/se3.cpp
-# lie_groups/liegroups/src/lie_groups/SO2.cpp
-# lie_groups/liegroups/src/lie_groups/SO3.cpp
-# lie_groups/liegroups/src/lie_groups/SE2.cpp
-# lie_groups/liegroups/src/lie_groups/SE3.cpp
-# )
+add_library(lie_groups
+lie_groups/liegroups/src/lie_algebras/so2.cpp
+lie_groups/liegroups/src/lie_algebras/so3.cpp
+lie_groups/liegroups/src/lie_algebras/se2.cpp
+lie_groups/liegroups/src/lie_algebras/se3.cpp
+lie_groups/liegroups/src/lie_groups/SO2.cpp
+lie_groups/liegroups/src/lie_groups/SO3.cpp
+lie_groups/liegroups/src/lie_groups/SE2.cpp
+lie_groups/liegroups/src/lie_groups/SE3.cpp
+)
 
 # ########################
 # ## Lie Groups Library ##
@@ -40,11 +40,11 @@ include_directories(
 ## Testing ##
 #############
 
-add_executable(main src/main.cpp)
+# add_executable(main src/main.cpp)
 # src/common/sources/source_base.cpp)
 
 
 # option(BUILD_TESTS "Build the Params GTests" OFF)
 # if(BUILD_TESTS)
-  # add_subdirectory(test)
+  add_subdirectory(test)
 # endif()

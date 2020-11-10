@@ -1,8 +1,17 @@
+#ifndef RRANSAC_COMMON_SOURCES_SOURCE_RN_H_
+#define RRANSAC_COMMON_SOURCES_SOURCE_RN_H_
+
 #include "common/sources/source_base.h"
 #include <typeinfo>
-#include "common/sources/source_base.h"
 
 namespace rransac {
+
+
+/**
+ * \class SourceRN
+ * This source is meant to be used for a target that evolves on RN and whose
+ * measurements are on RN or on RN and its tangent space. * 
+ */ 
 
 template<class S>
 class SourceRN : public SourceBase<S,SourceRN<S>> {
@@ -15,18 +24,23 @@ typedef S type_;
 void Init(const SourceParameters& params);      
 
 /** Returns the jacobian of the observation function w.r.t. the states */
-Eigen::MatrixXd GetLinObsMatState(S const& state) {return this->H_;}                        
+Eigen::MatrixXd GetLinObsMatState(const S& state) {return this->H_;}                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
 Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state) {return this->V_;}                         
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const S& state) {return state.g_.data_;} 
-
-
+Meas GetEstMeas(const S& state) {
+    Meas m;
+    m.pose = state.g_.data_;
+    m.twist = state.u_.data_;
+    return m;
+    } 
 
 };
 
+
+//--------------------------------------------------
 
 template<class S>
 void SourceRN<S>::Init(const SourceParameters& params) {
@@ -53,7 +67,7 @@ void SourceRN<S>::Init(const SourceParameters& params) {
         this->V_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Identity();
         break;
     default:
-        throw std::runtime_error("SourceRN:Init Measurement type not supported.");
+        throw std::runtime_error("SourceRN::Init Measurement type not supported.");
         break;
     }
 
@@ -66,3 +80,6 @@ void SourceRN<S>::Init(const SourceParameters& params) {
 
 
 } // namesapce rransac
+
+
+#endif // RRANSAC_COMMON_SOURCES_SOURCE_RN_H_

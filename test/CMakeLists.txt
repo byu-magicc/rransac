@@ -27,7 +27,7 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 ########################################
 
 #---------------------------------------
-# Source tests
+# Parameter Test
 #---------------------------------------
 
 add_executable(parameterTest 
@@ -35,15 +35,26 @@ parameters_test.cpp
 ../src/parameters.cpp)
 target_link_libraries(parameterTest gtest_main)
 
+#---------------------------------------
+# Source tests
+#---------------------------------------
 add_executable(source_baseTest
 common/sources/source_base_test.cpp
-# ../src/common/sources/source_base.cpp
 ../src/parameters.cpp)
-# ../src/common/sources/source_R2_pos.cpp
-# ../src/common/sources/source_R2_pos_vel.cpp)
 add_dependencies(source_baseTest lie_groups)
 target_link_libraries(source_baseTest gtest_main lie_groups)
 
+add_executable(source_RNTest
+common/sources/source_RN_test.cpp
+../src/parameters.cpp)
+add_dependencies(source_RNTest lie_groups)
+target_link_libraries(source_RNTest gtest_main lie_groups)
+
+add_executable(source_SEN_Pos_VelTest
+common/sources/source_SEN_Pos_Vel_test.cpp
+../src/parameters.cpp)
+add_dependencies(source_SEN_Pos_VelTest lie_groups)
+target_link_libraries(source_SEN_Pos_VelTest gtest_main lie_groups)
 
 # add_executable(rransacTest
 # rransac_test.cpp

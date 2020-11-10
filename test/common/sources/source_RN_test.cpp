@@ -46,11 +46,6 @@ ASSERT_NO_THROW(source_r2.Init(params));
 // Make sure parameters were set correctly.
 ASSERT_EQ(params.type_, source_r2.params_.type_);
 
-
-
-
-
-
 }
 
 //////////////////////////////////////////////////
@@ -62,6 +57,7 @@ TEST(Source_RN, OTHER){
 
 // Test the functions using R2_r2
 SourceParameters params;
+lie_groups::R2_r2 state = lie_groups::R2_r2::Random();
 params.type_ = MeasurementTypes::RN_POS;
 SourceRN<lie_groups::R2_r2> source1;
 source1.Init(params);
@@ -70,8 +66,11 @@ H1 << 1,0,0,0,0,1,0,0;
 Eigen::Matrix<double,2,2> V1;
 V1.setIdentity();
 
-// ASSERT_EQ(source1.GetLinObsMatState(params),H1);
-// ASSERT_EQ(source1.GetLinObsMatSensorNoise(params),V1);
+ASSERT_EQ(source1.GetLinObsMatState(state),H1);
+ASSERT_EQ(source1.GetLinObsMatSensorNoise(state),V1);
+Meas m = source1.GetEstMeas(state);
+ASSERT_EQ(m.pose, state.g_.data_);
+ASSERT_EQ(m.twist, state.u_.data_);
 
 
 }
