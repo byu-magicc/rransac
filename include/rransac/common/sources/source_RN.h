@@ -9,7 +9,7 @@ class SourceRN : public SourceBase<S,SourceRN<S>> {
 
 public:
 
-// typedef S type_;
+typedef S type_;
 
 /** Initializes the measurement source. This function must set the parameters.  */
 void Init(const SourceParameters& params);      
@@ -21,7 +21,7 @@ Eigen::MatrixXd GetLinObsMatState(S const& state) {return this->H_;}
 Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state) {return this->V_;}                         
 
 /** Computes the estimated measurement given a state */
-Eigen::MatrixXd GetEstMeas(const S& state) {return state.g_.data_;} /** Returns an estimated measurement according to the state. */
+Meas GetEstMeas(const S& state) {return state.g_.data_;} 
 
 
 
@@ -31,13 +31,13 @@ Eigen::MatrixXd GetEstMeas(const S& state) {return state.g_.data_;} /** Returns 
 template<class S>
 void SourceRN<S>::Init(const SourceParameters& params) {
 
-    const unsigned int sizeg = S::g_type_::size1_;
-    const unsigned int sizeu = S::u_type_::size1_;
+    const unsigned int sizeg = S::g_type_::dim_;
+    const unsigned int sizeu = S::u_type_::dim_;
 
     // Make sure that the state is a valid type
-    if (typeid(S).name() != typeid(lie_groups::State<lie_groups::Rn<sizeg>,lie_groups::Rn<sizeu>>).name())
+    if (typeid(S).name() != typeid(lie_groups::State<lie_groups::Rn<sizeg>>).name())
     {
-        std::runtime_error("SourceRNPos::Init State is not supported by this source type");
+        throw std::runtime_error("SourceRNPos::Init State is not supported by this source type");
     }
 
     // Construct the Jacobians
@@ -49,8 +49,7 @@ void SourceRN<S>::Init(const SourceParameters& params) {
         this->V_ = Eigen::Matrix<double,sizeg,sizeg>::Identity();
         break;
     case MeasurementTypes::RN_POS_VEL:
-        this->H_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Zero();
-        this->H_.block(0,0,sizeg,sizeg).setIdentity();
+        this->H_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Identity();
         this->V_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Identity();
         break;
     default:
