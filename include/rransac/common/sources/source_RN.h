@@ -10,7 +10,8 @@ namespace rransac {
 /**
  * \class SourceRN
  * This source is meant to be used for a target that evolves on RN and whose
- * measurements are on RN or on RN and its tangent space. * 
+ * measurements are on RN or on RN and its tangent space. Compatible with 
+ * MeasurementType::RN_POS and MeasurementType::RN_VEL
  */ 
 
 template<class S>

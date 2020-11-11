@@ -11,7 +11,8 @@ namespace rransac {
 /**
  * \class SourceSENPosVel
  * This source is meant to be used for a target that evolves on SEN and whose
- * measurements are on RN or on RN and its tangent space. * 
+ * measurements are on RN or on RN and its tangent space. Compatible with 
+ * MeasurementType::SEN_POS and MeasurementType::SEN_POS_VEL 
  */ 
 template<class S>
 class SourceSENPosVel: public SourceBase<S,SourceSENPosVel<S>> {
@@ -99,4 +100,4 @@ default:
 }
 } // namespace rransac
 
-#endif // RRANSAC_COMMON_SOURCES_SOURCE_RN_H_
+#endif // RRANSAC_COMMON_SOURCES_SOURCE_SEN_POS_VEL_H_
