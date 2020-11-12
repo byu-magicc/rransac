@@ -109,6 +109,12 @@ ASSERT_EQ(source.GetLinObsMatSensorNoise(state),V_pos_vel);
 ASSERT_EQ(source.GetEstMeas(state).pose,m.pose);
 ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
 
+
+// Test ToEuclidean
+
+m.pose_euclidean = source.ToEuclidean(m);
+ASSERT_EQ(m.pose,m.pose_euclidean);
+
 }
 
 

@@ -44,34 +44,34 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(source_baseTest lie_groups)
 # target_link_libraries(source_baseTest gtest_main lie_groups)
 
-# add_executable(source_RNTest
-# common/sources/source_RN_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(source_RNTest lie_groups)
-# target_link_libraries(source_RNTest gtest_main lie_groups)
+add_executable(source_RNTest
+common/sources/source_RN_test.cpp
+../src/parameters.cpp)
+add_dependencies(source_RNTest lie_groups)
+target_link_libraries(source_RNTest gtest_main lie_groups)
 
-# add_executable(source_SEN_Pos_VelTest
-# common/sources/source_SEN_pos_vel_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(source_SEN_Pos_VelTest lie_groups)
-# target_link_libraries(source_SEN_Pos_VelTest gtest_main lie_groups)
+add_executable(source_SEN_Pos_VelTest
+common/sources/source_SEN_pos_vel_test.cpp
+../src/parameters.cpp)
+add_dependencies(source_SEN_Pos_VelTest lie_groups)
+target_link_libraries(source_SEN_Pos_VelTest gtest_main lie_groups)
 
 
-# add_executable(source_SEN_Pose_TwistTest
-# common/sources/source_SEN_pose_twist_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(source_SEN_Pose_TwistTest lie_groups)
-# target_link_libraries(source_SEN_Pose_TwistTest gtest_main lie_groups)
+add_executable(source_SEN_Pose_TwistTest
+common/sources/source_SEN_pose_twist_test.cpp
+../src/parameters.cpp)
+add_dependencies(source_SEN_Pose_TwistTest lie_groups)
+target_link_libraries(source_SEN_Pose_TwistTest gtest_main lie_groups)
 
 #---------------------------------------
 # Transformations
 #---------------------------------------
 
-add_executable(trans_homographyTest
-common/transformations/transformation_homography_test.cpp
-../src/parameters.cpp)
-add_dependencies(trans_homographyTest lie_groups)
-target_link_libraries(trans_homographyTest gtest_main lie_groups)
+# add_executable(trans_homographyTest
+# common/transformations/transformation_homography_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(trans_homographyTest lie_groups)
+# target_link_libraries(trans_homographyTest gtest_main lie_groups)
 
 # add_executable(rransacTest
 # rransac_test.cpp

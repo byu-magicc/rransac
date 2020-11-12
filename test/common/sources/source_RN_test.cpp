@@ -72,6 +72,13 @@ Meas m = source1.GetEstMeas(state);
 ASSERT_EQ(m.pose, state.g_.data_);
 ASSERT_EQ(m.twist, state.u_.data_);
 
+// Test ToEuclidean
+Meas m2;
+m2.pose = Eigen::Matrix<double,2,1>::Zero();
+m2.pose << 1,2;
+m2.pose_euclidean = source1.ToEuclidean(m2);
+ASSERT_EQ(m2.pose,m2.pose_euclidean);
+
 
 }
 

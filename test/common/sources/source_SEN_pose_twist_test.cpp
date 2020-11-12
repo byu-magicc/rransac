@@ -103,6 +103,26 @@ ASSERT_EQ(source.GetLinObsMatSensorNoise(state),V_pose_twist);
 ASSERT_EQ(source.GetEstMeas(state).pose,m.pose);
 ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
 
+
+// Test to Euclidean function by undoing it and testing the result against the original pose.
+m.pose_euclidean = source.ToEuclidean(m);
+
+Eigen::Matrix<double, TypeParam::g_type_::size1_, TypeParam::g_type_::size2_> pose;
+pose.setZero();
+pose(TypeParam::g_type_::size1_-1,TypeParam::g_type_::size2_-1) = 1;
+Eigen::Matrix<double,  TypeParam::g_type_::dim_pos_,1> t = m.pose_euclidean.block(0,0,TypeParam::g_type_::dim_pos_,1);
+Eigen::Matrix<double,  TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_> R;
+Eigen::Matrix<double,  TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_> I = Eigen::Matrix<double,  TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_>::Identity();
+R = TypeParam::g_type_::rot_algebra::Wedge(m.pose_euclidean.block(TypeParam::g_type_::dim_pos_,0,TypeParam::g_type_::dim_rot_,1));
+R = (I+R/2.0)*(I-R/2.0).inverse();
+
+
+
+pose.block(0,0,TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_) = R;
+pose.block(0,TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_,1) = t;
+
+ASSERT_EQ(m.pose,pose);
+
 }
 
 

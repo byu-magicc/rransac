@@ -39,6 +39,11 @@ Meas GetEstMeas(const S& state) {
     return m;
     } 
 
+/**
+ * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
+ * @param Meas The measurement whose pose needs to be transformed
+ */
+Eigen::MatrixXd ToEuclidean(const Meas& m);
 
 };
 
@@ -74,6 +79,21 @@ void SourceSENPoseTwist<S>::Init(const SourceParameters& params) {
 
     this->params_ = params;
 
+}
+
+
+//----------------------------------------------------------------------------------------
+template<class S>
+Eigen::MatrixXd SourceSENPoseTwist<S>::ToEuclidean(const Meas& m)  {
+    typename S::g_type_ g(m.pose);
+    Eigen::Matrix<double,  S::g_type_::dim_pos_,S::g_type_::dim_pos_> I = Eigen::Matrix<double,  S::g_type_::dim_pos_,S::g_type_::dim_pos_>::Identity();
+    Eigen::Matrix<double, S::g_type_::dim_pos_,S::g_type_::dim_pos_>&& u = 2.0*(g.R_-I)*(g.R_+I).inverse();
+    Eigen::Matrix<double, S::g_type_::dim_,1> pose_euclidean;
+    pose_euclidean.block(0,0,S::g_type_::dim_pos_,1) = g.t_;
+    pose_euclidean.block(S::g_type_::dim_pos_,0,S::g_type_::dim_rot_,1) = S::g_type_::rot_algebra::Vee(u);
+
+
+    return pose_euclidean;
 }
 
 

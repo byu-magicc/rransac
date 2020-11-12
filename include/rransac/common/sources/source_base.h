@@ -99,7 +99,16 @@ public:
     /** Computes the estimated measurement given a state */
     Meas GetEstMeas(const S& state){
         return static_cast<Derived*>(this)->GetEstMeas(state);
-    } /** Returns an estimated measurement according to the state. */
+    } 
+
+    /**
+     * Maps the pose to Euclidean space. If the pose is already Euclidean space, then it returns the pose; otherwise
+     * it returns the mapped pose.
+     * @param Meas The measurement whose pose needs to be transformed
+     */
+    Eigen::MatrixXd ToEuclidean(const Meas& m)  {
+        return static_cast<Derived*>(this)->ToEuclidean(m); 
+    }
 
     /**
      * Calculates the temporal distance between two measurements.

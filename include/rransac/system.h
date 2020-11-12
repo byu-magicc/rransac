@@ -12,17 +12,29 @@ namespace rransac {
  * This class holds all of the system information including parameters, sources, and models. 
  * 
  */ 
-
+template <typename S> 
 class System {
+
+
 
 public:
 
     Parameters params_;               /** < System parameters */
     std::vector<SourceBase> sources_; /** < Contains all of the instantiated sources. */
+    std::vector<Meas> new_meas_;
 
 private:
 
 };
+
+template <typename Source>
+class node {
+
+void computeBoundingBox<const std::vector<Source>& sources>
+
+    Source::Mat_A = sources[0].ToAlgebra(meas)
+
+}
 
 }
 

@@ -38,6 +38,14 @@ Meas GetEstMeas(const S& state) {
     return m;
     } 
 
+/**
+ * Maps the pose to Euclidean space. In this case, it just returns the pose.
+ * @param Meas The measurement whose pose needs to be transformed
+ */
+Eigen::MatrixXd ToEuclidean(const Meas& m)  {
+    return m.pose;
+}
+
 };
 
 
