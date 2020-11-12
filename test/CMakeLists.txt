@@ -69,8 +69,7 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 
 add_executable(trans_homographyTest
 common/transformations/transformation_homography_test.cpp
-../src/parameters.cpp
-../src/common/transformations/trans_homography.cpp)
+../src/parameters.cpp)
 add_dependencies(trans_homographyTest lie_groups)
 target_link_libraries(trans_homographyTest gtest_main lie_groups)
 

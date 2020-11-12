@@ -52,8 +52,8 @@ void TransformMeasurement(Meas& meas) {
  * @param state The track's state to be transformed.
  * @param cov   The track's error covariance to be transformed.
  */ 
-// void TransformTrack(State& state, Eigen::Matrix<double,State::dim_,State::dim_>& cov) {
-void TransformTrack(State& state, Eigen::MatrixXd& cov) {
+void TransformTrack(State& state, Eigen::Matrix<double,State::dim_,State::dim_>& cov) {
+// void TransformTrack(State& state, Eigen::MatrixXd& cov) {
     static_cast<Derived*>(this)->TransformTrack(state,cov);
 }
 

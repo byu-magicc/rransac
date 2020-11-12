@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "common/transformations/trans_homography.h"
 #include <chrono> 
+#include <iostream>
 
 
 namespace rransac
@@ -63,9 +64,9 @@ ASSERT_EQ(trans.h4_, h4);
 }
 
 
-// Measurement transformation
+// Test the transformation for R2_r2
 
-TEST(TransformHomographyTest, MeasurementTransformationR2) {
+TEST(TransformHomographyTest, R2_r2_TransformationR2) {
 
 
 TransformHomography<R2_r2> trans;
@@ -141,7 +142,7 @@ ASSERT_LT( (m2.twist.normalized()-m3.twist.normalized()).norm(),1e-10); // small
 R2_r2 state1 = R2_r2::Random();
 R2_r2 state_trans; // the transformed state
 Eigen::Matrix4d error_cov, error_cov_transformed;
-error_cov.setIdentity();
+error_cov.setRandom();
 Eigen::Matrix4d cov_trans;
 cov_trans.setZero();
 cov_trans.block(0,0,2,2) = trans.ConstructVelTransform(state1.g_.data_);
@@ -156,16 +157,59 @@ error_cov_transformed = cov_trans * error_cov *cov_trans.transpose();
 // Transform state and covariance
 trans.TransformTrack(state1,error_cov);
 
-std::cout << "cov: " << std::endl << cov_trans << std::endl;
 ASSERT_EQ(state1.g_.data_, state_trans.g_.data_);
 ASSERT_EQ(state1.u_.data_, state_trans.u_.data_);
 ASSERT_EQ(error_cov, error_cov_transformed);
 
+// Test
 
+Eigen::Matrix2d G =  trans.ConstructVelTransform(state1.g_.data_);
+Eigen::Matrix2d M =  trans.ConstructCovTrans12(state1.g_.data_,state1.u_.data_);
+Eigen::Matrix2d W;
+W << 0, -2, 2, 0;
+Eigen::Matrix2d Wn = M*G.inverse() + G*W*G.inverse();
+Eigen::Matrix2d Wa = (Wn-Wn.transpose())/2.0;
+
+std::cout << Wn*G*state1.u_.data_ << std::endl;
+std::cout << Wa*G*state1.u_.data_ << std::endl;
 
 
 
 }
 
+// Test the transformation for SE2_se2
+
+TEST(TransformHomographyTest, SE2_se2_TransformationR2) {
+
+///////////////////////////////////////
+// Test the transform rotation function
+///////////////////////////////////////
+
+TransformHomography<R2_r2> trans;
+
+
+// Construct a state and make sure the velocity isn't zero.
+SE2_se2 state = SE2_se2::Random();
+while (state.u_.data_.norm() < 1e-5) {
+    state = SE2_se2::Random();
+}
+
+// Construct Homography.
+SO3 R = SO3::Random();
+Eigen::Matrix3d H{R.data_};
+trans.SetData(H);
+
+// Transform the velocity and rotation and construct the proper rotation.
+Eigen::Matrix<double,2,1> vel_transformed = trans.ConstructVelTransform(state.g_.t_)*state.g_.R_*state.u_.p_; 
+Eigen::Matrix2d R_transformed = trans.TransformRotation(vel_transformed);
+Eigen::Matrix2d R_proper;
+R_proper.block(0,0,2,1) = vel_transformed.normalized();
+R_proper(0,1) = - R_proper(1,0);
+R_proper(1,1) = R_proper(0,0);
+
+ASSERT_EQ(R_proper, R_transformed);
+
+
+}
 
 } // namespace rransac
