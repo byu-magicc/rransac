@@ -92,14 +92,14 @@ d2 << 0,dt;
 Eigen::Matrix2d vel_trans_numerical;
 vel_trans_numerical.block(0,0,2,1) = (trans.TransformPosition(m1.pose + d1) - trans.TransformPosition(m1.pose))/dt;
 vel_trans_numerical.block(0,1,2,1) = (trans.TransformPosition(m1.pose + d2) - trans.TransformPosition(m1.pose))/dt;
-Eigen::Matrix2d vel_trans_analytical = trans.ConstructVelTransform(m1.pose);
+Eigen::Matrix2d vel_trans_analytical = trans.ConstructTranslationalVelTransform(m1.pose);
 ASSERT_LT( (vel_trans_analytical-vel_trans_numerical).norm(),1e-8); // small error
 
 
 // Verify a part of the covariance transform testing the function ConstructCovTrans12
 Eigen::Matrix2d cov_12_numerical;
-cov_12_numerical.block(0,0,2,1) = (trans.ConstructVelTransform(m1.pose + d1)*m1.twist - trans.ConstructVelTransform(m1.pose)*m1.twist)/dt;
-cov_12_numerical.block(0,1,2,1) = (trans.ConstructVelTransform(m1.pose + d2)*m1.twist - trans.ConstructVelTransform(m1.pose)*m1.twist)/dt;
+cov_12_numerical.block(0,0,2,1) = (trans.ConstructTranslationalVelTransform(m1.pose + d1)*m1.twist - trans.ConstructTranslationalVelTransform(m1.pose)*m1.twist)/dt;
+cov_12_numerical.block(0,1,2,1) = (trans.ConstructTranslationalVelTransform(m1.pose + d2)*m1.twist - trans.ConstructTranslationalVelTransform(m1.pose)*m1.twist)/dt;
 Eigen::Matrix2d cov_12_analytical = trans.ConstructCovTrans12(m1.pose,m1.twist);
 ASSERT_LT( (cov_12_analytical-cov_12_numerical).norm(),1e-8); // small error
 
@@ -145,13 +145,13 @@ Eigen::Matrix4d error_cov, error_cov_transformed;
 error_cov.setRandom();
 Eigen::Matrix4d cov_trans;
 cov_trans.setZero();
-cov_trans.block(0,0,2,2) = trans.ConstructVelTransform(state1.g_.data_);
-cov_trans.block(2,2,2,2) = trans.ConstructVelTransform(state1.g_.data_);
+cov_trans.block(0,0,2,2) = trans.ConstructTranslationalVelTransform(state1.g_.data_);
+cov_trans.block(2,2,2,2) = trans.ConstructTranslationalVelTransform(state1.g_.data_);
 cov_trans.block(2,0,2,2) = trans.ConstructCovTrans12(state1.g_.data_,state1.u_.data_);
 
 // Create transformed state and error covariance
 state_trans.g_.data_ = trans.TransformPosition(state1.g_.data_);
-state_trans.u_.data_ = trans.ConstructVelTransform(state1.g_.data_)*state1.u_.data_;
+state_trans.u_.data_ = trans.ConstructTranslationalVelTransform(state1.g_.data_)*state1.u_.data_;
 error_cov_transformed = cov_trans * error_cov *cov_trans.transpose();
 
 // Transform state and covariance
@@ -161,17 +161,17 @@ ASSERT_EQ(state1.g_.data_, state_trans.g_.data_);
 ASSERT_EQ(state1.u_.data_, state_trans.u_.data_);
 ASSERT_EQ(error_cov, error_cov_transformed);
 
-// Test
+// // Test
 
-Eigen::Matrix2d G =  trans.ConstructVelTransform(state1.g_.data_);
-Eigen::Matrix2d M =  trans.ConstructCovTrans12(state1.g_.data_,state1.u_.data_);
-Eigen::Matrix2d W;
-W << 0, -2, 2, 0;
-Eigen::Matrix2d Wn = M*G.inverse() + G*W*G.inverse();
-Eigen::Matrix2d Wa = (Wn-Wn.transpose())/2.0;
+// Eigen::Matrix2d G =  trans.ConstructTranslationalVelTransform(state1.g_.data_);
+// Eigen::Matrix2d M =  trans.ConstructCovTrans12(state1.g_.data_,state1.u_.data_);
+// Eigen::Matrix2d W;
+// W << 0, -2, 2, 0;
+// Eigen::Matrix2d Wn = M*G.inverse() + G*W*G.inverse();
+// Eigen::Matrix2d Wa = (Wn-Wn.transpose())/2.0;
 
-std::cout << Wn*G*state1.u_.data_ << std::endl;
-std::cout << Wa*G*state1.u_.data_ << std::endl;
+// std::cout << Wn*G*state1.u_.data_ << std::endl;
+// std::cout << Wa*G*state1.u_.data_ << std::endl;
 
 
 
@@ -179,13 +179,13 @@ std::cout << Wa*G*state1.u_.data_ << std::endl;
 
 // Test the transformation for SE2_se2
 
-TEST(TransformHomographyTest, SE2_se2_TransformationR2) {
+TEST(TransformHomographyTest, SE2_se2_Transformation) {
 
 ///////////////////////////////////////
 // Test the transform rotation function
 ///////////////////////////////////////
 
-TransformHomography<R2_r2> trans;
+TransformHomography<SE2_se2> trans;
 
 
 // Construct a state and make sure the velocity isn't zero.
@@ -195,12 +195,29 @@ while (state.u_.data_.norm() < 1e-5) {
 }
 
 // Construct Homography.
-SO3 R = SO3::Random();
-Eigen::Matrix3d H{R.data_};
+SO2 R_psi = SO2::Random();
+Eigen::Matrix<double,3,1> t,n;
+t.setRandom();
+n << 0,0,1;
+
+// std::cout << "n: " << std::endl << n << std::endl;
+// std::cout << "t: " << std::endl << t << std::endl;
+// std::cout << "tn: " << std::endl << t*n.transpose() << std::endl;
+
+Eigen::Matrix3d H;
+H.setZero();
+H.block(0,0,2,2) = R_psi.data_;
+H.block(0,2,3,1) = -t;
+H(2,2) +=1;
+
+Eigen::Matrix2d H1 = H.block(0,0,2,2);
+
+// std::cout << "H: " << std::endl << H << std::endl;
+
 trans.SetData(H);
 
 // Transform the velocity and rotation and construct the proper rotation.
-Eigen::Matrix<double,2,1> vel_transformed = trans.ConstructVelTransform(state.g_.t_)*state.g_.R_*state.u_.p_; 
+Eigen::Matrix<double,2,1> vel_transformed = trans.ConstructTranslationalVelTransform(state.g_.t_)*state.g_.R_*state.u_.p_; 
 Eigen::Matrix2d R_transformed = trans.TransformRotation(vel_transformed);
 Eigen::Matrix2d R_proper;
 R_proper.block(0,0,2,1) = vel_transformed.normalized();
@@ -209,6 +226,106 @@ R_proper(1,1) = R_proper(0,0);
 
 ASSERT_EQ(R_proper, R_transformed);
 
+/////////////////////////////////////////////////////
+// Test the covariance portion of the transform track;
+/////////////////////////////////////////////////////
+
+double dt = 1e-7;
+Eigen::Matrix<double,3,1> dt_t1;
+Eigen::Matrix<double,3,1> dt_t2;
+Eigen::Matrix<double,3,1> dt_r;
+Eigen::Matrix<double,3,1> dt_p1;
+Eigen::Matrix<double,3,1> dt_p2;
+Eigen::Matrix<double,3,1> dt_w;
+
+dt_t1 << dt,0,0;
+dt_t2 << 0,dt,0;
+dt_r  << 0,0,dt;
+dt_p1 = dt_t1;
+dt_p2 = dt_t2;
+dt_w  = dt_r;
+
+// std::cout << dt_t1 << std::endl << std::endl;
+// std::cout << dt_t2 << std::endl << std::endl;
+// std::cout << dt_p1 << std::endl << std::endl;
+// std::cout << dt_p2 << std::endl << std::endl;
+
+SE2_se2 state_base = SE2_se2::Random();                           // Get a random state and modify it to meet specifications.
+Eigen::Matrix<double,2,1> v = state_base.u_.p_;
+state_base.u_.p_ << v.norm(), 0;
+v.normalize();
+state_base.g_.R_ << v(0), -v(1), v(1), v(0);
+Eigen::Matrix<double,6,6> cov;                                    // Construct a covariance matrix. It is not used, but needed to call a function
+Eigen::Matrix<double,6,6> cov_transform_numerical;
+
+
+// Construct analytical cov transform
+Eigen::Matrix2d&& G = trans.ConstructTranslationalVelTransform(state_base.g_.t_);
+
+// std::cout << "G: " << std::endl << G << std::endl;
+// std::cout << "h1/h4: " << std::endl << H1/H(2,2) << std::endl;
+Eigen::Matrix<double,2,1>&& vel_transformed_sf = G*state_base.g_.R_*state_base.u_.p_;
+
+// Construct transformed rotation matrix
+Eigen::Matrix2d R_transformed2 = trans.TransformRotation(vel_transformed_sf);
+
+std::cout << "R t: " << std::endl << R_transformed2 << std::endl;
+std::cout << "R_tt: " << std::endl << H1*state_base.g_.R_ << std::endl;
+
+// Construct perturbed states
+SE2_se2 state_t1, state_t2, state_r, state_p1, state_p2, state_w;
+state_t1 = state_base;
+state_t2 = state_base;
+state_r  = state_base;
+state_p1 = state_base;
+state_p2 = state_base;
+state_w  = state_base;
+state_t1.g_.OPlusEq(dt_t1);
+state_t2.g_.OPlusEq(dt_t2);
+state_r.g_.OPlusEq(dt_r);
+state_p1.u_.data_+= dt_p1;
+state_p2.u_.data_+= dt_p2;
+state_w.u_.data_ += dt_w ;
+
+
+
+trans.TransformTrack(state_base, cov);
+trans.TransformTrack(state_t1, cov);
+trans.TransformTrack(state_t2, cov);
+trans.TransformTrack(state_r, cov);
+trans.TransformTrack(state_p1, cov);
+trans.TransformTrack(state_p2, cov);
+trans.TransformTrack(state_w, cov);
+
+// std::cout << state_base.g_.data_ << std::endl << std::endl;
+// std::cout << state_t1.g_.data_ << std::endl << std::endl;
+// std::cout << state_base.g_.data_-state_t1.g_.data_ << std::endl << std::endl;
+// std::cout << (state_base.g_.data_-state_p1.g_.data_)/dt << std::endl << std::endl;
+// std::cout << state_base.u_.data_-state_p1.u_.data_ << std::endl << std::endl;
+
+// std::cout << (state_base.g_.data_-state_p2.g_.data_)/dt << std::endl << std::endl;
+// std::cout << state_base.u_.data_-state_p2.u_.data_ << std::endl << std::endl;
+
+
+// Eigen::Matrix3d tmp = state_w.g_.data_.inverse();
+// Eigen::Matrix3d tmp2 = tmp*state_base.g_.data_;
+// std::cout << "tmp: " << std::endl << tmp << std::endl << std::endl;
+// std::cout << "tmp2: " << std::endl << tmp2 << std::endl << std::endl;
+// std::cout << "log: " << std::endl << se2::Log(tmp) << std::endl << std::endl;
+
+
+// std::cout << SE2_se2::OMinus(state_base,state_w) << std::endl << std::endl;
+
+cov_transform_numerical.block(0,0,6,1) = SE2_se2::OMinus(state_base,state_t1)/dt;
+cov_transform_numerical.block(0,1,6,1) = SE2_se2::OMinus(state_base,state_t2)/dt;
+cov_transform_numerical.block(0,2,6,1) = SE2_se2::OMinus(state_base,state_r)/dt;
+cov_transform_numerical.block(0,3,6,1) = SE2_se2::OMinus(state_base,state_p1)/dt;
+cov_transform_numerical.block(0,4,6,1) = SE2_se2::OMinus(state_base,state_p2)/dt;
+cov_transform_numerical.block(0,5,6,1) = SE2_se2::OMinus(state_base,state_w)/dt;
+
+std::cout << cov_transform_numerical << std::endl << std::endl;
+
+// Transform states
 
 }
 

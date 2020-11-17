@@ -44,7 +44,7 @@ h4_ = data.block(2,2,1,1);
 void TransformMeasurement(Meas& meas) {
 
     if (meas.type == MeasurementTypes::RN_POS_VEL) {
-        Eigen::Matrix2d&& tmp = ConstructVelTransform(meas.pose);
+        Eigen::Matrix2d&& tmp = ConstructTranslationalVelTransform(meas.pose);
         meas.twist = tmp*meas.twist;
     }
 
@@ -72,14 +72,21 @@ Eigen::Matrix<double,2,1> TransformPosition(const Eigen::Matrix<double,2,1>& pos
 }
 
 /**
- * Construct the linear transformation required to transform the pixel velocity and error covariance using 
+ * Construct the linear transformation required to transform the pixel translational velocity and error covariance using 
  * the current pixel position
  * @param pos The pixel location
  */ 
-Eigen::Matrix2d ConstructVelTransform(const Eigen::Matrix<double,2,1>& pos){
+Eigen::Matrix2d ConstructTranslationalVelTransform(const Eigen::Matrix<double,2,1>& pos){
     double&& tmp = (h3_T_*pos + h4_)(0,0);
     return (tmp*H1_ - (H1_*pos +h2_)*h3_T_)/(tmp*tmp);
-    // return H1_;
+}
+
+/**
+ * Transforms the angular velocity. The homography doesn't affect the angular velocity in the virtual camera frame.
+ * @param omega The angular rotation to be transformed
+ */ 
+Eigen::Matrix<double,1,1> TransformAngularVelocity(const Eigen::Matrix<double,1,1>& omega){
+    return omega;
 }
 
 /**
@@ -99,6 +106,10 @@ Eigen::Matrix2d ConstructCovTrans12(const Eigen::Matrix<double,2,1>& pos, const 
  * @param vel_transformed The velocity transformed into the current surveillance frame
  */ 
 Eigen::Matrix2d TransformRotation(const Eigen::Matrix<double,2,1>& vel_transformed){
+
+    // The velocity is small so set the rotation to identity.
+    if (vel_transformed.norm() == 0)
+        return Eigen::Matrix2d::Identity();
 
     Eigen::Matrix<double,2,1> tmp = vel_transformed.normalized();
     Eigen::Matrix2d R_transformed;
@@ -132,7 +143,7 @@ template<>
 void TransformHomography<lie_groups::R2_r2>::TransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<double,lie_groups::R2_r2::dim_,lie_groups::R2_r2::dim_>& cov) {
 
 
-    Eigen::Matrix2d&& G = ConstructVelTransform(state.g_.data_);
+    Eigen::Matrix2d&& G = ConstructTranslationalVelTransform(state.g_.data_);
     
     // Transform the covariance
     Eigen::Matrix4d cov_trans;    // matrix used to transform the covariance
@@ -160,19 +171,30 @@ void TransformHomography<lie_groups::SE2_se2>::TransformTrack(lie_groups::SE2_se
     // Homography transforms from the previous surveillance frame to the current; thus we need to first transform the velocity
     // into the surveillance frame before transforming it.
     
-    // // Get the transformed velocity in the current survillance frame
-    // Eigen::Matrix2d&& G = ConstructVelTransform(state.g_.data_);
-    // Eigen::Matrix<double,2,1>&& vel_transformed_sf = G*state.g_.R_*state.u_.p_;
+    // Get the transformed velocity in the current survillance frame
+    Eigen::Matrix2d&& G = ConstructTranslationalVelTransform(state.g_.t_);
+    Eigen::Matrix<double,2,1>&& vel_transformed_sf = G*state.g_.R_*state.u_.p_;
 
-    // // Construct transformed rotation matrix
-    // Eigen::Matrix2d R_transformed = TransformRotation(vel_transformed_sf);
+    // Construct transformed rotation matrix
+    Eigen::Matrix2d R_transformed = TransformRotation(vel_transformed_sf);
 
-    // // We assume that the velocity in the body frame is in the x direction
-    // Eigen::Matrix<double,2,1> vel_transformed_bf;
+    // We assume that the velocity in the body frame is in the x direction
+    Eigen::Matrix<double,2,1> vel_transformed_bf;
     // vel_transformed_bf << vel_transformed_sf.norm(),0;
+    vel_transformed_bf << R_transformed.transpose()*vel_transformed_sf;
 
-    // // Transform the position
-    // Eigen::Matrix<double,2,1> pos_transformed = TransformPosition(state.g_.t_);
+    // Transform the position
+    Eigen::Matrix<double,2,1> pos_transformed = TransformPosition(state.g_.t_);
+
+    // Transform the angular velocity
+    Eigen::Matrix<double,1,1> angular_vel_transformed = TransformAngularVelocity(state.u_.th_);
+
+    // Update the state
+    state.g_.R_ = R_transformed;
+    state.g_.t_ = pos_transformed;
+    state.u_.th_ = angular_vel_transformed;
+    state.u_.p_ = vel_transformed_bf;
+
     
     // // Transform the covariance
     // Eigen::Matrix4d cov_trans;    // matrix used to transform the covariance
