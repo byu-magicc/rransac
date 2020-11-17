@@ -212,7 +212,7 @@ H(2,2) +=1;
 
 Eigen::Matrix2d H1 = H.block(0,0,2,2);
 
-// std::cout << "H: " << std::endl << H << std::endl;
+// std::cout << "H: " << std::endl << H << std::endl << std::endl;
 
 trans.SetData(H);
 
@@ -230,7 +230,7 @@ ASSERT_EQ(R_proper, R_transformed);
 // Test the covariance portion of the transform track;
 /////////////////////////////////////////////////////
 
-double dt = 1e-7;
+double dt = 1e-8;
 Eigen::Matrix<double,3,1> dt_t1;
 Eigen::Matrix<double,3,1> dt_t2;
 Eigen::Matrix<double,3,1> dt_r;
@@ -245,32 +245,19 @@ dt_p1 = dt_t1;
 dt_p2 = dt_t2;
 dt_w  = dt_r;
 
-// std::cout << dt_t1 << std::endl << std::endl;
-// std::cout << dt_t2 << std::endl << std::endl;
-// std::cout << dt_p1 << std::endl << std::endl;
-// std::cout << dt_p2 << std::endl << std::endl;
 
 SE2_se2 state_base = SE2_se2::Random();                           // Get a random state and modify it to meet specifications.
 Eigen::Matrix<double,2,1> v = state_base.u_.p_;
 state_base.u_.p_ << v.norm(), 0;
 v.normalize();
 state_base.g_.R_ << v(0), -v(1), v(1), v(0);
-Eigen::Matrix<double,6,6> cov;                                    // Construct a covariance matrix. It is not used, but needed to call a function
+Eigen::Matrix<double,6,6> cov;                                    // Construct a covariance matrix. Not used
+Eigen::Matrix<double,6,6> cov_original, cov_transformed_analytical, cov_transformed_numerical;
+cov_original.setRandom();
+cov_transformed_analytical = cov_original;
+cov_transformed_numerical = cov_original;
 Eigen::Matrix<double,6,6> cov_transform_numerical;
 
-
-// Construct analytical cov transform
-Eigen::Matrix2d&& G = trans.ConstructTranslationalVelTransform(state_base.g_.t_);
-
-// std::cout << "G: " << std::endl << G << std::endl;
-// std::cout << "h1/h4: " << std::endl << H1/H(2,2) << std::endl;
-Eigen::Matrix<double,2,1>&& vel_transformed_sf = G*state_base.g_.R_*state_base.u_.p_;
-
-// Construct transformed rotation matrix
-Eigen::Matrix2d R_transformed2 = trans.TransformRotation(vel_transformed_sf);
-
-std::cout << "R t: " << std::endl << R_transformed2 << std::endl;
-std::cout << "R_tt: " << std::endl << H1*state_base.g_.R_ << std::endl;
 
 // Construct perturbed states
 SE2_se2 state_t1, state_t2, state_r, state_p1, state_p2, state_w;
@@ -287,34 +274,13 @@ state_p1.u_.data_+= dt_p1;
 state_p2.u_.data_+= dt_p2;
 state_w.u_.data_ += dt_w ;
 
-
-
-trans.TransformTrack(state_base, cov);
 trans.TransformTrack(state_t1, cov);
 trans.TransformTrack(state_t2, cov);
 trans.TransformTrack(state_r, cov);
 trans.TransformTrack(state_p1, cov);
 trans.TransformTrack(state_p2, cov);
 trans.TransformTrack(state_w, cov);
-
-// std::cout << state_base.g_.data_ << std::endl << std::endl;
-// std::cout << state_t1.g_.data_ << std::endl << std::endl;
-// std::cout << state_base.g_.data_-state_t1.g_.data_ << std::endl << std::endl;
-// std::cout << (state_base.g_.data_-state_p1.g_.data_)/dt << std::endl << std::endl;
-// std::cout << state_base.u_.data_-state_p1.u_.data_ << std::endl << std::endl;
-
-// std::cout << (state_base.g_.data_-state_p2.g_.data_)/dt << std::endl << std::endl;
-// std::cout << state_base.u_.data_-state_p2.u_.data_ << std::endl << std::endl;
-
-
-// Eigen::Matrix3d tmp = state_w.g_.data_.inverse();
-// Eigen::Matrix3d tmp2 = tmp*state_base.g_.data_;
-// std::cout << "tmp: " << std::endl << tmp << std::endl << std::endl;
-// std::cout << "tmp2: " << std::endl << tmp2 << std::endl << std::endl;
-// std::cout << "log: " << std::endl << se2::Log(tmp) << std::endl << std::endl;
-
-
-// std::cout << SE2_se2::OMinus(state_base,state_w) << std::endl << std::endl;
+trans.TransformTrack(state_base, cov_transformed_analytical);
 
 cov_transform_numerical.block(0,0,6,1) = SE2_se2::OMinus(state_base,state_t1)/dt;
 cov_transform_numerical.block(0,1,6,1) = SE2_se2::OMinus(state_base,state_t2)/dt;
@@ -323,9 +289,13 @@ cov_transform_numerical.block(0,3,6,1) = SE2_se2::OMinus(state_base,state_p1)/dt
 cov_transform_numerical.block(0,4,6,1) = SE2_se2::OMinus(state_base,state_p2)/dt;
 cov_transform_numerical.block(0,5,6,1) = SE2_se2::OMinus(state_base,state_w)/dt;
 
-std::cout << cov_transform_numerical << std::endl << std::endl;
+cov_transformed_numerical = cov_transform_numerical*cov_original*cov_transform_numerical.transpose();
 
-// Transform states
+// We undo the analytical transformation using the numerical transformations to test that the numerical is close to the analytical.
+Eigen::Matrix<double,6,6> cov_undone = cov_transform_numerical.inverse()* cov_transformed_analytical * (cov_transform_numerical.transpose()).inverse();
+
+ASSERT_LE( (cov_transformed_numerical - cov_transformed_analytical).norm(), 1e-7 );
+ASSERT_LE( (cov_undone - cov_original).norm(), 1e-7 );
 
 }
 
