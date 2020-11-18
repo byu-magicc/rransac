@@ -28,7 +28,14 @@ namespace rransac {
 template <typename State, typename StateType, typename Source, typename Transformation> 
 class ModelBase
 {
-typedef Eigen::Matrix<double,2.0*S::G::dim_,2.0*S::G::dim_> Mat;
+
+typedef State State;
+typedef StateType StateType;
+typedef Source Source;
+typedef Transformation Transformation;
+static constexpr unsigned int g_dim_ = State::g_type_::dim_;
+typedef Eigen::Matrix<double,2.0*g_dim_,2.0*g_dim_> Mat;
+
 
 
 public:
@@ -91,10 +98,10 @@ public:
      */ 
     static Mat GetLinTransFuncMatState(const State& state, const double dt) {
         Mat F;
-        F.block(0,0,State::G::dim_, State::G::dim_) = State::G::Adjoint(State::U::Exp(state.u_.data_*dt));
-        F.block(0,State::G::dim_,State::G::dim_,State::G::dim_) = State::U::Jr(state.u_.data_*dt)*dt;
-        F.block(State::G::dim_,0,State::G::dim_,State::G::dim_).setZero();
-        F.block(State::G::dim_,State::G::dim_,State::G::dim_,State::G::dim_).setIdentity(); 
+        F.block(0,0,g_dim_, g_dim_) = State::g_type_::Adjoint(State::u_type_::Exp(state.u_.data_*dt));
+        F.block(0,g_dim_,g_dim_,g_dim_) = State::u_type_::Jr(state.u_.data_*dt)*dt;
+        F.block(g_dim_,0,g_dim_,g_dim_).setZero();
+        F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity(); 
         return F;
     }
 
@@ -106,10 +113,10 @@ public:
      */
     static Mat GetLinTransFuncMatNoise(const State& state, const double dt){
         Mat G;
-        G.block(0,0,State::G::dim_, State::G::dim_) = State::U::Jr(state.u_.data_*dt)*dt;
-        G.block(0,State::G::dim_,State::G::dim_,State::G::dim_) = State::U::Jr(state.u_.data_*dt)*dt*dt/2;
-        G.block(State::G::dim_,0,State::G::dim_,State::G::dim_).setZero(); 
-        G.block(State::G::dim_,State::G::dim_,State::G::dim_,State::G::dim_)= Eigen::Matrix<double,State::G::dim_,State::G::dim_>::Identity()*dt;
+        G.block(0,0,g_dim_, g_dim_) = State::u_type_::Jr(state.u_.data_*dt)*dt;
+        G.block(0,g_dim_,g_dim_,g_dim_) = State::u_type_::Jr(state.u_.data_*dt)*dt*dt/2;
+        G.block(g_dim_,0,g_dim_,g_dim_).setZero(); 
+        G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
         return G;
 
     }
@@ -184,100 +191,129 @@ public:
 
 private:
 
-void GetInnovationAndCovarianceFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,State::g_type_::dim_*2,1>& innovation, Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2>& cov);
+void GetInnovationAndCovarianceFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,g_dim_*2,1>& state_update, Mat& cov_update);
 
-void GetInnovationAndCovarianceNonFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,State::g_type_::dim_*2,1>& innovation, Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2>& cov);
+void GetInnovationAndCovarianceNonFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,g_dim_*2,1>& state_update, Mat& cov_update);
 
 
 };
 
-
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// //                                               Abelian Models
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// template <typename State, typename Source, typename Transformation> 
-// void ModelBase<State, lie_groups::Abelian, Source, Transformation>::Init(std::vector<Source>& sources, const Parameters& params) {
-//     sources_ = sources;
-//     F_.setIdentity();
-//     G_.setIdentity(); 
-// }
-
-// //---------------------------------------------------------------------------------------------------------
+ //---------------------------------------------------------------------------------------------------------
 
 
 
 template <typename State, typename SourceType, typename Source, typename Transformation> 
 void ModelBase<State, SourceType, Source, Transformation>::UpdateModel(const Parameters& params) {
 
-Eigen::Matrix<double,State::g_type_::dim_*2,1> innovation_sum;
-Eigen::Matrix<double,State::g_type_::dim_*2,1> innovation;
-Eigen::Matrix<double,State::g_type_::dim_*2,1> update;
-Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2> cov;
-Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2> cov_sum;
-Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2> error_cov_inverse = err_cov_.inverse();
-innovation_sum.setZero();
+Eigen::Matrix<double,g_dim_*2,1> state_update_sum;
+Eigen::Matrix<double,g_dim_*2,1> state_update;
+Eigen::Matrix<double,g_dim_*2,1> update;
+Mat cov;
+Mat cov_sum;
+Mat error_cov_inverse = err_cov_.inverse();
+state_update_sum.setZero();
 cov_sum.setZero();
 
 // loop through the measurements per source
 for (std::vector<Meas> meas : new_assoc_meas_) {
 
     if(sources_[meas.front()].params_.meas_cov_fixed_) {
-        GetInnovationAndCovarianceFixedMeasurementCov(meas, innovation, cov);
+        GetInnovationAndCovarianceFixedMeasurementCov(meas, state_update, cov);
     } else {
-        GetInnovationAndCovarianceNonFixedMeasurementCov(meas, innovation, cov);
+        GetInnovationAndCovarianceNonFixedMeasurementCov(meas, state_update, cov);
     }
 
-    innovation_sum+= innovation;
+    state_update_sum+= state_update;
     cov_sum += (cov.inverse() - error_cov_inverse);
 }
 
-error_cov_inverse = error_cov_inverse + cov_sum;
+// Update the error covariance
+error_cov_inverse += cov_sum;
 err_cov_ = error_cov_inverse.inverse();
 
-update = err_cov_ * innovation_sum;
-state_.g_.OPlusEq(update.block(0,0,State::g_type_::dim_,1));
-state_.u_.data += update.block(State::g_type_::dim_,0,State::g_type_::dim_,1)
+// Update the state
+update = err_cov_ * state_update_sum;
+state_.g_.OPlusEq(update.block(0,0,g_dim_,1));
+state_.u_.data += update.block(g_dim_,0,g_dim_,1)
 
 }
 
 //---------------------------------------------------------------------------------------------------------
 
 template <typename State, typename SourceType, typename Source, typename Transformation> 
-void ModelBase<State, SourceType, Source, Transformation>::GetInnovationAndCovarianceFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,State::g_type_::dim_*2,1>& innovation, Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2>& cov) {
+void ModelBase<State, SourceType, Source, Transformation>::GetInnovationAndCovarianceFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,g_dim_*2,1>& state_update, Mat& cov_update) {
 
-innovation.setZero();
-covariance.setZero();
+state_update.setZero();
+cov_update = err_cov_;
 
-// std::vector<Eigen::Matrix<double,State::g_type_::dim_*2,1>> innovations(meas.size());
-Eigen::Matrix<double,State::g_type_::dim_*2,1> error
-Eigen::MatrixXd H = GetLinObsMatState(state_);
-Eigen::MatrixXd V = GetLinObsMatMeasNoise(state_);
-Eigen::MatrixXd K;
-Eigen::MatrixXd tmp = V*sources_[meas.front().source_index].params_.meas_cov_*V.transpose();
-Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2> cov_tilde=Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2>::Zero();
-Eigen::Matrix<double,State::g_type_::dim_*2,State::g_type_::dim_*2> innovation_cov;
+Eigen::Matrix<double,g_dim_*2,1> nu = Eigen::Matrix<double,g_dim_*2,1>::Zero(); // Total innovation term
+Eigen::Matrix<double,g_dim_*2,1> nu_i;
+Eigen::MatrixXd H = GetLinObsMatState(state_);                                         // Jacobian of observation function w.r.t. state
+Eigen::MatrixXd V = GetLinObsMatMeasNoise(state_);                                     // Jacobian of observation function w.r.t. noise
+Eigen::MatrixXd K;                                                                     // Kalman Gain
+Mat S;                                                                                 // Innovation covariance
+Mat cov_tilde=Mat::Zero();
 Meas estimated_meas = sources_[meas.front().source_index].GetEstMeas(state_);
+Eigen::MatrixXd tmp = V*sources_[meas.front().source_index].params_.meas_cov_*V.transpose();
 
-innovation_cov = (H*err_cov_*H.transpose() + tmp);
-K = err_cov_*H.transpose()*innovation_cov.inverse();
+
+S = (H*err_cov_*H.transpose() + tmp);
+K = err_cov_*H.transpose()*S.inverse();
 
 double B0 = 1;
 
-// Get total innovation
+// Get total weighted innovation and part of the cov_tilde
 for (Meas m : meas) {
-    error = sources_[m.source_index].OMinus(m, estimated_meas);
-    innovation += m.weight*error;
-    cov_tilde+= m.weight*error*error.transpose();
+    nu_i = sources_[m.source_index].OMinus(m, estimated_meas);
+    nu += m.weight*nu_i;
+    cov_tilde+= m.weight*nu_i*nu_i.transpose();
     B0 -= m.weight;
 }
 
-// Construct cov tilde
-cov_tilde -= innovation*innovation.transpose()*meas.size();
+// Finish constructing cov_tilde
+cov_tilde -= nu*nu.transpose()*meas.size();
 cov_tilde = K*cov_tilde*K.transpose();
 
 // construct covariance
-cov = err_cov_ - (1-B0)*K*innovation_cov*K.transpose();
+cov_update +=  cov_tilde - (1-B0)*K*S*K.transpose();
+state_update = H.transpose()*tmp.inverse()*nu;
+
+
+}
+
+
+//---------------------------------------------------------------------------------------------------------
+template <typename State, typename SourceType, typename Source, typename Transformation> 
+void ModelBase<State, SourceType, Source, Transformation>::GetInnovationAndCovarianceNonFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,g_dim_*2,1>& state_update, Mat& cov_update) {
+
+state_update.setZero();
+cov_update = err_cov_;
+
+Eigen::Matrix<double,g_dim_*2,1> nu = Eigen::Matrix<double,g_dim_*2,1>::Zero();        // Total innovation term
+std::vector<Eigen::Matrix<double,g_dim_*2,1>> nu_i(meas.size());                       // Innovation term for each measurement
+Eigen::MatrixXd H = GetLinObsMatState(state_);                                         // Jacobian of observation function w.r.t. state
+Eigen::MatrixXd V = GetLinObsMatMeasNoise(state_);                                     // Jacobian of observation function w.r.t. noise
+Eigen::MatrixXd K;                                                                     // Kalman Gain
+Mat S;                                                                                 // Innovation covariance
+Meas estimated_meas = sources_[meas.front().source_index].GetEstMeas(state_);
+
+
+// Get individual innovations and weighted total innovations
+for (unsigned long int ii=0; ii< meas.size(); ++ii) {
+    nu_i[ii] = sources_[meas[ii].source_index].OMinus(meas[ii], estimated_meas);
+    nu += meas[ii].weight*nu_i[ii];
+}
+
+// Construct covariance update and state update
+for (unsigned long int ii=0; ii< meas.size(); ++ii) {
+
+    S = (H*err_cov_*H.transpose() + V*meas[ii].meas_cov*V.transpose());
+    K = err_cov_*H.transpose()*S.inverse();
+    cov_update += meas[ii].weight*K*nu_i[ii]*nu_i[ii].transpose()-nu*nu.transpose()*K.transpose() - meas[ii].weight*K*S*K.transpose();
+
+    state_update += meas[ii].weight*H.transpose()*(V*meas[ii].meas_cov*V.transpose()).inverse()*nu_i[ii];
+}
+
 
 
 }
