@@ -79,6 +79,25 @@ m2.pose << 1,2;
 m2.pose_euclidean = source1.ToEuclidean(m2);
 ASSERT_EQ(m2.pose,m2.pose_euclidean);
 
+// Test OMinus
+Meas m3, m4;
+m3.pose = Eigen::Matrix<double,2,1>::Random();
+m3.twist = Eigen::Matrix<double,2,1>::Random();
+m4.pose = Eigen::Matrix<double,2,1>::Random();
+m4.twist = Eigen::Matrix<double,2,1>::Random();
+
+Eigen::Matrix<double,4,1> error2;
+error2.block(0,0,2,1) = m3.pose - m4.pose;
+error2.block(2,0,2,1) = m3.twist - m4.twist;
+
+
+SourceParameters params2;
+params2.type_ = MeasurementTypes::RN_POS_VEL;
+SourceRN<lie_groups::R2_r2> source2;
+source2.Init(params2);
+
+ASSERT_EQ( source1.OMinus(m3,m4), m3.pose - m4.pose);
+ASSERT_EQ( source2.OMinus(m3,m4), error2);
 
 }
 

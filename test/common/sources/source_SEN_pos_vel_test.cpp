@@ -115,6 +115,30 @@ ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
 m.pose_euclidean = source.ToEuclidean(m);
 ASSERT_EQ(m.pose,m.pose_euclidean);
 
+// Test OMinus
+SourceParameters params1, params2;
+params1.type_ = MeasurementTypes::SEN_POS;
+params2.type_ = MeasurementTypes::SEN_POS_VEL;
+
+SourceSENPosVel<TypeParam> source1, source2;
+source1.Init(params1);
+source2.Init(params2);
+
+Meas m3, m4;
+m3.pose = Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,1>::Random();
+m3.twist = Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,1>::Random();
+m4.pose = Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,1>::Random();
+m4.twist = Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,1>::Random();
+
+Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,1> error2;
+error2.block(0,0,TypeParam::g_type_::dim_pos_,1) = m3.pose - m4.pose;
+error2.block(TypeParam::g_type_::dim_pos_,0,TypeParam::g_type_::dim_pos_,1) = m3.twist - m4.twist;
+
+ASSERT_EQ( source1.OMinus(m3,m4), m3.pose - m4.pose);
+ASSERT_EQ( source2.OMinus(m3,m4), error2);
+
+
+
 }
 
 

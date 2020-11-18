@@ -2,6 +2,8 @@
 #define RRANSAC_COMMON_PARAMETERS_H_
 
 #include <vector>
+#include <Eigen/Dense>
+
 
 namespace rransac
 {
@@ -56,6 +58,9 @@ float RANSAC_stopping_criteria_; /**< During any iteration, if the probability o
                                       a valid model is above this threshold, RANSAC stops early and
                                       uses the current model hypothesis to generate a new model.
                                       This value must be between 0 and 1.*/
+
+// TODO::
+Eigen::MatrixXd process_noise_covariance_; /**< The process noise covariance of the model */
 
 
 

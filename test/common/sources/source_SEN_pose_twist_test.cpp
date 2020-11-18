@@ -121,7 +121,33 @@ R = (I+R/2.0)*(I-R/2.0).inverse();
 pose.block(0,0,TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_) = R;
 pose.block(0,TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_,1) = t;
 
-ASSERT_EQ(m.pose,pose);
+ASSERT_LE( (m.pose-pose).norm() , 1e-8);
+
+
+// Test OMinus
+SourceParameters params1, params2;
+params1.type_ = MeasurementTypes::SEN_POSE;
+params2.type_ = MeasurementTypes::SEN_POSE_TWIST;
+
+SourceSENPoseTwist<TypeParam> source1, source2;
+source1.Init(params1);
+source2.Init(params2);
+
+TypeParam state_tmp = TypeParam::Random();
+
+Meas m3, m4;
+m3.pose = state_tmp.g_.data_;
+m3.twist = Eigen::Matrix<double,TypeParam::g_type_::dim_,1>::Random();
+state_tmp = TypeParam::Random();
+m4.pose = state_tmp.g_.data_;
+m4.twist = Eigen::Matrix<double,TypeParam::g_type_::dim_,1>::Random();
+
+Eigen::Matrix<double,TypeParam::g_type_::dim_*2,1> error2;
+error2.block(0,0,TypeParam::g_type_::dim_,1) = TypeParam::g_type_::OMinus(m3.pose,m4.pose);
+error2.block(TypeParam::g_type_::dim_,0,TypeParam::g_type_::dim_,1) = m3.twist - m4.twist;
+
+ASSERT_LE( (source1.OMinus(m3,m4) - TypeParam::g_type_::OMinus(m3.pose,m4.pose)).norm(), 1e-8  );
+ASSERT_LE( (source2.OMinus(m3,m4) - error2).norm(), 1e-8) ;
 
 }
 

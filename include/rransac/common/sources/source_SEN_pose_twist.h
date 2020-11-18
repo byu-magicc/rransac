@@ -40,6 +40,25 @@ Meas GetEstMeas(const S& state) {
     } 
 
 /**
+ * Returns the error between the estimated measurement and the measurement
+ */
+Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
+
+    if (this->params_.type_ == MeasurementTypes::SEN_POSE) {
+        return S::g_type_::OMinus(m1.pose,m2.pose);
+    } else if (this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST){
+        Eigen::Matrix<double, S::g_type_::dim_*2,1> error;
+        error.block(0,0,S::g_type_::dim_,1) = S::g_type_::OMinus(m1.pose,m2.pose);
+        error.block(S::g_type_::dim_,0,S::g_type_::dim_,1) = m1.twist - m2.twist;
+        return error;
+    } else {
+        throw std::runtime_error("SourceSENPoseTwist::OMinus Measurement type not supported.");
+    }
+
+
+}
+
+/**
  * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
  * @param Meas The measurement whose pose needs to be transformed
  */

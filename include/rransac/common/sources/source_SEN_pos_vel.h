@@ -41,6 +41,25 @@ Meas GetEstMeas(const S& state) {
 } 
 
 /**
+ * Returns the error between the estimated measurement and the measurement
+ */
+Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
+
+    if (this->params_.type_ == MeasurementTypes::SEN_POS) {
+        return m1.pose - m2.pose;
+    } else if (this->params_.type_ == MeasurementTypes::SEN_POS_VEL){
+        Eigen::Matrix<double, S::g_type_::dim_pos_*2,1> error;
+        error.block(0,0,S::g_type_::dim_pos_,1) = m1.pose - m2.pose;
+        error.block(S::g_type_::dim_pos_,0,S::g_type_::dim_pos_,1) = m1.twist - m2.twist;
+        return error;
+    } else {
+        throw std::runtime_error("SourceSENPosVel::OMinus Measurement type not supported.");
+    }
+
+
+}
+
+/**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
  * @param Meas The measurement whose pose needs to be transformed
  */

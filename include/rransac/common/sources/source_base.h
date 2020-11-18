@@ -102,6 +102,15 @@ public:
     } 
 
     /**
+     * Performs the OMinus operation between two measurement (m1 ominus m2)
+     * @param m1 a measurement
+     * @param m2 a measurement
+     */
+    Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
+        return static_cast<Derived*>(this)->OMinus(m1, m2);
+    } 
+
+    /**
      * Maps the pose to Euclidean space. If the pose is already Euclidean space, then it returns the pose; otherwise
      * it returns the mapped pose.
      * @param Meas The measurement whose pose needs to be transformed
