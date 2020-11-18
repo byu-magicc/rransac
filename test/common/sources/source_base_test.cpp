@@ -99,6 +99,36 @@ ASSERT_EQ(source.GetEstMeas(state).pose, state.g_.data_);
 
 ASSERT_EQ(source.GetTemporalDistance(m1,m2,params_),fabs(m1.time_stamp-m2.time_stamp));
 
+
+// Random number generator;
+int num_randn = 50000;
+std::vector<Eigen::Matrix<double,4,1>> randn_nums(num_randn);
+Eigen::Matrix<double,4,1> mean;
+Eigen::Matrix<double,4,4> cov;
+mean.setZero();
+cov.setZero();
+
+// Get random numbers and calculate mean
+for(Eigen::Matrix<double,4,1>& randn_num : randn_nums) {
+    randn_num = source.GaussianRandomGenerator(4);
+    mean += randn_num;
+    // std::cout << randn_num << std::endl << std::endl;
+}
+
+mean /= num_randn;
+
+// Calculate std
+for(Eigen::Matrix<double,4,1> randn_num : randn_nums) {
+    cov += (mean - randn_num)*(mean-randn_num).transpose();
+    
+}
+
+cov /= num_randn;
+
+ASSERT_LE( (mean - Eigen::Matrix<double,4,1>::Zero()).norm(), 0.1);
+ASSERT_LE( (cov - Eigen::Matrix<double,4,4>::Identity()).norm(), 0.1);
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////

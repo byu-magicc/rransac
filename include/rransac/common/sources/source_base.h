@@ -3,9 +3,11 @@
 
 #include <Eigen/Core>
 #include "state.h"
+#include <cmath>
 #include "common/measurement/measurement_base.h"
 #include "parameters.h"
 #include <typeinfo>
+#include <random>
 
 
 namespace rransac
@@ -76,6 +78,7 @@ class SourceBase
 public:
 
     typedef S state_type_;
+    static constexpr unsigned int meas_dim = Derived::dim;
 
     SourceParameters params_;  /** < The source parameters @see SourceParameters */
 
@@ -119,6 +122,32 @@ public:
         return static_cast<Derived*>(this)->ToEuclidean(m); 
     }
 
+   /**
+     * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
+     * @param state The state that serves as the mean in the Gaussian distribution
+     * @param meas_std The measurement covariance
+     */ 
+    Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
+        return static_cast<Derived*>(this)->GenerateRandomMeasurement(state,meas_std);
+    }
+
+   /**
+     * Generates a vector of random numbers from a Gaussian distribution of zero mean and 1 standard deviation
+     * @param randn_nums The Gaussian random numbers to be generated
+     */ 
+    Eigen::MatrixXd GaussianRandomGenerator(const int size){
+
+
+        std::normal_distribution<double> dist_(0,1);
+        Eigen::MatrixXd randn_nums(size,1);
+        for (unsigned int ii = 0; ii < size; ++ii){
+            randn_nums(ii,0) = dist_(gen_);
+        }
+
+        return randn_nums;
+
+    }
+
     /**
      * Calculates the temporal distance between two measurements.
      * @param[in] meas1 A measurement.
@@ -140,6 +169,7 @@ public:
     double GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
 
+
 // protected:
     Eigen::MatrixXd H_;
     Eigen::MatrixXd V_;
@@ -159,6 +189,8 @@ private:
     static double GSD_SEN_SEN_POSE(const Meas& meas1, const Meas& meas2, const Parameters& params){return (S::g_type_::OMinus(meas1.pose,meas2.pose)).norm(); }
     static double GSD_SEN_SEN_POS(const Meas& meas1, const Meas& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
     static double GSD_NotImplemented(const Meas& meas1, const Meas& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
+
+    std::default_random_engine gen_;
 
 };
 

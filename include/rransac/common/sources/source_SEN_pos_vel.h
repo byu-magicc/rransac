@@ -20,6 +20,9 @@ class SourceSENPosVel: public SourceBase<S,SourceSENPosVel<S>> {
 public:
 
 typedef S type_;
+static constexpr unsigned int Derived::dim = S::g_type_::dim_pos_;
+
+
 
 /** Initializes the measurement source. This function must set the parameters.  */
 void Init(const SourceParameters& params);      

@@ -20,6 +20,8 @@ class SourceRN : public SourceBase<S,SourceRN<S>> {
 public:
 
 typedef S type_;
+static constexpr unsigned int Derived::dim = S::g_type_::dim_;
+
 
 /** Initializes the measurement source. This function must set the parameters.  */
 void Init(const SourceParameters& params);      
@@ -63,6 +65,33 @@ Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
  */
 Eigen::MatrixXd ToEuclidean(const Meas& m)  {
     return m.pose;
+}
+
+/**
+ * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
+ * @param state The state that serves as the mean in the Gaussian distribution
+ * @param meas_std The measurement standard deviation
+ */ 
+Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
+    Meas m;
+
+    switch (params.type_)
+    {
+    case MeasurementTypes::RN_POS:
+        this->H_ = Eigen::Matrix<double,sizeg,sizeg+sizeu>::Zero();
+        this->H_.block(0,0,sizeg,sizeg).setIdentity();
+        this->V_ = Eigen::Matrix<double,sizeg,sizeg>::Identity();
+        break;
+    case MeasurementTypes::RN_POS_VEL:
+        this->H_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Identity();
+        this->V_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Identity();
+        break;
+    default:
+        throw std::runtime_error("SourceRN::GenerateRandomMeasurement Measurement type not supported.");
+        break;
+    }
+
+    return m;
 }
 
 };

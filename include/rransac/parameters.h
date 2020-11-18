@@ -2,7 +2,7 @@
 #define RRANSAC_COMMON_PARAMETERS_H_
 
 #include <vector>
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 
 namespace rransac

@@ -19,6 +19,8 @@ class SourceSENPoseTwist : public SourceBase<S,SourceSENPoseTwist<S>> {
 public:
 
 typedef S type_;
+static constexpr unsigned int Derived::dim = S::g_type_::dim_;
+
 
 /** Initializes the measurement source. This function must set the parameters.  */
 void Init(const SourceParameters& params);      
