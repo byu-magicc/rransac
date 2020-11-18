@@ -14,11 +14,17 @@ template<typename T>
 class SEN_POS_VEL_Test :public testing::Test {
     public:
     typedef T type;
+
 };
 
 TYPED_TEST_SUITE(SEN_POS_VEL_Test, MyTypes);
 
 TYPED_TEST(SEN_POS_VEL_Test, INIT) {
+
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,1> Mat_p;
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,1> Mat_pv;
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,  TypeParam::g_type_::dim_pos_> Mat_p_c;
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,TypeParam::g_type_::dim_pos_*2> Mat_pv_c;
 
 SourceParameters params;
 SourceSENPosVel<TypeParam> source;
@@ -62,6 +68,10 @@ else {
 TYPED_TEST(SEN_POS_VEL_Test, Funcs) {
 
 typedef TypeParam S;
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,1> Mat_p;
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,1> Mat_pv;
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,  TypeParam::g_type_::dim_pos_> Mat_p_c;
+typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,TypeParam::g_type_::dim_pos_*2> Mat_pv_c;
 
 SourceParameters params;
 SourceSENPosVel<TypeParam> source;
@@ -136,6 +146,64 @@ error2.block(TypeParam::g_type_::dim_pos_,0,TypeParam::g_type_::dim_pos_,1) = m3
 
 ASSERT_EQ( source1.OMinus(m3,m4), m3.pose - m4.pose);
 ASSERT_EQ( source2.OMinus(m3,m4), error2);
+
+
+// Test Random Measurements
+const int num_rand = 10000;
+double std_scalar = 0.1;
+Mat_p_c std1 = Mat_p_c::Identity()*std_scalar;
+Mat_pv_c std2 = Mat_pv_c::Identity()*std_scalar;
+std::vector<Meas> rand_meas1(num_rand);
+std::vector<Meas> rand_meas2(num_rand);
+std::vector<Mat_p> error_1(num_rand);
+std::vector<Mat_pv> error_2(num_rand);
+Mat_p error_mean1;
+Mat_pv error_mean2;
+error_mean1.setZero();
+error_mean2.setZero();
+
+// std::cout << "std1: " << std::endl << std1 << std::endl;
+
+// Generate the random measurement, calculate the error between the state and measurement, and get the mean of the error
+for (unsigned long int ii = 0; ii < num_rand; ++ii) {
+
+    rand_meas1[ii] = source1.GenerateRandomMeasurement(state,std1);
+    rand_meas2[ii] = source2.GenerateRandomMeasurement(state,std2);
+
+    error_1[ii] = source1.OMinus(rand_meas1[ii], source1.GetEstMeas(state));
+    error_2[ii] = source2.OMinus(rand_meas2[ii], source2.GetEstMeas(state));
+    error_mean1+=error_1[ii];
+    error_mean2+=error_2[ii];
+
+}
+error_mean1 /=num_rand;
+error_mean2 /=num_rand;
+
+// Calculate the covariance
+Mat_p_c cov1;
+Mat_pv_c cov2;
+cov1.setZero();
+cov2.setZero();
+for (unsigned long int ii = 0; ii < num_rand; ++ii){
+
+    cov1 += (error_mean1 - error_1[ii])*(error_mean1 - error_1[ii]).transpose();
+    cov2 += (error_mean2 - error_2[ii])*(error_mean2 - error_2[ii]).transpose();
+
+}
+cov1 /= num_rand;
+cov2 /= num_rand;
+
+
+// std::cout << "error_mean1: " << std::endl << error_mean1 << std::endl;
+// std::cout << "error_mean2: " << std::endl << error_mean2 << std::endl;
+// std::cout << "cov1: " << std::endl << cov1 << std::endl;
+// std::cout << "cov2: " << std::endl << cov2 << std::endl;
+
+
+ASSERT_LE( (error_mean1).norm(), 0.1);
+ASSERT_LE( (cov1 - std1*std1).norm(), 0.1);
+ASSERT_LE( (error_mean2).norm(), 0.1);
+ASSERT_LE( (cov2 - std2*std2).norm(), 0.1);
 
 
 

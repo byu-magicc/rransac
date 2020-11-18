@@ -20,7 +20,7 @@ class SourceSENPosVel: public SourceBase<S,SourceSENPosVel<S>> {
 public:
 
 typedef S type_;
-static constexpr unsigned int Derived::dim = S::g_type_::dim_pos_;
+static constexpr unsigned int dim = S::g_type_::dim_pos_;
 
 
 
@@ -70,6 +70,35 @@ Eigen::MatrixXd ToEuclidean(const Meas& m)  {
     return m.pose;
 }
 
+/**
+ * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
+ * @param state The state that serves as the mean in the Gaussian distribution
+ * @param meas_std The measurement standard deviation
+ */ 
+Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
+    Meas m;
+
+    Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
+    // Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(5);
+
+ 
+
+    switch (this->params_.type_)
+    {
+    case MeasurementTypes::SEN_POS:        
+        m.pose = state.g_.t_ + deviation;
+        break;
+    case MeasurementTypes::SEN_POS_VEL:
+        m.pose = state.g_.t_ + deviation.block(0,0,S::g_type_::dim_pos_,1);   
+        m.twist = state.u_.p_ + deviation.block(S::g_type_::dim_pos_,0,S::g_type_::dim_pos_,1);
+        break;
+    default:
+        throw std::runtime_error("SourceSENPosVel::GenerateRandomMeasurement Measurement type not supported.");
+        break;
+    }
+
+    return m;
+}
 
 
 };

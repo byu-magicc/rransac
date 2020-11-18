@@ -20,7 +20,7 @@ class SourceRN : public SourceBase<S,SourceRN<S>> {
 public:
 
 typedef S type_;
-static constexpr unsigned int Derived::dim = S::g_type_::dim_;
+static constexpr unsigned int dim = S::g_type_::dim_;
 
 
 /** Initializes the measurement source. This function must set the parameters.  */
@@ -75,16 +75,19 @@ Eigen::MatrixXd ToEuclidean(const Meas& m)  {
 Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
     Meas m;
 
-    switch (params.type_)
+    Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
+    // Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(5);
+
+ 
+
+    switch (this->params_.type_)
     {
-    case MeasurementTypes::RN_POS:
-        this->H_ = Eigen::Matrix<double,sizeg,sizeg+sizeu>::Zero();
-        this->H_.block(0,0,sizeg,sizeg).setIdentity();
-        this->V_ = Eigen::Matrix<double,sizeg,sizeg>::Identity();
+    case MeasurementTypes::RN_POS:        
+        m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
         break;
     case MeasurementTypes::RN_POS_VEL:
-        this->H_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Identity();
-        this->V_ = Eigen::Matrix<double,sizeg+sizeu,sizeg+sizeu>::Identity();
+        m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
+        m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
         break;
     default:
         throw std::runtime_error("SourceRN::GenerateRandomMeasurement Measurement type not supported.");
