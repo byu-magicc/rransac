@@ -73,6 +73,7 @@ Eigen::MatrixXd ToEuclidean(const Meas& m);
  */ 
 Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
     Meas m;
+    m.source_index = this->params_.source_index_;
 
     Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
     // Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(5);
@@ -83,10 +84,13 @@ Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
     {
     case MeasurementTypes::SEN_POSE:        
         m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
+        m.type = MeasurementTypes::SEN_POSE;
         break;
     case MeasurementTypes::SEN_POSE_TWIST:
         m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
         m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
+        m.type = MeasurementTypes::SEN_POSE_TWIST;
+
         break;
     default:
         throw std::runtime_error("SourceSENPoseTwist::GenerateRandomMeasurement Measurement type not supported.");

@@ -28,13 +28,13 @@ namespace rransac {
 template <typename State, typename StateType, typename Source, typename Transformation> 
 class ModelBase
 {
-
-typedef State State;
-typedef StateType StateType;
-typedef Source Source;
-typedef Transformation Transformation;
+public:
+typedef State MB_State;
+typedef StateType MB_StateType;
+typedef Source MB_Source;
+typedef Transformation MB_Transformation;
 static constexpr unsigned int g_dim_ = State::g_type_::dim_;
-typedef Eigen::Matrix<double,2.0*g_dim_,2.0*g_dim_> Mat;
+typedef Eigen::Matrix<double,2*g_dim_,2*g_dim_> Mat;
 
 
 
@@ -51,12 +51,15 @@ public:
 
     Mat Q_;                           /** < Process noise covariance */
 
-    std::vector<Source>& sources_;    /** < Reference to the sources contained in system */
+    std::vector<Source>* sources_;    /** < Reference to the sources contained in system */
 
     // Useful matrices for propagating
     Mat F_;                           /** < The Jacobian of the state transition function w.r.t. the states */
     Mat G_;                           /** < The Jacobian of the state transition function w.r.t. the noise  */
 
+
+    ModelBase()=default;
+    ~ModelBase()=default;
 
      /**
      * Initializes the model.
@@ -64,7 +67,9 @@ public:
      * @param[in] params  The system parameters specified by the user
      */ 
     void Init(std::vector<Source>& sources, const Parameters& params) {
-        sources_ = sources;
+        sources_ = &sources;
+        err_cov_.setIdentity();
+        SetParameters(params);
         // static_cast<Derived*>(this)->Init(params);
     }
     
@@ -98,8 +103,8 @@ public:
      */ 
     static Mat GetLinTransFuncMatState(const State& state, const double dt) {
         Mat F;
-        F.block(0,0,g_dim_, g_dim_) = State::g_type_::Adjoint(State::u_type_::Exp(state.u_.data_*dt));
-        F.block(0,g_dim_,g_dim_,g_dim_) = State::u_type_::Jr(state.u_.data_*dt)*dt;
+        F.block(0,0,g_dim_, g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
+        F.block(0,g_dim_,g_dim_,g_dim_) = (state.u_*dt).Jr()*dt;
         F.block(g_dim_,0,g_dim_,g_dim_).setZero();
         F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity(); 
         return F;
@@ -113,8 +118,8 @@ public:
      */
     static Mat GetLinTransFuncMatNoise(const State& state, const double dt){
         Mat G;
-        G.block(0,0,g_dim_, g_dim_) = State::u_type_::Jr(state.u_.data_*dt)*dt;
-        G.block(0,g_dim_,g_dim_,g_dim_) = State::u_type_::Jr(state.u_.data_*dt)*dt*dt/2;
+        G.block(0,0,g_dim_, g_dim_) = (state.u_*dt).Jr()*dt;
+        G.block(0,g_dim_,g_dim_,g_dim_) = (state.u_*dt).Jr()*dt*dt/2;
         G.block(g_dim_,0,g_dim_,g_dim_).setZero(); 
         G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
         return G;
@@ -140,7 +145,7 @@ public:
     }
 
     /**
-     * Uses the newly associated measurements to update the state estimate, error covariance, and consensus set using a 
+     * Uses the newly associated measurements to update the statMeas_dime estimate, error covariance, and consensus set using a 
      * centralized measurement fusion.
      * @param[in] param Contains all of the user defined parameters.
      */ 
@@ -154,8 +159,8 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns the Jacobian \f$H_k\f$
      */ 
-    static Eigen::MatrixXd GetLinObsMatState(const State& state, const unsigned int source_ID){
-        return sources_[source_ID].GetLinObsMatState(state);
+    Eigen::MatrixXd GetLinObsMatState(const State& state, const unsigned int source_ID){
+        return (*sources_)[source_ID].GetLinObsMatState(state);
     }
 
     /**
@@ -165,8 +170,8 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns the Jacobian \f$V_k\f$
      */ 
-    static Eigen::MatrixXd GetLinObsMatMeasNoise(const State& state, const unsigned int source_ID){
-        return sources_[source_ID].GetLinObsMatMeasNoise(state);
+    Eigen::MatrixXd GetLinObsMatMeasNoise(const State& state, const unsigned int source_ID){
+        return (*sources_)[source_ID].GetLinObsMatMeasNoise(state);
     }
 
     /**
@@ -175,8 +180,8 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns a measurement \f$ y \f$ based on the state and source.
      */ 
-    Eigen::MatrixXd GetEstMeas(const S& state, const unsigned int source_ID){
-        return sources_[source_ID].GetEstMeas(state);
+    Eigen::MatrixXd GetEstMeas(const State& state, const unsigned int source_ID){
+        return (*sources_)[source_ID].GetEstMeas(state);
     }
 
     /**
@@ -185,7 +190,7 @@ public:
      * @param[in] T The transformation object provided by the user. The object should already have the data it needs to transform the model.
      * @param[in] dt The time interval between the previous global frame and the current global frame. 
      */ 
-    virtual void TransformModel(const Transformation& T){
+    virtual void TransformModel(Transformation& T){
         T.TransformTrack(state_,err_cov_);
     }
 
@@ -217,7 +222,7 @@ cov_sum.setZero();
 // loop through the measurements per source
 for (std::vector<Meas> meas : new_assoc_meas_) {
 
-    if(sources_[meas.front()].params_.meas_cov_fixed_) {
+    if((*sources_)[meas.front()].params_.meas_cov_fixed_) {
         GetInnovationAndCovarianceFixedMeasurementCov(meas, state_update, cov);
     } else {
         GetInnovationAndCovarianceNonFixedMeasurementCov(meas, state_update, cov);
@@ -234,7 +239,7 @@ err_cov_ = error_cov_inverse.inverse();
 // Update the state
 update = err_cov_ * state_update_sum;
 state_.g_.OPlusEq(update.block(0,0,g_dim_,1));
-state_.u_.data += update.block(g_dim_,0,g_dim_,1)
+state_.u_.data += update.block(g_dim_,0,g_dim_,1);
 
 }
 
@@ -253,8 +258,8 @@ Eigen::MatrixXd V = GetLinObsMatMeasNoise(state_);                              
 Eigen::MatrixXd K;                                                                     // Kalman Gain
 Mat S;                                                                                 // Innovation covariance
 Mat cov_tilde=Mat::Zero();
-Meas estimated_meas = sources_[meas.front().source_index].GetEstMeas(state_);
-Eigen::MatrixXd tmp = V*sources_[meas.front().source_index].params_.meas_cov_*V.transpose();
+Meas estimated_meas = (*sources_)[meas.front().source_index].GetEstMeas(state_);
+Eigen::MatrixXd tmp = V*(*sources_)[meas.front().source_index].params_.meas_cov_*V.transpose();
 
 
 S = (H*err_cov_*H.transpose() + tmp);
@@ -264,7 +269,7 @@ double B0 = 1;
 
 // Get total weighted innovation and part of the cov_tilde
 for (Meas m : meas) {
-    nu_i = sources_[m.source_index].OMinus(m, estimated_meas);
+    nu_i = (*sources_)[m.source_index].OMinus(m, estimated_meas);
     nu += m.weight*nu_i;
     cov_tilde+= m.weight*nu_i*nu_i.transpose();
     B0 -= m.weight;
@@ -295,12 +300,12 @@ Eigen::MatrixXd H = GetLinObsMatState(state_);                                  
 Eigen::MatrixXd V = GetLinObsMatMeasNoise(state_);                                     // Jacobian of observation function w.r.t. noise
 Eigen::MatrixXd K;                                                                     // Kalman Gain
 Mat S;                                                                                 // Innovation covariance
-Meas estimated_meas = sources_[meas.front().source_index].GetEstMeas(state_);
+Meas estimated_meas = (*sources_)[meas.front().source_index].GetEstMeas(state_);
 
 
 // Get individual innovations and weighted total innovations
 for (unsigned long int ii=0; ii< meas.size(); ++ii) {
-    nu_i[ii] = sources_[meas[ii].source_index].OMinus(meas[ii], estimated_meas);
+    nu_i[ii] = (*sources_)[meas[ii].source_index].OMinus(meas[ii], estimated_meas);
     nu += meas[ii].weight*nu_i[ii];
 }
 

@@ -82,6 +82,12 @@ public:
 
     SourceParameters params_;  /** < The source parameters @see SourceParameters */
 
+    SourceBase(const SourceBase& other) : SourceBase() {
+        params_ = other.params_;
+        // std::cerr << "here" << std::endl;
+        // SourceBase();
+    }
+
     /** Initializes the measurement source. This function must set the parameters.  */
     void Init(const SourceParameters& params) {
         static_cast<Derived*>(this)->Init(params);
@@ -175,7 +181,7 @@ public:
     Eigen::MatrixXd V_;
     
 
-private:
+// private:
      SourceBase();
     ~SourceBase();
     friend Derived;
@@ -234,6 +240,8 @@ SourceBase<S,Derived>::SourceBase() {
 
 template< class S, class Derived>
 SourceBase<S, Derived>::~SourceBase() {
+
+    // std::cerr << "Destructing" << std::endl;
 
     for (int i = 0; i < MeasurementTypes::NUM_TYPES; i++) {
         delete [] gsd_ptr_[i];

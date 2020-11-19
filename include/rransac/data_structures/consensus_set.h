@@ -58,6 +58,6 @@ std::list<std::vector<M>> consensus_set_; /** < Contains the measurements associ
 };
 } // namespace rransac
 
-#include "src/data_structures/consensus_set.tpp"
+#include "data_structures/consensus_set.tpp"
 
 #endif // RRANSAC_DATA_STRUCTURES_CONSENSUS_SET_H_

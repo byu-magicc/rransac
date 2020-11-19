@@ -36,32 +36,39 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # target_link_libraries(parameterTest gtest_main)
 
 #---------------------------------------
+# Consensus Set Test
+#---------------------------------------
+# add_executable(consensus_setTest 
+# data_structures/consensus_set_test.cpp)
+# target_link_libraries(consensus_setTest gtest_main)
+
+#---------------------------------------
 # Source tests
 #---------------------------------------
-add_executable(source_baseTest
-common/sources/source_base_test.cpp
-../src/parameters.cpp)
-add_dependencies(source_baseTest lie_groups)
-target_link_libraries(source_baseTest gtest_main lie_groups)
+# add_executable(source_baseTest
+# common/sources/source_base_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(source_baseTest lie_groups)
+# target_link_libraries(source_baseTest gtest_main lie_groups)
 
-add_executable(source_RNTest
-common/sources/source_RN_test.cpp
-../src/parameters.cpp)
-add_dependencies(source_RNTest lie_groups)
-target_link_libraries(source_RNTest gtest_main lie_groups)
+# add_executable(source_RNTest
+# common/sources/source_RN_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(source_RNTest lie_groups)
+# target_link_libraries(source_RNTest gtest_main lie_groups)
 
-add_executable(source_SEN_Pos_VelTest
-common/sources/source_SEN_pos_vel_test.cpp
-../src/parameters.cpp)
-add_dependencies(source_SEN_Pos_VelTest lie_groups)
-target_link_libraries(source_SEN_Pos_VelTest gtest_main lie_groups)
+# add_executable(source_SEN_Pos_VelTest
+# common/sources/source_SEN_pos_vel_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(source_SEN_Pos_VelTest lie_groups)
+# target_link_libraries(source_SEN_Pos_VelTest gtest_main lie_groups)
 
 
-add_executable(source_SEN_Pose_TwistTest
-common/sources/source_SEN_pose_twist_test.cpp
-../src/parameters.cpp)
-add_dependencies(source_SEN_Pose_TwistTest lie_groups)
-target_link_libraries(source_SEN_Pose_TwistTest gtest_main lie_groups)
+# add_executable(source_SEN_Pose_TwistTest
+# common/sources/source_SEN_pose_twist_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(source_SEN_Pose_TwistTest lie_groups)
+# target_link_libraries(source_SEN_Pose_TwistTest gtest_main lie_groups)
 
 #---------------------------------------
 # Transformations
@@ -72,6 +79,18 @@ target_link_libraries(source_SEN_Pose_TwistTest gtest_main lie_groups)
 # ../src/parameters.cpp)
 # add_dependencies(trans_homographyTest lie_groups)
 # target_link_libraries(trans_homographyTest gtest_main lie_groups)
+
+#---------------------------------------
+# Model
+#---------------------------------------
+
+add_executable(model_baseTest
+common/models/model_base_test.cpp
+../src/parameters.cpp)
+add_dependencies(model_baseTest lie_groups)
+target_link_libraries(model_baseTest gtest_main lie_groups)
+
+
 
 # add_executable(rransacTest
 # rransac_test.cpp
@@ -85,23 +104,11 @@ target_link_libraries(source_SEN_Pose_TwistTest gtest_main lie_groups)
 
 
 
-# add_executable(consensus_setTest 
-# data_structures/consensus_set_test.cpp)
-# target_link_libraries(consensus_setTest gtest_main)
 
 
 
-# add_executable(measurement_cvTest
-# common/measurement/measurement_cv_test.cpp
-# ../src/common/measurement/measurement_cv.cpp
-# ../src/common/parameters.cpp)
-# target_link_libraries(measurement_cvTest gtest_main)
 
-# add_executable(measurement_factoryTest
-# common/measurement/measurement_factory_test.cpp
-# ../src/common/measurement/measurement_factory.cpp
-# ../src/common/measurement/measurement_cv.cpp)
-# target_link_libraries(measurement_factoryTest gtest_main)
+
 
 # add_executable(nodeTest
 # data_structures/node_test.cpp

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 project(rransac)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_BUILD_TYPE RELEASE)
-# set(CMAKE_BUILD_TYPE DEBUG)
+# set(CMAKE_BUILD_TYPE RELEASE)
+set(CMAKE_BUILD_TYPE DEBUG)
 
 find_package(Eigen3)
 
