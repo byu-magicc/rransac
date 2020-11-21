@@ -1,11 +1,16 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.8)
 project(rransac)
 
 set(CMAKE_CXX_STANDARD 11)
 # set(CMAKE_BUILD_TYPE RELEASE)
-set(CMAKE_BUILD_TYPE DEBUG)
+# set(CMAKE_BUILD_TYPE DEBUG)
+
+
 
 find_package(Eigen3)
+
+# message(STATUS "${EIGEN3_INCLUDE_DIR}")
+# message(STATUS "here")
 
 include_directories(
     ${EIGEN3_INCLUDE_DIR}
@@ -40,7 +45,7 @@ lie_groups/liegroups/src/lie_groups/SE3.cpp
 ## Testing ##
 #############
 
-# add_executable(main src/main.cpp)
+add_executable(main src/main.cpp)
 # src/common/sources/source_base.cpp)
 
 

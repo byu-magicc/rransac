@@ -20,10 +20,10 @@ namespace rransac
 enum MeasurementTypes {
     RN_POS,                   // The target space is RN and the position is measured
     RN_POS_VEL,               // The target space is RN and the position and velocity is measured
-    SEN_POSE,                 // The target space is SEN and the pose is measured and is an element of SEN
-    SEN_POSE_TWIST,           // The target space is SEN and the pose and twist is measured and are elements of SEN and seN
-    SEN_POS,                  // The target space is SEN and the position is measured
-    SEN_POS_VEL,              // The target space is SEN and the position and velocity is measured
+    SEN_POSE,                 // The target space is SEN and the pose is measured and is an element of SEN. The pose is in the surveillance region frame
+    SEN_POSE_TWIST,           // The target space is SEN and the pose and twist is measured and are elements of SEN and sen. The pose is in the surveillance region frame and the twist is in the body frame 
+    SEN_POS,                  // The target space is SEN and the position is measured. The position is in the surveillance region frame
+    SEN_POS_VEL,              // The target space is SEN and the position and velocity is measured. The position and velocity are measured in the surveillance region frame
     NUM_TYPES
     // SO3_ATT
 };

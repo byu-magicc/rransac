@@ -39,7 +39,10 @@ Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){return this->V_;}
 Meas GetEstMeas(const S& state) {
     Meas m;
     m.pose = state.g_.t_;
-    m.twist = state.u_.p_;
+
+    if(this->params_.type_ == MeasurementTypes::SEN_POS_VEL)
+        m.twist = state.g_.R_*state.u_.p_;
+
     return m;
 } 
 
@@ -92,7 +95,7 @@ Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
         break;
     case MeasurementTypes::SEN_POS_VEL:
         m.pose = state.g_.t_ + deviation.block(0,0,S::g_type_::dim_pos_,1);   
-        m.twist = state.u_.p_ + deviation.block(S::g_type_::dim_pos_,0,S::g_type_::dim_pos_,1);
+        m.twist = state.g_.R_*state.u_.p_ + deviation.block(S::g_type_::dim_pos_,0,S::g_type_::dim_pos_,1);
         m.type = MeasurementTypes::SEN_POS_VEL;
         break;
     default:
@@ -127,7 +130,7 @@ void SourceSENPosVel<S>::Init(const SourceParameters& params) {
     case MeasurementTypes::SEN_POS_VEL:
         this->V_ = Eigen::Matrix<double,S::g_type_::dim_pos_ + S::u_type_::dim_t_vel_,S::g_type_::dim_pos_+ S::u_type_::dim_t_vel_>::Identity();
         this->H_ = Eigen::Matrix<double,S::g_type_::dim_pos_+S::u_type_::dim_t_vel_, S::dim_>::Zero();
-        this->H_.block(S::g_type_::dim_pos_,S::g_type_::dim_,S::u_type_::dim_t_vel_,S::u_type_::dim_).setIdentity();
+        // this->H_.block(S::g_type_::dim_pos_,S::g_type_::dim_,S::u_type_::dim_t_vel_,S::u_type_::dim_).setIdentity();
         break;
     default:
         throw std::runtime_error("SourceSENPosVel::Init Measurement type not supported.");
@@ -150,7 +153,14 @@ case MeasurementTypes::SEN_POS:
     return this->H_;
     break;
 case MeasurementTypes::SEN_POS_VEL:
+
     this->H_.block(0,0,S::g_type_::dim_pos_, S::g_type_::dim_pos_) = state.g_.R_;
+    this->H_.block(S::g_type_::dim_pos_, S::g_type_::dim_, S::u_type_::dim_t_vel_,S::u_type_::dim_t_vel_) = state.g_.R_;
+    if ( S::g_type_::dim_pos_== 2) { 
+        this->H_.block(S::g_type_::dim_pos_,S::g_type_::dim_pos_, S::u_type_::dim_t_vel_, S::g_type_::rot_algebra::dim_) = state.g_.R_ * S::g_type_::rot_algebra::Wedge(Eigen::Matrix<double,S::g_type_::rot_algebra::dim_,1>::Ones()) * state.u_.p_;
+    } else {
+        this->H_.block(S::g_type_::dim_pos_,S::g_type_::dim_pos_, S::u_type_::dim_t_vel_, S::g_type_::rot_algebra::dim_) = -state.g_.R_ * S::g_type_::rot_algebra::Wedge(state.u_.p_.block(0,0,S::g_type_::rot_algebra::dim_,1));
+    }
     return this->H_;
     break;
 default:

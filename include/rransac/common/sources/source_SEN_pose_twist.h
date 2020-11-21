@@ -26,7 +26,7 @@ static constexpr unsigned int dim = S::g_type_::dim_;
 void Init(const SourceParameters& params);      
 
 /** Returns the jacobian of the observation function w.r.t. the states 
- * 
+ * @param state A state of a model.
 */
 Eigen::MatrixXd GetLinObsMatState(S const& state){return this->H_;};                        
 
@@ -62,7 +62,7 @@ Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
 
 /**
  * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
- * @param Meas The measurement whose pose needs to be transformed
+ * @param m The measurement whose pose needs to be transformed
  */
 Eigen::MatrixXd ToEuclidean(const Meas& m);
 

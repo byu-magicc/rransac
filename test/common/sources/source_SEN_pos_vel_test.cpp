@@ -75,12 +75,32 @@ typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,TypeParam::g_type_::
 
 SourceParameters params;
 SourceSENPosVel<TypeParam> source;
+
+// Construct a state
 TypeParam state = TypeParam::Random();
+state.g_.R_.block(0,0,state.u_.p_.rows(),1) = state.u_.p_.normalized(); 
+
+if(state.g_.dim_ == 3) {
+    state.g_.R_.block(0,1,state.u_.p_.rows(),1) << - state.g_.data_(1,0), state.g_.data_(0,0);
+} else {
+
+    state.g_.R_.block(0,1,state.u_.p_.rows(),1) << -state.g_.data_(1,0), state.g_.data_(0,0), state.g_.data_(2,0);
+    // std::cout << state.g_.R_.block(0,2,state.u_.p_.rows(),1)<< std::endl << std::endl;
+    // std::cout << S::g_type_::rot_algebra::Wedge(state.g_.data_.block(0,0,state.u_.p_.rows(),1)) << std::endl << std::endl;
+    // std::cout << state.g_.data_.block(0,1,state.u_.p_.rows(),1)<< std::endl << std::endl;
+    
+    state.g_.R_.block(0,2,state.u_.p_.rows(),1) = S::g_type_::rot_algebra::Wedge(state.g_.data_.block(0,0,state.u_.p_.rows(),1))*state.g_.data_.block(0,1,state.u_.p_.rows(),1);
+
+}
+
+double px = state.u_.p_.norm();
+state.u_.p_.setZero();
+state.u_.p_(0,0) = px;
 
 // Construct the expected measurement
 Meas m;
 m.pose = state.g_.t_;
-m.twist = state.u_.p_;
+m.twist = state.g_.R_*state.u_.p_;
 
 // Construct the Jacobians
 Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_> V_pos;
@@ -91,8 +111,14 @@ Eigen::MatrixXd H_pos = Eigen::Matrix<double, S::g_type_::dim_pos_, S::dim_>::Ze
 H_pos.block(0,0,S::g_type_::dim_pos_, S::g_type_::dim_pos_) = state.g_.R_;
 
 Eigen::MatrixXd H_pos_vel = Eigen::Matrix<double,S::g_type_::dim_pos_+S::u_type_::dim_t_vel_, S::dim_>::Zero();
-H_pos_vel.block(S::g_type_::dim_pos_,S::g_type_::dim_,S::u_type_::dim_t_vel_,S::u_type_::dim_).setIdentity();
 H_pos_vel.block(0,0,S::g_type_::dim_pos_, S::g_type_::dim_pos_) = state.g_.R_;
+H_pos_vel.block(S::g_type_::dim_pos_, S::g_type_::dim_, S::u_type_::dim_t_vel_,S::u_type_::dim_t_vel_) = state.g_.R_;
+
+if ( S::g_type_::dim_pos_== 2) { 
+H_pos_vel.block(S::g_type_::dim_pos_,S::g_type_::dim_pos_, S::u_type_::dim_t_vel_, S::g_type_::rot_algebra::dim_) = state.g_.R_ * S::g_type_::rot_algebra::Wedge(Eigen::Matrix<double,S::g_type_::rot_algebra::dim_,1>::Ones()) * state.u_.p_;
+} else {
+    H_pos_vel.block(S::g_type_::dim_pos_,S::g_type_::dim_pos_, S::u_type_::dim_t_vel_, S::g_type_::rot_algebra::dim_) = -state.g_.R_ * S::g_type_::rot_algebra::Wedge(state.u_.p_.block(0,0,S::g_type_::rot_algebra::dim_,1));
+}
 
 // std::cout << V_pos << std::endl << std::endl;
 // std::cout << V_pos_vel << std::endl << std::endl;
@@ -102,6 +128,8 @@ H_pos_vel.block(0,0,S::g_type_::dim_pos_, S::g_type_::dim_pos_) = state.g_.R_;
 // std::cout << state.g_.R_.transpose()*state.g_.R_ << std::endl << std::endl;
 
 
+
+
 // Tests
 params.type_ = MeasurementTypes::SEN_POS;
 ASSERT_NO_THROW(source.Init(params));
@@ -109,7 +137,7 @@ ASSERT_NO_THROW(source.Init(params));
 ASSERT_EQ(source.GetLinObsMatState(state),H_pos);
 ASSERT_EQ(source.GetLinObsMatSensorNoise(state),V_pos);
 ASSERT_EQ(source.GetEstMeas(state).pose,m.pose);
-ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
+// ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
 
 params.type_ = MeasurementTypes::SEN_POS_VEL;
 ASSERT_NO_THROW(source.Init(params));

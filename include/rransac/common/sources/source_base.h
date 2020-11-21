@@ -84,6 +84,8 @@ public:
 
     SourceBase(const SourceBase& other) : SourceBase() {
         params_ = other.params_;
+        H_ = other.H_;
+        V_ = other.V_;
         // std::cerr << "here" << std::endl;
         // SourceBase();
     }
