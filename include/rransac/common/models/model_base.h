@@ -38,7 +38,7 @@ typedef State MB_State;
 typedef Source MB_Source;
 typedef Transformation MB_Transformation;
 static constexpr unsigned int cov_dim_ = Cov_DIM;
-typedef Eigen::Matrix<double,2*cov_dim_,2*cov_dim_> Mat;
+typedef Eigen::Matrix<double,cov_dim_,cov_dim_> Mat;
 
 
 
@@ -195,8 +195,8 @@ public:
     /**
      * Returns a Random State
      */ 
-    State GetRandomState(){
-        return static_cast<Derived*>(this)->GetRandomState();
+    static State GetRandomState(){
+        return Derived::GetRandomState();
     }
 
 private:

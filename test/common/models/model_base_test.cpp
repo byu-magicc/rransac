@@ -5,6 +5,7 @@
 
 #include "common/models/model_base.h"
 #include "common/models/model_RN.h"
+#include "common/models/model_SEN_pos_vel.h"
 #include "common/sources/source_base.h"
 #include "common/sources/source_RN.h"
 #include "common/sources/source_SEN_pos_vel.h"
@@ -22,7 +23,7 @@ using namespace lie_groups;
 
 typedef ModelRN<R2_r2, TransformNULL<R2_r2>> Model1;
 typedef ModelRN<R3_r3, TransformNULL<R3_r3>> Model2;
-// typedef ModelBase<SE2_se2, SE2_se2::StateType, SourceSENPosVel<SE2_se2>,    TransformNULL<SE2_se2>> Model3;
+typedef ModelSENPosVel<SE2_se2, TransformNULL<SE2_se2>> Model3;
 // typedef ModelBase<SE2_se2, SE2_se2::StateType, SourceSENPoseTwist<SE2_se2>, TransformNULL<SE2_se2>> Model4;
 // typedef ModelBase<SE3_se3, SE3_se3::StateType, SourceSENPosVel<SE3_se3>,    TransformNULL<SE3_se3>> Model5;
 // typedef ModelBase<SE3_se3, SE3_se3::StateType, SourceSENPoseTwist<SE3_se3>, TransformNULL<SE3_se3>> Model6;
@@ -36,14 +37,14 @@ struct ModelHelper {
 
 typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
 typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
-// typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
+typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
 // typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
 // typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
 // typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
 // using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
-using MyTypes = ::testing::Types< ModelHelper1>;
+using MyTypes = ::testing::Types< ModelHelper3>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,6 +58,12 @@ static constexpr unsigned int meas_dim = Model::Model::MB_Source::meas_dim;
 static constexpr unsigned int state_dim = Model::Model::MB_State::g_type_::dim_*2;
 
 void SetUp() override {
+
+// This grabs the desired components of the F and G matrices.
+Filter.setZero();
+Filter.block(0,0, cov_dim_-1, cov_dim_-1).setIdentity();
+Filter(cov_dim_-1, g_dim_*2-1) = 1;
+std::cout << Filter << std::endl;
 
 // std::cerr << "setup" << std::endl;
 // Setup the parameters
@@ -139,15 +146,19 @@ for (unsigned int ii = 0; ii < num_iters; ++ii) {
 
 // std::cerr << "here 3" << std::endl;
 // Construct Jacobians with state0 and dt
-F.block(0,0,g_dim_, g_dim_) = typename Model::Model::MB_State::g_type_(Model::Model::MB_State::u_type_::Exp(state0.u_.data_*dt)).Adjoint();
-F.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt;
-F.block(g_dim_,0,g_dim_,g_dim_).setZero();
-F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity(); 
+Eigen::Matrix<double, g_dim_*2, g_dim_*2> F_tmp, G_tmp;
+F_tmp.block(0,0,g_dim_, g_dim_) = typename Model::Model::MB_State::g_type_(Model::Model::MB_State::u_type_::Exp(state0.u_.data_*dt)).Adjoint();
+F_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt;
+F_tmp.block(g_dim_,0,g_dim_,g_dim_).setZero();
+F_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity(); 
 
-G.block(0,0,g_dim_, g_dim_) = (state0.u_*dt).Jr()*dt;
-G.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt*dt/2;
-G.block(g_dim_,0,g_dim_,g_dim_).setZero(); 
-G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,Model::Model::g_dim_,Model::Model::g_dim_>::Identity()*dt;
+G_tmp.block(0,0,g_dim_, g_dim_) = (state0.u_*dt).Jr()*dt;
+G_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt*dt/2;
+G_tmp.block(g_dim_,0,g_dim_,g_dim_).setZero(); 
+G_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,Model::Model::g_dim_,Model::Model::g_dim_>::Identity()*dt;
+
+F = Filter*F_tmp*Filter.transpose();
+G = Filter*G_tmp*Filter.transpose();
 
 }
 
@@ -177,6 +188,8 @@ typename Model::Model track;
 typename Model::Model::Mat F;
 typename Model::Model::Mat G;
 static constexpr unsigned int g_dim_ = Model::Model::g_dim_;
+static constexpr unsigned int cov_dim_ = Model::Model::cov_dim_;
+Eigen::Matrix<double, cov_dim_, g_dim_*2> Filter;
 
 };
 
@@ -211,11 +224,15 @@ ASSERT_EQ(this->track.GetLinTransFuncMatNoise(this->state0,this->dt), this->G);
 this->track.state_ = this->state0;
 this->track.PropagateModel(this->dt);
 // std::cout << "err_cov: " << this->track.err_cov_ << std::endl << std::endl;
+// std::cout << "this->F: " << this->F << std::endl << std::endl;
 // std::cout << "G_: " << this->track.G_ << std::endl << std::endl;
+// std::cout << "Q_: " << this->track.Q_ << std::endl << std::endl;
 ASSERT_LE( (this->track.F_- this->F).norm(), 1e-12  );
 ASSERT_LE( (this->track.G_- this->G).norm(), 1e-12  );
 ASSERT_LE( (this->track.state_.g_.data_ - this->states[1].g_.data_).norm(), 1e-12  );
 ASSERT_LE( (this->track.state_.u_.data_ - this->states[1].u_.data_).norm(), 1e-12  );
+
+
 ASSERT_LE( (this->track.err_cov_ - this->F*this->F.transpose() - this->G*this->track.Q_*this->G.transpose()).norm(), 1e-12  );
 
 // Test the update model function

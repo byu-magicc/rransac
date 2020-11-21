@@ -39,7 +39,7 @@ Mat GetLinTransFuncMatNoise(const State& state, const double dt){
 
 }
 
-void UpdateState(const Eigen::Matrix<double,g_dim_,1>& state_update) {
+void UpdateState(const Eigen::Matrix<double,2*g_dim_,1>& state_update) {
     this->state_.g_.OPlusEq(state_update.block(0,0,g_dim_,1));
     this->state_.u_.data_ += state_update.block(g_dim_,0,g_dim_,1);
 }
@@ -47,7 +47,7 @@ void UpdateState(const Eigen::Matrix<double,g_dim_,1>& state_update) {
 /**
  * Returns a Random State
  */ 
-State GetRandomState(){
+static State GetRandomState(){
     return State::Random();
 }
 
