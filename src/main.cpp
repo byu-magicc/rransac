@@ -4,6 +4,7 @@
 #include "common/sources/source_base.h"
 #include <typeinfo>
 #include "state.h"
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include <chrono> 
 
@@ -60,41 +61,13 @@ Meas Func2() {
 }
 
 int main(){
- 
- unsigned long num_iter = 100000;
-auto start = std::chrono::high_resolution_clock::now();
 
-// Eigen::MatrixXd dynamic1 = Eigen::Matrix4d::Identity();
-// Eigen::MatrixXd dynamic2 = Eigen::Matrix4d::Identity();
+Eigen::Matrix4d tmp;
+tmp.setIdentity();
+tmp = tmp*0.1;
+std::cout << tmp.inverse() << std::endl << std::endl; 
+std::cout << tmp.sqrt() << std::endl << std::endl; 
 
-for (unsigned long i=0; i < num_iter; ++i){
-   Meas m =  Func2();
-}
-
-auto finish = std::chrono::high_resolution_clock::now();
-
-std::chrono::duration<double> elapsed = finish - start;
-
-
-std::cout << "Elapsed time: " << elapsed.count() << " s\n";
-
-start = std::chrono::high_resolution_clock::now();
-
-Eigen::Matrix4d static1 = Eigen::Matrix4d::Identity();
-Eigen::Matrix4d static2 = Eigen::Matrix4d::Identity();
-
-for (unsigned long i=0; i < num_iter; ++i){
-     Meas m =  Func1();
-}
-
-
-
-
-finish = std::chrono::high_resolution_clock::now();
-
-elapsed = finish - start;
-
-std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 return 0;
  
  

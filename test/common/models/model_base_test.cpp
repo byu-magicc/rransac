@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 #include <typeinfo>
 #include <Eigen/Core>
+#include <unsupported/Eigen/MatrixFunctions>
 
 
 #include "common/models/model_base.h"
 #include "common/models/model_RN.h"
 #include "common/models/model_SEN_pos_vel.h"
+#include "common/models/model_SEN_pose_twist.h"
 #include "common/sources/source_base.h"
 #include "common/sources/source_RN.h"
 #include "common/sources/source_SEN_pos_vel.h"
@@ -24,9 +26,9 @@ using namespace lie_groups;
 typedef ModelRN<R2_r2, TransformNULL<R2_r2>> Model1;
 typedef ModelRN<R3_r3, TransformNULL<R3_r3>> Model2;
 typedef ModelSENPosVel<SE2_se2, TransformNULL<SE2_se2>> Model3;
-// typedef ModelBase<SE2_se2, SE2_se2::StateType, SourceSENPoseTwist<SE2_se2>, TransformNULL<SE2_se2>> Model4;
-// typedef ModelBase<SE3_se3, SE3_se3::StateType, SourceSENPosVel<SE3_se3>,    TransformNULL<SE3_se3>> Model5;
-// typedef ModelBase<SE3_se3, SE3_se3::StateType, SourceSENPoseTwist<SE3_se3>, TransformNULL<SE3_se3>> Model6;
+typedef ModelSENPoseTwist<SE2_se2, TransformNULL<SE2_se2>> Model4;
+typedef ModelSENPosVel<SE3_se3, TransformNULL<SE2_se2>> Model5;
+typedef ModelSENPoseTwist<SE3_se3, TransformNULL<SE2_se2>> Model6;
 
 template<class M, MeasurementTypes MT1, MeasurementTypes MT2>
 struct ModelHelper {
@@ -38,13 +40,13 @@ struct ModelHelper {
 typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
 typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
 typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
-// typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
-// typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
-// typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
+typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
+typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
+typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
-using MyTypes = ::testing::Types< ModelHelper3>;
+using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+// using MyTypes = ::testing::Types< ModelHelper6>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,14 +58,21 @@ protected:
 
 static constexpr unsigned int meas_dim = Model::Model::MB_Source::meas_dim;
 static constexpr unsigned int state_dim = Model::Model::MB_State::g_type_::dim_*2;
+static constexpr unsigned int cov_dim = Model::Model::cov_dim_;
+static constexpr unsigned int a_vel_dim = Model::Model::cov_dim_ - Model::Model::MB_State::g_type_::dim_-1;
+static constexpr unsigned int t_vel_dim = state_dim - Model::Model::MB_State::g_type_::dim_ - a_vel_dim;
 
 void SetUp() override {
 
 // This grabs the desired components of the F and G matrices.
-Filter.setZero();
-Filter.block(0,0, cov_dim_-1, cov_dim_-1).setIdentity();
-Filter(cov_dim_-1, g_dim_*2-1) = 1;
-std::cout << Filter << std::endl;
+if (Model::MeasType1 == MeasurementTypes::SEN_POS|| Model::MeasType1 == MeasurementTypes::SEN_POS_VEL) {
+    Filter.setZero();
+    Filter.block(0,0, g_dim_+1, g_dim_+1).setIdentity();
+    Filter.block(g_dim_+1, g_dim_ + t_vel_dim,  a_vel_dim, a_vel_dim).setIdentity();
+// std::cout << Filter << std::endl;
+} else {
+    Filter.setIdentity();
+}
 
 // std::cerr << "setup" << std::endl;
 // Setup the parameters
@@ -100,7 +109,7 @@ sources.push_back(source1);
 sources.push_back(source2);
 // std::cerr << source1.gsd_ptr_ << std::endl;
 // std::cerr << sources.front().gsd_ptr_ << std::endl;
-params.process_noise_covariance_ = Eigen::Matrix<double,state_dim,state_dim>::Identity()*system_cov_scale;
+params.process_noise_covariance_ = Eigen::Matrix<double,cov_dim,cov_dim>::Identity()*system_cov_scale;
 
 // std::cerr << "here 1" << std::endl;
 
@@ -151,6 +160,9 @@ F_tmp.block(0,0,g_dim_, g_dim_) = typename Model::Model::MB_State::g_type_(Model
 F_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt;
 F_tmp.block(g_dim_,0,g_dim_,g_dim_).setZero();
 F_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity(); 
+
+// std::cout << "f_tmp: " << std::endl << F_tmp << std::endl << std::endl;
+
 
 G_tmp.block(0,0,g_dim_, g_dim_) = (state0.u_*dt).Jr()*dt;
 G_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt*dt/2;
@@ -217,8 +229,12 @@ ASSERT_EQ(this->state.u_.data_, this->states.back().u_.data_);
 
 
 // Test the system function Jacobians
-ASSERT_EQ(this->track.GetLinTransFuncMatState(this->state0,this->dt), this->F);
-ASSERT_EQ(this->track.GetLinTransFuncMatNoise(this->state0,this->dt), this->G);
+// std::cout << "this->F: " << std::endl << this->F << std::endl << std::endl;
+// std::cout << "track->F: " << std::endl << this->track.GetLinTransFuncMatState(this->state0,this->dt) << std::endl;
+// std::cout << "err: " << std::endl << this->track.GetLinTransFuncMatState(this->state0,this->dt) - this->F << std::endl;
+
+ASSERT_LE( (this->track.GetLinTransFuncMatState(this->state0,this->dt) - this->F).norm(), 1e-12);
+ASSERT_LE( (this->track.GetLinTransFuncMatNoise(this->state0,this->dt) - this->G).norm(), 1e-12);
 
 // Test the Propagate Model Function
 this->track.state_ = this->state0;
@@ -239,8 +255,8 @@ ASSERT_LE( (this->track.err_cov_ - this->F*this->F.transpose() - this->G*this->t
 this->track.err_cov_.setIdentity();
 this->track.state_ = this->track.state_.Identity();
 
-std::cerr << "state0: " << this->track.state_.g_.data_ << std::endl;
-std::cerr <<  this->track.state_.u_.data_ << std::endl;
+// std::cerr << "state0: " << this->track.state_.g_.data_ << std::endl;
+// std::cerr <<  this->track.state_.u_.data_ << std::endl;
 
 for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
 
@@ -250,11 +266,37 @@ for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
 
 }
 
-std::cout << "g_est: " << std::endl << this->track.state_.g_.data_ << std::endl;
-std::cout << "g_true: " << std::endl << this->states.back().g_.data_<< std::endl;
-std::cout << "u_est: " << std::endl << this->track.state_.u_.data_ << std::endl;
-std::cout << "u_true: " << std::endl << this->states.back().u_.data_ << std::endl;
-std::cout << "cov: " << std::endl << this->track.err_cov_ << std::endl;
+// Test covariance
+ASSERT_LE(  ((this->track.err_cov_ + this->track.err_cov_.transpose())/2.0 - this->track.err_cov_ ).norm(), 1e-12); // symmetric
+Eigen::VectorXcd eigen_values = this->track.err_cov_.eigenvalues();
+for (int ii =0; ii < eigen_values.rows(); ++ii){                       // positive definite
+    ASSERT_GT( std::abs(eigen_values(ii)), 0);
+}
+
+if (TypeParam::MeasType1 == MeasurementTypes::SEN_POS|| TypeParam::MeasType1 == MeasurementTypes::SEN_POS_VEL) {
+    
+    // Eigen::MatrixXd error = (*this->track.sources_)[1].params_.meas_cov_.inverse()*(*this->track.sources_)[1].OMinus( this->new_meas.back().back().back(),(*this->track.sources_)[1].GetEstMeas(this->track.state_));
+    // std::cerr << "norm error: " << error.norm() << std::endl;
+    // std::cerr << " cov inverse: " << this->meas_cov2.inverse() << std::endl;
+    // std::cerr << " blah er: " << (*this->track.sources_)[1].OMinus( this->new_meas.back().back().back(),(*this->track.sources_)[1].GetEstMeas(this->track.state_))<< std::endl;
+    Eigen::MatrixXd error = this->meas_cov2.inverse().sqrt()*(*this->track.sources_)[1].OMinus( this->new_meas.back().back().back(),(*this->track.sources_)[1].GetEstMeas(this->track.state_));
+    EXPECT_LE( error.norm(),  5) << "This result might not always be true since updating the track is not deterministic";
+
+
+} else {
+    EXPECT_LE( (this->Filter.transpose()*this->track.err_cov_.inverse().sqrt()*this->Filter*this->track.state_.OMinus(this->states.back())).norm(),  5) << "This result might not always be true since updating the track is not deterministic";
+    // std::cout << "norm error " << (this->Filter.transpose()*this->track.err_cov_.inverse().sqrt()*this->Filter*this->track.state_.OMinus(this->states.back())).norm() << std::endl;
+
+}
+
+// 
+
+// std::cout << "g_est: " << std::endl << this->track.state_.g_.data_ << std::endl;
+// std::cout << "g_true: " << std::endl << this->states.back().g_.data_<< std::endl;
+// std::cout << "u_est: " << std::endl << this->track.state_.u_.data_ << std::endl;
+// std::cout << "u_true: " << std::endl << this->states.back().u_.data_ << std::endl;
+// std::cout << "cov: " << std::endl << this->track.err_cov_ << std::endl;
+// std::cout << "norm error " << (this->track.state_.OMinus(this->states.back())).norm() << std::endl;
 
 
 }

@@ -35,31 +35,12 @@ Eigen::MatrixXd GetLinObsMatState(const S& state) {return this->H_;}
 Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state) {return this->V_;}                         
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const S& state) {
-    Meas m;
-    m.pose = state.g_.data_;
-    m.twist = state.u_.data_;
-    return m;
-    } 
+Meas GetEstMeas(const S& state);
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
-
-    if (this->params_.type_ == MeasurementTypes::RN_POS) {
-        return m1.pose - m2.pose;
-    } else if (this->params_.type_ == MeasurementTypes::RN_POS_VEL){
-        Eigen::Matrix<double, S::g_type_::dim_*2,1> error;
-        error.block(0,0,S::g_type_::dim_,1) = m1.pose - m2.pose;
-        error.block(S::g_type_::dim_,0,S::g_type_::dim_,1) = m1.twist - m2.twist;
-        return error;
-    } else {
-        throw std::runtime_error("SourceRN::OMinus Measurement type not supported.");
-    }
-
-
-}
+Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2);
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
@@ -74,40 +55,14 @@ Eigen::MatrixXd ToEuclidean(const Meas& m)  {
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
-    Meas m;
-    m.source_index = this->params_.source_index_;
-
-
-
-    Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
-    // Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(5);
-
- 
-
-    switch (this->params_.type_)
-    {
-    case MeasurementTypes::RN_POS:        
-        m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
-        m.type = MeasurementTypes::RN_POS;
-        break;
-    case MeasurementTypes::RN_POS_VEL:
-        m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
-        m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
-        m.type = MeasurementTypes::RN_POS_VEL;
-        break;
-    default:
-        throw std::runtime_error("SourceRN::GenerateRandomMeasurement Measurement type not supported.");
-        break;
-    }
-
-    return m;
-}
+Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std);
 
 };
 
 
-//--------------------------------------------------
+
+
+//--------------------------------------------------------------
 
 template<class S>
 void SourceRN<S>::Init(const SourceParameters& params) {
@@ -137,13 +92,64 @@ void SourceRN<S>::Init(const SourceParameters& params) {
         throw std::runtime_error("SourceRN::Init Measurement type not supported.");
         break;
     }
-
     this->params_ = params;
-
 }
 
-// template<class S>
-// Eigen::MatrixXd SourceRN<S>::GetLinObsMatState(S const& state) {return this->H_;}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+template<class S>
+Meas SourceRN<S>::GetEstMeas(const S& state) {
+    Meas m;
+    m.pose = state.g_.data_;
+    m.twist = state.u_.data_;
+    return m;
+} 
+
+//---------------------------------------------------------------------------
+template<class S>
+Eigen::MatrixXd SourceRN<S>::OMinus(const Meas& m1, const Meas& m2) {
+
+    if (this->params_.type_ == MeasurementTypes::RN_POS) {
+        return m1.pose - m2.pose;
+    } else if (this->params_.type_ == MeasurementTypes::RN_POS_VEL){
+        Eigen::Matrix<double, S::g_type_::dim_*2,1> error;
+        error.block(0,0,S::g_type_::dim_,1) = m1.pose - m2.pose;
+        error.block(S::g_type_::dim_,0,S::g_type_::dim_,1) = m1.twist - m2.twist;
+        return error;
+    } else {
+        throw std::runtime_error("SourceRN::OMinus Measurement type not supported.");
+    }
+}
+
+//---------------------------------------------------------------------------------------------
+template<class S>
+Meas SourceRN<S>::GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
+    Meas m;
+    m.source_index = this->params_.source_index_;
+
+    Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
+
+    switch (this->params_.type_)
+    {
+    case MeasurementTypes::RN_POS:        
+        m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
+        m.type = MeasurementTypes::RN_POS;
+        break;
+    case MeasurementTypes::RN_POS_VEL:
+        m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
+        m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
+        m.type = MeasurementTypes::RN_POS_VEL;
+        break;
+    default:
+        throw std::runtime_error("SourceRN::GenerateRandomMeasurement Measurement type not supported.");
+        break;
+    }
+
+    return m;
+}
 
 
 } // namesapce rransac

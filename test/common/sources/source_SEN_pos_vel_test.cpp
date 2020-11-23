@@ -107,12 +107,12 @@ Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,TypeParam::g_type_::dim_pos_> 
 V_pos.setIdentity();
 Eigen::MatrixXd V_pos_vel = Eigen::Matrix<double,S::g_type_::dim_pos_ + S::u_type_::dim_t_vel_,S::g_type_::dim_pos_+ S::u_type_::dim_t_vel_>::Identity();
 
-Eigen::MatrixXd H_pos = Eigen::Matrix<double, S::g_type_::dim_pos_, S::dim_>::Zero();
+Eigen::MatrixXd H_pos = Eigen::Matrix<double, S::g_type_::dim_pos_, SourceSENPosVel<TypeParam>::cov_dim_>::Zero();
 H_pos.block(0,0,S::g_type_::dim_pos_, S::g_type_::dim_pos_) = state.g_.R_;
 
-Eigen::MatrixXd H_pos_vel = Eigen::Matrix<double,S::g_type_::dim_pos_+S::u_type_::dim_t_vel_, S::dim_>::Zero();
+Eigen::MatrixXd H_pos_vel = Eigen::Matrix<double,S::g_type_::dim_pos_+S::u_type_::dim_t_vel_, SourceSENPosVel<TypeParam>::cov_dim_>::Zero();
 H_pos_vel.block(0,0,S::g_type_::dim_pos_, S::g_type_::dim_pos_) = state.g_.R_;
-H_pos_vel.block(S::g_type_::dim_pos_, S::g_type_::dim_, S::u_type_::dim_t_vel_,S::u_type_::dim_t_vel_) = state.g_.R_;
+H_pos_vel.block(S::g_type_::dim_pos_, S::g_type_::dim_, S::u_type_::dim_t_vel_,1) = state.g_.R_.block(0,0,S::u_type_::dim_t_vel_,1);
 
 if ( S::g_type_::dim_pos_== 2) { 
 H_pos_vel.block(S::g_type_::dim_pos_,S::g_type_::dim_pos_, S::u_type_::dim_t_vel_, S::g_type_::rot_algebra::dim_) = state.g_.R_ * S::g_type_::rot_algebra::Wedge(Eigen::Matrix<double,S::g_type_::rot_algebra::dim_,1>::Ones()) * state.u_.p_;

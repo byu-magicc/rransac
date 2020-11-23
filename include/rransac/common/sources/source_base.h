@@ -143,18 +143,7 @@ public:
      * Generates a vector of random numbers from a Gaussian distribution of zero mean and 1 standard deviation
      * @param randn_nums The Gaussian random numbers to be generated
      */ 
-    Eigen::MatrixXd GaussianRandomGenerator(const int size){
-
-
-        std::normal_distribution<double> dist_(0,1);
-        Eigen::MatrixXd randn_nums(size,1);
-        for (unsigned int ii = 0; ii < size; ++ii){
-            randn_nums(ii,0) = dist_(gen_);
-        }
-
-        return randn_nums;
-
-    }
+    Eigen::MatrixXd GaussianRandomGenerator(const int size);
 
     /**
      * Calculates the temporal distance between two measurements.
@@ -202,7 +191,25 @@ public:
 
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+template< class S, class Derived>
+Eigen::MatrixXd  SourceBase<S,Derived>::GaussianRandomGenerator(const int size){
+
+
+    std::normal_distribution<double> dist_(0,1);
+    Eigen::MatrixXd randn_nums(size,1);
+    for (unsigned int ii = 0; ii < size; ++ii){
+        randn_nums(ii,0) = dist_(gen_);
+    }
+
+    return randn_nums;
+
+}
+
+//-------------------------------------------------------------------------------
 
 template< class S, class Derived>
 SourceBase<S,Derived>::SourceBase() {

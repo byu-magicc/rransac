@@ -45,7 +45,7 @@ lie_groups/liegroups/src/lie_groups/SE3.cpp
 ## Testing ##
 #############
 
-add_executable(main src/main.cpp)
+# add_executable(main src/main.cpp)
 # src/common/sources/source_base.cpp)
 
 

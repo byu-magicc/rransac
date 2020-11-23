@@ -34,31 +34,12 @@ Eigen::MatrixXd GetLinObsMatState(S const& state){return this->H_;};
 Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){return this->V_;}                        
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const S& state) {
-    Meas m;
-    m.pose = state.g_.data_;
-    m.twist = state.u_.data_;
-    return m;
-    } 
+Meas GetEstMeas(const S& state);
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
-
-    if (this->params_.type_ == MeasurementTypes::SEN_POSE) {
-        return S::g_type_::OMinus(m1.pose,m2.pose);
-    } else if (this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST){
-        Eigen::Matrix<double, S::g_type_::dim_*2,1> error;
-        error.block(0,0,S::g_type_::dim_,1) = S::g_type_::OMinus(m1.pose,m2.pose);
-        error.block(S::g_type_::dim_,0,S::g_type_::dim_,1) = m1.twist - m2.twist;
-        return error;
-    } else {
-        throw std::runtime_error("SourceSENPoseTwist::OMinus Measurement type not supported.");
-    }
-
-
-}
+Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2);
 
 /**
  * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
@@ -71,38 +52,13 @@ Eigen::MatrixXd ToEuclidean(const Meas& m);
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
-    Meas m;
-    m.source_index = this->params_.source_index_;
-
-    Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
-    // Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(5);
-
- 
-
-    switch (this->params_.type_)
-    {
-    case MeasurementTypes::SEN_POSE:        
-        m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
-        m.type = MeasurementTypes::SEN_POSE;
-        break;
-    case MeasurementTypes::SEN_POSE_TWIST:
-        m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
-        m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
-        m.type = MeasurementTypes::SEN_POSE_TWIST;
-
-        break;
-    default:
-        throw std::runtime_error("SourceSENPoseTwist::GenerateRandomMeasurement Measurement type not supported.");
-        break;
-    }
-
-    return m;
-}
+Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std);
 
 };
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //-----------------------------------------------------------------
 
@@ -136,6 +92,30 @@ void SourceSENPoseTwist<S>::Init(const SourceParameters& params) {
 
 }
 
+//----------------------------------------------------------------------------------------
+template<class S>
+Meas SourceSENPoseTwist<S>::GetEstMeas(const S& state) {
+    Meas m;
+    m.pose = state.g_.data_;
+    m.twist = state.u_.data_;
+    return m;
+} 
+
+//----------------------------------------------------------------------------------------
+template<class S>
+Eigen::MatrixXd SourceSENPoseTwist<S>::OMinus(const Meas& m1, const Meas& m2) {
+
+    if (this->params_.type_ == MeasurementTypes::SEN_POSE) {
+        return S::g_type_::OMinus(m1.pose,m2.pose);
+    } else if (this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST){
+        Eigen::Matrix<double, S::g_type_::dim_*2,1> error;
+        error.block(0,0,S::g_type_::dim_,1) = S::g_type_::OMinus(m1.pose,m2.pose);
+        error.block(S::g_type_::dim_,0,S::g_type_::dim_,1) = m1.twist - m2.twist;
+        return error;
+    } else {
+        throw std::runtime_error("SourceSENPoseTwist::OMinus Measurement type not supported.");
+    }
+}
 
 //----------------------------------------------------------------------------------------
 template<class S>
@@ -149,6 +129,34 @@ Eigen::MatrixXd SourceSENPoseTwist<S>::ToEuclidean(const Meas& m)  {
 
 
     return pose_euclidean;
+}
+
+//----------------------------------------------------------------------------------------
+template<class S>
+Meas SourceSENPoseTwist<S>::GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
+    Meas m;
+    m.source_index = this->params_.source_index_;
+
+    Eigen::MatrixXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
+
+    switch (this->params_.type_)
+    {
+    case MeasurementTypes::SEN_POSE:        
+        m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
+        m.type = MeasurementTypes::SEN_POSE;
+        break;
+    case MeasurementTypes::SEN_POSE_TWIST:
+        m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
+        m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
+        m.type = MeasurementTypes::SEN_POSE_TWIST;
+
+        break;
+    default:
+        throw std::runtime_error("SourceSENPoseTwist::GenerateRandomMeasurement Measurement type not supported.");
+        break;
+    }
+
+    return m;
 }
 
 

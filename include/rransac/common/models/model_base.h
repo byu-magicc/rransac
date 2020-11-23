@@ -70,21 +70,13 @@ public:
      * @param[in] sources A reference to the sources contained in system
      * @param[in] params  The system parameters specified by the user
      */ 
-    void Init(std::vector<Source>& sources, const Parameters& params) {
-        sources_ = &sources;
-        err_cov_.setIdentity();
-        F_.setIdentity();
-        G_.setIdentity();
-        SetParameters(params);
-    }
+    void Init(std::vector<Source>& sources, const Parameters& params);
     
     /**
      * Sets the user defined parameters
      * @param[in] params  The system parameters specified by the user
      */ 
-    void SetParameters(const Parameters& params) {
-        Q_ = params.process_noise_covariance_;
-    }
+    void SetParameters(const Parameters& params) { Q_ = params.process_noise_covariance_; }
 
      /**
      * Propagates the state estimate forward or backwards in time according to the time interval dt
@@ -94,7 +86,6 @@ public:
      */ 
     static State PropagateState(const State& state, const double dt) {
         State tmp = state;
-        // lie_groups::SE2_se2 tmp;
         tmp.g_.OPlusEq(tmp.u_.data_*dt);
         return tmp;
     }
@@ -125,20 +116,7 @@ public:
      * Propagates the state estimate and error covariance to the current time.
      * @param[in] dt  The amount of time the model needs to be propagated.
      */ 
-    void PropagateModel(const double dt) {
-
-        // Construct matrices to transform covariance.
-        F_ = GetLinTransFuncMatState(state_,dt);
-        G_ = GetLinTransFuncMatNoise(state_,dt);
-
-
-        // Transform covariance
-        err_cov_ = F_*err_cov_*F_.transpose() + G_*Q_*G_.transpose();
-
-        // Propagate state
-        state_.g_.OPlusEq(state_.u_.data_*dt);
-
-    }
+    void PropagateModel(const double dt);
 
     /**
      * Uses the newly associated measurements to update the statMeas_dime estimate, error covariance, and consensus set using a 
@@ -210,9 +188,38 @@ Eigen::Matrix<double,Cov_DIM,1> GetStateUpdate(const Parameters& params);
 
 };
 
- //---------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived>
+void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::Init(std::vector<Source>& sources, const Parameters& params) {
+    sources_ = &sources;
+    err_cov_.setIdentity();
+    F_.setIdentity();
+    G_.setIdentity();
+    SetParameters(params);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
+void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::PropagateModel(const double dt) {
+
+    // Construct matrices to transform covariance.
+    F_ = GetLinTransFuncMatState(state_,dt);
+    G_ = GetLinTransFuncMatNoise(state_,dt);
 
 
+    // Transform covariance
+    err_cov_ = F_*err_cov_*F_.transpose() + G_*Q_*G_.transpose();
+
+    // Propagate state
+    state_.g_.OPlusEq(state_.u_.data_*dt);
+
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 
 template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
 Eigen::Matrix<double,Cov_DIM,1> ModelBase<State, Source, Transformation,Cov_DIM, Derived>::GetStateUpdate(const Parameters& params) {
