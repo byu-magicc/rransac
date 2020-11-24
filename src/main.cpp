@@ -7,66 +7,25 @@
 #include <unsupported/Eigen/MatrixFunctions>
 
 #include <chrono> 
-
-   
-// using namespace std;
+#include <boost/math/distributions/inverse_chi_squared.hpp>
+#include <boost/math/distributions/chi_squared.hpp>
+#include <boost/math/special_functions/gamma.hpp>
  
-// class IVectorParam
-// {
-// public:
-//     virtual ~IVectorParam() {}
-//     float y;
-// };
-
-// template <class T>
-// class CVectorParam : public IVectorParam
-// {
-//     public:
-//     std::vector<T> m_vect;
-//     ~CVectorParam()=default;
-// };
- 
-//  enum class Blah { A, B, C};
-
-//  template<Blah type>
-//  void test(){
-//      std::cout << "hi" << std::endl;
-//  }
-
-//  template<>
-//  void test<Blah::A>(){
-//      std::cout << "A" << std::endl;
-//  }
-
-using namespace rransac;
-
-enum Color {Red, Blue, Green};
-
-
-
-Meas Func1() {
-    Meas&& m = Meas();
-    m.pose = Eigen::Matrix2d::Identity();
-    m.twist = Eigen::Matrix2d::Identity();
-    return m;
-
-}
-
-Meas Func2() {
-    Meas m;
-    m.pose = Eigen::Matrix2d::Identity();
-    m.twist = Eigen::Matrix2d::Identity();
-    return m;
-
-}
-
 int main(){
 
-Eigen::Matrix4d tmp;
-tmp.setIdentity();
-tmp = tmp*0.1;
-std::cout << tmp.inverse() << std::endl << std::endl; 
-std::cout << tmp.sqrt() << std::endl << std::endl; 
+// // boost::math::inverse_chi_squared dist_inv(3,1);
+// // boost::math::chi_squared dist(3,1);
+// boost::math::chi_squared dist(2);
+// float test = boost::math::tgamma(1.0/2 +1);
+// std::cout << pow(M_PI, 1.0/2.0)/test << std::endl;
+
+// // std::cout << boost::math::quantile(dist,0.199) << std::endl;
+// std::cout << boost::math::quantile(dist, 0.9997) << std::endl;
+// // std::cout << boost::math::quantile(dist_inv, 0.198) << std::endl;
+Eigen::MatrixXd tmp;
+
+std::cout << tmp.rows() << std::endl;
+
 
 return 0;
  

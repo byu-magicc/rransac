@@ -6,32 +6,19 @@
 
 namespace rransac {
 
-template<class Derived, class S>
-class Base
-{
-public:
-    void Init(S& state){
-        // std::static_cast<Derived*>(this)->Init(params_);
-        static_cast<Derived*>(this)->Init(params_);
-    }
 
-    SourceParameters params_;
-};
-
-// class test : public
 
 // Dummy function needed to initialize SourceBase
-template <class S>
-class Dummy : public SourceBase<S,Dummy<S>> 
-// class Dummy : public Base<Dummy<S>,S> 
+template <class S, int Dims>
+class Dummy : public SourceBase<S,Dummy<S,Dims>> 
 {
 public:
 
     typedef S state_type_;
+    static constexpr unsigned int dim = Dims;
 
     /** Initializes the measurement source. This function must set the parameters.  */
     void Init(const SourceParameters& params) {
-        this->params_ = params;
         this->H_ = Eigen::Matrix2d::Identity();
         this->V_ = Eigen::Matrix2d::Identity();
     }
@@ -57,6 +44,33 @@ public:
 
 };
 
+typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,1>> DummySource1;
+typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,2>> DummySource2;
+typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,3>> DummySource3;
+
+
+///////////////////////////////////////////////////////////////////////
+//                             All functions execpt spatial test
+///////////////////////////////////////////////////////////////////////
+TEST(SOURCE_BASE, InitFunction) {
+
+SourceParameters source_params_;
+DummySource2 source;
+
+// Valid source parameters
+source_params_.meas_cov_fixed_ = true;
+source_params_.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params_.expected_num_false_meas_ = 0.1;
+source_params_.type_ = MeasurementTypes::RN_POS;
+source_params_.gate_probability_ = 0.8;
+source_params_.probability_of_detection_ = 0.9;
+
+ASSERT_NO_THROW(source.Init(source_params_));
+
+}
+
+      
+
 ///////////////////////////////////////////////////////////////////////
 //                             All functions execpt spatial test
 ///////////////////////////////////////////////////////////////////////
@@ -69,9 +83,10 @@ TEST(SOURCE_BASE, TemporalDistance) {
 /* initialize random seed: */
 srand (time(NULL));
 SourceParameters source_params_;
+source_params_.gate_probability_ = 0.95;
 Parameters params_;
 source_params_.type_ = MeasurementTypes::RN_POS;
-Dummy<lie_groups::R2_r2> source;
+DummySource2 source;
 
 lie_groups::R2_r2 state;
 state.g_.data_.setRandom();
@@ -144,7 +159,7 @@ Parameters params_;
 constexpr unsigned int max_iter = 20;
 for (unsigned int i; i <max_iter; ++i) {
 
-Dummy<lie_groups::R2_r2> source1;
+DummySource2 source1;
 Meas m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
 m_R2_Pos_1.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_2.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
@@ -182,7 +197,7 @@ Parameters params_;
 constexpr unsigned int max_iter = 20;
 for (unsigned int i; i <max_iter; ++i) {
 
-Dummy<lie_groups::R2_r2> source1;
+DummySource2 source1;
 Meas m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
 m_R2_Pos_1.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_2.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
@@ -218,8 +233,8 @@ TEST(SOURCE_BASE, SpatialDistance_SEN_POSE) {
 srand (time(NULL));
 Parameters params_;
 
-// R2
-Dummy<lie_groups::SE2_se2> source1;
+// se2
+SourceBase<lie_groups::SE2_se2, Dummy<lie_groups::SE2_se2,2>> source1;
 Meas m_SE2_Pose_1, m_SE2_Pose_2, m_SE2_Pose_Twist_1, m_SE2_Pose_Twist_2;
 m_SE2_Pose_1.pose  = lie_groups::se2::Exp(Eigen::Matrix<double,3,1>::Random());
 m_SE2_Pose_2.pose  = lie_groups::se2::Exp(Eigen::Matrix<double,3,1>::Random());
@@ -240,7 +255,7 @@ ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_Twis
 ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_1,params_),           (lie_groups::SE2::OMinus(m_SE2_Pose_Twist_1.pose,m_SE2_Pose_1.pose)).norm());
 
 // R3
-Dummy<lie_groups::SE3_se3> source2;
+SourceBase<lie_groups::SE3_se3,Dummy<lie_groups::SE3_se3,2>> source2;
 Meas m_SE3_Pose_1, m_SE3_Pose_2, m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2;
 m_SE3_Pose_1.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());
 m_SE3_Pose_2.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());

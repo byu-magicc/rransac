@@ -62,8 +62,9 @@ Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std);
 
 
 
-//--------------------------------------------------------------
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<class S>
 void SourceRN<S>::Init(const SourceParameters& params) {
 
@@ -77,7 +78,7 @@ void SourceRN<S>::Init(const SourceParameters& params) {
     }
 
     // Construct the Jacobians
-    switch (params.type_)
+    switch (this->params_.type_)
     {
     case MeasurementTypes::RN_POS:
         this->H_ = Eigen::Matrix<double,sizeg,sizeg+sizeu>::Zero();
@@ -92,13 +93,10 @@ void SourceRN<S>::Init(const SourceParameters& params) {
         throw std::runtime_error("SourceRN::Init Measurement type not supported.");
         break;
     }
-    this->params_ = params;
+    
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                                            Definitions
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+//---------------------------------------------------------------------------
 
 template<class S>
 Meas SourceRN<S>::GetEstMeas(const S& state) {

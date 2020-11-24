@@ -76,7 +76,7 @@ void SourceSENPosVel<S>::Init(const SourceParameters& params) {
     }
 
     // Verify measurement type
-    switch (params.type_)
+    switch (this->params_.type_)
     {
     case MeasurementTypes::SEN_POS:
         this->V_ = Eigen::Matrix<double,S::g_type_::dim_pos_,S::g_type_::dim_pos_>::Identity();
@@ -91,9 +91,6 @@ void SourceSENPosVel<S>::Init(const SourceParameters& params) {
         throw std::runtime_error("SourceSENPosVel::Init Measurement type not supported.");
         break;
     }
-
-    this->params_ = params;
-
 }
 
 //-----------------------------------------------------------------

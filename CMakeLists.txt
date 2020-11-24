@@ -8,12 +8,14 @@ set(CMAKE_CXX_STANDARD 11)
 
 
 find_package(Eigen3)
+find_package(Boost)
 
 # message(STATUS "${EIGEN3_INCLUDE_DIR}")
 # message(STATUS "here")
 
 include_directories(
     ${EIGEN3_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIRS}
     include/rransac
     lie_groups/liegroups/include
     include
@@ -46,6 +48,7 @@ lie_groups/liegroups/src/lie_groups/SE3.cpp
 #############
 
 # add_executable(main src/main.cpp)
+# ${Boost_LIBRARIES})
 # src/common/sources/source_base.cpp)
 
 

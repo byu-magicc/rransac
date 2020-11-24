@@ -270,7 +270,7 @@ for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
 ASSERT_LE(  ((this->track.err_cov_ + this->track.err_cov_.transpose())/2.0 - this->track.err_cov_ ).norm(), 1e-12); // symmetric
 Eigen::VectorXcd eigen_values = this->track.err_cov_.eigenvalues();
 for (int ii =0; ii < eigen_values.rows(); ++ii){                       // positive definite
-    ASSERT_GT( std::abs(eigen_values(ii)), 0);
+    ASSERT_GT( std::real(eigen_values(ii)), 0);
 }
 
 if (TypeParam::MeasType1 == MeasurementTypes::SEN_POS|| TypeParam::MeasType1 == MeasurementTypes::SEN_POS_VEL) {

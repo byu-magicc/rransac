@@ -8,24 +8,12 @@
 #include "parameters.h"
 #include <typeinfo>
 #include <random>
+#include <boost/math/distributions/chi_squared.hpp>
+#include <boost/math/special_functions/gamma.hpp>
 
 
 namespace rransac
 {
-
-
-
-// /** \enum SourceTypes
-//  * Indicates the source types that are implemented. The nomenclature of the source type 
-//  * indicates the manifold the target moves on, and the type of measurement.
-//  * @see MeasurementTypes
-//  */ 
-// enum class SourceTypes {
-//     R2_R2_POSE,            // The target moves on R2 and the measurement type is MeasurementTypes::R2_POSE
-//     R2_R2_POSE_TWIST,      // The target moves on R2 and the measurement type is MeasurementTypes::R2_POSE_TWIST
-//     SE2_R2_POS,
-// }
-
 
 
 /** \class SourceParameters
@@ -44,12 +32,17 @@ struct SourceParameters {
     float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a source during
                                       a single scan. This value must be between 0 and 1.*/
 
+    float gate_probability_;         /**< The probability that a true measurement will be inside the validation region of a track. This value must
+                                          be between 0 and 1. */
+
     
     unsigned int source_index_;  /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
 
+    // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
 
-    // SourceParameters(MeasurementTypes type) : type_(type) {}
-    SourceParameters()=default;
+    double gate_threshold_;              /**< The gate threshold of the validation region */
+    double gate_threshold_sqrt_;         /**< The square root of the gate threshold */    
+    double vol_unit_hypershpere_;        /**< The Volume of the unit hypershpere */
 
 };
 
@@ -86,14 +79,10 @@ public:
         params_ = other.params_;
         H_ = other.H_;
         V_ = other.V_;
-        // std::cerr << "here" << std::endl;
-        // SourceBase();
     }
 
     /** Initializes the measurement source. This function must set the parameters.  */
-    void Init(const SourceParameters& params) {
-        static_cast<Derived*>(this)->Init(params);
-    }       
+    void Init(const SourceParameters& params);     
 
     /** Returns the jacobian of the observation function w.r.t. the states */
     Eigen::MatrixXd GetLinObsMatState(const S& state){
@@ -177,6 +166,13 @@ public:
     ~SourceBase();
     friend Derived;
 
+private:
+
+    /**
+     * Ensure that the source parameters meet the specified criteria. If a parameter doesn't, and error will be thrown.
+     * @param params The source parameters needed to initialize the source. 
+     */ 
+    void VerifySourceParameters(const SourceParameters& params);
 
     typedef double (*GSDFuncPTR)(const Meas&, const Meas&, const Parameters&);
 
@@ -194,10 +190,24 @@ public:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template< class S, class Derived>
+void SourceBase<S,Derived>::Init(const SourceParameters& params) {
+
+    VerifySourceParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown.
+
+    boost::math::chi_squared dist(meas_dim);
+    this->params_ = params;
+    this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+    this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
+    this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim)/2.0)/boost::math::tgamma(static_cast<double>(meas_dim)/2.0 +1.0);
+
+    static_cast<Derived*>(this)->Init(params_);
+}   
+
+//-------------------------------------------------------------------------------
 
 template< class S, class Derived>
 Eigen::MatrixXd  SourceBase<S,Derived>::GaussianRandomGenerator(const int size){
-
 
     std::normal_distribution<double> dist_(0,1);
     Eigen::MatrixXd randn_nums(size,1);
@@ -206,7 +216,6 @@ Eigen::MatrixXd  SourceBase<S,Derived>::GaussianRandomGenerator(const int size){
     }
 
     return randn_nums;
-
 }
 
 //-------------------------------------------------------------------------------
@@ -258,6 +267,71 @@ SourceBase<S, Derived>::~SourceBase() {
     delete [] gsd_ptr_;
 
 }
+
+//---------------------------------------------------
+
+template< class S, class Derived>
+void SourceBase<S, Derived>::VerifySourceParameters(const SourceParameters& params) {
+
+    // Measurement covariance
+    if (params.meas_cov_fixed_) { // Make sure that the measurement covariance is set properly.
+
+        if (params.meas_cov_.rows() ==0 ) { // Make sure that it is not empty
+            throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance cannot be empty if the measurement covariance is fixed.");
+        } 
+
+        if (  ((params.meas_cov_ + params.meas_cov_.transpose())/2.0 - params.meas_cov_).norm() > 1e-12 ) {
+            throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not symmetic. ");
+        }
+
+        Eigen::VectorXcd eigen_values = params.meas_cov_.eigenvalues();
+        for (int ii =0; ii < eigen_values.rows(); ++ii){                       // positive definite
+            if(std::real(eigen_values(ii)) <0) {
+                throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not positive definite. ");
+            }
+        }
+
+    }
+
+    // Expected number of false measurements
+    if (params.expected_num_false_meas_ < 0 || params.expected_num_false_meas_ > 1) {
+        throw std::runtime_error("SourceBase::VerifySourceParameters: The expected number of false measurements must be between 0 and 1. ");
+    }
+
+    // Verify the number of measurement types
+    switch (params.type_)
+    {
+    case MeasurementTypes::RN_POS:
+        break;    
+    case MeasurementTypes::RN_POS_VEL:
+        break;  
+    case MeasurementTypes::SEN_POS:
+        break;   
+    case MeasurementTypes::SEN_POS_VEL:
+        break;  
+    case MeasurementTypes::SEN_POSE:
+        break;  
+    case MeasurementTypes::SEN_POSE_TWIST:
+        break;  
+    default:
+        throw std::runtime_error("SourceBase::VerifySourceParameters: The measurement type is not known. ");
+        break;
+    }
+
+    // Verify the probability of detection 
+    if (params.probability_of_detection_ < 0 || params.probability_of_detection_ > 1) {
+        throw std::runtime_error("SourceBase::VerifySourceParameters: probability_of_detection_ must be between 0 and 1. ");
+    }
+
+    // Verify the gate probability
+    if (params.gate_probability_ < 0 || params.gate_probability_ > 1) {
+        throw std::runtime_error("SourceBase::VerifySourceParameters: gate_probability_ must be between 0 and 1. ");
+    }
+
+}
+
+
+
 
 
 } // namespace rransac

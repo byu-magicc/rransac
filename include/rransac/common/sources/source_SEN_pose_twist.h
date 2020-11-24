@@ -72,7 +72,7 @@ void SourceSENPoseTwist<S>::Init(const SourceParameters& params) {
     }
 
     // Verify measurement type
-    switch (params.type_)
+    switch (this->params_.type_)
     {
     case MeasurementTypes::SEN_POSE:
         this->V_ = Eigen::Matrix<double,S::g_type_::dim_,S::g_type_::dim_>::Identity();
@@ -87,8 +87,6 @@ void SourceSENPoseTwist<S>::Init(const SourceParameters& params) {
         throw std::runtime_error("SourceSENPoseTwist::Init Measurement type not supported.");
         break;
     }
-
-    this->params_ = params;
 
 }
 
