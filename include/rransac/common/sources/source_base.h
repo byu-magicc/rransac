@@ -39,7 +39,7 @@ struct SourceParameters {
     unsigned int source_index_;  /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
 
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
-
+    bool has_twist;                      /**< Indicates if the measurement has velocity data in addition to position */
     double gate_threshold_;              /**< The gate threshold of the validation region */
     double gate_threshold_sqrt_;         /**< The square root of the gate threshold */    
     double vol_unit_hypershpere_;        /**< The Volume of the unit hypershpere */
@@ -195,11 +195,22 @@ void SourceBase<S,Derived>::Init(const SourceParameters& params) {
 
     VerifySourceParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown.
 
-    boost::math::chi_squared dist(meas_dim);
+    
     this->params_ = params;
-    this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+    if(this->params_.type_ == MeasurementTypes::RN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST) {
+        this->params_.has_twist = true;
+        boost::math::chi_squared dist(meas_dim*2);
+        this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim))/boost::math::tgamma(static_cast<double>(meas_dim) +1.0);
+    } else {
+        this->params_.has_twist = false;
+        boost::math::chi_squared dist(meas_dim);
+        this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim)/2.0)/boost::math::tgamma(static_cast<double>(meas_dim)/2.0 +1.0);
+    }
+    
     this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
-    this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim)/2.0)/boost::math::tgamma(static_cast<double>(meas_dim)/2.0 +1.0);
+    
 
     static_cast<Derived*>(this)->Init(params_);
 }   

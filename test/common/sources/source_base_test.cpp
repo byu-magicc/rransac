@@ -54,18 +54,81 @@ typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,3>> DummySource3;
 ///////////////////////////////////////////////////////////////////////
 TEST(SOURCE_BASE, InitFunction) {
 
-SourceParameters source_params_;
+SourceParameters source_params;
 DummySource2 source;
 
-// Valid source parameters
-source_params_.meas_cov_fixed_ = true;
-source_params_.meas_cov_ = Eigen::Matrix2d::Identity();
-source_params_.expected_num_false_meas_ = 0.1;
-source_params_.type_ = MeasurementTypes::RN_POS;
-source_params_.gate_probability_ = 0.8;
-source_params_.probability_of_detection_ = 0.9;
 
-ASSERT_NO_THROW(source.Init(source_params_));
+
+//
+// Invalid source parameters
+//
+
+// Empty measurement covariance 
+source_params.meas_cov_fixed_ = true;
+source_params.expected_num_false_meas_ = 0.1;
+source_params.type_ = MeasurementTypes::RN_POS;
+source_params.gate_probability_ = 0.8;
+source_params.probability_of_detection_ = 0.9;
+ASSERT_ANY_THROW(source.Init(source_params));
+
+// not symmetric measurement covariance
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params.meas_cov_ << 0, 1, 2, 0;
+ASSERT_ANY_THROW(source.Init(source_params));
+
+// not positive definite measurement covariance
+source_params.meas_cov_ << -1, 0, 0, -1;
+ASSERT_ANY_THROW(source.Init(source_params));
+
+// Invalid expected number of false measurements
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params.expected_num_false_meas_ = -0.1;
+ASSERT_ANY_THROW(source.Init(source_params));
+source_params.expected_num_false_meas_ = 1.1;
+ASSERT_ANY_THROW(source.Init(source_params));
+source_params.expected_num_false_meas_ = 0.9;
+
+// Invalid measurement type
+source_params.type_ = MeasurementTypes::NUM_TYPES;
+ASSERT_ANY_THROW(source.Init(source_params));
+source_params.type_ = MeasurementTypes::RN_POS_VEL;
+
+// Invalid gate_probability_
+source_params.gate_probability_ = -0.1;
+ASSERT_ANY_THROW(source.Init(source_params));
+source_params.gate_probability_ = 1.1;
+ASSERT_ANY_THROW(source.Init(source_params));
+source_params.gate_probability_ = 0.8;
+
+// Invalid probability of detection
+source_params.probability_of_detection_ = -0.1;
+ASSERT_ANY_THROW(source.Init(source_params));
+source_params.probability_of_detection_ = 1.1;
+ASSERT_ANY_THROW(source.Init(source_params));
+source_params.probability_of_detection_ = 0.9;
+
+
+// Valid source parameters
+source_params.meas_cov_fixed_ = true;
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params.expected_num_false_meas_ = 0.1;
+source_params.type_ = MeasurementTypes::RN_POS;
+source_params.gate_probability_ = 0.393469340287367;
+source_params.probability_of_detection_ = 0.9;
+
+ASSERT_NO_THROW(source.Init(source_params));
+
+// Check the gate threshold and unit hyptersphere.
+ASSERT_LE( fabs(1- source.params_.gate_threshold_), 1e-6);
+ASSERT_LE( fabs(1- source.params_.gate_threshold_sqrt_), 1e-4);
+ASSERT_LE( fabs(M_PI- source.params_.vol_unit_hypershpere_  ), 1e-6);
+
+source_params.type_ = MeasurementTypes::RN_POS_VEL;
+source_params.gate_probability_ = 0.593994150290162;
+ASSERT_NO_THROW(source.Init(source_params));
+ASSERT_LE( fabs(4- source.params_.gate_threshold_), 1e-3);
+ASSERT_LE( fabs(2- source.params_.gate_threshold_sqrt_), 1e-3);
+ASSERT_LE( fabs(4.934802200544679- source.params_.vol_unit_hypershpere_  ), 1e-3);
 
 }
 
@@ -83,9 +146,14 @@ TEST(SOURCE_BASE, TemporalDistance) {
 /* initialize random seed: */
 srand (time(NULL));
 SourceParameters source_params_;
-source_params_.gate_probability_ = 0.95;
-Parameters params_;
+
+source_params_.meas_cov_fixed_ = true;
+source_params_.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params_.expected_num_false_meas_ = 0.1;
 source_params_.type_ = MeasurementTypes::RN_POS;
+source_params_.gate_probability_ = 0.8;
+source_params_.probability_of_detection_ = 0.9;
+Parameters params_;
 DummySource2 source;
 
 lie_groups::R2_r2 state;
