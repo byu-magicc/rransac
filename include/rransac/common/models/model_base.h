@@ -18,6 +18,15 @@
 namespace rransac {
 
 
+struct ModelLikelihoodUpdateInfo{
+
+bool in_local_surveillance_region;        /** < Indicates if the track is in the local surveillance region of the source */
+int num_assoc_meas;                       /** < Indicates the number of measurements associated to the track from the source */
+unsigned int source_index;                /** < The source index */
+double volume;                            /** < The volume of the validation region */
+
+};
+
 /**
  * \class ModelBase
  * R-RANSAC is designed to be modular and work with a variety of models. However, this 
@@ -56,6 +65,8 @@ public:
     Mat Q_;                           /** < Process noise covariance */
 
     std::vector<Source>* sources_;    /** < Reference to the sources contained in system */
+
+    std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info_; /**< Contains the information needed to update the model_likelihood */
 
     // Useful matrices for propagating
     Mat F_;                           /** < The Jacobian of the state transition function w.r.t. the states */
@@ -171,6 +182,11 @@ public:
     }
 
     /**
+     * Update the model likelihood using the model_likelihood_update_info_
+     */
+    void UpdateModelLikelihood(); 
+
+    /**
      * Returns a Random State
      */ 
     static State GetRandomState(){
@@ -199,6 +215,8 @@ void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::Init(std::vector
     F_.setIdentity();
     G_.setIdentity();
     SetParameters(params);
+    model_likelihood_ = 0;
+    model_likelihood_update_info_.resize(sources_->size());
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -336,57 +354,65 @@ state_update = H.transpose()*S_inverse*nu;
 
 }
 
-
 //---------------------------------------------------------------------------------------------------------
+
 template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
 void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::GetInnovationAndCovarianceNonFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,cov_dim_,1>& state_update, Mat& cov_update) {
 
-state_update.setZero();
-cov_update = err_cov_;
+    state_update.setZero();
+    cov_update = err_cov_;
 
 
-std::vector<Eigen::MatrixXd> nu_i(meas.size());                                  // Innovation term for each measurement
-Eigen::MatrixXd H = GetLinObsMatState(state_,meas.front().source_index);         // Jacobian of observation function w.r.t. state
-Eigen::MatrixXd V = GetLinObsMatSensorNoise(state_,meas.front().source_index);   // Jacobian of observation function w.r.t. noise
-Eigen::MatrixXd K;                                                               // Kalman Gain
-Eigen::MatrixXd S_inverse;                                                       // Innovation covariance inverse
-Eigen::MatrixXd nu(err_cov_.rows(),1);                                         // Total innovation term
-nu.setZero();
-Meas estimated_meas = (*sources_)[meas.front().source_index].GetEstMeas(state_);
+    std::vector<Eigen::MatrixXd> nu_i(meas.size());                                  // Innovation term for each measurement
+    Eigen::MatrixXd H = GetLinObsMatState(state_,meas.front().source_index);         // Jacobian of observation function w.r.t. state
+    Eigen::MatrixXd V = GetLinObsMatSensorNoise(state_,meas.front().source_index);   // Jacobian of observation function w.r.t. noise
+    Eigen::MatrixXd K;                                                               // Kalman Gain
+    Eigen::MatrixXd S_inverse;                                                       // Innovation covariance inverse
+    Eigen::MatrixXd nu(err_cov_.rows(),1);                                         // Total innovation term
+    nu.setZero();
+    Meas estimated_meas = (*sources_)[meas.front().source_index].GetEstMeas(state_);
 
-// std::cerr << "err_cov_: " << std::endl << err_cov_ << std::endl << std::endl;
-// std::cerr << "H: " << std::endl << H << std::endl << std::endl;
-
-
-// Helper calculations
-Eigen::MatrixXd H_cov_HT = H*err_cov_*H.transpose();
-Eigen::MatrixXd cov_HT = err_cov_*H.transpose();
-
-// Get individual innovations and weighted total innovations
-for (unsigned long int ii=0; ii< meas.size(); ++ii) {
-    nu_i[ii] = (*sources_)[meas[ii].source_index].OMinus(meas[ii], estimated_meas);
-    
-
-}
-
-// Construct covariance update and state update
-for (unsigned long int ii=0; ii< meas.size(); ++ii) {
-    
-    S_inverse = (H_cov_HT + V*meas[ii].meas_cov*V.transpose()).inverse();
-    K = cov_HT*S_inverse;
-    nu += meas[ii].weight*K*nu_i[ii];
-    cov_update += meas[ii].weight*(K*nu_i[ii]*nu_i[ii].transpose() - cov_HT)*K.transpose();
-
-    state_update += meas[ii].weight*H.transpose()*S_inverse*nu_i[ii];
-}
-
-cov_update -= nu*nu.transpose();
+    // std::cerr << "err_cov_: " << std::endl << err_cov_ << std::endl << std::endl;
+    // std::cerr << "H: " << std::endl << H << std::endl << std::endl;
 
 
+    // Helper calculations
+    Eigen::MatrixXd H_cov_HT = H*err_cov_*H.transpose();
+    Eigen::MatrixXd cov_HT = err_cov_*H.transpose();
+
+    // Get individual innovations and weighted total innovations
+    for (unsigned long int ii=0; ii< meas.size(); ++ii) {
+        nu_i[ii] = (*sources_)[meas[ii].source_index].OMinus(meas[ii], estimated_meas);
+        
+
+    }
+
+    // Construct covariance update and state update
+    for (unsigned long int ii=0; ii< meas.size(); ++ii) {
+        
+        S_inverse = (H_cov_HT + V*meas[ii].meas_cov*V.transpose()).inverse();
+        K = cov_HT*S_inverse;
+        nu += meas[ii].weight*K*nu_i[ii];
+        cov_update += meas[ii].weight*(K*nu_i[ii]*nu_i[ii].transpose() - cov_HT)*K.transpose();
+
+        state_update += meas[ii].weight*H.transpose()*S_inverse*nu_i[ii];
+    }
+
+    cov_update -= nu*nu.transpose();
 
 }
+
+//---------------------------------------------------------------------------------------------------------
+
+template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
+void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::UpdateModelLikelihood() {
+    for (auto& update_info : model_likelihood_update_info_) {
+        if( update_info.in_local_surveillance_region) {
+            typename Source& source = *(sources_)[update_info.source_index];
+            model_likelihood_ += 1 + source.probability_of_detection_*source.gate_probability_*( update_info.num_assoc_meas/(source.expected_num_false_meas_*update_info.volume)-1)
+        }
+    }
+} 
 
 
 } // namespace rransac
-
-#endif // RRANSAC_COMMON_MODEL_BASE_H_

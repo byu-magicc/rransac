@@ -1,21 +1,32 @@
 #include <gtest/gtest.h>
-#include "common/sources/source_base.h"
+#include <functional>
 #include <stdlib.h>     /* srand, rand */
-#include "memory.h"
 
+#include "memory.h"
+#include "common/sources/source_base.h"
 
 namespace rransac {
 
+template <typename State>
+struct CallbackClass {
 
+bool func(const State& state) {
+    if (state.g_.data_.norm() < 5)
+        return true;
+    else 
+        return false;
+}
+
+};
 
 // Dummy function needed to initialize SourceBase
-template <class S, int Dims>
-class Dummy : public SourceBase<S,Dummy<S,Dims>> 
+template <class tState, int tDims>
+class Dummy : public SourceBase<tState, Dummy<tState,tDims>> 
 {
 public:
 
-    typedef S state_type_;
-    static constexpr unsigned int dim = Dims;
+    using State = tState;
+    static constexpr unsigned int meas_dim_ = tDims;
 
     /** Initializes the measurement source. This function must set the parameters.  */
     void Init(const SourceParameters& params) {
@@ -25,17 +36,17 @@ public:
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd GetLinObsMatState(const S& state){
+    Eigen::MatrixXd GetLinObsMatState(const tState& state){
         return this->H_;
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){
+    Eigen::MatrixXd GetLinObsMatSensorNoise(const tState& state){
         return this->V_;
     }                         
 
     /** Computes the estimated measurement given a state */
-    Meas GetEstMeas(const S& state){
+    Meas GetEstMeas(const tState& state){
         Meas&& tmp = Meas();
         tmp.pose = state.g_.data_;
         return tmp;
@@ -46,7 +57,7 @@ public:
 
 typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,1>> DummySource1;
 typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,2>> DummySource2;
-typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,3>> DummySource3;
+typedef SourceBase<lie_groups::R3_r3, Dummy<lie_groups::R3_r3,3>> DummySource3;
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -56,7 +67,7 @@ TEST(SOURCE_BASE, InitFunction) {
 
 SourceParameters source_params;
 DummySource2 source;
-
+CallbackClass<lie_groups::R2_r2> call;
 
 
 //
@@ -69,43 +80,44 @@ source_params.expected_num_false_meas_ = 0.1;
 source_params.type_ = MeasurementTypes::RN_POS;
 source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.9;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 
 // not symmetric measurement covariance
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.meas_cov_ << 0, 1, 2, 0;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 
 // not positive definite measurement covariance
 source_params.meas_cov_ << -1, 0, 0, -1;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 
 // Invalid expected number of false measurements
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.expected_num_false_meas_ = -0.1;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.expected_num_false_meas_ = 1.1;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.expected_num_false_meas_ = 0.9;
 
 // Invalid measurement type
 source_params.type_ = MeasurementTypes::NUM_TYPES;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.type_ = MeasurementTypes::RN_POS_VEL;
 
 // Invalid gate_probability_
 source_params.gate_probability_ = -0.1;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.gate_probability_ = 1.1;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.gate_probability_ = 0.8;
 
 // Invalid probability of detection
 source_params.probability_of_detection_ = -0.1;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.probability_of_detection_ = 1.1;
-ASSERT_ANY_THROW(source.Init(source_params));
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.probability_of_detection_ = 0.9;
+
 
 
 // Valid source parameters
@@ -116,7 +128,7 @@ source_params.type_ = MeasurementTypes::RN_POS;
 source_params.gate_probability_ = 0.393469340287367;
 source_params.probability_of_detection_ = 0.9;
 
-ASSERT_NO_THROW(source.Init(source_params));
+ASSERT_NO_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 
 // Check the gate threshold and unit hyptersphere.
 ASSERT_LE( fabs(1- source.params_.gate_threshold_), 1e-6);
@@ -125,10 +137,24 @@ ASSERT_LE( fabs(M_PI- source.params_.vol_unit_hypershpere_  ), 1e-6);
 
 source_params.type_ = MeasurementTypes::RN_POS_VEL;
 source_params.gate_probability_ = 0.593994150290162;
-ASSERT_NO_THROW(source.Init(source_params));
+ASSERT_NO_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 ASSERT_LE( fabs(4- source.params_.gate_threshold_), 1e-3);
 ASSERT_LE( fabs(2- source.params_.gate_threshold_sqrt_), 1e-3);
 ASSERT_LE( fabs(4.934802200544679- source.params_.vol_unit_hypershpere_  ), 1e-3);
+
+// State is within surveillance region.
+lie_groups::R2_r2 state;
+state.g_.data_ << 1,1;
+ASSERT_TRUE(source.StateInsideSurveillanceRegion(state));
+
+// State outside of surveillance region
+state.g_.data_ << 5,5;
+ASSERT_FALSE(source.StateInsideSurveillanceRegion(state));
+
+// Test default StateInsideSurveillanceRegionDefaultCallback
+source.Init(source_params);
+ASSERT_TRUE(source.StateInsideSurveillanceRegion(state));
+
 
 }
 
@@ -323,7 +349,7 @@ ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_Twis
 ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_1,params_),           (lie_groups::SE2::OMinus(m_SE2_Pose_Twist_1.pose,m_SE2_Pose_1.pose)).norm());
 
 // R3
-SourceBase<lie_groups::SE3_se3,Dummy<lie_groups::SE3_se3,2>> source2;
+SourceBase<lie_groups::SE3_se3, Dummy<lie_groups::SE3_se3,2>> source2;
 Meas m_SE3_Pose_1, m_SE3_Pose_2, m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2;
 m_SE3_Pose_1.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());
 m_SE3_Pose_2.pose  = lie_groups::se3::Exp(Eigen::Matrix<double,6,1>::Random());

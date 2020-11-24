@@ -2,14 +2,17 @@
 #define RRANSAC_COMMON_SOURCES_SOURCE_BASE_H_
 
 #include <Eigen/Core>
-#include "state.h"
 #include <cmath>
-#include "common/measurement/measurement_base.h"
-#include "parameters.h"
 #include <typeinfo>
 #include <random>
 #include <boost/math/distributions/chi_squared.hpp>
 #include <boost/math/special_functions/gamma.hpp>
+#include <functional>
+
+
+#include "parameters.h"
+#include "common/measurement/measurement_base.h"
+#include "state.h"
 
 
 namespace rransac
@@ -64,14 +67,15 @@ struct SourceParameters {
  */ 
 
 
-template<class S, typename Derived>
+template<typename tState, typename tDerived>
 class SourceBase
 {
 
 public:
 
-    typedef S state_type_;
-    static constexpr unsigned int meas_dim = Derived::dim;
+    typedef tState State;
+    static constexpr unsigned int meas_dim_ = tDerived::meas_dim_;               /**< The Dimension of the measurement */
+    std::function<bool(const State&)> state_in_surveillance_region_callback_;
 
     SourceParameters params_;  /** < The source parameters @see SourceParameters */
 
@@ -82,23 +86,27 @@ public:
     }
 
     /** Initializes the measurement source. This function must set the parameters.  */
+    void Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback); 
+
+    /** Initializes the measurement source. This function must set the parameters.  */
     void Init(const SourceParameters& params);     
 
+
     /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd GetLinObsMatState(const S& state){
+    Eigen::MatrixXd GetLinObsMatState(const State& state){
        
         // std::cout << typeid(M).name() << std::endl;
-        return static_cast<Derived*>(this)->GetLinObsMatState(state);
+        return static_cast<tDerived*>(this)->GetLinObsMatState(state);
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){
-        return static_cast<Derived*>(this)->GetLinObsMatSensorNoise(state);
+    Eigen::MatrixXd GetLinObsMatSensorNoise(const State& state){
+        return static_cast<tDerived*>(this)->GetLinObsMatSensorNoise(state);
     }                         
 
     /** Computes the estimated measurement given a state */
-    Meas GetEstMeas(const S& state){
-        return static_cast<Derived*>(this)->GetEstMeas(state);
+    Meas GetEstMeas(const State& state){
+        return static_cast<tDerived*>(this)->GetEstMeas(state);
     } 
 
     /**
@@ -107,7 +115,7 @@ public:
      * @param m2 a measurement
      */
     Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
-        return static_cast<Derived*>(this)->OMinus(m1, m2);
+        return static_cast<tDerived*>(this)->OMinus(m1, m2);
     } 
 
     /**
@@ -116,7 +124,7 @@ public:
      * @param Meas The measurement whose pose needs to be transformed
      */
     Eigen::MatrixXd ToEuclidean(const Meas& m)  {
-        return static_cast<Derived*>(this)->ToEuclidean(m); 
+        return static_cast<tDerived*>(this)->ToEuclidean(m); 
     }
 
    /**
@@ -124,8 +132,8 @@ public:
      * @param state The state that serves as the mean in the Gaussian distribution
      * @param meas_std The measurement covariance
      */ 
-    Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
-        return static_cast<Derived*>(this)->GenerateRandomMeasurement(state,meas_std);
+    Meas GenerateRandomMeasurement(const State& state, const Eigen::MatrixXd& meas_std){
+        return static_cast<tDerived*>(this)->GenerateRandomMeasurement(state,meas_std);
     }
 
    /**
@@ -133,6 +141,20 @@ public:
      * @param randn_nums The Gaussian random numbers to be generated
      */ 
     Eigen::MatrixXd GaussianRandomGenerator(const int size);
+
+    /**
+     * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
+     */
+    bool StateInsideSurveillanceRegion(const State& state) {
+        return state_in_surveillance_region_callback_(state);
+    }
+
+    /**
+     * The Default callback function used with StateInsideSurveillanceRegion. It always returns true.  
+     */
+    static bool StateInsideSurveillanceRegionDefaultCallback(const State& state) {
+        return true;
+    }
 
     /**
      * Calculates the temporal distance between two measurements.
@@ -164,7 +186,7 @@ public:
 // private:
      SourceBase();
     ~SourceBase();
-    friend Derived;
+    friend tDerived;
 
 private:
 
@@ -179,7 +201,7 @@ private:
     GSDFuncPTR **gsd_ptr_;
 
     static double GSD_RN_RN_POS(const Meas& meas1, const Meas& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
-    static double GSD_SEN_SEN_POSE(const Meas& meas1, const Meas& meas2, const Parameters& params){return (S::g_type_::OMinus(meas1.pose,meas2.pose)).norm(); }
+    static double GSD_SEN_SEN_POSE(const Meas& meas1, const Meas& meas2, const Parameters& params){return (State::g_type_::OMinus(meas1.pose,meas2.pose)).norm(); }
     static double GSD_SEN_SEN_POS(const Meas& meas1, const Meas& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
     static double GSD_NotImplemented(const Meas& meas1, const Meas& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
 
@@ -190,35 +212,43 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template< class S, class Derived>
-void SourceBase<S,Derived>::Init(const SourceParameters& params) {
+template<typename tState, typename tDerived>
+void SourceBase<tState,tDerived>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
+    this->Init(params);
+    this->state_in_surveillance_region_callback_ = state_in_surveillance_region_callback;
+}
+
+//-------------------------------------------------------------------------------
+
+template<typename tState, typename tDerived>
+void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
 
     VerifySourceParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown.
-
+    this->state_in_surveillance_region_callback_ = StateInsideSurveillanceRegionDefaultCallback;
     
     this->params_ = params;
     if(this->params_.type_ == MeasurementTypes::RN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST) {
         this->params_.has_twist = true;
-        boost::math::chi_squared dist(meas_dim*2);
+        boost::math::chi_squared dist(meas_dim_*2);
         this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
-        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim))/boost::math::tgamma(static_cast<double>(meas_dim) +1.0);
+        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim_))/boost::math::tgamma(static_cast<double>(meas_dim_) +1.0);
     } else {
         this->params_.has_twist = false;
-        boost::math::chi_squared dist(meas_dim);
+        boost::math::chi_squared dist(meas_dim_);
         this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
-        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim)/2.0)/boost::math::tgamma(static_cast<double>(meas_dim)/2.0 +1.0);
+        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim_)/2.0)/boost::math::tgamma(static_cast<double>(meas_dim_)/2.0 +1.0);
     }
     
     this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
     
 
-    static_cast<Derived*>(this)->Init(params_);
+    static_cast<tDerived*>(this)->Init(params_);
 }   
 
 //-------------------------------------------------------------------------------
 
-template< class S, class Derived>
-Eigen::MatrixXd  SourceBase<S,Derived>::GaussianRandomGenerator(const int size){
+template<typename tState, typename tDerived>
+Eigen::MatrixXd  SourceBase<tState, tDerived>::GaussianRandomGenerator(const int size){
 
     std::normal_distribution<double> dist_(0,1);
     Eigen::MatrixXd randn_nums(size,1);
@@ -231,8 +261,8 @@ Eigen::MatrixXd  SourceBase<S,Derived>::GaussianRandomGenerator(const int size){
 
 //-------------------------------------------------------------------------------
 
-template< class S, class Derived>
-SourceBase<S,Derived>::SourceBase() {
+template<typename tState, typename tDerived>
+SourceBase<tState, tDerived>::SourceBase() {
 
     // Generate two dimensional array of function pointers.
     gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
@@ -267,8 +297,8 @@ SourceBase<S,Derived>::SourceBase() {
 
 //---------------------------------------------------
 
-template< class S, class Derived>
-SourceBase<S, Derived>::~SourceBase() {
+template<typename tState, typename tDerived>
+SourceBase<tState, tDerived>::~SourceBase() {
 
     // std::cerr << "Destructing" << std::endl;
 
@@ -281,8 +311,8 @@ SourceBase<S, Derived>::~SourceBase() {
 
 //---------------------------------------------------
 
-template< class S, class Derived>
-void SourceBase<S, Derived>::VerifySourceParameters(const SourceParameters& params) {
+template<typename tState, typename tDerived>
+void SourceBase<tState, tDerived>::VerifySourceParameters(const SourceParameters& params) {
 
     // Measurement covariance
     if (params.meas_cov_fixed_) { // Make sure that the measurement covariance is set properly.

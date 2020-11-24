@@ -14,13 +14,13 @@ namespace rransac {
  * MeasurementType::RN_POS and MeasurementType::RN_VEL
  */ 
 
-template<class S>
-class SourceRN : public SourceBase<S,SourceRN<S>> {
+template<class tState>
+class SourceRN : public SourceBase<tState, SourceRN<tState>> {
 
 public:
 
-typedef S type_;
-static constexpr unsigned int dim = S::g_type_::dim_;
+typedef tState State;
+static constexpr unsigned int meas_dim_ = tState::g_type_::dim_;
 
 SourceRN()=default;
 ~SourceRN()=default;
@@ -29,13 +29,13 @@ SourceRN()=default;
 void Init(const SourceParameters& params);      
 
 /** Returns the jacobian of the observation function w.r.t. the states */
-Eigen::MatrixXd GetLinObsMatState(const S& state) {return this->H_;}                        
+Eigen::MatrixXd GetLinObsMatState(const tState& state) {return this->H_;}                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state) {return this->V_;}                         
+Eigen::MatrixXd GetLinObsMatSensorNoise(const tState& state) {return this->V_;}                         
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const S& state);
+Meas GetEstMeas(const tState& state);
 
 /**
  * Returns the error between the estimated measurement and the measurement
@@ -55,7 +55,7 @@ Eigen::MatrixXd ToEuclidean(const Meas& m)  {
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std);
+Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
 
 };
 
@@ -65,14 +65,14 @@ Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<class S>
-void SourceRN<S>::Init(const SourceParameters& params) {
+template<class tState>
+void SourceRN<tState>::Init(const SourceParameters& params) {
 
-    const unsigned int sizeg = S::g_type_::dim_;
-    const unsigned int sizeu = S::u_type_::dim_;
+    const unsigned int sizeg = tState::g_type_::dim_;
+    const unsigned int sizeu = tState::u_type_::dim_;
 
     // Make sure that the state is a valid type
-    if (typeid(S).name() != typeid(lie_groups::State<lie_groups::Rn<sizeg>>).name())
+    if (typeid(tState).name() != typeid(lie_groups::State<lie_groups::Rn<sizeg>>).name())
     {
         throw std::runtime_error("SourceRNPos::Init State is not supported by this source type");
     }
@@ -98,8 +98,8 @@ void SourceRN<S>::Init(const SourceParameters& params) {
 
 //---------------------------------------------------------------------------
 
-template<class S>
-Meas SourceRN<S>::GetEstMeas(const S& state) {
+template<class tState>
+Meas SourceRN<tState>::GetEstMeas(const tState& state) {
     Meas m;
     m.pose = state.g_.data_;
     m.twist = state.u_.data_;
@@ -107,15 +107,15 @@ Meas SourceRN<S>::GetEstMeas(const S& state) {
 } 
 
 //---------------------------------------------------------------------------
-template<class S>
-Eigen::MatrixXd SourceRN<S>::OMinus(const Meas& m1, const Meas& m2) {
+template<class tState>
+Eigen::MatrixXd SourceRN<tState>::OMinus(const Meas& m1, const Meas& m2) {
 
     if (this->params_.type_ == MeasurementTypes::RN_POS) {
         return m1.pose - m2.pose;
     } else if (this->params_.type_ == MeasurementTypes::RN_POS_VEL){
-        Eigen::Matrix<double, S::g_type_::dim_*2,1> error;
-        error.block(0,0,S::g_type_::dim_,1) = m1.pose - m2.pose;
-        error.block(S::g_type_::dim_,0,S::g_type_::dim_,1) = m1.twist - m2.twist;
+        Eigen::Matrix<double, tState::g_type_::dim_*2,1> error;
+        error.block(0,0,tState::g_type_::dim_,1) = m1.pose - m2.pose;
+        error.block(tState::g_type_::dim_,0,tState::g_type_::dim_,1) = m1.twist - m2.twist;
         return error;
     } else {
         throw std::runtime_error("SourceRN::OMinus Measurement type not supported.");
@@ -123,8 +123,8 @@ Eigen::MatrixXd SourceRN<S>::OMinus(const Meas& m1, const Meas& m2) {
 }
 
 //---------------------------------------------------------------------------------------------
-template<class S>
-Meas SourceRN<S>::GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
+template<class tState>
+Meas SourceRN<tState>::GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
     Meas m;
     m.source_index = this->params_.source_index_;
 
@@ -133,12 +133,12 @@ Meas SourceRN<S>::GenerateRandomMeasurement(const S& state, const Eigen::MatrixX
     switch (this->params_.type_)
     {
     case MeasurementTypes::RN_POS:        
-        m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
+        m.pose = tState::g_type_::OPlus(state.g_.data_,deviation);
         m.type = MeasurementTypes::RN_POS;
         break;
     case MeasurementTypes::RN_POS_VEL:
-        m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
-        m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
+        m.pose = tState::g_type_::OPlus(state.g_.data_, deviation.block(0,0,tState::g_type_::dim_,1));
+        m.twist = state.u_.data_ + deviation.block(tState::g_type_::dim_,0,tState::g_type_::dim_,1);
         m.type = MeasurementTypes::RN_POS_VEL;
         break;
     default:
@@ -149,7 +149,11 @@ Meas SourceRN<S>::GenerateRandomMeasurement(const S& state, const Eigen::MatrixX
     return m;
 }
 
+// Common Source
+// typedef SourceBase<lie_groups::R2_r2, SourceRN<lie_groups::R2_r2>>
 
+// template<class S, typename Derived>
+// class SourceBase
 } // namesapce rransac
 
 
