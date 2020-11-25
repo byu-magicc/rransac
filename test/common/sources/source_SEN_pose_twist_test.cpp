@@ -21,7 +21,13 @@ TYPED_TEST_SUITE(SEN_POSE_TWIST_Test, MyTypes);
 TYPED_TEST(SEN_POSE_TWIST_Test, INIT) {
 
 SourceParameters params;
-SourceSENPoseTwist<TypeParam> source;
+params.meas_cov_fixed_ = false;
+params.expected_num_false_meas_ = 0.1;
+params.gate_probability_ = 0.8;
+params.probability_of_detection_ = 0.9;
+
+
+SourceBase<TypeParam, SourceSENPoseTwist<TypeParam>> source;
 
 // Valid state type
 if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name() == typeid(SE3_se3).name()) {
@@ -68,7 +74,12 @@ typedef Eigen::Matrix<double,TypeParam::g_type_::dim_*2,TypeParam::g_type_::dim_
 
 
 SourceParameters params;
-SourceSENPoseTwist<TypeParam> source;
+params.meas_cov_fixed_ = false;
+params.expected_num_false_meas_ = 0.1;
+params.gate_probability_ = 0.8;
+params.probability_of_detection_ = 0.9;
+
+SourceBase<TypeParam, SourceSENPoseTwist<TypeParam>> source;
 TypeParam state = TypeParam::Random();
 
 
@@ -132,10 +143,22 @@ ASSERT_LE( (m.pose-pose).norm() , 1e-8);
 
 // Test OMinus
 SourceParameters params1, params2;
+
+params1.meas_cov_fixed_ = false;
+params1.expected_num_false_meas_ = 0.1;
+params1.gate_probability_ = 0.8;
+params1.probability_of_detection_ = 0.9;
+
+params2.meas_cov_fixed_ = false;
+params2.expected_num_false_meas_ = 0.1;
+params2.gate_probability_ = 0.8;
+params2.probability_of_detection_ = 0.9;
+
+
 params1.type_ = MeasurementTypes::SEN_POSE;
 params2.type_ = MeasurementTypes::SEN_POSE_TWIST;
 
-SourceSENPoseTwist<TypeParam> source1, source2;
+SourceBase<TypeParam, SourceSENPoseTwist<TypeParam>> source1, source2;
 source1.Init(params1);
 source2.Init(params2);
 

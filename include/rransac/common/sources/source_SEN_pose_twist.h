@@ -13,13 +13,13 @@ namespace rransac {
  * MeasurementType::SEN_POSE and MeasurementType::SEN_POSE_TWIST
  */ 
 
-template <class S>
-class SourceSENPoseTwist : public SourceBase<S,SourceSENPoseTwist<S>> {
+template <class tState>
+class SourceSENPoseTwist : public SourceBase<tState,SourceSENPoseTwist<tState>> {
 
 public:
 
-typedef S type_;
-static constexpr unsigned int dim = S::g_type_::dim_;
+typedef tState State;
+static constexpr unsigned int meas_dim_ = tState::g_type_::dim_;
 
 
 /** Initializes the measurement source. This function must set the parameters.  */
@@ -28,13 +28,13 @@ void Init(const SourceParameters& params);
 /** Returns the jacobian of the observation function w.r.t. the states 
  * @param state A state of a model.
 */
-Eigen::MatrixXd GetLinObsMatState(S const& state){return this->H_;};                        
+Eigen::MatrixXd GetLinObsMatState(tState const& state){return this->H_;};                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd GetLinObsMatSensorNoise(const S& state){return this->V_;}                        
+Eigen::MatrixXd GetLinObsMatSensorNoise(const tState& state){return this->V_;}                        
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const S& state);
+Meas GetEstMeas(const tState& state);
 
 /**
  * Returns the error between the estimated measurement and the measurement
@@ -52,7 +52,7 @@ Eigen::MatrixXd ToEuclidean(const Meas& m);
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std);
+Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
 
 };
 
@@ -62,11 +62,11 @@ Meas GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std);
 
 //-----------------------------------------------------------------
 
-template<class S>
-void SourceSENPoseTwist<S>::Init(const SourceParameters& params) {
+template<class tState>
+void SourceSENPoseTwist<tState>::Init(const SourceParameters& params) {
 
     // Verify state
-    if (typeid(S).name() != typeid(lie_groups::SE2_se2).name() && typeid(S).name() != typeid(lie_groups::SE3_se3).name())
+    if (typeid(State).name() != typeid(lie_groups::SE2_se2).name() && typeid(State).name() != typeid(lie_groups::SE3_se3).name())
     {
         throw std::runtime_error("SourceSENPoseTwist::Init State is not supported by this source type");
     }
@@ -75,13 +75,13 @@ void SourceSENPoseTwist<S>::Init(const SourceParameters& params) {
     switch (this->params_.type_)
     {
     case MeasurementTypes::SEN_POSE:
-        this->V_ = Eigen::Matrix<double,S::g_type_::dim_,S::g_type_::dim_>::Identity();
-        this->H_ = Eigen::Matrix<double, S::g_type_::dim_, S::dim_>::Zero();
-        this->H_.block(0,0,S::g_type_::dim_,S::g_type_::dim_).setIdentity();
+        this->V_ = Eigen::Matrix<double,meas_dim_,meas_dim_>::Identity();
+        this->H_ = Eigen::Matrix<double, meas_dim_, State::dim_>::Zero();
+        this->H_.block(0,0,meas_dim_,meas_dim_).setIdentity();
         break;
     case MeasurementTypes::SEN_POSE_TWIST:
-        this->V_ = Eigen::Matrix<double,S::dim_,S::dim_>::Identity();
-        this->H_ = Eigen::Matrix<double,S::dim_,S::dim_>::Identity();
+        this->V_ = Eigen::Matrix<double,meas_dim_*2,meas_dim_*2>::Identity();
+        this->H_ = Eigen::Matrix<double,meas_dim_*2,State::dim_>::Identity();
         break;
     default:
         throw std::runtime_error("SourceSENPoseTwist::Init Measurement type not supported.");
@@ -91,8 +91,8 @@ void SourceSENPoseTwist<S>::Init(const SourceParameters& params) {
 }
 
 //----------------------------------------------------------------------------------------
-template<class S>
-Meas SourceSENPoseTwist<S>::GetEstMeas(const S& state) {
+template<class tState>
+Meas SourceSENPoseTwist<tState>::GetEstMeas(const tState& state) {
     Meas m;
     m.pose = state.g_.data_;
     m.twist = state.u_.data_;
@@ -100,15 +100,15 @@ Meas SourceSENPoseTwist<S>::GetEstMeas(const S& state) {
 } 
 
 //----------------------------------------------------------------------------------------
-template<class S>
-Eigen::MatrixXd SourceSENPoseTwist<S>::OMinus(const Meas& m1, const Meas& m2) {
+template<class tState>
+Eigen::MatrixXd SourceSENPoseTwist<tState>::OMinus(const Meas& m1, const Meas& m2) {
 
     if (this->params_.type_ == MeasurementTypes::SEN_POSE) {
-        return S::g_type_::OMinus(m1.pose,m2.pose);
+        return State::g_type_::OMinus(m1.pose,m2.pose);
     } else if (this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST){
-        Eigen::Matrix<double, S::g_type_::dim_*2,1> error;
-        error.block(0,0,S::g_type_::dim_,1) = S::g_type_::OMinus(m1.pose,m2.pose);
-        error.block(S::g_type_::dim_,0,S::g_type_::dim_,1) = m1.twist - m2.twist;
+        Eigen::Matrix<double, meas_dim_*2,1> error;
+        error.block(0,0,meas_dim_,1) = State::g_type_::OMinus(m1.pose,m2.pose);
+        error.block(meas_dim_,0,meas_dim_,1) = m1.twist - m2.twist;
         return error;
     } else {
         throw std::runtime_error("SourceSENPoseTwist::OMinus Measurement type not supported.");
@@ -116,22 +116,22 @@ Eigen::MatrixXd SourceSENPoseTwist<S>::OMinus(const Meas& m1, const Meas& m2) {
 }
 
 //----------------------------------------------------------------------------------------
-template<class S>
-Eigen::MatrixXd SourceSENPoseTwist<S>::ToEuclidean(const Meas& m)  {
-    typename S::g_type_ g(m.pose);
-    Eigen::Matrix<double,  S::g_type_::dim_pos_,S::g_type_::dim_pos_> I = Eigen::Matrix<double,  S::g_type_::dim_pos_,S::g_type_::dim_pos_>::Identity();
-    Eigen::Matrix<double, S::g_type_::dim_pos_,S::g_type_::dim_pos_>&& u = 2.0*(g.R_-I)*(g.R_+I).inverse();
-    Eigen::Matrix<double, S::g_type_::dim_,1> pose_euclidean;
-    pose_euclidean.block(0,0,S::g_type_::dim_pos_,1) = g.t_;
-    pose_euclidean.block(S::g_type_::dim_pos_,0,S::g_type_::dim_rot_,1) = S::g_type_::rot_algebra::Vee(u);
+template<class tState>
+Eigen::MatrixXd SourceSENPoseTwist<tState>::ToEuclidean(const Meas& m)  {
+    typename State::g_type_ g(m.pose);
+    Eigen::Matrix<double,  State::g_type_::dim_pos_,State::g_type_::dim_pos_> I = Eigen::Matrix<double,  State::g_type_::dim_pos_,State::g_type_::dim_pos_>::Identity();
+    Eigen::Matrix<double, State::g_type_::dim_pos_,State::g_type_::dim_pos_>&& u = 2.0*(g.R_-I)*(g.R_+I).inverse();
+    Eigen::Matrix<double, State::g_type_::dim_,1> pose_euclidean;
+    pose_euclidean.block(0,0,State::g_type_::dim_pos_,1) = g.t_;
+    pose_euclidean.block(State::g_type_::dim_pos_,0,State::g_type_::dim_rot_,1) = State::g_type_::rot_algebra::Vee(u);
 
 
     return pose_euclidean;
 }
 
 //----------------------------------------------------------------------------------------
-template<class S>
-Meas SourceSENPoseTwist<S>::GenerateRandomMeasurement(const S& state, const Eigen::MatrixXd& meas_std){
+template<class tState>
+Meas SourceSENPoseTwist<tState>::GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
     Meas m;
     m.source_index = this->params_.source_index_;
 
@@ -140,12 +140,12 @@ Meas SourceSENPoseTwist<S>::GenerateRandomMeasurement(const S& state, const Eige
     switch (this->params_.type_)
     {
     case MeasurementTypes::SEN_POSE:        
-        m.pose = S::g_type_::OPlus(state.g_.data_,deviation);
+        m.pose = State::g_type_::OPlus(state.g_.data_,deviation);
         m.type = MeasurementTypes::SEN_POSE;
         break;
     case MeasurementTypes::SEN_POSE_TWIST:
-        m.pose = S::g_type_::OPlus(state.g_.data_, deviation.block(0,0,S::g_type_::dim_,1));
-        m.twist = state.u_.data_ + deviation.block(S::g_type_::dim_,0,S::g_type_::dim_,1);
+        m.pose = State::g_type_::OPlus(state.g_.data_, deviation.block(0,0,State::g_type_::dim_,1));
+        m.twist = state.u_.data_ + deviation.block(State::g_type_::dim_,0,State::g_type_::dim_,1);
         m.type = MeasurementTypes::SEN_POSE_TWIST;
 
         break;
@@ -157,7 +157,9 @@ Meas SourceSENPoseTwist<S>::GenerateRandomMeasurement(const S& state, const Eige
     return m;
 }
 
-
+// Common Sources
+typedef SourceBase<lie_groups::SE2_se2,SourceSENPoseTwist<lie_groups::SE2_se2>> SourceSE2PoseTwist;
+typedef SourceBase<lie_groups::SE3_se3,SourceSENPoseTwist<lie_groups::SE3_se3>> SourceSE3PoseTwist;
 
 
 

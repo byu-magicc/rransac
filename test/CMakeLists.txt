@@ -45,11 +45,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 #---------------------------------------
 # Source tests
 #---------------------------------------
-add_executable(source_baseTest
-common/sources/source_base_test.cpp
-../src/parameters.cpp)
-add_dependencies(source_baseTest lie_groups)
-target_link_libraries(source_baseTest gtest_main lie_groups)
+# add_executable(source_baseTest
+# common/sources/source_base_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(source_baseTest lie_groups)
+# target_link_libraries(source_baseTest gtest_main lie_groups)
 
 # add_executable(source_RNTest
 # common/sources/source_RN_test.cpp
@@ -84,11 +84,17 @@ target_link_libraries(source_baseTest gtest_main lie_groups)
 # Model
 #---------------------------------------
 
-# add_executable(model_baseTest
-# common/models/model_base_test.cpp
+add_executable(model_baseTest
+common/models/model_base_test.cpp
+../src/parameters.cpp)
+add_dependencies(model_baseTest lie_groups)
+target_link_libraries(model_baseTest gtest_main lie_groups)
+
+# add_executable(model_baseTest2
+# common/models/model_base_test2.cpp
 # ../src/parameters.cpp)
-# add_dependencies(model_baseTest lie_groups)
-# target_link_libraries(model_baseTest gtest_main lie_groups)
+# add_dependencies(model_baseTest2 lie_groups)
+# target_link_libraries(model_baseTest2 gtest_main lie_groups)
 
 
 

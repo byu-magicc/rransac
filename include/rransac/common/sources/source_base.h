@@ -83,6 +83,7 @@ public:
         params_ = other.params_;
         H_ = other.H_;
         V_ = other.V_;
+        state_in_surveillance_region_callback_ = other.state_in_surveillance_region_callback_;
     }
 
     /** Initializes the measurement source. This function must set the parameters.  */

@@ -24,11 +24,13 @@ namespace rransac
 using namespace lie_groups;
 
 typedef ModelRN<R2_r2, TransformNULL<R2_r2>> Model1;
-typedef ModelRN<R3_r3, TransformNULL<R3_r3>> Model2;
-typedef ModelSENPosVel<SE2_se2, TransformNULL<SE2_se2>> Model3;
-typedef ModelSENPoseTwist<SE2_se2, TransformNULL<SE2_se2>> Model4;
-typedef ModelSENPosVel<SE3_se3, TransformNULL<SE2_se2>> Model5;
-typedef ModelSENPoseTwist<SE3_se3, TransformNULL<SE2_se2>> Model6;
+// typedef ModelBase<SourceR3, TransformNULL<R3_r3>, 6, ModelRN<R3_r3, TransformNULL<R3_r3>>> Model2;
+// typedef ModelBase<SourceSE2PosVel, TransformNULL<SE2_se2>, 5, ModelSENPosVel<SE2_se2, TransformNULL<SE2_se2>>> Model3;
+// typedef ModelBase<SourceSE2PoseTwist, TransformNULL<SE2_se2>, 6, ModelSENPoseTwist<SE2_se2, TransformNULL<SE2_se2>>> Model4;
+// typedef ModelBase<SourceSE3PosVel, TransformNULL<SE3_se3>, 10, ModelSENPosVel<SE3_se3, TransformNULL<SE3_se3>>> Model5;
+// typedef ModelBase<SourceSE3PoseTwist, TransformNULL<SE3_se3>,12, ModelSENPoseTwist<SE3_se3, TransformNULL<SE3_se3>>> Model6;
+
+
 
 template<class M, MeasurementTypes MT1, MeasurementTypes MT2>
 struct ModelHelper {
@@ -38,15 +40,15 @@ struct ModelHelper {
 };
 
 typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
-typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
-typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
-typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
-typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
-typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
+// typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
+// typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
+// typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
+// typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
+// typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
-// using MyTypes = ::testing::Types< ModelHelper6>;
+// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+using MyTypes = ::testing::Types< ModelHelper1>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,11 +58,11 @@ class ModelTest : public ::testing::Test {
 
 protected:
 
-static constexpr unsigned int meas_dim = Model::Model::MB_Source::meas_dim;
-static constexpr unsigned int state_dim = Model::Model::MB_State::g_type_::dim_*2;
+static constexpr unsigned int meas_dim = Model::Model::Source::meas_dim_;
+static constexpr unsigned int state_dim = Model::Model::State::g_type_::dim_*2;
 static constexpr unsigned int cov_dim = Model::Model::cov_dim_;
-static constexpr unsigned int a_vel_dim = Model::Model::cov_dim_ - Model::Model::MB_State::g_type_::dim_-1;
-static constexpr unsigned int t_vel_dim = state_dim - Model::Model::MB_State::g_type_::dim_ - a_vel_dim;
+static constexpr unsigned int a_vel_dim = Model::Model::cov_dim_ - Model::Model::State::g_type_::dim_-1;
+static constexpr unsigned int t_vel_dim = state_dim - Model::Model::State::g_type_::dim_ - a_vel_dim;
 
 void SetUp() override {
 
@@ -99,8 +101,8 @@ meas_std2.setIdentity();
 meas_std2 *= sqrt(meas_cov_scale);
 
 // std::cerr << "here0" << std::endl;
-typename Model::Model::MB_Source source1;
-typename Model::Model::MB_Source source2;
+typename Model::Model::Source source1;
+typename Model::Model::Source source2;
 source1.Init(source_params1);
 source2.Init(source_params2);
 // std::cerr << "here00" << std::endl;
@@ -144,6 +146,8 @@ for (unsigned int ii = 0; ii < num_iters; ++ii) {
         m2.meas_cov = meas_cov2;
         m1.weight = 1.0/(num_meas+1);
         m2.weight = 1.0/(num_meas+1);
+        m1.time_stamp = ii*dt;
+        m2.time_stamp = ii*dt;
         meas1[jj] = m1;
         meas2[jj] = m2;
     }
@@ -156,7 +160,7 @@ for (unsigned int ii = 0; ii < num_iters; ++ii) {
 // std::cerr << "here 3" << std::endl;
 // Construct Jacobians with state0 and dt
 Eigen::Matrix<double, g_dim_*2, g_dim_*2> F_tmp, G_tmp;
-F_tmp.block(0,0,g_dim_, g_dim_) = typename Model::Model::MB_State::g_type_(Model::Model::MB_State::u_type_::Exp(state0.u_.data_*dt)).Adjoint();
+F_tmp.block(0,0,g_dim_, g_dim_) = typename Model::Model::State::g_type_(Model::Model::State::u_type_::Exp(state0.u_.data_*dt)).Adjoint();
 F_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt;
 F_tmp.block(g_dim_,0,g_dim_,g_dim_).setZero();
 F_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity(); 
@@ -184,11 +188,11 @@ Eigen::Matrix<double,meas_dim, meas_dim> meas_std1;
 Eigen::Matrix<double,meas_dim*2, meas_dim*2> meas_std2;
 Parameters params;
 
-typename Model::Model::MB_State state;
-typename Model::Model::MB_State state0;
-std::vector<typename Model::Model::MB_State> states;
+typename Model::Model::State state;
+typename Model::Model::State state0;
+std::vector<typename Model::Model::State> states;
 
-std::vector<typename Model::Model::MB_Source> sources;
+std::vector<typename Model::Model::Source> sources;
 
 std::vector<std::vector<std::vector<Meas>>> new_meas; // time, source, measurements
 
@@ -298,6 +302,16 @@ if (TypeParam::MeasType1 == MeasurementTypes::SEN_POS|| TypeParam::MeasType1 == 
 // std::cout << "cov: " << std::endl << this->track.err_cov_ << std::endl;
 // std::cout << "norm error " << (this->track.state_.OMinus(this->states.back())).norm() << std::endl;
 
+
+// Verify the Consensus Set
+ASSERT_EQ(this->track.cs_.Size(), this->num_iters);
+
+ConsensusSet<Meas> set;
+set.consensus_set_.begin();
+
+for( std::list<std::vector<Meas>>::iterator it = this->track.cs_.consensus_set_.begin(); it!= this->track.cs_.consensus_set_.end(); ++it) {
+    ASSERT_EQ( (*it).size(), 4);
+}
 
 }
 

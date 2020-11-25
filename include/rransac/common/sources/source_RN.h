@@ -149,11 +149,11 @@ Meas SourceRN<tState>::GenerateRandomMeasurement(const tState& state, const Eige
     return m;
 }
 
-// Common Source
-// typedef SourceBase<lie_groups::R2_r2, SourceRN<lie_groups::R2_r2>>
+//Common Sources
+typedef SourceBase<lie_groups::R2_r2, SourceRN<lie_groups::R2_r2>> SourceR2;
+typedef SourceBase<lie_groups::R3_r3, SourceRN<lie_groups::R3_r3>> SourceR3;
 
-// template<class S, typename Derived>
-// class SourceBase
+
 } // namesapce rransac
 
 

@@ -27,7 +27,12 @@ typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,  TypeParam::g_type_::
 typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,TypeParam::g_type_::dim_pos_*2> Mat_pv_c;
 
 SourceParameters params;
-SourceSENPosVel<TypeParam> source;
+params.meas_cov_fixed_ = false;
+params.expected_num_false_meas_ = 0.1;
+params.gate_probability_ = 0.8;
+params.probability_of_detection_ = 0.9;
+
+SourceBase<TypeParam, SourceSENPosVel<TypeParam>> source;
 
 // Valid state type
 if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name() == typeid(SE3_se3).name()) {
@@ -74,7 +79,12 @@ typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_,  TypeParam::g_type_::
 typedef Eigen::Matrix<double,TypeParam::g_type_::dim_pos_*2,TypeParam::g_type_::dim_pos_*2> Mat_pv_c;
 
 SourceParameters params;
-SourceSENPosVel<TypeParam> source;
+params.meas_cov_fixed_ = false;
+params.expected_num_false_meas_ = 0.1;
+params.gate_probability_ = 0.8;
+params.probability_of_detection_ = 0.9;
+
+SourceBase<TypeParam, SourceSENPosVel<TypeParam>> source;
 
 // Construct a state
 TypeParam state = TypeParam::Random();
@@ -155,10 +165,22 @@ ASSERT_EQ(m.pose,m.pose_euclidean);
 
 // Test OMinus
 SourceParameters params1, params2;
+
+params1.meas_cov_fixed_ = false;
+params1.expected_num_false_meas_ = 0.1;
+params1.gate_probability_ = 0.8;
+params1.probability_of_detection_ = 0.9;
+
+params2.meas_cov_fixed_ = false;
+params2.expected_num_false_meas_ = 0.1;
+params2.gate_probability_ = 0.8;
+params2.probability_of_detection_ = 0.9;
+
+
 params1.type_ = MeasurementTypes::SEN_POS;
 params2.type_ = MeasurementTypes::SEN_POS_VEL;
 
-SourceSENPosVel<TypeParam> source1, source2;
+SourceBase<TypeParam, SourceSENPosVel<TypeParam>> source1, source2;
 source1.Init(params1);
 source2.Init(params2);
 

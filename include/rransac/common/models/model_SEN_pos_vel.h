@@ -6,10 +6,13 @@
 
 namespace rransac {
 
-template <typename State, typename Transformation>
-class ModelSENPosVel : public ModelBase<State, SourceSENPosVel<State>, Transformation, State::g_type_::dim_ + State::u_type_::dim_ - State::u_type_::dim_t_vel_ + 1, ModelSENPosVel<State, Transformation>> {
+template <typename tState, typename tTransformation>
+class ModelSENPosVel : public ModelBase<SourceSENPosVel<tState>, tTransformation,  tState::g_type_::dim_ + tState::u_type_::dim_ - tState::u_type_::dim_t_vel_ + 1, ModelSENPosVel<tState, tTransformation>> {
 
 public:
+
+typedef tState State;
+typedef tTransformation Transformation;
 
 static constexpr unsigned int g_dim_ = State::g_type_::dim_;
 static constexpr unsigned int cov_dim_ = State::g_type_::dim_ + State::u_type_::dim_ - State::u_type_::dim_t_vel_ + 1;
@@ -50,8 +53,8 @@ static State GetRandomState();
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename State, typename Transformation>
-typename ModelSENPosVel<State, Transformation>::Mat  ModelSENPosVel<State, Transformation>::GetLinTransFuncMatState(const State& state, const double dt) {  
+template <typename tState, typename tTransformation>
+typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::GetLinTransFuncMatState(const State& state, const double dt) {  
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt;  
     this->F_.block(0,0,g_dim_,g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
     this->F_.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1); // Jacobian w.r.t. rho x
@@ -61,8 +64,8 @@ typename ModelSENPosVel<State, Transformation>::Mat  ModelSENPosVel<State, Trans
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Transformation>
-typename ModelSENPosVel<State, Transformation>::Mat ModelSENPosVel<State, Transformation>::GetLinTransFuncMatNoise(const State& state, const double dt){
+template <typename tState, typename tTransformation>
+typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::GetLinTransFuncMatNoise(const State& state, const double dt){
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
     this->G_.block(0,0,g_dim_, g_dim_) = tmp;
     this->G_.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1)*dt/2.0;
@@ -75,8 +78,8 @@ typename ModelSENPosVel<State, Transformation>::Mat ModelSENPosVel<State, Transf
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Transformation>
-void ModelSENPosVel<State, Transformation>::UpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update) {
+template <typename tState, typename tTransformation>
+void ModelSENPosVel<tState, tTransformation>::UpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update) {
     Eigen::Matrix<double,g_dim_,1> twist_update;
     twist_update.setZero();
     twist_update(0,0) = state_update(g_dim_,0);          // get rho_x
@@ -87,8 +90,8 @@ void ModelSENPosVel<State, Transformation>::UpdateState(const Eigen::Matrix<doub
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Transformation>
-State ModelSENPosVel<State, Transformation>::GetRandomState(){
+template <typename tState, typename tTransformation>
+tState ModelSENPosVel<tState, tTransformation>::GetRandomState(){
     State state = State::Random();
 
     state.g_.R_.block(0,0,state.u_.p_.rows(),1) = state.u_.p_.normalized(); 

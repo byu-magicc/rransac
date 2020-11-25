@@ -38,15 +38,19 @@ double volume;                            /** < The volume of the validation reg
  * 
  * Note: You can use any model. 
  */ 
-template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived> 
 class ModelBase
 {
 public:
-typedef State MB_State;
-// typedef StateType MB_StateType;
-typedef Source MB_Source;
-typedef Transformation MB_Transformation;
-static constexpr unsigned int cov_dim_ = Cov_DIM;
+typedef typename tSource::State State;
+typedef tSource Source;
+typedef tTransformation Transformation;
+typedef tDerived Derived;
+
+
+static constexpr unsigned int g_dim_ = State::g_type_::dim_;
+// static constexpr unsigned int cov_dim_ = tCovDim;
+static constexpr unsigned int cov_dim_ = tCovDim;
 typedef Eigen::Matrix<double,cov_dim_,cov_dim_> Mat;
 
 
@@ -109,7 +113,7 @@ public:
      * @return The Jacobian \f$ F_k\f$. 
      */ 
     Mat GetLinTransFuncMatState(const State& state, const double dt) {
-        return static_cast<Derived*>(this)->GetLinTransFuncMatState(state, dt);
+        return static_cast<tDerived*>(this)->DerivedGetLinTransFuncMatState(state, dt);        
     }
 
     /**
@@ -119,7 +123,7 @@ public:
      * @return Returns the Jacobian \f$ G_k \f$
      */
     Mat GetLinTransFuncMatNoise(const State& state, const double dt){
-        return static_cast<Derived*>(this)->GetLinTransFuncMatNoise(state, dt);
+        return static_cast<tDerived*>(this)->DerivedGetLinTransFuncMatNoise(state, dt);
 
     }
 
@@ -135,7 +139,12 @@ public:
      * @param[in] param Contains all of the user defined parameters.
      */ 
     void UpdateModel(const Parameters& params) {
-        static_cast<Derived*>(this)->UpdateState(GetStateUpdate( params));
+        static_cast<tDerived*>(this)->DerivedUpdateState(GetStateUpdate( params));
+        for (auto& new_measurements: new_assoc_meas_) {
+            cs_.AddMeasurementsToConsensusSet(new_measurements);
+        }
+        
+        new_assoc_meas_.clear();
     }
 
 
@@ -190,7 +199,7 @@ public:
      * Returns a Random State
      */ 
     static State GetRandomState(){
-        return Derived::GetRandomState();
+        return tDerived::DerivedGetRandomState();
     }
 
 private:
@@ -199,7 +208,7 @@ void GetInnovationAndCovarianceFixedMeasurementCov(const std::vector<Meas>& meas
 
 void GetInnovationAndCovarianceNonFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,cov_dim_,1>& state_update, Mat& cov_update);
 
-Eigen::Matrix<double,Cov_DIM,1> GetStateUpdate(const Parameters& params);
+Eigen::Matrix<double,tCovDim,1> GetStateUpdate(const Parameters& params);
 
 
 };
@@ -208,8 +217,8 @@ Eigen::Matrix<double,Cov_DIM,1> GetStateUpdate(const Parameters& params);
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived>
-void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::Init(std::vector<Source>& sources, const Parameters& params) {
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(std::vector<Source>& sources, const Parameters& params) {
     sources_ = &sources;
     err_cov_.setIdentity();
     F_.setIdentity();
@@ -221,8 +230,8 @@ void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::Init(std::vector
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
-void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::PropagateModel(const double dt) {
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived> 
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(const double dt) {
 
     // Construct matrices to transform covariance.
     F_ = GetLinTransFuncMatState(state_,dt);
@@ -239,8 +248,8 @@ void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::PropagateModel(c
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
-Eigen::Matrix<double,Cov_DIM,1> ModelBase<State, Source, Transformation,Cov_DIM, Derived>::GetStateUpdate(const Parameters& params) {
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
+Eigen::Matrix<double, tCovDim,1> ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetStateUpdate(const Parameters& params) {
 
 Eigen::Matrix<double,cov_dim_,1> state_update_sum;
 Eigen::Matrix<double,cov_dim_,1> state_update;
@@ -291,8 +300,8 @@ return update;
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
-void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::GetInnovationAndCovarianceFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,cov_dim_,1>& state_update, Mat& cov_update) {
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationAndCovarianceFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,cov_dim_,1>& state_update, Mat& cov_update) {
 
 state_update.setZero();
 cov_update = err_cov_;
@@ -356,8 +365,8 @@ state_update = H.transpose()*S_inverse*nu;
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
-void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::GetInnovationAndCovarianceNonFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,cov_dim_,1>& state_update, Mat& cov_update) {
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationAndCovarianceNonFixedMeasurementCov(const std::vector<Meas>& meas, Eigen::Matrix<double,cov_dim_,1>& state_update, Mat& cov_update) {
 
     state_update.setZero();
     cov_update = err_cov_;
@@ -404,15 +413,17 @@ void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::GetInnovationAnd
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Source, typename Transformation, int Cov_DIM, typename Derived> 
-void ModelBase<State, Source, Transformation,Cov_DIM, Derived>::UpdateModelLikelihood() {
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModelLikelihood() {
     for (auto& update_info : model_likelihood_update_info_) {
-        if( update_info.in_local_surveillance_region) {
-            typename Source& source = *(sources_)[update_info.source_index];
-            model_likelihood_ += 1 + source.probability_of_detection_*source.gate_probability_*( update_info.num_assoc_meas/(source.expected_num_false_meas_*update_info.volume)-1)
+        if ( update_info.in_local_surveillance_region) {
+            tSource& source = (*sources_)[update_info.source_index];
+            model_likelihood_ += std::log(1 + source.params_.probability_of_detection_*source.params_.gate_probability_*( update_info.num_assoc_meas/(source.params_.expected_num_false_meas_*update_info.volume)-1));
         }
     }
 } 
 
 
 } // namespace rransac
+
+#endif //RRANSAC_COMMON_MODELS_BASE_H_
