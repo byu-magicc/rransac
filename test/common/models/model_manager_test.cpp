@@ -205,6 +205,69 @@ ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
 
 }
 
+TEST(ModelManagerTest, MergeModels ) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL<State>> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager; 
+Model model1, model2;
+
+Meas m1,m2;
+m1.time_stamp = 0;
+m2.time_stamp = 1;
+
+// Make model2 with better stats than model1
+
+model1.label_ = 2;
+model1.missed_detection_time_ = 10;
+model1.model_likelihood_ = 10;
+model1.err_cov_ = Eigen::Matrix<double,6,6>::Identity()*1.5;
+model1.cs_.AddMeasToConsensusSet(m1);
+
+model2.label_ = 3;
+model2.missed_detection_time_ = 1;
+model2.model_likelihood_ = 1000;
+model2.err_cov_ = Eigen::Matrix<double,6,6>::Identity()*0.5;
+model2.cs_.AddMeasToConsensusSet(m2);
+
+// Set states so that they are not similar
+model1.state_.g_.data_ << 1,1,1;
+model2.state_.g_.data_ << 5,5,5;
+model1.state_.u_.data_ << 1,1,1;
+model2.state_.u_.data_ << 1,1,1;
+
+sys.params_.max_num_models_ = 3;
+sys.params_.similar_tracks_threshold_ = 1;
+
+model_manager.AddModel(sys, model1);
+model_manager.AddModel(sys, model2);
+
+// The models are not similar to merge so no models should be merged.
+model_manager.MergeModels(sys);
+
+ASSERT_EQ(sys.models_.size(),2);
+
+// change the data of model2 so that it will be merged
+model2.state_.g_.data_ << 1.5, 1.5, 1.5;
+model2.label_ = 1;
+model_manager.AddModel(sys, model2);
+
+
+model_manager.MergeModels(sys);
+
+ASSERT_EQ(sys.models_.size(),2);
+ASSERT_EQ(sys.models_.front().label_, model2.label_);
+ASSERT_EQ(sys.models_.front().missed_detection_time_, model2.missed_detection_time_);
+ASSERT_EQ(sys.models_.front().model_likelihood_, model2.model_likelihood_);
+
+std::cout << "state g" << sys.models_.front().state_.g_.data_ << std::endl;
+std::cout << "state g" << sys.models_.front().state_.g_.data_ << std::endl;
+std::cout << "cov" << sys.models_.front().err_cov_ << std::endl;
+
+}
+
 } // namespace rransac
 
 

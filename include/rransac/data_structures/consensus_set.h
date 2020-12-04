@@ -56,6 +56,11 @@ void TransformConsensusSet(const tTransformation& T);
  */ 
 unsigned int Size() { return consensus_set_.size();}
 
+/*
+* Merges two consensus sets together. This is used when two models are merged together.
+*/
+static ConsensusSet MergeConsensusSets(const ConsensusSet& cs1, const ConsensusSet& cs2);
+
 
 std::list<std::vector<tMeasurement>> consensus_set_; /** < Contains the measurements associated with the model that have not expired. Each vector of measurements 
                                                 contains measurements with the same time stamp. This allows us to efficiently remove expired measurements

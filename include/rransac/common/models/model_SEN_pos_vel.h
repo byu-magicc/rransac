@@ -40,12 +40,22 @@ Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
 * for the additional translationals velocities (which are zero) before being added to state.
 * @param state_update An element of the lie algebra of the state used to update the state. 
 */
-void DerivedUpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update);
+void DerivedOPlusEq(const Eigen::Matrix<double,cov_dim_,1>& state_update);
 
 /**
  * Returns a Random State
  */ 
 static State DerivedGetRandomState();
+
+static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist& model1, const ModelSENPoseTwist& model2 ) {
+
+    Eigen::Matrix<double,cov_dim_,1> tmp;
+    Eigen::Matrix<double,tState::dim_,1> err = model1.state_.OMinus(model2.state_);
+    tmp.block(0,0,tState::g_type_::dim_+1,1) = err.block(0,0,tState::g_type_::dim_+1,1);
+    tmp.block(tState::g_type_::dim_+1,0,tState::g_type_::dim_rot_,1) = err.block(tState::g_type_::dim_+tState::g_type_::dim_pos_,0,tState::g_type_::dim_rot_,1);
+
+    return tmp
+}
 
 };
 
@@ -79,7 +89,7 @@ typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTr
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, typename tTransformation>
-void ModelSENPosVel<tState, tTransformation>::DerivedUpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update) {
+void ModelSENPosVel<tState, tTransformation>::DerivedOPlusEq(const Eigen::Matrix<double,cov_dim_,1>& state_update) {
     Eigen::Matrix<double,g_dim_,1> twist_update;
     twist_update.setZero();
     twist_update(0,0) = state_update(g_dim_,0);          // get rho_x

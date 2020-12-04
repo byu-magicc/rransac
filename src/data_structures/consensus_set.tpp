@@ -126,9 +126,22 @@ void ConsensusSet<tMeasurement>::TransformConsensusSet(const tTransformation& T)
     }
 }
 
+//-----------------------------------------------------------------
 
+template<class tMeasurement>
+ConsensusSet<tMeasurement> ConsensusSet<tMeasurement>::MergeConsensusSets(const ConsensusSet& cs1, const ConsensusSet& cs2) {
 
+    ConsensusSet<tMeasurement> merged_consensus_set = cs1;
+    
+    for (auto iter = cs2.consensus_set_.begin(); iter != cs2.consensus_set_.end(); ++iter) {
+        
+        merged_consensus_set.AddMeasurementsToConsensusSetSameTimeStamp((*iter));
 
+    }
+    
+    return merged_consensus_set;
+
+}
 
 
 } // namespace rransac

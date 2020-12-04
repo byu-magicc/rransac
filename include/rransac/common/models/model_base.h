@@ -67,7 +67,7 @@ public:
 
     double missed_detection_time_;  /** The time elapsed since a measurement was associated with the target. */
     
-    unsigned long int label_;       /** When the model becomes a good model, it receives a unique label */   
+    long int label_;       /** When the model becomes a good model, it receives a unique label */   
 
     std::vector<Source>* sources_;    /** < Reference to the sources contained in system */
 
@@ -167,7 +167,7 @@ public:
      */ 
     void UpdateModel(const Parameters& params) {
         if (new_assoc_meas_.size() > 0) {
-            static_cast<tDerived*>(this)->DerivedUpdateState(GetStateUpdate( params));
+            OPlusEQ(GetStateUpdate( params));
             for (auto& new_measurements: new_assoc_meas_) {
                 cs_.AddMeasurementsToConsensusSet(new_measurements);
             }
@@ -175,6 +175,10 @@ public:
         }
         
         new_assoc_meas_.clear();
+    }
+
+    void OPlusEQ(const Eigen::Matrix<double,tCovDim,1>& state_update){
+        static_cast<tDerived*>(this)->DerivedOPlusEq(state_update);
     }
 
 
@@ -228,7 +232,7 @@ public:
      * Computes the OMinus operation for the state
      */ 
     static Eigen::Matrix<double,tCovDim,1> OMinus(const tDerived& model1, const tDerived& model2) {
-        return static_cast<tDerived*>(this)->OMinus(model1, model2);
+        return tDerived::DerivedOMinus(model1, model2);
     }
 
     /**
@@ -280,6 +284,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(std::vector<So
     model_likelihood_ = 0;
     model_likelihood_update_info_.resize(sources_->size());
     missed_detection_time_ = 0;
+    label_ = -1;                    // Indicates that it has not received a proper label.
 }
 
 //-------------------------------------------------------------------------------------------------------------------

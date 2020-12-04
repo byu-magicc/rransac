@@ -37,12 +37,16 @@ Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
 * Update the state of the model using the provided state_update
 * @param state_update An element of the lie algebra of the state used to update the state. 
 */
-void DerivedUpdateState(const Eigen::Matrix<double,2*g_dim_,1>& state_update);
+void DerivedOPlusEq(const Eigen::Matrix<double,2*g_dim_,1>& state_update);
 
 /**
  * Returns a Random State
  */ 
 static State DerivedGetRandomState(){ return State::Random(); }
+
+static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist& model1, const ModelSENPoseTwist& model2 ) {
+     return model1.state_.OMinus(model2.state_);
+}
 
 };
 
@@ -72,7 +76,7 @@ typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, typename tTransformation>
-void ModelSENPoseTwist<tState,tTransformation>::DerivedUpdateState(const Eigen::Matrix<double,2*g_dim_,1>& state_update) {
+void ModelSENPoseTwist<tState,tTransformation>::DerivedOPlusEq(const Eigen::Matrix<double,2*g_dim_,1>& state_update) {
     this->state_.g_.OPlusEq(state_update.block(0,0,g_dim_,1));
     this->state_.u_.data_ += state_update.block(g_dim_,0,g_dim_,1);
 }

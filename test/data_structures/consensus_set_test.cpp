@@ -328,4 +328,58 @@ ASSERT_EQ( (*iter)[0].pose, m3.pose*data  );
 
 }
 
+// -----------------------------------------------------------------
+
+TEST(CONSENSUS_TEST, MERGE_CONSENSUS_SETS) {
+
+Meas m1,m2,m3,m4,m5,m6,m7,m8,m9,m10;
+
+m1.time_stamp = 0;
+m2.time_stamp = 0.1;
+m3.time_stamp = 0.5;
+m4.time_stamp = -0.1;
+m5.time_stamp = 0.2;
+m6.time_stamp = 0.2;
+m7.time_stamp = -0.2;
+m8.time_stamp = 0.1;
+m9.time_stamp = 0.3;
+m10.time_stamp = 0.6;
+
+
+std::vector<Meas> meas1 {m1,m2,m3,m4,m5,m6};
+std::vector<Meas> meas2 {m7,m8,m9,m10};
+
+ConsensusSet<Meas> cs1;
+ConsensusSet<Meas> cs2;
+ConsensusSet<Meas> merged_cs;
+
+cs1.AddMeasurementsToConsensusSet(meas1);
+cs2.AddMeasurementsToConsensusSet(meas2);
+
+merged_cs = ConsensusSet<Meas>::MergeConsensusSets(cs1,cs2);
+
+ASSERT_EQ(merged_cs.consensus_set_.size(), 8);
+
+ASSERT_EQ(merged_cs.consensus_set_.front().front().time_stamp, m7.time_stamp);
+ASSERT_EQ(merged_cs.consensus_set_.back().front().time_stamp, m10.time_stamp);
+
+auto iter = merged_cs.consensus_set_.begin();
+++iter;
+ASSERT_EQ(iter->front().time_stamp, m4.time_stamp);
+++iter;
+ASSERT_EQ(iter->front().time_stamp, m1.time_stamp);
+++iter;
+ASSERT_EQ(iter->front().time_stamp, m2.time_stamp);
+ASSERT_EQ(iter->size(), 2);
+++iter;
+ASSERT_EQ(iter->front().time_stamp, m5.time_stamp);
+ASSERT_EQ(iter->size(), 2);
+++iter;
+ASSERT_EQ(iter->front().time_stamp, m9.time_stamp);
+++iter;
+ASSERT_EQ(iter->front().time_stamp, m3.time_stamp);
+
+
+}
+
 } // namespace rransac
