@@ -25,7 +25,7 @@ typedef Eigen::Matrix<double,cov_dim_,cov_dim_> Mat;
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-Mat GetLinTransFuncMatState(const State& state, const double dt);
+Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -33,19 +33,19 @@ Mat GetLinTransFuncMatState(const State& state, const double dt);
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-Mat GetLinTransFuncMatNoise(const State& state, const double dt);
+Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
 
 /**
 * Update the state of the model using the provided state_update. The state_update provided is augmented to account
 * for the additional translationals velocities (which are zero) before being added to state.
 * @param state_update An element of the lie algebra of the state used to update the state. 
 */
-void UpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update);
+void DerivedUpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update);
 
 /**
  * Returns a Random State
  */ 
-static State GetRandomState();
+static State DerivedGetRandomState();
 
 };
 
@@ -54,7 +54,7 @@ static State GetRandomState();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tState, typename tTransformation>
-typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::GetLinTransFuncMatState(const State& state, const double dt) {  
+typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {  
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt;  
     this->F_.block(0,0,g_dim_,g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
     this->F_.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1); // Jacobian w.r.t. rho x
@@ -65,7 +65,7 @@ typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tT
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, typename tTransformation>
-typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::GetLinTransFuncMatNoise(const State& state, const double dt){
+typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
     this->G_.block(0,0,g_dim_, g_dim_) = tmp;
     this->G_.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1)*dt/2.0;
@@ -79,7 +79,7 @@ typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTr
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, typename tTransformation>
-void ModelSENPosVel<tState, tTransformation>::UpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update) {
+void ModelSENPosVel<tState, tTransformation>::DerivedUpdateState(const Eigen::Matrix<double,cov_dim_,1>& state_update) {
     Eigen::Matrix<double,g_dim_,1> twist_update;
     twist_update.setZero();
     twist_update(0,0) = state_update(g_dim_,0);          // get rho_x
@@ -91,7 +91,7 @@ void ModelSENPosVel<tState, tTransformation>::UpdateState(const Eigen::Matrix<do
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, typename tTransformation>
-tState ModelSENPosVel<tState, tTransformation>::GetRandomState(){
+tState ModelSENPosVel<tState, tTransformation>::DerivedGetRandomState(){
     State state = State::Random();
 
     state.g_.R_.block(0,0,state.u_.p_.rows(),1) = state.u_.p_.normalized(); 

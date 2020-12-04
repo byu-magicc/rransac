@@ -29,24 +29,24 @@ public:
     static constexpr unsigned int meas_dim_ = tDims;
 
     /** Initializes the measurement source. This function must set the parameters.  */
-    void Init(const SourceParameters& params) {
+    void DerivedInit(const SourceParameters& params) {
         this->H_ = Eigen::Matrix2d::Identity();
         this->V_ = Eigen::Matrix2d::Identity();
     }
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd GetLinObsMatState(const tState& state){
+    Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state){
         return this->H_;
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd GetLinObsMatSensorNoise(const tState& state){
+    Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state){
         return this->V_;
     }                         
 
     /** Computes the estimated measurement given a state */
-    Meas GetEstMeas(const tState& state){
+    Meas DerivedGetEstMeas(const tState& state){
         Meas&& tmp = Meas();
         tmp.pose = state.g_.data_;
         return tmp;

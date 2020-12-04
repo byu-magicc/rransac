@@ -24,11 +24,11 @@ namespace rransac
 using namespace lie_groups;
 
 typedef ModelRN<R2_r2, TransformNULL<R2_r2>> Model1;
-// typedef ModelBase<SourceR3, TransformNULL<R3_r3>, 6, ModelRN<R3_r3, TransformNULL<R3_r3>>> Model2;
-// typedef ModelBase<SourceSE2PosVel, TransformNULL<SE2_se2>, 5, ModelSENPosVel<SE2_se2, TransformNULL<SE2_se2>>> Model3;
-// typedef ModelBase<SourceSE2PoseTwist, TransformNULL<SE2_se2>, 6, ModelSENPoseTwist<SE2_se2, TransformNULL<SE2_se2>>> Model4;
-// typedef ModelBase<SourceSE3PosVel, TransformNULL<SE3_se3>, 10, ModelSENPosVel<SE3_se3, TransformNULL<SE3_se3>>> Model5;
-// typedef ModelBase<SourceSE3PoseTwist, TransformNULL<SE3_se3>,12, ModelSENPoseTwist<SE3_se3, TransformNULL<SE3_se3>>> Model6;
+typedef ModelRN<R3_r3, TransformNULL<R3_r3>> Model2;
+typedef ModelSENPosVel<SE2_se2, TransformNULL<SE2_se2>> Model3;
+typedef ModelSENPoseTwist<SE2_se2, TransformNULL<SE2_se2>> Model4;
+typedef ModelSENPosVel<SE3_se3, TransformNULL<SE3_se3>> Model5;
+typedef ModelSENPoseTwist<SE3_se3, TransformNULL<SE3_se3>> Model6;
 
 
 
@@ -40,15 +40,15 @@ struct ModelHelper {
 };
 
 typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
-// typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
-// typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
-// typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
-// typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
-// typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
+typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
+typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
+typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
+typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
+typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
-using MyTypes = ::testing::Types< ModelHelper1>;
+using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+// using MyTypes = ::testing::Types< ModelHelper1>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -76,6 +76,8 @@ if (Model::MeasType1 == MeasurementTypes::SEN_POS|| Model::MeasType1 == Measurem
     Filter.setIdentity();
 }
 
+
+
 // std::cerr << "setup" << std::endl;
 // Setup the parameters
 double meas_cov_scale = 0.01;
@@ -89,6 +91,9 @@ source_params1.meas_cov_fixed_ = true;
 source_params1.meas_cov_ = meas_cov1;
 source_params1.type_ = Model::MeasType1;
 source_params1.source_index_ = 0;
+source_params1.expected_num_false_meas_ = 0.8;
+source_params1.probability_of_detection_ = 0.8;
+source_params1.gate_probability_ = 0.8;
 
 source_params2.meas_cov_fixed_ = false;
 meas_cov2.setIdentity();
@@ -97,6 +102,9 @@ meas_cov2 *= meas_cov_scale;
 // source_params2.meas_cov_ = meas_cov2;
 source_params2.type_ = Model::MeasType2;
 source_params2.source_index_ = 1;
+source_params2.expected_num_false_meas_ = 0.8;
+source_params2.probability_of_detection_ = 0.8;
+source_params2.gate_probability_ = 0.8;
 meas_std2.setIdentity();
 meas_std2 *= sqrt(meas_cov_scale);
 
@@ -243,10 +251,12 @@ ASSERT_LE( (this->track.GetLinTransFuncMatNoise(this->state0,this->dt) - this->G
 // Test the Propagate Model Function
 this->track.state_ = this->state0;
 this->track.PropagateModel(this->dt);
+
 // std::cout << "err_cov: " << this->track.err_cov_ << std::endl << std::endl;
 // std::cout << "this->F: " << this->F << std::endl << std::endl;
 // std::cout << "G_: " << this->track.G_ << std::endl << std::endl;
 // std::cout << "Q_: " << this->track.Q_ << std::endl << std::endl;
+ASSERT_EQ(this->track.missed_detection_time_, dt);
 ASSERT_LE( (this->track.F_- this->F).norm(), 1e-12  );
 ASSERT_LE( (this->track.G_- this->G).norm(), 1e-12  );
 ASSERT_LE( (this->track.state_.g_.data_ - this->states[1].g_.data_).norm(), 1e-12  );
@@ -269,6 +279,8 @@ for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
     this->track.UpdateModel(this->params);
 
 }
+
+ASSERT_EQ(this->track.missed_detection_time_, 0);
 
 // Test covariance
 ASSERT_LE(  ((this->track.err_cov_ + this->track.err_cov_.transpose())/2.0 - this->track.err_cov_ ).norm(), 1e-12); // symmetric
@@ -313,7 +325,12 @@ for( std::list<std::vector<Meas>>::iterator it = this->track.cs_.consensus_set_.
     ASSERT_EQ( (*it).size(), 4);
 }
 
+this->track.PruneConsensusSet(0);
+ASSERT_EQ(this->track.cs_.Size(), this->num_iters-1);
+
 }
+
+
 
 
 

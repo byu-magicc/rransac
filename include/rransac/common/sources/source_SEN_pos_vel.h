@@ -27,36 +27,36 @@ static constexpr unsigned int cov_dim_ = tState::g_type_::dim_ + tState::u_type_
 
 
 /** Initializes the measurement source. This function must set the parameters.  */
-void Init(const SourceParameters& params);      
+void DerivedInit(const SourceParameters& params);      
 
 /** Returns the jacobian of the observation function w.r.t. the states 
  * 
 */
-Eigen::MatrixXd GetLinObsMatState(tState const& state);                        
+Eigen::MatrixXd DerivedGetLinObsMatState(tState const& state);                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd GetLinObsMatSensorNoise(const tState& state){return this->V_;}                        
+Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state){return this->V_;}                        
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const tState& state);
+Meas DerivedGetEstMeas(const tState& state);
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2);
+Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
  * @param Meas The measurement whose pose needs to be transformed
  */
-Eigen::MatrixXd ToEuclidean(const Meas& m)  { return m.pose;}
+Eigen::MatrixXd DerivedToEuclidean(const Meas& m)  { return m.pose;}
 
 /**
  * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
+Meas DerivedGenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
 
 
 };
@@ -67,7 +67,7 @@ Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_
 
 
 template<class tState>
-void SourceSENPosVel<tState>::Init(const SourceParameters& params) {
+void SourceSENPosVel<tState>::DerivedInit(const SourceParameters& params) {
 
     // Verify state
     if (typeid(tState).name() != typeid(lie_groups::SE2_se2).name() && typeid(tState).name() != typeid(lie_groups::SE3_se3).name())
@@ -95,7 +95,7 @@ void SourceSENPosVel<tState>::Init(const SourceParameters& params) {
 
 //-----------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPosVel<tState>::GetLinObsMatState(const tState& state) {
+Eigen::MatrixXd SourceSENPosVel<tState>::DerivedGetLinObsMatState(const tState& state) {
 
     switch (this->params_.type_)
     {
@@ -124,7 +124,7 @@ Eigen::MatrixXd SourceSENPosVel<tState>::GetLinObsMatState(const tState& state) 
 
 //-----------------------------------------------------------------
 template<class tState>
-Meas SourceSENPosVel<tState>::GetEstMeas(const tState& state) {
+Meas SourceSENPosVel<tState>::DerivedGetEstMeas(const tState& state) {
     Meas m;
     m.pose = state.g_.t_;
 
@@ -136,7 +136,7 @@ Meas SourceSENPosVel<tState>::GetEstMeas(const tState& state) {
 
 //-----------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPosVel<tState>::OMinus(const Meas& m1, const Meas& m2) {
+Eigen::MatrixXd SourceSENPosVel<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
 
     if (this->params_.type_ == MeasurementTypes::SEN_POS) {
         return m1.pose - m2.pose;
@@ -154,7 +154,7 @@ Eigen::MatrixXd SourceSENPosVel<tState>::OMinus(const Meas& m1, const Meas& m2) 
 
 //-----------------------------------------------------------------
 template<class tState>
-Meas SourceSENPosVel<tState>::GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
+Meas SourceSENPosVel<tState>::DerivedGenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
     Meas m;
     m.source_index = this->params_.source_index_;
 
@@ -180,8 +180,8 @@ Meas SourceSENPosVel<tState>::GenerateRandomMeasurement(const tState& state, con
 }
 
 // Common Sources
-typedef SourceBase<lie_groups::SE2_se2, SourceSENPosVel<lie_groups::SE2_se2>> SourceSE2PosVel;
-typedef SourceBase<lie_groups::SE3_se3, SourceSENPosVel<lie_groups::SE3_se3>> SourceSE3PosVel;
+typedef SourceSENPosVel<lie_groups::SE2_se2> SourceSE2PosVel;
+typedef SourceSENPosVel<lie_groups::SE3_se3> SourceSE3PosVel;
 
 } // namespace rransac
 

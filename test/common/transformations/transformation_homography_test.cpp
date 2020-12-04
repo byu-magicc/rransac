@@ -33,7 +33,7 @@ protected:
 
 };
 
-using MyTypes = ::testing::Types<R2_r2, SE2_se2>;
+using MyTypes = ::testing::Types<TransformHomography<R2_r2,Eigen::Matrix<double,4,4>>,TransformHomography<SE2_se2, Eigen::Matrix<double,5,5>>   >;
 TYPED_TEST_SUITE(HomographyTest, MyTypes);
 
 
@@ -50,7 +50,7 @@ h2 <<3,6;
 h3_T << 7,8;
 h4 << 9;
 
-TransformHomography<TypeParam> trans;
+TypeParam trans;
 
 
 trans.SetData(H);
@@ -69,7 +69,7 @@ ASSERT_EQ(trans.h4_, h4);
 TEST(TransformHomographyTest, R2_r2_TransformationR2) {
 
 
-TransformHomography<R2_r2> trans;
+TransformHomography<R2_r2, Eigen::Matrix4d> trans;
 
 // Construct Homography.
 SO3 R = SO3::Random();
@@ -185,7 +185,10 @@ TEST(TransformHomographyTest, SE2_se2_Transformation) {
 // Test the transform rotation function
 ///////////////////////////////////////
 
-TransformHomography<SE2_se2> trans;
+typedef Eigen::Matrix<double,5,5> MatCov;
+
+TransformHomography<SE2_se2, MatCov> trans;
+
 
 
 // Construct a state and make sure the velocity isn't zero.
@@ -251,10 +254,18 @@ Eigen::Matrix<double,2,1> v = state_base.u_.p_;
 state_base.u_.p_ << v.norm(), 0;
 v.normalize();
 state_base.g_.R_ << v(0), -v(1), v(1), v(0);
-Eigen::Matrix<double,6,6> cov;                                    // Construct a covariance matrix. Not used
-Eigen::Matrix<double,6,6> cov_original, cov_transformed_analytical, cov_transformed_numerical;
-cov_original.setRandom();
-cov_transformed_analytical = cov_original;
+MatCov cov;                                    // Construct a covariance matrix. Not used
+MatCov cov_transformed_analytical, cov_original_extracted;
+Eigen::Matrix<double,6,6> cov_original, cov_transformed_numerical;
+cov_original.setZero();
+cov_original_extracted.setRandom();
+cov_original.block(0,0,4,4) = cov_original_extracted.block(0,0,4,4);
+cov_original.block(5,0,1,4) = cov_original_extracted.block(4,0,1,4);
+cov_original.block(0,5,4,1) = cov_original_extracted.block(0,4,4,1);
+cov_original(5,5) = cov_original_extracted(4,4);
+
+cov_transformed_analytical = cov_original_extracted;
+
 cov_transformed_numerical = cov_original;
 Eigen::Matrix<double,6,6> cov_transform_numerical;
 
@@ -289,13 +300,25 @@ cov_transform_numerical.block(0,3,6,1) = SE2_se2::OMinus(state_base,state_p1)/dt
 cov_transform_numerical.block(0,4,6,1) = SE2_se2::OMinus(state_base,state_p2)/dt;
 cov_transform_numerical.block(0,5,6,1) = SE2_se2::OMinus(state_base,state_w)/dt;
 
+MatCov cov_transform_numerical_extracted;
+cov_transform_numerical_extracted.block(0,0,4,4) = cov_transform_numerical.block(0,0,4,4);
+cov_transform_numerical_extracted.block(4,0,1,4) = cov_transform_numerical.block(5,0,1,4);
+cov_transform_numerical_extracted.block(0,4,4,1) = cov_transform_numerical.block(0,5,4,1);
+cov_transform_numerical_extracted(4,4) = cov_transform_numerical(5,5); 
+
 cov_transformed_numerical = cov_transform_numerical*cov_original*cov_transform_numerical.transpose();
 
-// We undo the analytical transformation using the numerical transformations to test that the numerical is close to the analytical.
-Eigen::Matrix<double,6,6> cov_undone = cov_transform_numerical.inverse()* cov_transformed_analytical * (cov_transform_numerical.transpose()).inverse();
+MatCov cov_extracted;
+cov_extracted.block(0,0,4,4) = cov_transformed_numerical.block(0,0,4,4);
+cov_extracted.block(4,0,1,4) = cov_transformed_numerical.block(5,0,1,4);
+cov_extracted.block(0,4,4,1) = cov_transformed_numerical.block(0,5,4,1);
+cov_extracted(4,4) = cov_transformed_numerical(5,5); 
 
-ASSERT_LE( (cov_transformed_numerical - cov_transformed_analytical).norm(), 1e-7 );
-ASSERT_LE( (cov_undone - cov_original).norm(), 1e-7 );
+// We undo the analytical transformation using the numerical transformations to test that the numerical is close to the analytical.
+MatCov cov_undone = cov_transform_numerical_extracted.inverse()* cov_transformed_analytical * (cov_transform_numerical_extracted.transpose()).inverse();
+
+ASSERT_LE( (cov_extracted - cov_transformed_analytical).norm(), 1e-7 );
+ASSERT_LE( (cov_undone - cov_original_extracted).norm(), 1e-7 );
 
 }
 

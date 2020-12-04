@@ -16,25 +16,30 @@ namespace rransac
  * The transformation being applied is dependent on the data type, state type, and derived/child class
 */
 
-template <class Data, class State, class Derived>
+template <class tData, class tState, class tMatCov, class tDerived>
 class TransformBase {
 
 public:
+
+typedef tData Data;
+typedef tState State;
+typedef tMatCov MatCov;
+typedef tDerived Derived;
 
 /** 
  * Sets the transformation data member variable. This function will also call the derived classes set data in case
  * other stuff needs to be done. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void SetData(Data& data) {
-    static_cast<Derived*>(this)->SetData(data);
+void SetData(tData& data) {
+    static_cast<tDerived*>(this)->DerivedSetData(data);
 }
 
 
 /** 
  * Returns the transformation data member variable.
  */ 
-Data GetData() {
+tData GetData() {
     return data_;
 }
 
@@ -42,8 +47,8 @@ Data GetData() {
  * Transforms the measurement using data_ from the previous surveillance frame to the current one.
  * @param meas The measurement to be transformed.
  */ 
-void TransformMeasurement(Meas& meas) {
-    static_cast<Derived*>(this)->TransformMeasurement(meas);
+void TransformMeasurement(Meas& meas) const {
+    static_cast<const tDerived*>(this)->DerivedTransformMeasurement(meas);
 }
 
 /** 
@@ -52,9 +57,9 @@ void TransformMeasurement(Meas& meas) {
  * @param state The track's state to be transformed.
  * @param cov   The track's error covariance to be transformed.
  */ 
-void TransformTrack(State& state, Eigen::Matrix<double,State::dim_,State::dim_>& cov) {
+void TransformTrack(tState& state, tMatCov& cov) const {
 // void TransformTrack(State& state, Eigen::MatrixXd& cov) {
-    static_cast<Derived*>(this)->TransformTrack(state,cov);
+    static_cast<const tDerived*>(this)->DerivedTransformTrack(state,cov);
 }
 
 

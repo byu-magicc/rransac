@@ -26,27 +26,27 @@ SourceRN()=default;
 ~SourceRN()=default;
 
 /** Initializes the measurement source. This function must set the parameters.  */
-void Init(const SourceParameters& params);      
+void DerivedInit(const SourceParameters& params);      
 
 /** Returns the jacobian of the observation function w.r.t. the states */
-Eigen::MatrixXd GetLinObsMatState(const tState& state) {return this->H_;}                        
+Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state) {return this->H_;}                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd GetLinObsMatSensorNoise(const tState& state) {return this->V_;}                         
+Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state) {return this->V_;}                         
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const tState& state);
+Meas DerivedGetEstMeas(const tState& state);
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2);
+Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
  * @param Meas The measurement whose pose needs to be transformed
  */
-Eigen::MatrixXd ToEuclidean(const Meas& m)  {
+Eigen::MatrixXd DerivedToEuclidean(const Meas& m)  {
     return m.pose;
 }
 
@@ -55,7 +55,7 @@ Eigen::MatrixXd ToEuclidean(const Meas& m)  {
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
+Meas DerivedGenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
 
 };
 
@@ -66,7 +66,7 @@ Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<class tState>
-void SourceRN<tState>::Init(const SourceParameters& params) {
+void SourceRN<tState>::DerivedInit(const SourceParameters& params) {
 
     const unsigned int sizeg = tState::g_type_::dim_;
     const unsigned int sizeu = tState::u_type_::dim_;
@@ -99,7 +99,7 @@ void SourceRN<tState>::Init(const SourceParameters& params) {
 //---------------------------------------------------------------------------
 
 template<class tState>
-Meas SourceRN<tState>::GetEstMeas(const tState& state) {
+Meas SourceRN<tState>::DerivedGetEstMeas(const tState& state) {
     Meas m;
     m.pose = state.g_.data_;
     m.twist = state.u_.data_;
@@ -108,7 +108,7 @@ Meas SourceRN<tState>::GetEstMeas(const tState& state) {
 
 //---------------------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceRN<tState>::OMinus(const Meas& m1, const Meas& m2) {
+Eigen::MatrixXd SourceRN<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
 
     if (this->params_.type_ == MeasurementTypes::RN_POS) {
         return m1.pose - m2.pose;
@@ -124,7 +124,7 @@ Eigen::MatrixXd SourceRN<tState>::OMinus(const Meas& m1, const Meas& m2) {
 
 //---------------------------------------------------------------------------------------------
 template<class tState>
-Meas SourceRN<tState>::GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
+Meas SourceRN<tState>::DerivedGenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
     Meas m;
     m.source_index = this->params_.source_index_;
 
@@ -150,8 +150,8 @@ Meas SourceRN<tState>::GenerateRandomMeasurement(const tState& state, const Eige
 }
 
 //Common Sources
-typedef SourceBase<lie_groups::R2_r2, SourceRN<lie_groups::R2_r2>> SourceR2;
-typedef SourceBase<lie_groups::R3_r3, SourceRN<lie_groups::R3_r3>> SourceR3;
+typedef SourceRN<lie_groups::R2_r2> SourceR2;
+typedef SourceRN<lie_groups::R3_r3> SourceR3;
 
 
 } // namesapce rransac

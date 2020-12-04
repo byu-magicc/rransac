@@ -67,6 +67,7 @@
         "variant": "cpp",
         "bit": "cpp",
         "*.tpp": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "matrixfunctions": "cpp"
     }
 }

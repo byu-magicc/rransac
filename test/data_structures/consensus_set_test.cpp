@@ -6,30 +6,48 @@
 #include <stdlib.h>
 #include <time.h> 
 #include <chrono>
+#include "common/transformations/transformation_base.h"
+#include "state.h"
 
 namespace rransac {
 
 template<class M>
 void Print(const ConsensusSet<M>& cs) {
 
-for (auto it = cs.consensus_set_.begin(); it != cs.consensus_set_.end(); ++it) {
-    std::cout << (*it).front().time_stamp << std::endl;
+    for (auto it = cs.consensus_set_.begin(); it != cs.consensus_set_.end(); ++it) {
+        std::cout << (*it).front().time_stamp << std::endl;
+    }
 }
 
+// --------------------------------------------------------------------------------------------
+
+class TransformScalar : public TransformBase<double, lie_groups::R2_r2, Eigen::Matrix4d, TransformScalar> {
+public:
+void DerivedSetData(double data){ data_ = data;}
+
+void DerivedTransformMeasurement(Meas& meas) const{
+    meas.pose = meas.pose*data_;
+    meas.twist = meas.twist*data_;
 }
+
+void TransformTrack(lie_groups::R2_r2& state, Eigen::Matrix4d&cov) const {}
+
+};
+
+// --------------------------------------------------------------------------------------------
 
 TEST(CONSENSUS_TEST, ADD_MEASUREMENT) {
 
-MeasBase<int,int> m1, m2,m3,m4,m5,m6;
+Meas m1, m2,m3,m4,m5,m6;
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
 m3.time_stamp = 0.5;
 m4.time_stamp = -0.1;
 m5.time_stamp = 0.2;
-m5.source_id = 1;
+m5.source_index = 1;
 m6.time_stamp = 0.2;
-m6.source_id = 2;
-ConsensusSet<MeasBase<int,int>> cs;
+m6.source_index = 2;
+ConsensusSet<Meas> cs;
 
 cs.AddMeasToConsensusSet(m1);
 ASSERT_EQ(cs.consensus_set_.size(), 1);
@@ -46,7 +64,7 @@ ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 
 // m3 should come after m1 and m2
 cs.AddMeasToConsensusSet(m3);
-std::list<std::vector<MeasBase<int,int>>>::iterator iter = cs.consensus_set_.begin();
+std::list<std::vector<Meas>>::iterator iter = cs.consensus_set_.begin();
 ASSERT_EQ(cs.consensus_set_.size(), 3);
 ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 ASSERT_EQ((*(++iter)).back().time_stamp, m2.time_stamp);
@@ -88,8 +106,8 @@ ASSERT_EQ((*iter).front().time_stamp, m4.time_stamp);
 ASSERT_EQ((*(++iter)).front().time_stamp, m1.time_stamp);
 ASSERT_EQ((*(++iter)).back().time_stamp, m2.time_stamp);
 ASSERT_EQ((*(++iter)).front().time_stamp, m5.time_stamp);
-ASSERT_EQ((*iter).front().source_id, m5.source_id);
-ASSERT_EQ((*iter).back().source_id, m6.source_id);
+ASSERT_EQ((*iter).front().source_index, m5.source_index);
+ASSERT_EQ((*iter).back().source_index, m6.source_index);
 ASSERT_EQ(cs.consensus_set_.back().front().time_stamp, m3.time_stamp);
 // std::cerr << "here 3" << std::endl;
 
@@ -102,12 +120,12 @@ TEST(CONSENSUS_TEST, ADD_MEASUREMENTS) {
 
 
 int num_meas = 1000;
-ConsensusSet<MeasBase<int,int>> cs;
+ConsensusSet<Meas> cs;
 srand (time(NULL));
-std::vector<MeasBase<int,int>> measurements;
+std::vector<Meas> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    MeasBase<int,int> m1;
+    Meas m1;
     m1.time_stamp = rand() % 200 - 100;
     measurements.push_back(m1);
 }
@@ -144,9 +162,9 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 TEST(CONSENSUS_TEST, ADD_MEASUREMENTS_SAME_TIME_STAMP) {
 
 
-ConsensusSet<MeasBase<int,int>> cs;
-MeasBase<int,int> m1,m2,m3,m4,m5;
-std::vector<MeasBase<int,int>> mv1, mv2, mv3, mv4, mv5, mv6;
+ConsensusSet<Meas> cs;
+Meas m1,m2,m3,m4,m5;
+std::vector<Meas> mv1, mv2, mv3, mv4, mv5, mv6;
 m1.time_stamp = 0.1;
 m2.time_stamp = -0.1;
 m3.time_stamp = 0.4;
@@ -178,10 +196,10 @@ ASSERT_EQ(iter->size(), 4);
 int num_meas = 1000;
 
 srand (time(NULL));
-std::vector<MeasBase<int,int>> measurements;
+std::vector<Meas> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    MeasBase<int,int> m;
+    Meas m;
     m.time_stamp = rand() % 200 - 100;
     measurements.clear();
     measurements.push_back(m);
@@ -218,7 +236,7 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 
 TEST(CONSENSUS_TEST, PRUNE_CONSENSUS_SET) {
 
-MeasBase<int,int> m1, m2,m3,m4,m5,m6;
+Meas m1, m2,m3,m4,m5,m6;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -226,9 +244,9 @@ m3.time_stamp = 0.5;
 m4.time_stamp = -0.1;
 m5.time_stamp = 0.2;
 m6.time_stamp = 0.2;
-std::vector<MeasBase<int,int>> meas {m1,m2,m3,m4,m5,m6};
+std::vector<Meas> meas {m1,m2,m3,m4,m5,m6};
 
-ConsensusSet<MeasBase<int,int>> cs;
+ConsensusSet<Meas> cs;
 cs.AddMeasurementsToConsensusSet(meas);
 
 // Remove all measurements
@@ -255,4 +273,59 @@ ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m5.time_stamp);
 
 }
 
+// -----------------------------------------------------------------
+
+TEST(CONSENSUS_TEST, TRANSFORM_CONSENSUS_SET) {
+
+Meas m1, m2,m3,m4,m5,m6;
+
+m1.time_stamp = 0;
+m2.time_stamp = 0.1;
+m3.time_stamp = 0.5;
+m4.time_stamp = -0.1;
+m5.time_stamp = 0.2;
+m6.time_stamp = 0.2;
+
+m1.pose = Eigen::Vector2d::Random();
+m2.pose = Eigen::Vector2d::Random();
+m3.pose = Eigen::Vector2d::Random();
+m4.pose = Eigen::Vector2d::Random();
+m5.pose = Eigen::Vector2d::Random();
+m6.pose = Eigen::Vector2d::Random();
+
+m1.twist = Eigen::Vector2d::Random();
+m2.twist = Eigen::Vector2d::Random();
+m3.twist = Eigen::Vector2d::Random();
+m4.twist = Eigen::Vector2d::Random();
+m5.twist = Eigen::Vector2d::Random();
+m6.twist = Eigen::Vector2d::Random();
+
+std::vector<Meas> meas {m1,m2,m3,m4,m5,m6};
+
+ConsensusSet<Meas> cs, cs_copy;
+cs.AddMeasurementsToConsensusSet(meas);
+
+
+TransformScalar trans;
+double data = 2.0;
+trans.SetData(data);
+
+cs.TransformConsensusSet(trans);
+
+auto iter = cs.consensus_set_.begin();
+
+ASSERT_EQ( (*iter)[0].pose, m4.pose*data  );
+++iter;
+ASSERT_EQ( (*iter)[0].pose, m1.pose*data  );
+++iter;
+ASSERT_EQ( (*iter)[0].pose, m2.pose*data  );
+++iter;
+ASSERT_EQ( (*iter)[0].pose, m5.pose*data  );
+ASSERT_EQ( (*iter)[1].pose, m6.pose*data  );
+++iter;
+ASSERT_EQ( (*iter)[0].pose, m3.pose*data  );
+
+
 }
+
+} // namespace rransac

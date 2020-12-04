@@ -11,8 +11,8 @@ namespace rransac
  * This transform class is used when the measurements and the track do not need to be transformed. 
 */
 
-template<class S>
-class TransformNULL : public TransformBase<Eigen::MatrixXd, S, TransformNULL<S>> {
+template<class tState>
+class TransformNULL : public TransformBase<Eigen::MatrixXd, tState, Eigen::Matrix<double,tState::dim_,tState::dim_>, TransformNULL<tState>> {
 
 public:
 
@@ -21,7 +21,7 @@ public:
  * opportunity to perform other calculations using the data. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void SetData(Eigen::Matrix3d data) {
+void DerivedSetData(Eigen::Matrix3d data) {
     throw std::runtime_error("TransformNULL::SetData Not Implemented.");
 }
 
@@ -29,7 +29,7 @@ void SetData(Eigen::Matrix3d data) {
  * Transforms the measurement using data_ from the previous surveillance frame to the current one.
  * @param meas The measurement to be transformed.
  */ 
-void TransformMeasurement(Meas& meas) {
+void DerivedTransformMeasurement(Meas& meas) {
     throw std::runtime_error("TransformNULL::TransformMeasurement Not Implemented.");
 }
 
@@ -39,7 +39,7 @@ void TransformMeasurement(Meas& meas) {
  * @param state The track's state to be transformed.
  * @param cov   The track's error covariance to be transformed.
  */ 
-void TransformTrack(S& state, Eigen::Matrix<double,S::dim_,S::dim_>& cov) {
+void DerivedTransformTrack(tState& state, Eigen::Matrix<double,tState::dim_,tState::dim_>& cov) {
     throw std::runtime_error("TransformNULL::TransformTrack Not Implemented.");
 }
 

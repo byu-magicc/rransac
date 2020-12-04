@@ -1,0 +1,211 @@
+#include <gtest/gtest.h>
+#include <Eigen/Core>
+
+#include "system.h"
+#include "common/models/model_manager.h"
+#include "common/transformations/transformation_null.h"
+#include "common/models/model_RN.h"
+#include "common/sources/source_RN.h"
+
+namespace rransac
+{
+    
+using namespace lie_groups;
+
+/**
+ * Test the AddModel function. When a model is added and there are more models than the maximum number of models, the model with the 
+ * lowest model likelihood is removed. We will verify that it can remove a model from the begining, middle, and end
+ */ 
+TEST(ModelManagerTest, AddModel ) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL<State>> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;
+int max_num_models = 10;
+
+sys.params_.max_num_models_ = max_num_models;
+
+// setup the models
+Model model;
+for(int ii = 0; ii < max_num_models+2; ++ii) {
+    
+    
+    if (ii == 5)
+        model.model_likelihood_ = 0.11;
+    else
+    {
+        model.model_likelihood_ = ii;
+    }
+    
+    model.label_ = ii;
+    model_manager.AddModel(sys, model);
+
+    
+}
+
+model.model_likelihood_ = 0.1;
+model.label_ = 12;
+
+model_manager.AddModel(sys, model);
+
+
+ASSERT_EQ(sys.models_.size(), max_num_models);
+
+auto iter = sys.models_.begin();
+
+ASSERT_EQ((*iter).label_, 1 );
+++iter;
+ASSERT_EQ((*iter).label_, 2 );
+++iter;
+ASSERT_EQ((*iter).label_, 3 );
+++iter;
+ASSERT_EQ((*iter).label_, 4 );
+++iter;
+ASSERT_EQ((*iter).label_, 6 );
+++iter;
+ASSERT_EQ((*iter).label_, 7 );
+++iter;
+ASSERT_EQ((*iter).label_, 8 );
+++iter;
+ASSERT_EQ((*iter).label_, 9 );
+++iter;
+ASSERT_EQ((*iter).label_, 10 );
+++iter;
+ASSERT_EQ((*iter).label_, 11 );
+
+}
+
+// ----------------------------------------------------------------
+
+TEST(ModelManagerTest, PruneConsensusSet ) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL<State>> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;  
+
+Model model;
+
+sys.params_.max_num_models_ = 2;
+
+Meas m1, m2;
+m1.time_stamp = 0.5; 
+m2.time_stamp = 1;
+
+std::vector<Meas> meas{m1,m2};
+
+model.cs_.AddMeasurementsToConsensusSet(meas);
+model_manager.AddModel(sys, model);
+model_manager.AddModel(sys, model);
+model_manager.PruneConsensusSets(sys, 0.7);
+
+ASSERT_EQ(sys.models_.begin()->cs_.consensus_set_.size(), 1);
+ASSERT_EQ(sys.models_.back().cs_.consensus_set_.size(), 1);
+
+}
+
+
+/**
+ *  Ensures that PropagateModel is called on all of the models
+ */ 
+TEST(ModelManagerTest, PropagateModel ) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL<State>> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;  
+
+Model model;
+model.state_.g_.data_ << 1,1,1;
+model.state_.u_.data_ << 2,3,4;
+
+sys.params_.max_num_models_ = 2;
+double dt = 0.1;
+
+
+model_manager.AddModel(sys, model);
+model_manager.AddModel(sys, model);
+
+for (int ii = 0; ii < 10; ++ii) {
+    model_manager.PropagateModels(sys,dt);
+}
+
+ASSERT_DOUBLE_EQ(sys.models_.begin()->missed_detection_time_, 1.0);
+ASSERT_LE( (sys.models_.front().state_.u_.data_- model.state_.u_.data_).norm(), 1e-12 );
+ASSERT_LE( (sys.models_.front().state_.g_.data_- model.state_.g_.data_ -model.state_.u_.data_).norm(), 1e-12 );
+ASSERT_LE( (sys.models_.back().state_.u_.data_ - model.state_.u_.data_).norm(), 1e-12 );
+ASSERT_LE( (sys.models_.back().state_.g_.data_ - model.state_.g_.data_ -model.state_.u_.data_).norm(), 1e-12 );
+
+
+}
+
+/**
+ *  Ensures that UpdateModel is called on all of the models
+ */ 
+TEST(ModelManagerTest, UpdateModel ) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL<State>> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;  
+
+SourceR3 source;
+SourceParameters source_params;
+source_params.meas_cov_fixed_ = true;
+source_params.meas_cov_ = Eigen::Matrix3d::Identity();
+source_params.expected_num_false_meas_ = 0.1;
+source_params.type_ = MeasurementTypes::RN_POS;
+source_params.probability_of_detection_ = 0.9;
+source_params.gate_probability_ = 0.8;
+source_params.source_index_ = 0;
+source.Init(source_params);
+
+sys.sources_.push_back(source);
+
+sys.params_.max_num_models_ = 2;
+sys.params_.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
+
+Meas m;
+m.source_index = 0;
+m.weight = 1;
+m.likelihood = 1;
+m.time_stamp = 0;
+m.type = MeasurementTypes::RN_POS;
+m.pose = Eigen::Matrix<double,3,1>::Random();
+
+
+Model model;
+model.Init(sys.sources_,sys.params_);
+model.state_.g_.data_ << 1,1,1;
+model.state_.u_.data_ << 2,3,4;
+
+model.new_assoc_meas_ = std::vector<std::vector<Meas>>{std::vector<Meas>{m}};
+
+double dt = 0.1;
+
+model_manager.AddModel(sys, model);
+model_manager.AddModel(sys, model);
+
+for (int ii = 0; ii < 10; ++ii) {
+    model_manager.PropagateModels(sys,dt);
+}
+ASSERT_DOUBLE_EQ(sys.models_.begin()->missed_detection_time_, 1.0);
+
+model_manager.UpdateModels(sys);
+
+
+ASSERT_EQ(sys.models_.front().missed_detection_time_, 0);
+ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
+
+
+}
+
+} // namespace rransac
+
+
+

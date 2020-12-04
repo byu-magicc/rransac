@@ -58,26 +58,53 @@ typedef Eigen::Matrix<double,cov_dim_,cov_dim_> Mat;
 public:
     State state_;                     /** < The estimated state of the phenomenon or target.*/
     Mat err_cov_;                     /** < The error covariance. */
-    double model_likelihood_;         /** < The likelihood that the model represents an actual phenomenon. This value will be between 0 and 1. */
+    
+    ConsensusSet<Meas> cs_;           /** < The consensus set. */
     std::vector<std::vector<Meas>> new_assoc_meas_;   /** < Measurements recently associated with the model. These measurements have not been used to update 
                                                      the model. Once an associated measurement has been used to update the model, they are added to the 
                                                      consensus set and removed from this vector. These measurements should have weights assigned to them. 
                                                      Each vector of measurements corresponds to a unique source ID. */
-    
-    ConsensusSet<Meas> cs_;           /** < The consensus set. */
 
-    Mat Q_;                           /** < Process noise covariance */
+    double missed_detection_time_;  /** The time elapsed since a measurement was associated with the target. */
+    
+    unsigned long int label_;       /** When the model becomes a good model, it receives a unique label */   
 
     std::vector<Source>* sources_;    /** < Reference to the sources contained in system */
 
+    double model_likelihood_;         /** < The likelihood that the model represents an actual phenomenon. This value will be between 0 and 1. */
     std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info_; /**< Contains the information needed to update the model_likelihood */
 
     // Useful matrices for propagating
     Mat F_;                           /** < The Jacobian of the state transition function w.r.t. the states */
     Mat G_;                           /** < The Jacobian of the state transition function w.r.t. the noise  */
+    Mat Q_;                           /** < Process noise covariance */
 
-
+    // Default constructor
     ModelBase()=default;
+
+    // Copy Constructor
+    ModelBase(const ModelBase& other) : state_(other.state_), err_cov_(other.err_cov_), model_likelihood_(other.model_likelihood_), 
+                                    new_assoc_meas_(other.new_assoc_meas_), missed_detection_time_(other.missed_detection_time_), 
+                                    cs_(other.cs_), sources_(other.sources_), Q_(other.Q_), model_likelihood_update_info_(other.model_likelihood_update_info_),
+                                    F_(other.F_), G_(other.G_), label_(other.label_) { }
+
+    // Copy assignment
+    ModelBase& operator =(const ModelBase& other) {
+        state_                        = other.state_;
+        err_cov_                      = other.err_cov_;
+        model_likelihood_             = other.model_likelihood_;
+        new_assoc_meas_               = other.new_assoc_meas_;
+        missed_detection_time_        = other.missed_detection_time_;
+        cs_                           = other.cs_;
+        Q_                            = other.Q_;
+        sources_                      = other.sources_;
+        model_likelihood_update_info_ = other.model_likelihood_update_info_;
+        F_                            = other.F_;
+        G_                            = other.G_;
+        label_                        = other.label_;
+    }
+
+    // Default destructor
     ~ModelBase()=default;
 
      /**
@@ -139,9 +166,12 @@ public:
      * @param[in] param Contains all of the user defined parameters.
      */ 
     void UpdateModel(const Parameters& params) {
-        static_cast<tDerived*>(this)->DerivedUpdateState(GetStateUpdate( params));
-        for (auto& new_measurements: new_assoc_meas_) {
-            cs_.AddMeasurementsToConsensusSet(new_measurements);
+        if (new_assoc_meas_.size() > 0) {
+            static_cast<tDerived*>(this)->DerivedUpdateState(GetStateUpdate( params));
+            for (auto& new_measurements: new_assoc_meas_) {
+                cs_.AddMeasurementsToConsensusSet(new_measurements);
+            }
+            missed_detection_time_ = 0;      // reset the missed detection time since a measurement was received
         }
         
         new_assoc_meas_.clear();
@@ -186,8 +216,19 @@ public:
      * @param[in] T The transformation object provided by the user. The object should already have the data it needs to transform the model.
      * @param[in] dt The time interval between the previous global frame and the current global frame. 
      */ 
-    void TransformModel(Transformation& T){
+    void TransformModel(const Transformation& T){
         T.TransformTrack(state_,this->err_cov_);
+    }
+
+    void TransformConsensusSet(const Transformation& T) {
+        cs_.TransformConsensusSet<tTransformation>(T);
+    }
+
+    /**
+     * Computes the OMinus operation for the state
+     */ 
+    static Eigen::Matrix<double,tCovDim,1> OMinus(const tDerived& model1, const tDerived& model2) {
+        return static_cast<tDerived*>(this)->OMinus(model1, model2);
     }
 
     /**
@@ -201,6 +242,18 @@ public:
     static State GetRandomState(){
         return tDerived::DerivedGetRandomState();
     }
+
+    /**
+     * 
+     */
+
+
+    /**
+     * Removes all of the measurements past the expiration time. 
+     */
+    void PruneConsensusSet(const double expiration_time) {
+        cs_.PruneConsensusSet(expiration_time);
+    } 
 
 private:
 
@@ -226,6 +279,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(std::vector<So
     SetParameters(params);
     model_likelihood_ = 0;
     model_likelihood_update_info_.resize(sources_->size());
+    missed_detection_time_ = 0;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -236,6 +290,8 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(cons
     // Construct matrices to transform covariance.
     F_ = GetLinTransFuncMatState(state_,dt);
     G_ = GetLinTransFuncMatNoise(state_,dt);
+
+    missed_detection_time_+=dt;
 
 
     // Transform covariance

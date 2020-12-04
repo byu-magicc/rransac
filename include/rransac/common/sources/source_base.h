@@ -13,6 +13,7 @@
 #include "parameters.h"
 #include "common/measurement/measurement_base.h"
 #include "state.h"
+#include "common/utilities.h"
 
 
 namespace rransac
@@ -97,17 +98,17 @@ public:
     Eigen::MatrixXd GetLinObsMatState(const State& state){
        
         // std::cout << typeid(M).name() << std::endl;
-        return static_cast<tDerived*>(this)->GetLinObsMatState(state);
+        return static_cast<tDerived*>(this)->DerivedGetLinObsMatState(state);
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
     Eigen::MatrixXd GetLinObsMatSensorNoise(const State& state){
-        return static_cast<tDerived*>(this)->GetLinObsMatSensorNoise(state);
+        return static_cast<tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
     }                         
 
     /** Computes the estimated measurement given a state */
     Meas GetEstMeas(const State& state){
-        return static_cast<tDerived*>(this)->GetEstMeas(state);
+        return static_cast<tDerived*>(this)->DerivedGetEstMeas(state);
     } 
 
     /**
@@ -116,7 +117,7 @@ public:
      * @param m2 a measurement
      */
     Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
-        return static_cast<tDerived*>(this)->OMinus(m1, m2);
+        return static_cast<tDerived*>(this)->DerivedOMinus(m1, m2);
     } 
 
     /**
@@ -125,7 +126,7 @@ public:
      * @param Meas The measurement whose pose needs to be transformed
      */
     Eigen::MatrixXd ToEuclidean(const Meas& m)  {
-        return static_cast<tDerived*>(this)->ToEuclidean(m); 
+        return static_cast<tDerived*>(this)->DerivedToEuclidean(m); 
     }
 
    /**
@@ -134,7 +135,7 @@ public:
      * @param meas_std The measurement covariance
      */ 
     Meas GenerateRandomMeasurement(const State& state, const Eigen::MatrixXd& meas_std){
-        return static_cast<tDerived*>(this)->GenerateRandomMeasurement(state,meas_std);
+        return static_cast<tDerived*>(this)->DerivedGenerateRandomMeasurement(state,meas_std);
     }
 
    /**
@@ -206,7 +207,7 @@ private:
     static double GSD_SEN_SEN_POS(const Meas& meas1, const Meas& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
     static double GSD_NotImplemented(const Meas& meas1, const Meas& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
 
-    std::default_random_engine gen_;
+    
 
 };
 
@@ -243,7 +244,7 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
     this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
     
 
-    static_cast<tDerived*>(this)->Init(params_);
+    static_cast<tDerived*>(this)->DerivedInit(params_);
 }   
 
 //-------------------------------------------------------------------------------
@@ -251,13 +252,7 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
 template<typename tState, typename tDerived>
 Eigen::MatrixXd  SourceBase<tState, tDerived>::GaussianRandomGenerator(const int size){
 
-    std::normal_distribution<double> dist_(0,1);
-    Eigen::MatrixXd randn_nums(size,1);
-    for (unsigned int ii = 0; ii < size; ++ii){
-        randn_nums(ii,0) = dist_(gen_);
-    }
-
-    return randn_nums;
+    return utilities::GaussianRandomGenerator(size);
 }
 
 //-------------------------------------------------------------------------------

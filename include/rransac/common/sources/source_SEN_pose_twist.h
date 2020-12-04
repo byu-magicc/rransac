@@ -23,36 +23,36 @@ static constexpr unsigned int meas_dim_ = tState::g_type_::dim_;
 
 
 /** Initializes the measurement source. This function must set the parameters.  */
-void Init(const SourceParameters& params);      
+void DerivedInit(const SourceParameters& params);      
 
 /** Returns the jacobian of the observation function w.r.t. the states 
  * @param state A state of a model.
 */
-Eigen::MatrixXd GetLinObsMatState(tState const& state){return this->H_;};                        
+Eigen::MatrixXd DerivedGetLinObsMatState(tState const& state){return this->H_;};                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd GetLinObsMatSensorNoise(const tState& state){return this->V_;}                        
+Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state){return this->V_;}                        
 
 /** Computes the estimated measurement given a state */
-Meas GetEstMeas(const tState& state);
+Meas DerivedGetEstMeas(const tState& state);
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2);
+Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
 
 /**
  * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
  * @param m The measurement whose pose needs to be transformed
  */
-Eigen::MatrixXd ToEuclidean(const Meas& m);
+Eigen::MatrixXd DerivedToEuclidean(const Meas& m);
 
 /**
  * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
+Meas DerivedGenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std);
 
 };
 
@@ -63,7 +63,7 @@ Meas GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_
 //-----------------------------------------------------------------
 
 template<class tState>
-void SourceSENPoseTwist<tState>::Init(const SourceParameters& params) {
+void SourceSENPoseTwist<tState>::DerivedInit(const SourceParameters& params) {
 
     // Verify state
     if (typeid(State).name() != typeid(lie_groups::SE2_se2).name() && typeid(State).name() != typeid(lie_groups::SE3_se3).name())
@@ -92,7 +92,7 @@ void SourceSENPoseTwist<tState>::Init(const SourceParameters& params) {
 
 //----------------------------------------------------------------------------------------
 template<class tState>
-Meas SourceSENPoseTwist<tState>::GetEstMeas(const tState& state) {
+Meas SourceSENPoseTwist<tState>::DerivedGetEstMeas(const tState& state) {
     Meas m;
     m.pose = state.g_.data_;
     m.twist = state.u_.data_;
@@ -101,7 +101,7 @@ Meas SourceSENPoseTwist<tState>::GetEstMeas(const tState& state) {
 
 //----------------------------------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPoseTwist<tState>::OMinus(const Meas& m1, const Meas& m2) {
+Eigen::MatrixXd SourceSENPoseTwist<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
 
     if (this->params_.type_ == MeasurementTypes::SEN_POSE) {
         return State::g_type_::OMinus(m1.pose,m2.pose);
@@ -117,7 +117,7 @@ Eigen::MatrixXd SourceSENPoseTwist<tState>::OMinus(const Meas& m1, const Meas& m
 
 //----------------------------------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPoseTwist<tState>::ToEuclidean(const Meas& m)  {
+Eigen::MatrixXd SourceSENPoseTwist<tState>::DerivedToEuclidean(const Meas& m)  {
     typename State::g_type_ g(m.pose);
     Eigen::Matrix<double,  State::g_type_::dim_pos_,State::g_type_::dim_pos_> I = Eigen::Matrix<double,  State::g_type_::dim_pos_,State::g_type_::dim_pos_>::Identity();
     Eigen::Matrix<double, State::g_type_::dim_pos_,State::g_type_::dim_pos_>&& u = 2.0*(g.R_-I)*(g.R_+I).inverse();
@@ -131,7 +131,7 @@ Eigen::MatrixXd SourceSENPoseTwist<tState>::ToEuclidean(const Meas& m)  {
 
 //----------------------------------------------------------------------------------------
 template<class tState>
-Meas SourceSENPoseTwist<tState>::GenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
+Meas SourceSENPoseTwist<tState>::DerivedGenerateRandomMeasurement(const tState& state, const Eigen::MatrixXd& meas_std){
     Meas m;
     m.source_index = this->params_.source_index_;
 
@@ -158,8 +158,8 @@ Meas SourceSENPoseTwist<tState>::GenerateRandomMeasurement(const tState& state, 
 }
 
 // Common Sources
-typedef SourceBase<lie_groups::SE2_se2,SourceSENPoseTwist<lie_groups::SE2_se2>> SourceSE2PoseTwist;
-typedef SourceBase<lie_groups::SE3_se3,SourceSENPoseTwist<lie_groups::SE3_se3>> SourceSE3PoseTwist;
+typedef SourceSENPoseTwist<lie_groups::SE2_se2> SourceSE2PoseTwist;
+typedef SourceSENPoseTwist<lie_groups::SE3_se3> SourceSE3PoseTwist;
 
 
 

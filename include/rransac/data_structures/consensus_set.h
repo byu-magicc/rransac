@@ -14,7 +14,7 @@ namespace rransac
  * the measurements. Each vector of measurements contains measurements with the same time stamp. 
  */ 
 
-template <class M>
+template <class tMeasurement>
 class ConsensusSet
 {
 public:
@@ -23,19 +23,19 @@ public:
  * Add a measurement to the consensus set. 
  * @param[in] meas The measurement to be added.
 */
-void AddMeasToConsensusSet(const M& meas);
+void AddMeasToConsensusSet(const tMeasurement& meas);
 
 /** 
  * Add a measurements to the consensus set. 
  * @param[in] meas The measurements to be added.
 */
-void AddMeasurementsToConsensusSet(const std::vector<M>& meas);
+void AddMeasurementsToConsensusSet(const std::vector<tMeasurement>& meas);
 
 /** 
  * Add a measurements to the consensus set. The measurements have the same time stamp.
  * @param[in] meas The measurements to be added.
 */
-void AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<M>& meas);
+void AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<tMeasurement>& meas);
 
 /** 
  * Removes all of the measurements from the consensus_set with a time stamp that occurred before the expiration_time. 
@@ -46,12 +46,18 @@ void AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<M>& meas);
 void PruneConsensusSet(double expiration_time);
 
 /**
+ * Transforms all of the measurements in the consensus set using the provided transformation.
+ */ 
+template<typename tTransformation>
+void TransformConsensusSet(const tTransformation& T);
+
+/**
  * Returns the size of the consensus set.
  */ 
 unsigned int Size() { return consensus_set_.size();}
 
 
-std::list<std::vector<M>> consensus_set_; /** < Contains the measurements associated with the model that have not expired. Each vector of measurements 
+std::list<std::vector<tMeasurement>> consensus_set_; /** < Contains the measurements associated with the model that have not expired. Each vector of measurements 
                                                 contains measurements with the same time stamp. This allows us to efficiently remove expired measurements
                                                 by simply removing an entire vector. */
 

@@ -45,6 +45,13 @@ void DerivedUpdateState(const Eigen::Matrix<double,2*g_dim_,1>& state_update);
  */ 
 static State DerivedGetRandomState(){ return State::Random();}
 
+/**
+ * 
+ */
+ static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelRN& model1, const ModelRN& model2 ) {
+     return model1.state_.Ominus(model2);
+ }
+
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
