@@ -223,13 +223,15 @@ m2.time_stamp = 1;
 model1.label_ = 2;
 model1.missed_detection_time_ = 10;
 model1.model_likelihood_ = 10;
-model1.err_cov_ = Eigen::Matrix<double,6,6>::Identity()*1.5;
+model1.err_cov_.setZero();
+model1.err_cov_.diagonal() << 2.5, 2.5, 2.5, 1.5, 1.5, 1.5;
 model1.cs_.AddMeasToConsensusSet(m1);
 
 model2.label_ = 3;
 model2.missed_detection_time_ = 1;
 model2.model_likelihood_ = 1000;
-model2.err_cov_ = Eigen::Matrix<double,6,6>::Identity()*0.5;
+model2.err_cov_.setZero();
+model2.err_cov_.diagonal() << 0.5, 0.5, 0.5, 3,3,3;
 model2.cs_.AddMeasToConsensusSet(m2);
 
 // Set states so that they are not similar
@@ -251,20 +253,61 @@ ASSERT_EQ(sys.models_.size(),2);
 
 // change the data of model2 so that it will be merged
 model2.state_.g_.data_ << 1.5, 1.5, 1.5;
+model2.state_.u_.data_ << 1.1, 1.1, 1.1;
 model2.label_ = 1;
 model_manager.AddModel(sys, model2);
 
 
 model_manager.MergeModels(sys);
 
+ASSERT_EQ(sys.models_.back().label_,3);
 ASSERT_EQ(sys.models_.size(),2);
 ASSERT_EQ(sys.models_.front().label_, model2.label_);
 ASSERT_EQ(sys.models_.front().missed_detection_time_, model2.missed_detection_time_);
 ASSERT_EQ(sys.models_.front().model_likelihood_, model2.model_likelihood_);
 
-std::cout << "state g" << sys.models_.front().state_.g_.data_ << std::endl;
-std::cout << "state g" << sys.models_.front().state_.g_.data_ << std::endl;
-std::cout << "cov" << sys.models_.front().err_cov_ << std::endl;
+// The fused state should be between the two original states
+ASSERT_LT(sys.models_.front().state_.g_.data_(0), model2.state_.g_.data_(0));
+ASSERT_LT(sys.models_.front().state_.g_.data_(1), model2.state_.g_.data_(1));
+ASSERT_LT(sys.models_.front().state_.g_.data_(2), model2.state_.g_.data_(2));
+ASSERT_LT(sys.models_.front().state_.u_.data_(0), model2.state_.u_.data_(0));
+ASSERT_LT(sys.models_.front().state_.u_.data_(1), model2.state_.u_.data_(1));
+ASSERT_LT(sys.models_.front().state_.u_.data_(2), model2.state_.u_.data_(2));
+
+ASSERT_GT(sys.models_.front().state_.g_.data_(0), model1.state_.g_.data_(0));
+ASSERT_GT(sys.models_.front().state_.g_.data_(1), model1.state_.g_.data_(1));
+ASSERT_GT(sys.models_.front().state_.g_.data_(2), model1.state_.g_.data_(2));
+ASSERT_GT(sys.models_.front().state_.u_.data_(0), model1.state_.u_.data_(0));
+ASSERT_GT(sys.models_.front().state_.u_.data_(1), model1.state_.u_.data_(1));
+ASSERT_GT(sys.models_.front().state_.u_.data_(2), model1.state_.u_.data_(2));
+
+// The fused error covariance should be smaller than the other two covariances
+ASSERT_LT(sys.models_.front().err_cov_(0,0), model2.err_cov_(0,0));
+ASSERT_LT(sys.models_.front().err_cov_(1,1), model2.err_cov_(1,1));
+ASSERT_LT(sys.models_.front().err_cov_(2,2), model2.err_cov_(2,2));
+ASSERT_LT(sys.models_.front().err_cov_(3,3), model2.err_cov_(3,3));
+ASSERT_LT(sys.models_.front().err_cov_(4,4), model2.err_cov_(4,4));
+ASSERT_LT(sys.models_.front().err_cov_(5,5), model2.err_cov_(5,5));
+
+ASSERT_LT(sys.models_.front().err_cov_(0,0), model1.err_cov_(0,0));
+ASSERT_LT(sys.models_.front().err_cov_(1,1), model1.err_cov_(1,1));
+ASSERT_LT(sys.models_.front().err_cov_(2,2), model1.err_cov_(2,2));
+ASSERT_LT(sys.models_.front().err_cov_(3,3), model1.err_cov_(3,3));
+ASSERT_LT(sys.models_.front().err_cov_(4,4), model1.err_cov_(4,4));
+ASSERT_LT(sys.models_.front().err_cov_(5,5), model1.err_cov_(5,5));
+
+ASSERT_GT(sys.models_.front().err_cov_(0,0), 0);
+ASSERT_GT(sys.models_.front().err_cov_(1,1), 0);
+ASSERT_GT(sys.models_.front().err_cov_(2,2), 0);
+ASSERT_GT(sys.models_.front().err_cov_(3,3), 0);
+ASSERT_GT(sys.models_.front().err_cov_(4,4), 0);
+ASSERT_GT(sys.models_.front().err_cov_(5,5), 0);
+
+
+
+// std::cout << "state g" << sys.models_.front().state_.g_.data_ << std::endl;
+// std::cout << "state u" << sys.models_.front().state_.u_.data_ << std::endl;
+// std::cout << "cov" << sys.models_.front().err_cov_ << std::endl;
 
 }
 

@@ -1,4 +1,5 @@
 #include <random>
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include "system.h"
 #include "common/utilities.h"
@@ -56,7 +57,7 @@ static bool SimilarModels(const System<tModel>& sys, const tModel& model1, const
 /**
  *  Fuse two models together using the sampled covariance intersection method
  */ 
-tModel FuseModels(const tModel& model1, const tModel& model2);
+static tModel FuseModels(const tModel& model1, const tModel& model2);
 
 
 
@@ -179,6 +180,7 @@ typename tModel::Mat P_inv = P1_inv + P2_inv;
 typename tModel::Mat P = P_inv.inverse();
 const typename tModel::Mat P_sqrt = P.sqrt();
 
+
 // The sample covariance intersection method needs 100 samples
 std::vector<Eigen::Matrix<double,tModel::cov_dim_,1>> samples(100);
 for (auto& sample : samples) {
@@ -186,7 +188,7 @@ for (auto& sample : samples) {
 }
 
 double r_max = -1;
-double r_min = -1;
+double r_min = 1e10;
 double r_candidate;
 for (auto& sample : samples) {
 
@@ -214,7 +216,7 @@ for (auto& sample : samples) {
 P = P/(0.5*(r_min + r_max));
 
 // Update the state
-fused_model.state_.OPlusEQ(P*P2_inv*tModel::OMinus(model1, model2));
+fused_model.state_.OPlusEQ(P*P2_inv*tModel::OMinus(model2, model1));
 
 
 fused_model.err_cov_ = P;
@@ -235,7 +237,7 @@ if (model1.model_likelihood_ < model2.model_likelihood_)
 }
 
 fused_model.cs_ = fused_model.cs_.MergeConsensusSets(model1.cs_, model2.cs_);
-
+return fused_model;
 }
 
 

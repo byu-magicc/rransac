@@ -86,22 +86,22 @@ public:
     ModelBase(const ModelBase& other) : state_(other.state_), err_cov_(other.err_cov_), model_likelihood_(other.model_likelihood_), 
                                     new_assoc_meas_(other.new_assoc_meas_), missed_detection_time_(other.missed_detection_time_), 
                                     cs_(other.cs_), sources_(other.sources_), Q_(other.Q_), model_likelihood_update_info_(other.model_likelihood_update_info_),
-                                    F_(other.F_), G_(other.G_), label_(other.label_) { }
+                                    F_(other.F_), G_(other.G_), label_(other.label_) {}
 
     // Copy assignment
-    ModelBase& operator =(const ModelBase& other) {
-        state_                        = other.state_;
-        err_cov_                      = other.err_cov_;
-        model_likelihood_             = other.model_likelihood_;
-        new_assoc_meas_               = other.new_assoc_meas_;
-        missed_detection_time_        = other.missed_detection_time_;
-        cs_                           = other.cs_;
-        Q_                            = other.Q_;
-        sources_                      = other.sources_;
-        model_likelihood_update_info_ = other.model_likelihood_update_info_;
-        F_                            = other.F_;
-        G_                            = other.G_;
-        label_                        = other.label_;
+    void operator =(const ModelBase& other) {
+        this->state_                        = other.state_;
+        this->err_cov_                      = other.err_cov_;
+        this->model_likelihood_             = other.model_likelihood_;
+        this->new_assoc_meas_               = other.new_assoc_meas_;
+        this->missed_detection_time_        = other.missed_detection_time_;
+        this->cs_                           = other.cs_;
+        this->Q_                            = other.Q_;
+        this->sources_                      = other.sources_;
+        this->model_likelihood_update_info_ = other.model_likelihood_update_info_;
+        this->F_                            = other.F_;
+        this->G_                            = other.G_;
+        this->label_                        = other.label_;
     }
 
     // Default destructor

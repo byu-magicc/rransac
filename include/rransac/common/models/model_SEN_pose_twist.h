@@ -44,7 +44,7 @@ void DerivedOPlusEq(const Eigen::Matrix<double,2*g_dim_,1>& state_update);
  */ 
 static State DerivedGetRandomState(){ return State::Random(); }
 
-static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist& model1, const ModelSENPoseTwist& model2 ) {
+static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist<tState, tTransformation>& model1, const ModelSENPoseTwist<tState, tTransformation>& model2 ) {
      return model1.state_.OMinus(model2.state_);
 }
 
