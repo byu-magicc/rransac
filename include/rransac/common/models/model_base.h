@@ -248,11 +248,6 @@ public:
     }
 
     /**
-     * 
-     */
-
-
-    /**
      * Removes all of the measurements past the expiration time. 
      */
     void PruneConsensusSet(const double expiration_time) {

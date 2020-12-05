@@ -21,14 +21,29 @@ typedef tModel Model;
 static void AddModel(System<tModel>& sys, const tModel& model);
 
 /**
-* Prunes the consensus set for each model.
-*/
-static void PruneConsensusSets(System<tModel>& sys, const double expiration_time);
-
-/**
 * Propagates every model
 */
 static void PropagateModels(System<tModel>& sys, const double dt);
+
+/**
+ * Updates the models, prune the consensus set, merge models, ranks models, and prunes models
+ */
+static void ManageModels(System<tModel>& sys, const double expiration_time) {
+    UpdateModels(sys);
+    PruneConsensusSets(sys, expiration_time);
+    MergeModels(sys);
+    PruneModels(sys);
+    RankAndPruneModels(sys);
+}
+
+
+
+private:
+
+/**
+* Prunes the consensus set for each model.
+*/
+static void PruneConsensusSets(System<tModel>& sys, const double expiration_time);
 
 /**
 * Updates every model
@@ -40,8 +55,10 @@ static void UpdateModels(System<tModel>& sys);
 */
 static void MergeModels(System<tModel>& sys);
 
-
-private:
+/**
+ * Promotes models to good models, demotes good models to poor models, and prunes models
+ */
+static void RankModels(System<tModel>& sys); 
 
 /**
 * Removes the models with the lowest model likelihood.
@@ -72,11 +89,6 @@ void ModelManager<tModel>::AddModel(System<tModel>& sys, const tModel& model) {
 
     sys.models_.push_back(model);
 
-    if (sys.models_.size() > sys.params_.max_num_models_) {
-    
-        PruneModels(sys);
-    }
-
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -84,6 +96,16 @@ void ModelManager<tModel>::AddModel(System<tModel>& sys, const tModel& model) {
 template <typename tModel>
 void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
 
+    // Remove the models that have not received a measurement for a while
+    for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
+        if(it->missed_detection_time_ > sys.params_.max_missed_detection_time_) {
+            auto it_copy = it;
+            --it;                       // We are going to remove it so we need to back up to the previous
+            sys.models_.erase(it_copy);
+        }
+    }
+
+    // Remove the worst ones until there are only the desired number of models or less
     while (sys.models_.size() > sys.params_.max_num_models_) {
 
         auto iter_to_remove = sys.models_.begin(); // The iterator will point to the model to be removed
@@ -145,6 +167,34 @@ for (auto iter1 = sys.models_.begin(); iter1 != sys.models_.end(); ++iter1) {
 }
 
 }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+template <typename tModel>
+void ModelManager<tModel>::RankModels(System<tModel>& sys) {
+
+    sys.good_models_.clear();
+
+    for (auto iter = sys.models_.begin(); iter != sys.models_.end(); ++iter) {
+
+        // See if the model is a good model
+        if (iter->model_likelihood_ >= sys.params_.good_model_threshold_) { 
+
+            // See if it needs a label
+            if (iter->label_ == -1) {
+                iter->label_ = sys.model_label_;
+                sys.model_label_++;
+            }
+
+            sys.good_models_.push_back(&(*iter));
+
+        }
+
+
+    }
+
+} 
+
 //-------------------------------------------------------------------------------------------------------------------
 
 template <typename tModel>

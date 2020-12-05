@@ -23,90 +23,15 @@ typedef ModelRN<State, TransformNULL<State>> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
-int max_num_models = 10;
-
-sys.params_.max_num_models_ = max_num_models;
-
-// setup the models
-Model model;
-for(int ii = 0; ii < max_num_models+2; ++ii) {
-    
-    
-    if (ii == 5)
-        model.model_likelihood_ = 0.11;
-    else
-    {
-        model.model_likelihood_ = ii;
-    }
-    
-    model.label_ = ii;
-    model_manager.AddModel(sys, model);
-
-    
-}
-
-model.model_likelihood_ = 0.1;
-model.label_ = 12;
-
-model_manager.AddModel(sys, model);
-
-
-ASSERT_EQ(sys.models_.size(), max_num_models);
-
-auto iter = sys.models_.begin();
-
-ASSERT_EQ((*iter).label_, 1 );
-++iter;
-ASSERT_EQ((*iter).label_, 2 );
-++iter;
-ASSERT_EQ((*iter).label_, 3 );
-++iter;
-ASSERT_EQ((*iter).label_, 4 );
-++iter;
-ASSERT_EQ((*iter).label_, 6 );
-++iter;
-ASSERT_EQ((*iter).label_, 7 );
-++iter;
-ASSERT_EQ((*iter).label_, 8 );
-++iter;
-ASSERT_EQ((*iter).label_, 9 );
-++iter;
-ASSERT_EQ((*iter).label_, 10 );
-++iter;
-ASSERT_EQ((*iter).label_, 11 );
-
-}
-
-// ----------------------------------------------------------------
-
-TEST(ModelManagerTest, PruneConsensusSet ) {
-
-typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL<State>> Model;
-
-System<Model> sys;
-ModelManager<Model> model_manager;  
-
 Model model;
 
-sys.params_.max_num_models_ = 2;
+model_manager.AddModel(sys,model);
 
-Meas m1, m2;
-m1.time_stamp = 0.5; 
-m2.time_stamp = 1;
+ASSERT_EQ(sys.models_.size(), 1);
 
-std::vector<Meas> meas{m1,m2};
 
-model.cs_.AddMeasurementsToConsensusSet(meas);
-model_manager.AddModel(sys, model);
-model_manager.AddModel(sys, model);
-model_manager.PruneConsensusSets(sys, 0.7);
-
-ASSERT_EQ(sys.models_.begin()->cs_.consensus_set_.size(), 1);
-ASSERT_EQ(sys.models_.back().cs_.consensus_set_.size(), 1);
 
 }
-
 
 /**
  *  Ensures that PropagateModel is called on all of the models
@@ -142,6 +67,109 @@ ASSERT_LE( (sys.models_.back().state_.g_.data_ - model.state_.g_.data_ -model.st
 
 
 }
+
+TEST(ModelManagerTest, ManageModels) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL<State>> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;
+Model model; 
+
+model.err_cov_.setIdentity();
+
+sys.params_.max_num_models_ = 10;
+sys.params_.good_model_threshold_ = 5;
+sys.params_.similar_tracks_threshold_ = 2;
+sys.params_.max_missed_detection_time_ = 40;
+ 
+// setup the models
+
+for(int ii = 0; ii < sys.params_.max_num_models_+3; ++ii) {
+    
+    model.state_.g_.data_ << ii, 3*(ii+1), ii+2;
+    model.state_.u_.data_ << 0.5*ii, ii, 2*ii;
+
+    if (ii == 5)
+        model.model_likelihood_ = 0.11;
+    else
+    {
+        model.model_likelihood_ = ii;
+    }
+    
+    if (ii == 7) {
+        model.missed_detection_time_ = 40;
+    }
+    
+    model_manager.AddModel(sys, model);
+
+    
+}
+
+model.model_likelihood_ = 0.1;
+
+
+model_manager.AddModel(sys, model);
+
+
+ASSERT_EQ(sys.models_.size(), max_num_models);
+
+auto iter = sys.models_.begin();
+
+ASSERT_EQ((*iter).label_, 1 );
+++iter;
+ASSERT_EQ((*iter).label_, 2 );
+++iter;
+ASSERT_EQ((*iter).label_, 3 );
+++iter;
+ASSERT_EQ((*iter).label_, 4 );
+++iter;
+ASSERT_EQ((*iter).label_, 6 );
+++iter;
+ASSERT_EQ((*iter).label_, 7 );
+++iter;
+ASSERT_EQ((*iter).label_, 8 );
+++iter;
+ASSERT_EQ((*iter).label_, 9 );
+++iter;
+ASSERT_EQ((*iter).label_, 10 );
+++iter;
+ASSERT_EQ((*iter).label_, 11 );
+}
+
+// ----------------------------------------------------------------
+
+TEST(ModelManagerTest, PruneConsensusSet ) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL<State>> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;  
+
+Model model;
+
+sys.params_.max_num_models_ = 2;
+
+Meas m1, m2;
+m1.time_stamp = 0.5; 
+m2.time_stamp = 1;
+
+std::vector<Meas> meas{m1,m2};
+
+model.cs_.AddMeasurementsToConsensusSet(meas);
+model_manager.AddModel(sys, model);
+model_manager.AddModel(sys, model);
+model_manager.PruneConsensusSets(sys, 0.7);
+
+ASSERT_EQ(sys.models_.begin()->cs_.consensus_set_.size(), 1);
+ASSERT_EQ(sys.models_.back().cs_.consensus_set_.size(), 1);
+
+}
+
+
+
 
 /**
  *  Ensures that UpdateModel is called on all of the models

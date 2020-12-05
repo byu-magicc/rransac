@@ -44,7 +44,8 @@ public:
     std::vector<std::vector<Meas>> new_meas_;                  /** < Contains all of the new measurements. */
     typename tModel::Transformation transformaion_;            /** < The transformation for the measurements and tracks */
     std::list<tModel> models_;                                 /** < The models created by rransac */
-    std::list<std::unique_ptr<tModel>> good_models_;           /** < A list of pointers to the good models */
+    std::vector<std::unique_ptr<tModel>> good_models_;         /** < A list of pointers to the good models */
+    unsigned int model_label_ =0;                              /** < The label incrementer for good models */
 
     // TODO add clusters and data tree
 
