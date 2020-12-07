@@ -62,7 +62,7 @@ float RANSAC_stopping_criteria_; /**< During any iteration, if the probability o
 
 
 
-int max_num_models_;               /** The maximum number of models that RRANSAC will store */
+
 
 Eigen::MatrixXd process_noise_covariance_; /**< The process noise covariance of the model */
 
@@ -73,7 +73,7 @@ Eigen::MatrixXd process_noise_covariance_; /**< The process noise covariance of 
 double good_model_threshold_;
 double max_missed_detection_time_; /** < A model that has  not received an associated measurement in this time (s) will be discarded */
 double similar_tracks_threshold_;
-
+int max_num_models_;               /** The maximum number of models that RRANSAC will store */
 
 
 

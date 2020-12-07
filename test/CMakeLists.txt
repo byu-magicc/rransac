@@ -89,17 +89,17 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(model_baseTest lie_groups)
 # target_link_libraries(model_baseTest gtest_main lie_groups)
 
-add_executable(model_baseTest2
-common/models/model_base_test2.cpp
-../src/parameters.cpp)
-add_dependencies(model_baseTest2 lie_groups)
-target_link_libraries(model_baseTest2 gtest_main lie_groups)
-
-# add_executable(model_managerTest 
-# common/models/model_manager_test.cpp
+# add_executable(model_baseTest2
+# common/models/model_base_test2.cpp
 # ../src/parameters.cpp)
-# add_dependencies(model_managerTest lie_groups)
-# target_link_libraries(model_managerTest gtest_main lie_groups)
+# add_dependencies(model_baseTest2 lie_groups)
+# target_link_libraries(model_baseTest2 gtest_main lie_groups)
+
+add_executable(model_managerTest 
+common/models/model_manager_test.cpp
+../src/parameters.cpp)
+add_dependencies(model_managerTest lie_groups)
+target_link_libraries(model_managerTest gtest_main lie_groups)
 
 
 

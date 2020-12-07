@@ -26,14 +26,19 @@ static void AddModel(System<tModel>& sys, const tModel& model);
 static void PropagateModels(System<tModel>& sys, const double dt);
 
 /**
- * Updates the models, prune the consensus set, merge models, ranks models, and prunes models
+* Updates every model
+*/
+static void UpdateModels(System<tModel>& sys);
+
+
+/**
+ * Prune the consensus set, merge models, ranks models, and prunes models. This should b called after update models is called.
  */
 static void ManageModels(System<tModel>& sys, const double expiration_time) {
-    UpdateModels(sys);
     PruneConsensusSets(sys, expiration_time);
     MergeModels(sys);
     PruneModels(sys);
-    RankAndPruneModels(sys);
+    RankModels(sys);
 }
 
 
@@ -45,10 +50,7 @@ private:
 */
 static void PruneConsensusSets(System<tModel>& sys, const double expiration_time);
 
-/**
-* Updates every model
-*/
-static void UpdateModels(System<tModel>& sys);
+
 
 /**
 * Looks for similar models and merges them.
@@ -276,7 +278,9 @@ if (model1.missed_detection_time_ > model2.missed_detection_time_)
     fused_model.missed_detection_time_ = model2.missed_detection_time_;
 
 // Set the label to the most recent label
-if (model1.label_ > model2.label_ && model2.label_ >=0) {
+if (model1.label_ == -1)
+    fused_model.label_ = model2.label_;
+else if (model1.label_ > model2.label_ && model2.label_ >=0) 
     fused_model.label_ = model2.label_;
 
 // An accurate model_likelihood would require keeping a history of the number of associated measurements, probability of detection, etc which we dont do.
@@ -284,7 +288,7 @@ if (model1.label_ > model2.label_ && model2.label_ >=0) {
 if (model1.model_likelihood_ < model2.model_likelihood_)
     fused_model.model_likelihood_ = model2.model_likelihood_;
 
-}
+
 
 fused_model.cs_ = fused_model.cs_.MergeConsensusSets(model1.cs_, model2.cs_);
 return fused_model;

@@ -75,18 +75,26 @@ typedef ModelRN<State, TransformNULL<State>> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
-Model model; 
+Model model, merge1, merge2; 
 
+Meas m1, m2;
+m1.time_stamp = 0.5; 
+m2.time_stamp = 1;
+
+std::vector<Meas> meas{m1,m2};
+
+model.cs_.AddMeasurementsToConsensusSet(meas);
 model.err_cov_.setIdentity();
+model.label_ = -1;
 
 sys.params_.max_num_models_ = 10;
 sys.params_.good_model_threshold_ = 5;
 sys.params_.similar_tracks_threshold_ = 2;
-sys.params_.max_missed_detection_time_ = 40;
+sys.params_.max_missed_detection_time_ = 30;
  
 // setup the models
 
-for(int ii = 0; ii < sys.params_.max_num_models_+3; ++ii) {
+for(int ii = 0; ii < sys.params_.max_num_models_+4; ++ii) {
     
     model.state_.g_.data_ << ii, 3*(ii+1), ii+2;
     model.state_.u_.data_ << 0.5*ii, ii, 2*ii;
@@ -100,6 +108,8 @@ for(int ii = 0; ii < sys.params_.max_num_models_+3; ++ii) {
     
     if (ii == 7) {
         model.missed_detection_time_ = 40;
+    } else {
+        model.missed_detection_time_ = 1;
     }
     
     model_manager.AddModel(sys, model);
@@ -107,66 +117,125 @@ for(int ii = 0; ii < sys.params_.max_num_models_+3; ++ii) {
     
 }
 
-model.model_likelihood_ = 0.1;
+sys.models_.back().model_likelihood_ = 0.1;
 
+// Make a model similar to model 8 so that it will be merged. Give this model the better label, missed detection time and likelihood
+model.model_likelihood_ = 20;
+model.missed_detection_time_ = 0;
+model.state_.g_.data_ << 8.5, 27.5, 10.5;
+model.state_.u_.data_ << 4.5,8.5,16.5;
+model.err_cov_ = Eigen::Matrix<double,6,6>::Identity()*2;
+model.label_ = 0;
+sys.model_label_++;
 
 model_manager.AddModel(sys, model);
 
-
-ASSERT_EQ(sys.models_.size(), max_num_models);
-
+// Get the models that will be merged together
+merge2 = model;
 auto iter = sys.models_.begin();
+iter = std::next(iter,8);
+merge1 = *iter;
 
-ASSERT_EQ((*iter).label_, 1 );
-++iter;
-ASSERT_EQ((*iter).label_, 2 );
-++iter;
-ASSERT_EQ((*iter).label_, 3 );
-++iter;
-ASSERT_EQ((*iter).label_, 4 );
-++iter;
-ASSERT_EQ((*iter).label_, 6 );
-++iter;
-ASSERT_EQ((*iter).label_, 7 );
-++iter;
-ASSERT_EQ((*iter).label_, 8 );
-++iter;
-ASSERT_EQ((*iter).label_, 9 );
-++iter;
-ASSERT_EQ((*iter).label_, 10 );
-++iter;
-ASSERT_EQ((*iter).label_, 11 );
-}
+model_manager.ManageModels(sys,0.7);
 
-// ----------------------------------------------------------------
+// Get the merged model
+iter = sys.models_.begin();
+iter = std::next(iter,5);
 
-TEST(ModelManagerTest, PruneConsensusSet ) {
-
-typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL<State>> Model;
-
-System<Model> sys;
-ModelManager<Model> model_manager;  
-
-Model model;
-
-sys.params_.max_num_models_ = 2;
-
-Meas m1, m2;
-m1.time_stamp = 0.5; 
-m2.time_stamp = 1;
-
-std::vector<Meas> meas{m1,m2};
-
-model.cs_.AddMeasurementsToConsensusSet(meas);
-model_manager.AddModel(sys, model);
-model_manager.AddModel(sys, model);
-model_manager.PruneConsensusSets(sys, 0.7);
-
-ASSERT_EQ(sys.models_.begin()->cs_.consensus_set_.size(), 1);
+// Check size of consensus set. One measurement from each model should have been removed.
+// This is to ensure that the function gets called and not to check the correctness of the function
+ASSERT_EQ(sys.models_.front().cs_.consensus_set_.size(), 1);
 ASSERT_EQ(sys.models_.back().cs_.consensus_set_.size(), 1);
 
+
+//////////////////////////
+// Verify that models were fused correctly
+/////////////////////////
+
+// The fused state should be between the two original states
+ASSERT_LT(iter->state_.g_.data_(0), merge2.state_.g_.data_(0));
+ASSERT_LT(iter->state_.g_.data_(1), merge2.state_.g_.data_(1));
+ASSERT_LT(iter->state_.g_.data_(2), merge2.state_.g_.data_(2));
+ASSERT_LT(iter->state_.u_.data_(0), merge2.state_.u_.data_(0));
+ASSERT_LT(iter->state_.u_.data_(1), merge2.state_.u_.data_(1));
+ASSERT_LT(iter->state_.u_.data_(2), merge2.state_.u_.data_(2));
+
+ASSERT_GT(iter->state_.g_.data_(0), merge1.state_.g_.data_(0));
+ASSERT_GT(iter->state_.g_.data_(1), merge1.state_.g_.data_(1));
+ASSERT_GT(iter->state_.g_.data_(2), merge1.state_.g_.data_(2));
+ASSERT_GT(iter->state_.u_.data_(0), merge1.state_.u_.data_(0));
+ASSERT_GT(iter->state_.u_.data_(1), merge1.state_.u_.data_(1));
+ASSERT_GT(iter->state_.u_.data_(2), merge1.state_.u_.data_(2));
+
+// The fused error covariance should be smaller than the other two covariances
+ASSERT_LT(iter->err_cov_(0,0), merge2.err_cov_(0,0));
+ASSERT_LT(iter->err_cov_(1,1), merge2.err_cov_(1,1));
+ASSERT_LT(iter->err_cov_(2,2), merge2.err_cov_(2,2));
+ASSERT_LT(iter->err_cov_(3,3), merge2.err_cov_(3,3));
+ASSERT_LT(iter->err_cov_(4,4), merge2.err_cov_(4,4));
+ASSERT_LT(iter->err_cov_(5,5), merge2.err_cov_(5,5));
+
+ASSERT_LT(iter->err_cov_(0,0), merge1.err_cov_(0,0));
+ASSERT_LT(iter->err_cov_(1,1), merge1.err_cov_(1,1));
+ASSERT_LT(iter->err_cov_(2,2), merge1.err_cov_(2,2));
+ASSERT_LT(iter->err_cov_(3,3), merge1.err_cov_(3,3));
+ASSERT_LT(iter->err_cov_(4,4), merge1.err_cov_(4,4));
+ASSERT_LT(iter->err_cov_(5,5), merge1.err_cov_(5,5));
+
+ASSERT_GT(iter->err_cov_(0,0), 0);
+ASSERT_GT(iter->err_cov_(1,1), 0);
+ASSERT_GT(iter->err_cov_(2,2), 0);
+ASSERT_GT(iter->err_cov_(3,3), 0);
+ASSERT_GT(iter->err_cov_(4,4), 0);
+ASSERT_GT(iter->err_cov_(5,5), 0);
+
+ASSERT_EQ(iter->missed_detection_time_,merge2.missed_detection_time_);
+ASSERT_EQ(iter->label_,merge2.label_);
+ASSERT_EQ(iter->model_likelihood_, merge2.model_likelihood_);
+
+
+// Verify that models were pruned correctly and labels were assigned properly
+ASSERT_EQ(sys.models_.size(), sys.params_.max_num_models_);
+iter = sys.models_.begin();
+
+ASSERT_EQ(iter->model_likelihood_, 1);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 2);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 3);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 4);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 6);
+ASSERT_EQ(iter->label_,1);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 20);
+ASSERT_EQ(iter->label_,0);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 9);
+ASSERT_EQ(iter->label_,2);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 10);
+ASSERT_EQ(iter->label_,3);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 11);
+ASSERT_EQ(iter->label_,4);
+++iter;
+ASSERT_EQ(iter->model_likelihood_, 12);
+ASSERT_EQ(iter->label_,5);
+
+// Verify the good models vector
+ASSERT_EQ(sys.good_models_[0]->model_likelihood_, 6);
+ASSERT_EQ(sys.good_models_[1]->model_likelihood_, 20);
+ASSERT_EQ(sys.good_models_[2]->model_likelihood_, 9);
+ASSERT_EQ(sys.good_models_[3]->model_likelihood_, 10);
+ASSERT_EQ(sys.good_models_[4]->model_likelihood_, 11);
+ASSERT_EQ(sys.good_models_[5]->model_likelihood_, 12);
+
+
 }
+
+
 
 
 
@@ -233,111 +302,7 @@ ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
 
 }
 
-TEST(ModelManagerTest, MergeModels ) {
 
-typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL<State>> Model;
-
-System<Model> sys;
-ModelManager<Model> model_manager; 
-Model model1, model2;
-
-Meas m1,m2;
-m1.time_stamp = 0;
-m2.time_stamp = 1;
-
-// Make model2 with better stats than model1
-
-model1.label_ = 2;
-model1.missed_detection_time_ = 10;
-model1.model_likelihood_ = 10;
-model1.err_cov_.setZero();
-model1.err_cov_.diagonal() << 2.5, 2.5, 2.5, 1.5, 1.5, 1.5;
-model1.cs_.AddMeasToConsensusSet(m1);
-
-model2.label_ = 3;
-model2.missed_detection_time_ = 1;
-model2.model_likelihood_ = 1000;
-model2.err_cov_.setZero();
-model2.err_cov_.diagonal() << 0.5, 0.5, 0.5, 3,3,3;
-model2.cs_.AddMeasToConsensusSet(m2);
-
-// Set states so that they are not similar
-model1.state_.g_.data_ << 1,1,1;
-model2.state_.g_.data_ << 5,5,5;
-model1.state_.u_.data_ << 1,1,1;
-model2.state_.u_.data_ << 1,1,1;
-
-sys.params_.max_num_models_ = 3;
-sys.params_.similar_tracks_threshold_ = 1;
-
-model_manager.AddModel(sys, model1);
-model_manager.AddModel(sys, model2);
-
-// The models are not similar to merge so no models should be merged.
-model_manager.MergeModels(sys);
-
-ASSERT_EQ(sys.models_.size(),2);
-
-// change the data of model2 so that it will be merged
-model2.state_.g_.data_ << 1.5, 1.5, 1.5;
-model2.state_.u_.data_ << 1.1, 1.1, 1.1;
-model2.label_ = 1;
-model_manager.AddModel(sys, model2);
-
-
-model_manager.MergeModels(sys);
-
-ASSERT_EQ(sys.models_.back().label_,3);
-ASSERT_EQ(sys.models_.size(),2);
-ASSERT_EQ(sys.models_.front().label_, model2.label_);
-ASSERT_EQ(sys.models_.front().missed_detection_time_, model2.missed_detection_time_);
-ASSERT_EQ(sys.models_.front().model_likelihood_, model2.model_likelihood_);
-
-// The fused state should be between the two original states
-ASSERT_LT(sys.models_.front().state_.g_.data_(0), model2.state_.g_.data_(0));
-ASSERT_LT(sys.models_.front().state_.g_.data_(1), model2.state_.g_.data_(1));
-ASSERT_LT(sys.models_.front().state_.g_.data_(2), model2.state_.g_.data_(2));
-ASSERT_LT(sys.models_.front().state_.u_.data_(0), model2.state_.u_.data_(0));
-ASSERT_LT(sys.models_.front().state_.u_.data_(1), model2.state_.u_.data_(1));
-ASSERT_LT(sys.models_.front().state_.u_.data_(2), model2.state_.u_.data_(2));
-
-ASSERT_GT(sys.models_.front().state_.g_.data_(0), model1.state_.g_.data_(0));
-ASSERT_GT(sys.models_.front().state_.g_.data_(1), model1.state_.g_.data_(1));
-ASSERT_GT(sys.models_.front().state_.g_.data_(2), model1.state_.g_.data_(2));
-ASSERT_GT(sys.models_.front().state_.u_.data_(0), model1.state_.u_.data_(0));
-ASSERT_GT(sys.models_.front().state_.u_.data_(1), model1.state_.u_.data_(1));
-ASSERT_GT(sys.models_.front().state_.u_.data_(2), model1.state_.u_.data_(2));
-
-// The fused error covariance should be smaller than the other two covariances
-ASSERT_LT(sys.models_.front().err_cov_(0,0), model2.err_cov_(0,0));
-ASSERT_LT(sys.models_.front().err_cov_(1,1), model2.err_cov_(1,1));
-ASSERT_LT(sys.models_.front().err_cov_(2,2), model2.err_cov_(2,2));
-ASSERT_LT(sys.models_.front().err_cov_(3,3), model2.err_cov_(3,3));
-ASSERT_LT(sys.models_.front().err_cov_(4,4), model2.err_cov_(4,4));
-ASSERT_LT(sys.models_.front().err_cov_(5,5), model2.err_cov_(5,5));
-
-ASSERT_LT(sys.models_.front().err_cov_(0,0), model1.err_cov_(0,0));
-ASSERT_LT(sys.models_.front().err_cov_(1,1), model1.err_cov_(1,1));
-ASSERT_LT(sys.models_.front().err_cov_(2,2), model1.err_cov_(2,2));
-ASSERT_LT(sys.models_.front().err_cov_(3,3), model1.err_cov_(3,3));
-ASSERT_LT(sys.models_.front().err_cov_(4,4), model1.err_cov_(4,4));
-ASSERT_LT(sys.models_.front().err_cov_(5,5), model1.err_cov_(5,5));
-
-ASSERT_GT(sys.models_.front().err_cov_(0,0), 0);
-ASSERT_GT(sys.models_.front().err_cov_(1,1), 0);
-ASSERT_GT(sys.models_.front().err_cov_(2,2), 0);
-ASSERT_GT(sys.models_.front().err_cov_(3,3), 0);
-ASSERT_GT(sys.models_.front().err_cov_(4,4), 0);
-ASSERT_GT(sys.models_.front().err_cov_(5,5), 0);
-
-
-
-// std::cout << "state g" << sys.models_.front().state_.g_.data_ << std::endl;
-// std::cout << "state u" << sys.models_.front().state_.u_.data_ << std::endl;
-// std::cout << "cov" << sys.models_.front().err_cov_ << std::endl;
-
-}
 
 } // namespace rransac
 
