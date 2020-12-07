@@ -25,6 +25,11 @@ Eigen::Matrix<double,2,1> h2_;
 Eigen::Matrix<double,1,2> h3_T_;
 Eigen::Matrix<double,1,1> h4_;
 
+
+void DerivedInit() {
+    this->transform_null_ = false;
+}
+
 /** 
  * The parent class sets the transformation data member variable. This derived class has the 
  * opportunity to perform other calculations using the data. 

@@ -39,7 +39,7 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Consensus Set Test
 #---------------------------------------
 # add_executable(consensus_setTest 
-# data_structures/consensus_set_test.cpp)
+# data_containers/consensus_set_test.cpp)
 # target_link_libraries(consensus_setTest gtest_main)
 
 #---------------------------------------
@@ -95,14 +95,22 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(model_baseTest2 lie_groups)
 # target_link_libraries(model_baseTest2 gtest_main lie_groups)
 
-add_executable(model_managerTest 
-common/models/model_manager_test.cpp
+# add_executable(model_managerTest 
+# common/models/model_manager_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(model_managerTest lie_groups)
+# target_link_libraries(model_managerTest gtest_main lie_groups)
+
+
+#---------------------------------------
+# Model
+#---------------------------------------
+
+add_executable(data_tree_listTest 
+data_containers/data_tree/data_tree_list_test.cpp
 ../src/parameters.cpp)
-add_dependencies(model_managerTest lie_groups)
-target_link_libraries(model_managerTest gtest_main lie_groups)
-
-
-
+add_dependencies(data_tree_listTest lie_groups)
+target_link_libraries(data_tree_listTest gtest_main lie_groups)
 
 
 # add_executable(rransacTest

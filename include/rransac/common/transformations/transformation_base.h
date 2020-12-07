@@ -26,6 +26,16 @@ typedef tState State;
 typedef tMatCov MatCov;
 typedef tDerived Derived;
 
+
+/**
+ * The init function must set the flag transform_null_. If it is set to true, then you are using the
+ * null transformation or (transformation_null) class; otherwise, you are using a transformation class
+ * that transforms measurements and objects.
+ */ 
+void Init() {
+    static_cast<tDerived*>(this)->DerivedInit();
+}
+
 /** 
  * Sets the transformation data member variable. This function will also call the derived classes set data in case
  * other stuff needs to be done. 
@@ -63,7 +73,7 @@ void TransformTrack(tState& state, tMatCov& cov) const {
 }
 
 
-
+bool transform_null_ = true;
 
 private:
 TransformBase()=default;

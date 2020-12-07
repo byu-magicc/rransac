@@ -16,6 +16,11 @@ class TransformNULL : public TransformBase<Eigen::MatrixXd, tState, Eigen::Matri
 
 public:
 
+
+void DerivedInit() {
+    this->transform_null_ = true;
+}
+
 /** 
  * The parent class sets the transformation data member variable. This derived class has the 
  * opportunity to perform other calculations using the data. 

@@ -52,7 +52,7 @@ h4 << 9;
 
 TypeParam trans;
 
-
+trans.Init();
 trans.SetData(H);
 
 ASSERT_EQ(trans.GetData(), H);
@@ -75,6 +75,7 @@ TransformHomography<R2_r2, Eigen::Matrix4d> trans;
 SO3 R = SO3::Random();
 Eigen::Matrix3d H{R.data_};
 
+trans.Init();
 trans.SetData(H);
 
 // Construct pixel measurement
@@ -216,7 +217,7 @@ H(2,2) +=1;
 Eigen::Matrix2d H1 = H.block(0,0,2,2);
 
 // std::cout << "H: " << std::endl << H << std::endl << std::endl;
-
+trans.Init();
 trans.SetData(H);
 
 // Transform the velocity and rotation and construct the proper rotation.

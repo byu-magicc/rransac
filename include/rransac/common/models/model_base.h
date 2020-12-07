@@ -8,7 +8,7 @@
 
 #include "state.h"
 #include "common/measurement/measurement_base.h"
-#include "data_structures/consensus_set.h"
+#include "data_containers/consensus_set.h"
 #include "parameters.h"
 #include "common/sources/source_base.h"
 #include "common/sources/source_RN.h"
@@ -221,11 +221,13 @@ public:
      * @param[in] dt The time interval between the previous global frame and the current global frame. 
      */ 
     void TransformModel(const Transformation& T){
-        T.TransformTrack(state_,this->err_cov_);
+        if (!T.transform_null_)
+            T.TransformTrack(state_,this->err_cov_);
     }
 
     void TransformConsensusSet(const Transformation& T) {
-        cs_.TransformConsensusSet<tTransformation>(T);
+        if (!T.transform_null_)
+            cs_.TransformConsensusSet<tTransformation>(T);
     }
 
     /**
