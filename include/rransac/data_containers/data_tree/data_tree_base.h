@@ -30,9 +30,10 @@ public:
  * std::list<tContainer>. So the outer iterator points to an element in the list and the inner iterator points to and 
  * element of tContainer.
  */ 
+
 struct IteratorPair {
-    typename std::list<tContainer>::iterator& outer_it;
-    typename tContainer::iterator& inner_it;
+    typename std::list<tContainer>::iterator outer_it;
+    typename tContainer::iterator inner_it;
 };
 
 /**
