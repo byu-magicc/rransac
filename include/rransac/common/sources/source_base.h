@@ -166,19 +166,32 @@ public:
      * \return Returns temporal distance between two measurements
      */
    
-    double GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
+    static double GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
 
     /**
-     * Calculates the spatial distance between two measurements depending on the type of measurement.
+     * Calculates the geodesic distance between two measurements depending on the type of measurement.
      * @param[in] meas1 A measurement.
      * @param[in] meas2 A different measurement.
      * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
      * \return Returns spatial distance between two measurements
      */
     
-    double GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
+    double GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
-
+    /**
+     * Finds the geodesic distance between two measurements of different time stamps and normalizes by the temproal distance.
+     * @param[in] meas1 A measurement.
+     * @param[in] meas2 A different measurement.
+     * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
+     * \return Returns spatial distance between two measurements
+     */
+    static double GetVelocityDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) {
+        if (meas1.time_stamp == meas2.time_stamp) {
+            throw std::runtime_error("SourceBase::GetVelocityDistance Measurements have the same time stamp");
+        } else {
+            return GetSpatialDistance(meas1,meas2,params)/GetTemporalDistance(meas1,meas2,params);
+        }
+    }
 
 // protected:
     Eigen::MatrixXd H_;

@@ -12,7 +12,7 @@ Parameters::Parameters()
     time_interval_ = 1;
     transform_consensus_set_ = false;
     meas_time_window_ = 1;
-    max_RANSAC_iters_ = 5000;
+    RANSAC_max_iters_ = 5000;
     RANSAC_stopping_criteria_ = 0.5;
 }
 
@@ -54,14 +54,14 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     }
 
     // Ensure that max_RANSAC_iters_ has a realistic value.
-    if (new_params.max_RANSAC_iters_ <=0)
+    if (new_params.RANSAC_max_iters_ <=0)
     {
         throw std::runtime_error("Parameters::SetParameters The provided value of max_RANSAC_iters_ is not greater than 0.");
         successfull = false;
     }
     else
     {
-        max_RANSAC_iters_ = new_params.max_RANSAC_iters_;
+        RANSAC_max_iters_ = new_params.RANSAC_max_iters_;
     }
 
     // Ensure that RANSAC_stopping_criteria_ has a realistic value.

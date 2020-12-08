@@ -38,6 +38,9 @@ Parameters(const Parameters &new_params);
  */
 bool SetParameters(const Parameters &new_params);
 
+float meas_time_window_; /**< The duration of time in seconds from the current moment and extending
+                              into the past during which measurements should be considered. All
+                              measurements outside of the time window will be discarded.*/
 
 bool fixed_time_interval_; /**< A flag that indicates if measurements are given to R-RANSAC at fixed time intervals. */
 
@@ -47,26 +50,31 @@ bool transform_consensus_set_; /**< A flag that indicates if the measurements in
                                     be transformed when a transformation is provided. For faster performance, it is
                                     recommended that this flag is set to false.*/
 
-float meas_time_window_; /**< The duration of time in seconds from the current moment and extending
-                              into the past during which measurements should be considered. All
-                              measurements outside of the time window will be discarded.*/
-                              
+// Cluster Parameters
+double cluster_time_threshold_;       /**< In order for a measurements to be a neighbor to another measurement of a different time stamp, the difference in time
+                                           must be less than or equal to  cluster_time_threshold_*/
+double cluster_velocity_threshold_;   /**< In order for a measurement to be a neighbor to another measurement of a different time stamp, the distance in pose 
+                                           normalized by the time difference between the two measurements must be less than or equal to the cluster_velocity_threshold_ */
+double cluster_position_threshold_;   /**< In order fo a measurement to be a neighbor to another measurement of the same time stamp, the distance in pose
+                                            must be less than or equal to the cluster_position_threshold_ */
+
+
 // RANSAC Parameters
-unsigned int max_RANSAC_iters_;  /**< The maximum number of RANSAC iterations per run. */
+unsigned int RANSAC_max_iters_;  /**< The maximum number of RANSAC iterations per run. */
 
 float RANSAC_stopping_criteria_; /**< During any iteration, if the probability of a model hypothesis
                                       a valid model is above this threshold, RANSAC stops early and
                                       uses the current model hypothesis to generate a new model.
                                       This value must be between 0 and 1.*/
 
+unsigned int RANSAC_minimum_subset_;    /** The minimum number of measurements from different time steps required to observe the system */
 
 
 
-
-
+// Model Parameters
 Eigen::MatrixXd process_noise_covariance_; /**< The process noise covariance of the model */
 
-// Track Fusion parameters
+
 
 
 // Model Manager

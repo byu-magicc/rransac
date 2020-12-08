@@ -14,11 +14,10 @@ namespace rransac
  * 
  */
 
-template <typename tContainer, typename tTransform, typename tDerived>
+template <typename tContainer, typename tDerived>
 class DataTreeBase {
 
 typedef tContainer Container;
-typedef tTransform transform;
 typedef tDerived Derived;
    
 public:
@@ -78,13 +77,15 @@ void RemoveMeasurements(const tContainerIteratorPair& iter_pairs){
 
 /**
  * Attempts to find a cluster from the measurements in the data tree. If a cluster was not found, the size of the vector container of iterator pairs will be 
- * zero.
+ * zero. A cluster must have enough measurements to form a minimum subset as defined by Parameters::RANSAC_minimum_subset_
+ * @param[in] source Any source that is defined in system. It is used to calculate different distances
  * @param[in] params The system parameters. It contains parameters that define the cluster.
- * @param[out] iter_pairs Contains iterators to the elements that make up the cluster.
+ * @param[out] iter_pairs Contains iterators to the elements that make up the cluster. The outer container distinguishes the iterator pairs by time.
  * @return returns true if a cluster is found.
  */
-bool FindCluster(const Parameters& params, std::vector<IteratorPair>& iter_pairs) const {
-    return static_cast<tDerived*>(this)->DerivedFindCluster(params, iter_pairs);
+template<typename tSource, typename tContainerContainerIteratorPair>
+bool FindCluster(const tSource& source, const Parameters& params, tContainerContainerIteratorPair& iter_pairs) const {
+    return static_cast<tDerived*>(this)->DerivedFindCluster(source, params, iter_pairs);
 }
 
 /**
@@ -96,6 +97,7 @@ void PruneDataTree(const double expiration_time);
 /**
  * Transforms the measurements using the transform provided. 
  */ 
+template< typename tTransform>
 void TransformMeasurements(const tTransform& transform);
 
 unsigned int Size() {return size_;};
@@ -118,8 +120,8 @@ unsigned long int size_;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename tContainer, typename tTransform, typename tDerived>
-void DataTreeBase<tContainer,tTransform, tDerived>::PruneDataTree(const double expiration_time) {
+template <typename tContainer, typename tDerived>
+void DataTreeBase<tContainer, tDerived>::PruneDataTree(const double expiration_time) {
 
     auto iter = data_.begin();
     while(iter != data_.end() && iter->begin()->time_stamp <= expiration_time) {
@@ -131,8 +133,9 @@ void DataTreeBase<tContainer,tTransform, tDerived>::PruneDataTree(const double e
 
 // -----------------------------------------------------------------------------------------------------------------
 
-template <typename tContainer, typename tTransform, typename tDerived>
-void DataTreeBase<tContainer,tTransform, tDerived>::TransformMeasurements(const tTransform& transform) {
+template <typename tContainer, typename tDerived>
+template< typename tTransform>
+void DataTreeBase<tContainer, tDerived>::TransformMeasurements(const tTransform& transform) {
 
     if (!transform.transform_null_) {
         for (auto outer_iter = data_.begin(); outer_iter != data_.end(); ++outer_iter) {

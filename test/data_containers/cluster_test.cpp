@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "data_containers/data_tree/data_tree_list.h"
+#include "data_containers/cluster.h"
 #include "common/transformations/trans_homography.h"
 #include "state.h"
 #include <math.h>
@@ -11,7 +11,7 @@
 using namespace rransac;
 using namespace lie_groups;
 
-class DataTreeListTest : public ::testing::Test {
+class ClusterTest : public ::testing::Test {
 public:
 
 
@@ -37,7 +37,7 @@ m.time_stamp = std::round(time_(0,0)*10);
 m.pose = Eigen::Matrix<double,2,1>::Random()*20;
 m.source_index = source_id;
 ++source_id;
-data_tree_.AddMeas(m);
+cluster_.AddMeasurement(m);
 
 }
 
@@ -48,7 +48,7 @@ data_tree_.AddMeas(m);
 typedef TransformHomography<R2_r2, Eigen::Matrix<double,4,4>> Transform;
 
 Transform trans_;
-DataTreeList data_tree_;
+Cluster cluster_;
 Parameters params_;
 
 unsigned int num_meas_ = 1000;
@@ -59,7 +59,7 @@ unsigned int source_id = 0;        // used to uniquely identify a measurement
 
 // Test the add remove prune and transform measurements function
 
-TEST_F(DataTreeListTest, AddRemovePruneTransformMeasurementsTest) {
+TEST_F(ClusterTest, AddRemovePruneTransformMeasurementsTest) {
 
 unsigned int size=0;
 unsigned int num_additional_meas = 100;
@@ -70,8 +70,8 @@ unsigned int num_additional_meas = 100;
 /////////////////////////////////
 
 // After the transformation all of the measurements should be zero
-data_tree_.TransformMeasurements(trans_);
-for(auto outer_iter = data_tree_.data_.begin(); outer_iter != data_tree_.data_.end(); ++outer_iter) {
+cluster_.TransformMeasurements(trans_);
+for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end(); ++outer_iter) {
     for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
         ASSERT_DOUBLE_EQ(inner_iter->pose.norm(), 0); // Should be zero after the transformation
     }
@@ -94,7 +94,7 @@ for (auto& m : vec_meas) {
     m.pose = Eigen::Matrix<double,2,1>::Random();
 }
 
-data_tree_.AddMeasurements(vec_meas);
+cluster_.AddMeasurements(vec_meas);
 
 
 // Construct a list of measurements to add.
@@ -109,17 +109,17 @@ for (auto iter = list_meas.begin(); iter != list_meas.end(); ++iter) {
     (*iter) = list_m;
 }
 
-data_tree_.AddMeasurements(list_meas);
+cluster_.AddMeasurements(list_meas);
 
 
-for (auto iter = data_tree_.data_.begin(); iter != data_tree_.data_.end(); ++ iter) {
+for (auto iter = cluster_.data_.begin(); iter != cluster_.data_.end(); ++ iter) {
     auto iter2 = std::next(iter,1);
     size += iter->size();
     double time_stamp = iter->front().time_stamp;
 
 
     // Make sure the previous element's time stamps come before the other ones
-    if (iter2 != data_tree_.data_.end()) {
+    if (iter2 != cluster_.data_.end()) {
         ASSERT_LT( iter->front().time_stamp , iter2->front().time_stamp) << "Elements not sorted properly according to time";
     }
 
@@ -129,17 +129,17 @@ for (auto iter = data_tree_.data_.begin(); iter != data_tree_.data_.end(); ++ it
 
 }
 
-ASSERT_EQ(data_tree_.Size(), size);
+ASSERT_EQ(cluster_.Size(), size);
 
 /////////////////////////////////
 //    Remove Measurement Test
 /////////////////////////////////
 
 // Remove random measurements
-typename DataTreeList::IteratorPair iter_pair;
-std::vector<DataTreeList::IteratorPair> iter_pairs;
+typename Cluster::IteratorPair iter_pair;
+std::vector<Cluster::IteratorPair> iter_pairs;
 std::vector<Meas> meas_to_remove;
-for(auto outer_iter = data_tree_.data_.begin(); outer_iter != data_tree_.data_.end(); ++outer_iter) {
+for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end(); ++outer_iter) {
 
     time.setRandom();
     auto inner_iter = outer_iter->begin();
@@ -157,11 +157,12 @@ for(auto outer_iter = data_tree_.data_.begin(); outer_iter != data_tree_.data_.e
 }
 
 // Remove measurements
-data_tree_.RemoveMeasurements(iter_pairs);
+cluster_.RemoveMeasurements(iter_pairs);
+size -= iter_pairs.size();
 
 // Make sure measurements are removed
 for (auto& m: meas_to_remove) {
-    for(auto outer_iter = data_tree_.data_.begin(); outer_iter != data_tree_.data_.end(); ++outer_iter) {
+    for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end(); ++outer_iter) {
         for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
             ASSERT_NE(inner_iter->source_index, m.source_index); // The source index uniquely identifies the measurement in this test. So we make sure we cannot
                                                                  // find it after removing it.
@@ -169,20 +170,22 @@ for (auto& m: meas_to_remove) {
     }
 }
 
+ASSERT_EQ(cluster_.Size(), size);
+
 
 // Remove all of the elements from a single time step;
 iter_pairs.clear();
 meas_to_remove.clear();
 
-if (data_tree_.data_.begin() != data_tree_.data_.end()) {
+if (cluster_.data_.begin() != cluster_.data_.end()) {
 
     // grab a random element
-    auto outer_iter_sts = data_tree_.data_.begin();
+    auto outer_iter_sts = cluster_.data_.begin();
     time.setRandom();
     outer_iter_sts = std::next(outer_iter_sts,std::round(time(0,0)*20));
 
     // We dont want the last one so we just iterate again
-    if(outer_iter_sts == data_tree_.data_.end())
+    if(outer_iter_sts == cluster_.data_.end())
         outer_iter_sts++;
 
     for (auto inner_iter = outer_iter_sts->begin(); inner_iter != outer_iter_sts->end(); ++ inner_iter ) {
@@ -192,11 +195,11 @@ if (data_tree_.data_.begin() != data_tree_.data_.end()) {
         meas_to_remove.push_back(*inner_iter);
     }
 
-    data_tree_.RemoveMeasurements(iter_pairs);
+    cluster_.RemoveMeasurements(iter_pairs);
 
     // Make sure measurements are removed
     for (auto& m: meas_to_remove) {
-        for(auto outer_iter = data_tree_.data_.begin(); outer_iter != data_tree_.data_.end(); ++outer_iter) {
+        for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end(); ++outer_iter) {
             for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
                 ASSERT_NE(inner_iter->source_index, m.source_index); // The source index uniquely identifies the measurement in this test. So we make sure we cannot
                                                                     // find it after removing it.
@@ -213,10 +216,10 @@ if (data_tree_.data_.begin() != data_tree_.data_.end()) {
 /////////////////////////////////
 
 // Test prune consensus test
-if (data_tree_.data_.begin() != data_tree_.data_.end()) {
-double time_stamp_first = data_tree_.data_.begin()->begin()->time_stamp;
-data_tree_.PruneDataTree(time_stamp_first);
-ASSERT_NE(data_tree_.data_.begin()->begin()->time_stamp, time_stamp_first);
+if (cluster_.data_.begin() != cluster_.data_.end()) {
+double time_stamp_first = cluster_.data_.begin()->begin()->time_stamp;
+cluster_.PruneCluster(time_stamp_first);
+ASSERT_NE(cluster_.data_.begin()->begin()->time_stamp, time_stamp_first);
 
 }
 
