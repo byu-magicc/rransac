@@ -7,11 +7,12 @@
 #include "parameters.h"
 #include <Eigen/Core>
 #include <iostream>
+#include "common/sources/source_RN.h"
 
 using namespace rransac;
 using namespace lie_groups;
 
-class ClusterTest : public ::testing::Test {
+class ClusterTestObject : public ::testing::Test {
 public:
 
 
@@ -59,7 +60,7 @@ unsigned int source_id = 0;        // used to uniquely identify a measurement
 
 // Test the add remove prune and transform measurements function
 
-TEST_F(ClusterTest, AddRemovePruneTransformMeasurementsTest) {
+TEST_F(ClusterTestObject, AddRemovePruneTransformMeasurementsTest) {
 
 unsigned int size=0;
 unsigned int num_additional_meas = 100;
@@ -222,6 +223,106 @@ cluster_.PruneCluster(time_stamp_first);
 ASSERT_NE(cluster_.data_.begin()->begin()->time_stamp, time_stamp_first);
 
 }
+
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TEST(ClusterTest, IsNeighborTest) {
+
+Parameters params;
+params.cluster_velocity_threshold_ = 1;
+params.cluster_position_threshold_ = 1;
+params.cluster_time_threshold_ = 2;
+
+Cluster cluster;
+
+SourceR2 source; // We need the source for calculating distances
+SourceParameters source_params;
+source_params.expected_num_false_meas_ = 0.1;
+source_params.gate_probability_ = 0.8;
+source_params.probability_of_detection_ = 0.8;
+source_params.meas_cov_fixed_ = false;
+source_params.type_ = MeasurementTypes::RN_POS;
+source.Init(source_params);
+
+Meas m, new_meas;
+unsigned int num_meas = 10;
+m.type = MeasurementTypes::RN_POS;
+new_meas.type = MeasurementTypes::RN_POS;
+
+////////////////////////////////////////////////////////
+// The cluster has no measurements so their are no neighbor measurements
+///////////////////////////////////////////////////////
+
+new_meas.time_stamp = 0;
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
+
+////////////////////////////////////////////////////////
+// Measurements outside of time threshold wont be added
+///////////////////////////////////////////////////////
+
+for (int ii = 0; ii < num_meas; ++ii) {
+    m.time_stamp = 0;
+    m.pose = Eigen::Matrix<double,2,1>::Random()*10;
+    cluster.AddMeasurement(m);
+}
+
+// Set the new measurement time stamp to be outside the time threshold
+new_meas.time_stamp = m.time_stamp + params.cluster_time_threshold_ +0.1;
+new_meas.pose = m.pose;
+
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
+new_meas.time_stamp = m.time_stamp - params.cluster_time_threshold_ - 0.1;
+
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
+
+////////////////////////////////////////////////////////
+// measurement within time threshold
+///////////////////////////////////////////////////////
+
+new_meas.time_stamp =  m.time_stamp - params.cluster_time_threshold_;
+ASSERT_TRUE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
+// add more measurements
+for (int ii = 0; ii < num_meas; ++ii) {
+    m.time_stamp = 1;
+    m.pose = Eigen::Matrix<double,2,1>::Random()*10;
+    cluster.AddMeasurement(m);
+}
+new_meas.pose = m.pose;
+
+// add more measurements
+for (int ii = 0; ii < num_meas; ++ii) {
+    m.time_stamp = 2;
+    m.pose = Eigen::Matrix<double,2,1>::Random()*10;
+    cluster.AddMeasurement(m);
+}
+
+// It should no longer be a neighbor due to recent time measurement
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
+// Update time stamp so it is a neighbor
+new_meas.time_stamp = 1;
+ASSERT_TRUE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
+new_meas.pose = m.pose;
+ASSERT_TRUE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
+// Add more measurements so that the new measurement is no longer a neighbor
+
+// add more measurements
+for (int ii = 0; ii < num_meas; ++ii) {
+    m.time_stamp = 3.1;
+    m.pose = Eigen::Matrix<double,2,1>::Random()*10;
+    cluster.AddMeasurement(m);
+}
+
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+
 
 }
 

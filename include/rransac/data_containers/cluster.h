@@ -74,13 +74,14 @@ void TransformMeasurements(const tTransform& transform);
 /**
  * Returns the number of measurements in the cluster
  */
-unsigned int Size() {return size_;};
+unsigned int Size() const {return size_;};
 
 /**
  * Returns true if the measurement is a neighboring measurement to one of the more recent measurements.
  * A recent measurement is a measurements whose time stamp is within Parameters::cluster_time_threshold_ of the latest measurement
  */ 
-bool IsNeighboringMeasurement(const Meas& meas);
+template<typename tSource>
+bool IsNeighboringMeasurement(const tSource& source, const Parameters& param, const Meas& meas) const;
 
 
 std::list<std::list<Meas>> data_; /** Contains all of the measurements. The outer container separates the measurements according to time */
@@ -88,7 +89,7 @@ std::list<std::list<Meas>> data_; /** Contains all of the measurements. The oute
 
 private:
 
-unsigned int size_; /** The total number of measurements in the cluster */
+unsigned int size_=0; /** The total number of measurements in the cluster */
 
 };
 
@@ -167,6 +168,35 @@ void Cluster::TransformMeasurements(const tTransform& transform) {
             }
         }
     }
+}
+
+//---------------------------------------------------------------------------------------------
+
+template<typename tSource>
+bool Cluster::IsNeighboringMeasurement(const tSource& source, const Parameters& params, const Meas& meas) const {
+
+    for (auto outer_iter = std::prev(data_.end()); outer_iter != data_.end(); --outer_iter) {
+
+        // New measurement is too far away from any recent measurement
+        if( source.GetTemporalDistance(meas, outer_iter->front(), params) > params.cluster_time_threshold_)
+            return false;
+
+        for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter){
+
+            // If same time stamp, use the position distance
+            if(inner_iter->time_stamp == meas.time_stamp) {
+                if(source.GetSpatialDistance(*inner_iter, meas, params) <= params.cluster_position_threshold_)
+                    return true;
+            } else { // Else use the velocity distance
+                if(source.GetVelocityDistance(*inner_iter,meas,params) <= params.cluster_velocity_threshold_)
+                    return true;
+            }
+
+        }
+
+    }
+
+    return false;
 }
 
 } // namespace rransac

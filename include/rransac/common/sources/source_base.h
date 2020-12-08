@@ -185,7 +185,7 @@ public:
      * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
      * \return Returns spatial distance between two measurements
      */
-    static double GetVelocityDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) {
+    double GetVelocityDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) const {
         if (meas1.time_stamp == meas2.time_stamp) {
             throw std::runtime_error("SourceBase::GetVelocityDistance Measurements have the same time stamp");
         } else {
