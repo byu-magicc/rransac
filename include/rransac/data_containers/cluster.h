@@ -23,6 +23,8 @@ struct IteratorPair {
     std::list<Meas>::iterator inner_it;
 };
 
+Cluster(){};
+Cluster(const Meas& meas) { AddMeasurement(meas); }
 
 /**
  * Adds a measurement to the data tree. It is assumed that the measurement has a valid time stamp and valid data.

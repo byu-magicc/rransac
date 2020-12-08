@@ -2,6 +2,7 @@
 #define RRANSAC_DATA_CONTAINERS_DATA_TREE_BASE_H_
 
 #include "common/measurement/measurement_base.h"
+#include "system.h"
 #include <list>
 
 namespace rransac
@@ -14,138 +15,106 @@ namespace rransac
  * 
  */
 
-template <typename tContainer, typename tDerived>
+template <typename tData, typename tDerived>
 class DataTreeBase {
 
-typedef tContainer Container;
+typedef tData Data;
 typedef tDerived Derived;
    
 public:
 
 /**
- * \struct IteratorPair
- * Contains a match of iterators. The outer iterator pertains to the outer container for the data object, and
- * the inner container pertains to the inner container for the data object. Note that the data object is type
- * std::list<tContainer>. So the outer iterator points to an element in the list and the inner iterator points to and 
- * element of tContainer.
- */ 
-
-struct IteratorPair {
-    typename std::list<tContainer>::iterator outer_it;
-    typename tContainer::iterator inner_it;
-};
-
-/**
- * Adds a measurement to the data tree. It is assumed that the measurement has a valid time stamp and valid data.
+ * Adds a measurement to the data tree. It is assumed that the measurement has a valid time stamp, type and valid data.
  * @param[in] meas The measurement to be added.
  */
-void AddMeas(const Meas& meas) {
-    ++size_;
-    static_cast<tDerived*>(this)->DerivedAddMeas(meas);
+template <typename tSystem>
+void AddMeasurement(const tSystem& sys, const Meas& meas) {
+    static_cast<tDerived*>(this)->DerivedAddMeasurement(sys, meas);
 } 
 
 /**
  * Adds measurements from a container that has an iterator object. The measurements can have different time stamps.
- * It is assumed that the measurements have a valid time stamp and valid data. This function will call AddMeas for every
+ * It is assumed that the measurements have a valid time stamp and valid data. This function will call AddMeasurement for every
  * measurement.
  */ 
-template <typename tContainerMeas>
-void AddMeasurements(const tContainerMeas& measurements ){
+template <typename tSystem, typename tContainerMeas>
+void AddMeasurements(const tSystem& sys, const tContainerMeas& measurements ){
     for (auto iter = measurements.begin(); iter != measurements.end(); ++iter) {
-        AddMeas(*iter);
+        AddMeasurement(sys, *iter);
     }
 }
 
 /**
- * Removes a measurement from the data tree using iterators defined in iter_pair
- * @param[in] iter_pair Contains the matched iterator pair necessary to remove an element. * 
+ * Removes a measurement from the data tree using meas_info
+ * @param[in] meas_info Contains the information necessary to remove a measurement 
  */
-void RemoveMeas(const IteratorPair& iter_pair){
-    static_cast<tDerived*>(this)->DerivedRemoveMeas(iter_pair);
+template <typename tMeasurementLocationInfo>
+void RemoveMeasurement(const tMeasurementLocationInfo& meas_info){
+    static_cast<tDerived*>(this)->DerivedRemoveMeasurement(meas_info);
 } 
 
 /**
- * Removes all of the measurements indicated by iter_pairs by calling RemoveMeas
- * @param[in] iter_pair Contains all of the matched iterator pairs that indicate which measurements to remove.
+ * Removes all of the measurements indicated by iter_pairs by calling RemoveMeasurement
+ * @param[in] container_meas_info A container that contains information to remove multiple measurements
  */ 
-template <typename tContainerIteratorPair>
-void RemoveMeasurements(const tContainerIteratorPair& iter_pairs){
-    for(auto iter = iter_pairs.begin(); iter != iter_pairs.end(); ++iter){
-        RemoveMeas(*iter);
+template <typename tContainerMeasurementLocationInfo>
+void RemoveMeasurements(const tContainerMeasurementLocationInfo& container_meas_info){
+    for(auto iter = container_meas_info.begin(); iter != container_meas_info.end(); ++iter){
+        RemoveMeasurement(*iter);
     }
 }
 
 /**
- * Attempts to find a cluster from the measurements in the data tree. If a cluster was not found, the size of the vector container of iterator pairs will be 
- * zero. A cluster must have enough measurements to form a minimum subset as defined by Parameters::RANSAC_minimum_subset_
- * @param[in] source Any source that is defined in system. It is used to calculate different distances
- * @param[in] params The system parameters. It contains parameters that define the cluster.
- * @param[out] iter_pairs Contains iterators to the elements that make up the cluster. The outer container distinguishes the iterator pairs by time.
+ * Attempts to find a cluster from the measurements in the data tree. If a measurement is found, it will 
+ * construct a cluster and add it to the System. A cluster must have enough measurements to form a minimum 
+ * subset as defined by Parameters::RANSAC_minimum_subset_
+ * @param[in,out] sys The complete system information
  * @return returns true if a cluster is found.
  */
-template<typename tSource, typename tContainerContainerIteratorPair>
-bool FindCluster(const tSource& source, const Parameters& params, tContainerContainerIteratorPair& iter_pairs) const {
-    return static_cast<tDerived*>(this)->DerivedFindCluster(source, params, iter_pairs);
+template <typename tSystem>
+void ConstructClusters(tSystem& sys) {
+    return static_cast<tDerived*>(this)->DerivedConstruct(sys);
 }
 
 /**
  * Removes all of the measurements with a time stamp before or equal to
  * the expiration time. 
+ * @param[in] sys The complete system information
+ * @param[in] expiration_time measurements before or equal to this time will be removed from the data set
  */ 
-void PruneDataTree(const double expiration_time);
+template <typename tSystem>
+void PruneDataTree(const tSystem& sys, const double expiration_time) {
+    static_cast<tDerived*>(this)->DerivedPruneDataTree(sys, expiration_time);
+}
 
 /**
  * Transforms the measurements using the transform provided. 
  */ 
 template< typename tTransform>
-void TransformMeasurements(const tTransform& transform);
+void TransformMeasurements(const tTransform& transform) {
+    static_cast<tDerived*>(this)->DerivedTransformMeasurements(transform);
+}
 
 unsigned int Size() {return size_;};
 
-std::list<tContainer> data_;
+tData data_;
 
 private:
-DataTreeBase() : size_{0} {}
+DataTreeBase()=default;
 ~DataTreeBase()=default;
 friend tDerived;
 
 
 
-unsigned long int size_;
+unsigned long int size_=0;
 
 
 };
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                                            Definitions
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename tContainer, typename tDerived>
-void DataTreeBase<tContainer, tDerived>::PruneDataTree(const double expiration_time) {
 
-    auto iter = data_.begin();
-    while(iter != data_.end() && iter->begin()->time_stamp <= expiration_time) {
-        size_ -= iter->size();
-        iter = data_.erase(iter); // Erases the element and returns an iterator to the next element which is now the first element of the list
-    }
-   
-}
 
-// -----------------------------------------------------------------------------------------------------------------
 
-template <typename tContainer, typename tDerived>
-template< typename tTransform>
-void DataTreeBase<tContainer, tDerived>::TransformMeasurements(const tTransform& transform) {
-
-    if (!transform.transform_null_) {
-        for (auto outer_iter = data_.begin(); outer_iter != data_.end(); ++outer_iter) {
-            for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter) {
-                transform.TransformMeasurement(*inner_iter);
-            }
-        }
-    }
-
-}
 
 } // namespace rransac
 

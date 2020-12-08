@@ -106,22 +106,22 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Data Trees
 #---------------------------------------
 
-# add_executable(data_tree_listTest 
-# data_containers/data_tree/data_tree_list_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(data_tree_listTest lie_groups)
-# target_link_libraries(data_tree_listTest gtest_main lie_groups)
+add_executable(data_tree_clustersTest 
+data_containers/data_tree/data_tree_clusters_test.cpp
+../src/parameters.cpp)
+add_dependencies(data_tree_clustersTest lie_groups)
+target_link_libraries(data_tree_clustersTest gtest_main lie_groups)
 
 
 #---------------------------------------
 # Cluster 
 #---------------------------------------
 
-add_executable(cluster_listTest 
-data_containers/cluster_test.cpp
-../src/parameters.cpp)
-add_dependencies(cluster_listTest lie_groups)
-target_link_libraries(cluster_listTest gtest_main lie_groups)
+# add_executable(cluster_listTest 
+# data_containers/cluster_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(cluster_listTest lie_groups)
+# target_link_libraries(cluster_listTest gtest_main lie_groups)
 
 # add_executable(rransacTest
 # rransac_test.cpp
