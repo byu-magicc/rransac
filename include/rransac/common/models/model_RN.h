@@ -6,13 +6,13 @@
 
 namespace rransac {
 
-template <typename tState, typename tTransformation>
-class ModelRN : public ModelBase<SourceRN<tState>, tTransformation, tState::g_type_::dim_*2, ModelRN<tState, tTransformation>> {
+template <typename tState, template <class ttState, class tMatCov> typename tTransformation>
+class ModelRN : public ModelBase<SourceRN<tState>, tTransformation<tState,tMatCov>, tState::g_type_::dim_*2, ModelRN<tState, tTransformation>> {
 
 public:
 
 typedef tState State;
-typedef tTransformation Transformation;
+typedef tTransformation<tState> Transformation;
 static constexpr unsigned int cov_dim_ = tState::g_type_::dim_*2;
 // static constexpr unsigned int cov_dim_ = tState::g_type_::dim_*2;
 static constexpr unsigned int g_dim_ = State::g_type_::dim_;
@@ -58,7 +58,7 @@ static State DerivedGetRandomState(){ return State::Random();}
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {    
     this->F_.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
     return this->F_;
@@ -66,8 +66,8 @@ typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::D
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-template <typename State, typename Transformation>
-typename ModelRN<State,Transformation>::Mat ModelRN<State,Transformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+template <typename tState, template <class ttState> typename tTransformation>
+typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
     this->G_.block(0,0,g_dim_, g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
     this->G_.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt*dt/2;
     this->G_.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
@@ -75,8 +75,8 @@ typename ModelRN<State,Transformation>::Mat ModelRN<State,Transformation>::Deriv
 
 }
 
-template <typename State, typename Transformation>
-void ModelRN<State,Transformation>::DerivedOPlusEq(const Eigen::Matrix<double,2*g_dim_,1>& state_update) {
+template <typename tState, template <class ttState> typename tTransformation>
+void ModelRN<tState,tTransformation>::DerivedOPlusEq(const Eigen::Matrix<double,2*g_dim_,1>& state_update) {
     this->state_.g_.OPlusEq(state_update.block(0,0,g_dim_,1));
     this->state_.u_.data_ += state_update.block(g_dim_,0,g_dim_,1);
 }

@@ -36,7 +36,14 @@ void DerivedAddMeasurement(const tSystem& sys, const Meas& meas);
  */
 void DerivedRemoveMeasurement(const MeasurementLocationInfo& meas_info); 
 
-
+/**
+ * The data tree has a list of clusters. This function finds every cluster that meets the minimum subset requirements as defined by
+ * Parameters::RANSAC_minimum_subset_ and gives a reference to System::clusters_ to later be used by RANSAC
+ * @param[in,out] sys The complete system information
+ * @return returns true if a cluster is found.
+ */
+template <typename tSystem>
+void DerivedConstructClusters(tSystem& sys);
 
 /**
  * Removes all of the measurements with a time stamp before or equal to
@@ -123,16 +130,49 @@ void DataTreeClusters::DerivedRemoveMeasurement(const MeasurementLocationInfo& m
     meas_info.cluster_iter->RemoveMeasurement(meas_info.iter_pair);
     if (meas_info.cluster_iter->Size() == 0)
         this->data_.erase(meas_info.cluster_iter);
+
+    --size_;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
 
 template <typename tSystem>
-void DataTreeClusters::DerivedPruneDataTree(const tSystem sys, const double expiration_time) [
-    for(auto iter = this->data_.begin(); iter != this->data_.end(); ++iter) {
-        iter->P
+void DataTreeClusters::DerivedConstructClusters(tSystem& sys) {
+
+    sys.clusters_.clear();
+    for(auto cluster_iter = this->data_.begin(); cluster_iter != this->data_.end(); ++cluster_iter) {
+        if(cluster_iter->data_.size() >= sys.params_.RANSAC_minimum_subset_)
+            sys.clusters_.push_back(&(*cluster_iter));
     }
-]
+
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
+
+template <typename tSystem>
+void DataTreeClusters::DerivedPruneDataTree(const tSystem sys, const double expiration_time) {
+    for(auto iter = this->data_.begin(); iter != this->data_.end(); ++iter) {
+        double size_diff = iter->Size();
+        iter->PruneCluster(expiration_time);
+        size_diff -= iter->Size();
+        size_ -= size_diff;
+
+        // After pruning the cluster, if it doesn't have any elements, remove it
+        if(iter->Size() == 0) {
+            iter = data_.erase(iter);
+            --iter;                       // Since erase returns an iterator to the next iterator, we need to back it up one; otherwise, the for loop would skip it 
+        } 
+        // If the latest measurement in the cluster has a time stamp before the current time minus the time threshold,
+        // It won't receive any other measurements and it hasn't been made into a model. Thus it won't ever become a model
+        // so it should be removed. 
+        else if (iter->data_.back().front().time_stamp <= (sys.current_time_ - sys.params_.cluster_time_threshold_)) {
+            size_ -= iter->Size();
+            iter = data_.erase(iter);
+            --iter;
+        }
+ 
+    }
+}
 
 } // namespace rransac
 

@@ -23,12 +23,12 @@ namespace rransac
 
 using namespace lie_groups;
 
-typedef ModelRN<R2_r2, TransformNULL<R2_r2>> Model1;
-typedef ModelRN<R3_r3, TransformNULL<R3_r3>> Model2;
-typedef ModelSENPosVel<SE2_se2, TransformNULL<SE2_se2>> Model3;
-typedef ModelSENPoseTwist<SE2_se2, TransformNULL<SE2_se2>> Model4;
-typedef ModelSENPosVel<SE3_se3, TransformNULL<SE3_se3>> Model5;
-typedef ModelSENPoseTwist<SE3_se3, TransformNULL<SE3_se3>> Model6;
+typedef ModelRN<R2_r2, TransformNULL> Model1;
+typedef ModelRN<R3_r3, TransformNULL> Model2;
+typedef ModelSENPosVel<SE2_se2, TransformNULL> Model3;
+typedef ModelSENPoseTwist<SE2_se2, TransformNULL> Model4;
+typedef ModelSENPosVel<SE3_se3, TransformNULL> Model5;
+typedef ModelSENPoseTwist<SE3_se3, TransformNULL> Model6;
 
 
 
@@ -256,7 +256,7 @@ this->track.PropagateModel(this->dt);
 // std::cout << "this->F: " << this->F << std::endl << std::endl;
 // std::cout << "G_: " << this->track.G_ << std::endl << std::endl;
 // std::cout << "Q_: " << this->track.Q_ << std::endl << std::endl;
-ASSERT_EQ(this->track.missed_detection_time_, dt);
+ASSERT_EQ(this->track.missed_detection_time_, this->dt);
 ASSERT_LE( (this->track.F_- this->F).norm(), 1e-12  );
 ASSERT_LE( (this->track.G_- this->G).norm(), 1e-12  );
 ASSERT_LE( (this->track.state_.g_.data_ - this->states[1].g_.data_).norm(), 1e-12  );

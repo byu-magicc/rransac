@@ -6,13 +6,13 @@
 
 namespace rransac {
 
-template <typename tState, typename tTransformation>
-class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransformation, tState::g_type_::dim_*2, ModelSENPoseTwist<tState, tTransformation>> {
+template <typename tState, template <class ttState> typename tTransformation>
+class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransformation<tState>, tState::g_type_::dim_*2, ModelSENPoseTwist<tState, tTransformation>> {
 
 public:
 
 typedef tState State;
-typedef tTransformation Transformation;
+typedef tTransformation<tState> Transformation;
 static constexpr unsigned int cov_dim_ = State::g_type_::dim_*2;
 static constexpr unsigned int g_dim_ = State::g_type_::dim_;
 typedef Eigen::Matrix<double,2*g_dim_,2*g_dim_> Mat;
@@ -54,7 +54,7 @@ static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist<tS
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {    
     this->F_.block(0,0,g_dim_, g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
     this->F_.block(0,g_dim_,g_dim_,g_dim_) = (state.u_*dt).Jr()*dt;
@@ -63,7 +63,7 @@ typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
     Eigen::Matrix<double, g_dim_, g_dim_> tmp = (state.u_*dt).Jr()*dt;
     this->G_.block(0,0,g_dim_, g_dim_) = tmp;
@@ -75,7 +75,7 @@ typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 void ModelSENPoseTwist<tState,tTransformation>::DerivedOPlusEq(const Eigen::Matrix<double,2*g_dim_,1>& state_update) {
     this->state_.g_.OPlusEq(state_update.block(0,0,g_dim_,1));
     this->state_.u_.data_ += state_update.block(g_dim_,0,g_dim_,1);

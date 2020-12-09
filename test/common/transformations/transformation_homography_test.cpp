@@ -33,7 +33,7 @@ protected:
 
 };
 
-using MyTypes = ::testing::Types<TransformHomography<R2_r2,Eigen::Matrix<double,4,4>>,TransformHomography<SE2_se2, Eigen::Matrix<double,5,5>>   >;
+using MyTypes = ::testing::Types<TransformHomography<R2_r2>,TransformHomography<SE2_se2>>;
 TYPED_TEST_SUITE(HomographyTest, MyTypes);
 
 
@@ -69,7 +69,7 @@ ASSERT_EQ(trans.h4_, h4);
 TEST(TransformHomographyTest, R2_r2_TransformationR2) {
 
 
-TransformHomography<R2_r2, Eigen::Matrix4d> trans;
+TransformHomography<R2_r2> trans;
 
 // Construct Homography.
 SO3 R = SO3::Random();
@@ -188,7 +188,7 @@ TEST(TransformHomographyTest, SE2_se2_Transformation) {
 
 typedef Eigen::Matrix<double,5,5> MatCov;
 
-TransformHomography<SE2_se2, MatCov> trans;
+TransformHomography<SE2_se2> trans;
 
 
 

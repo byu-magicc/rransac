@@ -19,7 +19,7 @@ using namespace lie_groups;
 TEST(ModelManagerTest, AddModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL<State>> Model;
+typedef ModelRN<State, TransformNULL> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
@@ -39,7 +39,7 @@ ASSERT_EQ(sys.models_.size(), 1);
 TEST(ModelManagerTest, PropagateModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL<State>> Model;
+typedef ModelRN<State, TransformNULL> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
@@ -71,7 +71,7 @@ ASSERT_LE( (sys.models_.back().state_.g_.data_ - model.state_.g_.data_ -model.st
 TEST(ModelManagerTest, ManageModels) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL<State>> Model;
+typedef ModelRN<State, TransformNULL> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
@@ -246,7 +246,70 @@ ASSERT_EQ(sys.good_models_[5]->model_likelihood_, 12);
 TEST(ModelManagerTest, UpdateModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL<State>> Model;
+typedef ModelRN<State, TransformNULL> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;  
+
+TransformHomography<State, Eigen::Matrix4d>
+
+SourceR3 source;
+SourceParameters source_params;
+source_params.meas_cov_fixed_ = true;
+source_params.meas_cov_ = Eigen::Matrix3d::Identity();
+source_params.expected_num_false_meas_ = 0.1;
+source_params.type_ = MeasurementTypes::RN_POS;
+source_params.probability_of_detection_ = 0.9;
+source_params.gate_probability_ = 0.8;
+source_params.source_index_ = 0;
+source.Init(source_params);
+
+sys.sources_.push_back(source);
+
+sys.params_.max_num_models_ = 2;
+sys.params_.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
+
+Meas m;
+m.source_index = 0;
+m.weight = 1;
+m.likelihood = 1;
+m.time_stamp = 0;
+m.type = MeasurementTypes::RN_POS;
+m.pose = Eigen::Matrix<double,3,1>::Random();
+
+
+Model model;
+model.Init(sys.sources_,sys.params_);
+model.state_.g_.data_ << 1,1,1;
+model.state_.u_.data_ << 2,3,4;
+
+model.new_assoc_meas_ = std::vector<std::vector<Meas>>{std::vector<Meas>{m}};
+
+double dt = 0.1;
+
+model_manager.AddModel(sys, model);
+model_manager.AddModel(sys, model);
+
+for (int ii = 0; ii < 10; ++ii) {
+    model_manager.PropagateModels(sys,dt);
+}
+ASSERT_DOUBLE_EQ(sys.models_.begin()->missed_detection_time_, 1.0);
+
+model_manager.UpdateModels(sys);
+
+
+ASSERT_EQ(sys.models_.front().missed_detection_time_, 0);
+ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
+
+
+}
+
+// Test the transform model
+
+TEST(ModelManagerTest, TransformModelTest ) {
+
+typedef lie_groups::R3_r3 State;
+typedef ModelRN<State, TransformNULL> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
@@ -301,7 +364,6 @@ ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
 
 
 }
-
 
 
 } // namespace rransac

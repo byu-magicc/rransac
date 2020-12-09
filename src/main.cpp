@@ -3,6 +3,12 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <iostream>
+#include "system.h"
+#include "state.h"
+#include "common/models/model_RN.h"
+#include "common/sources/source_RN.h"
+#include "common/transformations/transformation_null.h"
+#include "common/measurement/measurement_base.h"
 
 
 // #include "common/models/model_base.h"
@@ -19,16 +25,21 @@
 // #include "common/transformations/transformation_null.h"
 
 
-// using namespace rransac;
-// using namespace lie_groups;
+using namespace rransac;
+using namespace lie_groups;
 int main(){
 
+typedef ModelRN<R2_r2, TransformNULL> Model;
 
-Eigen::Matrix2d blah;
-blah.setIdentity();
+System<Model> sys;
 
-std::cout << blah.sqrt() << std::endl;
-Eigen::Matrix2d blah_Sqrt = blah.sqrt();
+Meas m;
+m.time_stamp = 0;
+m.pose = Eigen::Matrix2d::Identity();
+sys.data_tree_.AddMeasurement(sys,m);
+
+std::cout << sys.data_tree_.Size() << std::endl;
+
 return 0;
  
  

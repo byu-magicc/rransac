@@ -6,6 +6,7 @@
 
 #include "parameters.h"
 #include "common/measurement/measurement_base.h"
+#include "data_containers/data_tree/data_tree_cluster.h"
 
 // // Sources
 // #include "common/sources/source_base.h"
@@ -44,8 +45,11 @@ public:
     std::vector<std::vector<Meas>> new_meas_;                  /** < Contains all of the new measurements. */
     typename tModel::Transformation transformaion_;            /** < The transformation for the measurements and tracks */
     std::list<tModel> models_;                                 /** < The models created by rransac */
-    std::vector<tModel*> good_models_;         /** < A list of pointers to the good models */
+    std::vector<tModel*> good_models_;                         /** < A list of pointers to the good models */
     unsigned int model_label_ =0;                              /** < The label incrementer for good models */
+    double current_time_;                                      /** < The current system time */
+    DataTreeClusters data_tree_;                               /** < Contains measurements that are not in a consensus set */
+    std::vector<Cluster*> clusters_;                           /** < Reference to clusters. RANSAC tries to form measurements from each clusters */
 
     // TODO add clusters and data tree
 

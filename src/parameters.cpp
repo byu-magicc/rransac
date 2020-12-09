@@ -22,7 +22,18 @@ Parameters::Parameters(const Parameters &new_params) {
 }
 
 //------------------------------------------------------------------------------------
+
+void Parameters::operator= (const Parameters &new_params) {
+    SetParameters(new_params);
+}
+
+//------------------------------------------------------------------------------------
 bool Parameters::SetParameters(const Parameters &new_params) {
+
+    cluster_position_threshold_ = new_params.cluster_position_threshold_;
+    cluster_time_threshold_ = new_params.cluster_time_threshold_;
+    cluster_velocity_threshold_ = new_params.cluster_velocity_threshold_;
+    RANSAC_minimum_subset_ = new_params.RANSAC_minimum_subset_;
 
     bool successfull = true;
 

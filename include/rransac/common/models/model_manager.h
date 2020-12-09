@@ -38,7 +38,7 @@ static void UpdateModels(System<tModel>& sys);
  * Transforms all of the models
  */ 
 static void TransformModels(System<tModel>& sys){
-    for (auto iter = sys.models_.begin(), iter!=sys.models_.end(); ++iter) {
+    for (auto iter = sys.models_.begin(); iter!=sys.models_.end(); ++iter) {
         iter->TransformModel(sys.transformaion_);
         iter->TransformConsensusSet(sys.transformaion_);
     }

@@ -11,8 +11,8 @@ namespace rransac
  * This transform class is used when the measurements and the track do not need to be transformed. 
 */
 
-template<class tState>
-class TransformNULL : public TransformBase<Eigen::MatrixXd, tState, Eigen::Matrix<double,tState::dim_,tState::dim_>, TransformNULL<tState>> {
+template<class tState, class tMatCov = Eigen::Matrix<double,tState::dim_,tState::dim_> >
+class TransformNULL : public TransformBase<Eigen::MatrixXd, tState, tMatCov, TransformNULL<tState>> {
 
 public:
 

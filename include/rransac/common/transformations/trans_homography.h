@@ -13,9 +13,12 @@ namespace rransac
  * or MeasurementType::SEN_POS_VEL and is of TWO dimensions. When the state is SE2, it is assumed that tracking is done in the virtual image frame; 
  * otherwise it won't work. 
 */
+constexpr int TransformHomographyCovDim(int state_dim) {
+    return (state_dim == 2) ? 4: 5;
+} 
 
-template<class tState, class tMatCov>
-class TransformHomography : public TransformBase<Eigen::Matrix3d, tState, tMatCov, TransformHomography<tState,tMatCov>> {
+template<class tState>
+class TransformHomography : public TransformBase<Eigen::Matrix3d, tState, Eigen::Matrix<double,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, TransformHomography<tState> {
 
 public:
 
@@ -123,7 +126,7 @@ Eigen::Matrix2d TransformRotation(const Eigen::Matrix<double,2,1>& vel_transform
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 template<>
-void TransformHomography<lie_groups::R2_r2, Eigen::Matrix<double,4,4>>::DerivedTransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<double,4,4>& cov) const {
+void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<double,4,4>& cov) const {
 
 
     Eigen::Matrix2d&& G = ConstructTranslationalVelTransform(state.g_.data_);
@@ -148,7 +151,7 @@ void TransformHomography<lie_groups::R2_r2, Eigen::Matrix<double,4,4>>::DerivedT
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 template<>
-void TransformHomography<lie_groups::SE2_se2, Eigen::Matrix<double,5,5>>::DerivedTransformTrack(lie_groups::SE2_se2& state, Eigen::Matrix<double,5,5>& cov) const {
+void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups::SE2_se2& state, Eigen::Matrix<double,5,5>& cov) const {
         
     // Constraining the Homomgraphy to SE2 greatly simplifies the transformation.
 

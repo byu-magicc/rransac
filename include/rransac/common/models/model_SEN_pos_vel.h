@@ -6,13 +6,13 @@
 
 namespace rransac {
 
-template <typename tState, typename tTransformation>
-class ModelSENPosVel : public ModelBase<SourceSENPosVel<tState>, tTransformation,  tState::g_type_::dim_ + tState::u_type_::dim_ - tState::u_type_::dim_t_vel_ + 1, ModelSENPosVel<tState, tTransformation>> {
+template <typename tState, template <class ttState> typename tTransformation>
+class ModelSENPosVel : public ModelBase<SourceSENPosVel<tState>, tTransformation<tState>,  tState::g_type_::dim_ + tState::u_type_::dim_ - tState::u_type_::dim_t_vel_ + 1, ModelSENPosVel<tState, tTransformation>> {
 
 public:
 
 typedef tState State;
-typedef tTransformation Transformation;
+typedef tTransformation<tState> Transformation;
 
 static constexpr unsigned int g_dim_ = State::g_type_::dim_;
 static constexpr unsigned int cov_dim_ = State::g_type_::dim_ + State::u_type_::dim_ - State::u_type_::dim_t_vel_ + 1;
@@ -63,7 +63,7 @@ static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPosVel<tStat
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {  
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt;  
     this->F_.block(0,0,g_dim_,g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
@@ -74,7 +74,7 @@ typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tT
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
     this->G_.block(0,0,g_dim_, g_dim_) = tmp;
@@ -88,7 +88,7 @@ typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTr
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 void ModelSENPosVel<tState, tTransformation>::DerivedOPlusEq(const Eigen::Matrix<double,cov_dim_,1>& state_update) {
     Eigen::Matrix<double,g_dim_,1> twist_update;
     twist_update.setZero();
@@ -100,7 +100,7 @@ void ModelSENPosVel<tState, tTransformation>::DerivedOPlusEq(const Eigen::Matrix
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, typename tTransformation>
+template <typename tState, template <class ttState> typename tTransformation>
 tState ModelSENPosVel<tState, tTransformation>::DerivedGetRandomState(){
     State state = State::Random();
 

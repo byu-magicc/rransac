@@ -28,6 +28,8 @@ Parameters();
  */
 Parameters(const Parameters &new_params);
 
+void operator=(const Parameters &new_params);
+
 // Deconstructor
 ~Parameters();
 

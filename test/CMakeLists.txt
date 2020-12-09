@@ -73,11 +73,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Transformations
 #---------------------------------------
 
-# add_executable(trans_homographyTest
-# common/transformations/transformation_homography_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(trans_homographyTest lie_groups)
-# target_link_libraries(trans_homographyTest gtest_main lie_groups)
+add_executable(trans_homographyTest
+common/transformations/transformation_homography_test.cpp
+../src/parameters.cpp)
+add_dependencies(trans_homographyTest lie_groups)
+target_link_libraries(trans_homographyTest gtest_main lie_groups)
 
 #---------------------------------------
 # Model
@@ -106,11 +106,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Data Trees
 #---------------------------------------
 
-add_executable(data_tree_clustersTest 
-data_containers/data_tree/data_tree_clusters_test.cpp
-../src/parameters.cpp)
-add_dependencies(data_tree_clustersTest lie_groups)
-target_link_libraries(data_tree_clustersTest gtest_main lie_groups)
+# add_executable(data_tree_clustersTest 
+# data_containers/data_tree/data_tree_clusters_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(data_tree_clustersTest lie_groups)
+# target_link_libraries(data_tree_clustersTest gtest_main lie_groups)
 
 
 #---------------------------------------

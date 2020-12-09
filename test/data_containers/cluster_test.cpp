@@ -144,7 +144,7 @@ for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end()
 
     time.setRandom();
     auto inner_iter = outer_iter->begin();
-    inner_iter = std::next(inner_iter, std::round(time(0,0)*10));
+    inner_iter = std::next(inner_iter, std::round(fabs(time(0,0))*10));
 
     // We dont want the last iterator since it contains nothing
     if (inner_iter == outer_iter->end())

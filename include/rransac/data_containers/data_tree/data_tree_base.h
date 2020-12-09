@@ -73,7 +73,7 @@ void RemoveMeasurements(const tContainerMeasurementLocationInfo& container_meas_
  */
 template <typename tSystem>
 void ConstructClusters(tSystem& sys) {
-    return static_cast<tDerived*>(this)->DerivedConstruct(sys);
+    static_cast<tDerived*>(this)->DerivedConstructClusters(sys);
 }
 
 /**
