@@ -4,6 +4,7 @@
 #include "system.h"
 #include "common/models/model_manager.h"
 #include "common/transformations/transformation_null.h"
+#include "common/transformations/trans_homography.h"
 #include "common/models/model_RN.h"
 #include "common/sources/source_RN.h"
 
@@ -251,8 +252,6 @@ typedef ModelRN<State, TransformNULL> Model;
 System<Model> sys;
 ModelManager<Model> model_manager;  
 
-TransformHomography<State, Eigen::Matrix4d>
-
 SourceR3 source;
 SourceParameters source_params;
 source_params.meas_cov_fixed_ = true;
@@ -308,13 +307,22 @@ ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
 
 TEST(ModelManagerTest, TransformModelTest ) {
 
-typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL> Model;
+typedef lie_groups::R2_r2 State;
+typedef ModelRN<State, TransformHomography> Model;
+
+TransformHomography<State> trans;
+
+// The homography data is set so that the state and the measurements will all be transformed to zero
+Eigen::Matrix3d homography;
+homography.setZero();
+homography.block(2,2,1,1)<< 1;
+trans.Init();
+trans.SetData(homography);
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
 
-SourceR3 source;
+SourceR2 source;
 SourceParameters source_params;
 source_params.meas_cov_fixed_ = true;
 source_params.meas_cov_ = Eigen::Matrix3d::Identity();
@@ -328,7 +336,8 @@ source.Init(source_params);
 sys.sources_.push_back(source);
 
 sys.params_.max_num_models_ = 2;
-sys.params_.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
+sys.params_.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity();
+sys.transformaion_ = trans;
 
 Meas m;
 m.source_index = 0;
@@ -336,32 +345,41 @@ m.weight = 1;
 m.likelihood = 1;
 m.time_stamp = 0;
 m.type = MeasurementTypes::RN_POS;
-m.pose = Eigen::Matrix<double,3,1>::Random();
+m.pose = Eigen::Matrix<double,2,1>::Random();
 
 
 Model model;
 model.Init(sys.sources_,sys.params_);
-model.state_.g_.data_ << 1,1,1;
-model.state_.u_.data_ << 2,3,4;
+model.state_.g_.data_ << 1,1;
+model.state_.u_.data_ << 2,3;
+model.err_cov_ == Eigen::Matrix4d::Identity();
 
 model.new_assoc_meas_ = std::vector<std::vector<Meas>>{std::vector<Meas>{m}};
+
+for (int ii = 0; ii < 1000; ++ii) {
+    m.time_stamp = ii;
+    model.cs_.AddMeasToConsensusSet(m);
+}
 
 double dt = 0.1;
 
 model_manager.AddModel(sys, model);
 model_manager.AddModel(sys, model);
 
-for (int ii = 0; ii < 10; ++ii) {
-    model_manager.PropagateModels(sys,dt);
+model_manager.TransformModels(sys);
+
+for (auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++model_iter) {
+
+    // After the transformation it should be zero
+    ASSERT_DOUBLE_EQ(model_iter->state_.g_.data_.norm(),0);
+
+    for(auto outer_iter = model_iter->cs_.consensus_set_.begin(); outer_iter != model_iter->cs_.consensus_set_.end(); ++ outer_iter) {
+        for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
+            ASSERT_DOUBLE_EQ(inner_iter->pose.norm(), 0);
+        }
+    }
+
 }
-ASSERT_DOUBLE_EQ(sys.models_.begin()->missed_detection_time_, 1.0);
-
-model_manager.UpdateModels(sys);
-
-
-ASSERT_EQ(sys.models_.front().missed_detection_time_, 0);
-ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
-
 
 }
 

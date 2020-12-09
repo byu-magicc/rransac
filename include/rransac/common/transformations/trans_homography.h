@@ -7,20 +7,24 @@
 
 namespace rransac
 {
+
+constexpr int TransformHomographyCovDim(int state_dim) {
+    return (state_dim == 2) ? 4: 5;
+} 
+
 /** \class TransHomography
  * Transforms the measurements, states and error covariance using the homography. The homography is Eigen::Matrix3d
  * the state is R2 or SE2 and the measurement is of type MeasurementType::RN_POS, MeasurementType::RN_POS_VEL, MeasurementType::RN_POS.
  * or MeasurementType::SEN_POS_VEL and is of TWO dimensions. When the state is SE2, it is assumed that tracking is done in the virtual image frame; 
  * otherwise it won't work. 
 */
-constexpr int TransformHomographyCovDim(int state_dim) {
-    return (state_dim == 2) ? 4: 5;
-} 
 
 template<class tState>
-class TransformHomography : public TransformBase<Eigen::Matrix3d, tState, Eigen::Matrix<double,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, TransformHomography<tState> {
+class TransformHomography : public TransformBase<Eigen::Matrix3d, tState, Eigen::Matrix<double,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, TransformHomography<tState>> {
 
 public:
+
+typedef Eigen::Matrix<double,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov;
 
 // Components of the Homograpy H = [H1, h2; h3_T^T, h4] where T stands for transpose.
 Eigen::Matrix2d H1_;
@@ -66,7 +70,7 @@ void DerivedTransformMeasurement(Meas& meas) const {
  * @param state The track's state to be transformed.
  * @param cov   The track's error covariance to be transformed.
  */ 
-void DerivedTransformTrack(tState& state, tMatCov& cov) const {
+void DerivedTransformTrack(tState& state, MatCov& cov) const {
 // void TransformTrack(S& state, Eigen::MatrixXd& cov) {
     throw std::runtime_error("TransformHomography: The state is not supported.");
 }

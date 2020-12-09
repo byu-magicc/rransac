@@ -6,8 +6,8 @@
 
 namespace rransac {
 
-template <typename tState, template <class ttState, class tMatCov> typename tTransformation>
-class ModelRN : public ModelBase<SourceRN<tState>, tTransformation<tState,tMatCov>, tState::g_type_::dim_*2, ModelRN<tState, tTransformation>> {
+template <typename tState, template <class ttState> typename tTransformation>
+class ModelRN : public ModelBase<SourceRN<tState>, tTransformation<tState>, tState::g_type_::dim_*2, ModelRN<tState, tTransformation>> {
 
 public:
 
