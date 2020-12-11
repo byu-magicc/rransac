@@ -42,7 +42,8 @@ public:
 
     Parameters params_;                                        /** < System parameters */
     std::vector<typename tModel::Source> sources_;             /** < Contains all of the instantiated sources. */
-    std::vector<std::vector<Meas>> new_meas_;                  /** < Contains all of the new measurements. */
+    std::list<std::list<Meas>> new_meas_;                      /** < Contains all of the new measurements. The outer container distinguishes the 
+                                                                     measurements by source. */
     typename tModel::Transformation transformaion_;            /** < The transformation for the measurements and tracks */
     std::list<tModel> models_;                                 /** < The models created by rransac */
     std::vector<tModel*> good_models_;                         /** < A list of pointers to the good models */
@@ -51,7 +52,7 @@ public:
     DataTreeClusters data_tree_;                               /** < Contains measurements that are not in a consensus set */
     std::vector<Cluster*> clusters_;                           /** < Reference to clusters. RANSAC tries to form measurements from each clusters */
 
-    // TODO add clusters and data tree
+    
 
 private:
 

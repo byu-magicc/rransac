@@ -95,11 +95,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(model_baseTest2 lie_groups)
 # target_link_libraries(model_baseTest2 gtest_main lie_groups)
 
-add_executable(model_managerTest 
-common/models/model_manager_test.cpp
-../src/parameters.cpp)
-add_dependencies(model_managerTest lie_groups)
-target_link_libraries(model_managerTest gtest_main lie_groups)
+# add_executable(model_managerTest 
+# common/models/model_manager_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(model_managerTest lie_groups)
+# target_link_libraries(model_managerTest gtest_main lie_groups)
 
 
 #---------------------------------------
@@ -122,6 +122,16 @@ target_link_libraries(model_managerTest gtest_main lie_groups)
 # ../src/parameters.cpp)
 # add_dependencies(cluster_listTest lie_groups)
 # target_link_libraries(cluster_listTest gtest_main lie_groups)
+
+#---------------------------------------
+# Data Association
+#---------------------------------------
+add_executable(cluster_data_tree_data_associationTest 
+common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy_test.cpp
+../src/parameters.cpp)
+add_dependencies(cluster_data_tree_data_associationTest lie_groups)
+target_link_libraries(cluster_data_tree_data_associationTest gtest_main lie_groups)
+
 
 # add_executable(rransacTest
 # rransac_test.cpp

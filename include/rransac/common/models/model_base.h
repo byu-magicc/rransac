@@ -58,13 +58,14 @@ typedef Eigen::Matrix<double,cov_dim_,cov_dim_> Mat;
 public:
     State state_;                     /** < The estimated state of the phenomenon or target.*/
     Mat err_cov_;                     /** < The error covariance. */
-    
-    ConsensusSet<Meas> cs_;           /** < The consensus set. */
+
     std::vector<std::vector<Meas>> new_assoc_meas_;   /** < Measurements recently associated with the model. These measurements have not been used to update 
                                                      the model. Once an associated measurement has been used to update the model, they are added to the 
                                                      consensus set and removed from this vector. These measurements should have weights assigned to them. 
                                                      Each vector of measurements corresponds to a unique source ID. */
 
+    ConsensusSet<Meas> cs_;           /** < The consensus set. */
+    
     double missed_detection_time_;  /** The time elapsed since a measurement was associated with the target. */
     
     long int label_;       /** When the model becomes a good model, it receives a unique label */   
@@ -215,6 +216,12 @@ public:
     }
 
     /**
+     * Returns the innovation covariance associated with the measurement
+     * @param m The measurement
+     */ 
+    Eigen::MatrixXd GetInnovationCovariance(const Meas& m);
+
+    /**
      * Using the transformation data provided by the user, this function transforms the state estimate and error covariance
      * from the previous global frame to the current global frame.
      * @param[in] T The transformation object provided by the user. The object should already have the data it needs to transform the model.
@@ -255,6 +262,12 @@ public:
     void PruneConsensusSet(const double expiration_time) {
         cs_.PruneConsensusSet(expiration_time);
     } 
+
+
+    /**
+     * Adds a new measurement to the new_assoc_meas_ according to the source index.
+     */ 
+    void AddNewMeasurement( const Meas& meas);
 
 private:
 
@@ -480,6 +493,55 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModelLikeliho
         }
     }
 } 
+
+//---------------------------------------------------------------------------------------------------------
+
+
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
+Eigen::MatrixXd ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationCovariance(const Meas& m) {
+
+    Eigen::MatrixXd H = GetLinObsMatState(this->state_,m.source_index);         // Jacobian of observation function w.r.t. state
+    Eigen::MatrixXd V = GetLinObsMatSensorNoise(this->state_,m.source_index);   // Jacobian of observation function w.r.t. noise
+    Eigen::MatrixXd R;                                                          // Measurement noise covariance
+
+    if((*sources_)[m.source_index].params_.meas_cov_fixed_) {                   // Find measurement covariance depending on it being fixed or not
+        R = (*sources_)[m.source_index].params.meas_cov_;
+    } else {
+        R = m.meas_cov;
+    }
+
+    return H*err_cov_*H.transpose() + V*R*V.transpose();
+}
+
+//---------------------------------------------------------------------------------------------------------
+
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::AddNewMeasurement( const Meas& meas) {
+
+    bool meas_added = false;
+
+    // The new associated measurements should all have the same time stamp.
+    if(new_assoc_meas_.size() != 0)
+        if(new_assoc_meas_.front().size() != 0)
+            if(meas.time_stamp != new_assoc_meas_.front().front().time_stamp)
+                throw std::runtime_error("ModelBase::AddNewMeasurement Not all new measurements have the same time stamp");
+
+    // See if there is already a measurement with the same source index. If it is, add it to the list
+    for(auto iter = this->new_assoc_meas_.begin(); iter != this->new_assoc_meas_.end(); ++iter) {
+        if(iter->begin()->source_index == meas.source_index) {
+            iter->push_back(meas);
+            meas_added = true;
+            break;
+        }
+    }
+
+    // Create a new sub list and add the measurement
+    if(!meas_added) {
+        this->new_assoc_meas_.emplace_back(std::list<Meas>(meas));
+    }
+
+}
+
 
 
 } // namespace rransac

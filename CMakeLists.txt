@@ -50,13 +50,13 @@ lie_groups/liegroups/src/lie_groups/SE3.cpp
 ## Testing ##
 #############
 
-add_executable(main src/main.cpp
-src/parameters.cpp)
+# add_executable(main src/main.cpp
+# src/parameters.cpp)
 # ${Boost_LIBRARIES})
 # src/common/sources/source_base.cpp)
 
 
 # option(BUILD_TESTS "Build the Params GTests" OFF)
 # if(BUILD_TESTS)
-  # add_subdirectory(test)
+  add_subdirectory(test)
 # endif()

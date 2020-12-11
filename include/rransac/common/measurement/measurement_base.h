@@ -51,6 +51,7 @@ struct Meas
                                       association process.*/
     double weight;              /**< The weight of the measurement when updating the model is was associated with. This value is set during the data association
                                      process. */
+    double vol;
     Eigen::MatrixXd pose_euclidean; /**< The r-star tree uses bounding boxes in Euclidean space to organize the measurements. Some pose measurements are not
                                          in Euclidean space and need to be mapped to a Euclidean space. This variable contains that counterpart and can be set 
                                          using the source_base. */
