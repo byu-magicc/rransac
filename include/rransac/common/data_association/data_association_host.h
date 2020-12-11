@@ -33,6 +33,9 @@ public:
     static void AssociateNewMeasurements(System<tModel>& sys ) {
         DataAssociationModel(sys);
         DataAssociationClusterDataTree(sys);
+
+        if(sys.new_meas_.size() != 0)   
+            throw std::runtime_error("DataAssociationHost::AssociateNewMeasurements: All new measurements should have been copied to a model, cluster, or data tree and removed from System<Model>::new_meas_");
     }
 
 private:

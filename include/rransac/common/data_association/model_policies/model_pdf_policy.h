@@ -3,7 +3,9 @@
 
 #include <math.h>
 #include <numeric>
+#include <vector>
 #include "system.h"
+
 
 
 
@@ -27,6 +29,8 @@ static void  PolicyDataAssociationModel(System<tModel>& sys);
 
 private: 
 
+std::vector<bool> source_produced_meas_; /**< Flag to indicate if a source produced a measurement*/
+
 static void AssociateMeasurements(System<tModel>& sys);
 
 static void CalculateWeights(System<tModel>& sys);
@@ -36,6 +40,14 @@ static void CalculateModelUpdateInfo(System<tModel>& sys);
 static bool InValidationRegion(const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance, double& distance);
 
 static double GetVolume(const System<tModel>& sys, const double det_inn_cov_sqrt, const double source_index);
+
+/**
+ * Calculates a measurement likelihood
+ * @param distance The normalized distance the measurement is from the model
+ * @param dimensions The dimensions of the measurement
+ * @param det_inn_cov_sqrt The square root of the determinant of the innovation
+ */ 
+static double GetLikelihood(const double distance, const double dimensions, const double det_inn_cov_sqrt);
 
 };
 
@@ -48,7 +60,7 @@ static double GetVolume(const System<tModel>& sys, const double det_inn_cov_sqrt
 
 
 template<typename tModel>
-void DataTreeClusterAssociationPolicy<tModel>::PolicyDataAssociationModel(System<tModel>& sys) {
+void ModelPDFPolicy<tModel>::PolicyDataAssociationModel(System<tModel>& sys) {
     AssociateMeasurements(sys);
     CalculateModelUpdateInfo(sys);
     CalculateWeights(sys);
@@ -57,7 +69,11 @@ void DataTreeClusterAssociationPolicy<tModel>::PolicyDataAssociationModel(System
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-void DataTreeClusterAssociationPolicy<tModel>::AssociateMeasurements(System<tModel>& sys) {
+void ModelPDFPolicy<tModel>::AssociateMeasurements(System<tModel>& sys) {
+
+    // Reset the source produced meas flag
+    source_produced_meas_.clear();
+    source_produced_meas_.resize(sys.sources_.size(), false);
 
     // Clear the measurements
     for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++ model_iter) {
@@ -65,32 +81,33 @@ void DataTreeClusterAssociationPolicy<tModel>::AssociateMeasurements(System<tMod
     }
 
     // Add the new measurements
-    for(auto outer_meas_iter = sys.new_meas_.begin(); outer_meas_iter != sys.new_meas_.end(); ++outer_meas_iter) {
-        for(auto inner_meas_iter = outer_meas_iter.begin(); inner_meas_iter != outer_meas_iter->end(); ++inner_meas_iter) {
+    for(auto meas_iter = sys.new_meas_.begin(); meas_iter != sys.new_meas_.end(); ++meas_iter) {
+        bool meas_associated = false;
 
-            bool meas_associated = false;
+        // Indicates that a source produced a measurement
+        source_produced_meas_[meas_iter->source_index] = true;
 
-            // Iterate through all of the models
-            for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++ model_iter) {
-                
-                const Eigen::MatrixXd& innovation_covariance = model_iter->GetInnovationCovariance(*inner_iter);
-                double distance = 0;
-                double det_inn_cov_sqrt = sqrt(innovation_covariance.determinant());
+        // Iterate through all of the models
+        for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++ model_iter) {
+            
+            const Eigen::MatrixXd& innovation_covariance = model_iter->GetInnovationCovariance(*inner_iter);
+            double distance = 0;
+            double det_inn_cov_sqrt = sqrt(innovation_covariance.determinant());
 
-                if(InValidationRegion(*inner_meas_iter, *model_iter, innovation_covariance,distance)) {
-                    meas_associated = true;
-                    inner_meas_iter->likelihood = exp(-distance/2.0)/(pow(2*M_PI,innovation_covariance.rows/2.0)*det_inn_cov_sqrt);
-                    inner_meas_iter->vol = GetVolume(sys, det_inn_cov_sqrt, inner_meas_iter->source_index);
-                    model_iter->AddNewMeasurement(inner_meas_iter);
-                }
-            }
-
-            // Remove the measurement if it was associated
-            if(meas_associated) {
-                inner_meas_iter = outer_meas_iter->erase(inner_meas_iter);
-                --inner_meas_iter;
+            if(InValidationRegion(*meas_iter, *model_iter, innovation_covariance,distance)) {
+                meas_associated = true;
+                meas_iter->likelihood = GetLikelihood(distance, innovation_covariance.rows, det_inn_cov_sqrt); 
+                meas_iter->vol = GetVolume(sys, det_inn_cov_sqrt, meas_iter->source_index);
+                model_iter->AddNewMeasurement(meas_iter);
             }
         }
+
+        // Remove the measurement if it was associated
+        if(meas_associated) {
+            meas_iter = outer_meas_iter->erase(meas_iter);
+            --meas_iter;
+        }
+    
     }
 
 }
@@ -98,7 +115,7 @@ void DataTreeClusterAssociationPolicy<tModel>::AssociateMeasurements(System<tMod
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-void DataTreeClusterAssociationPolicy<tModel>::CalculateWeights(System<tModel>& sys) {
+void ModelPDFPolicy<tModel>::CalculateWeights(System<tModel>& sys) {
 
     for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++model_iter) {
         for(auto outer_meas_iter = model_iter->new_assoc_meas_.begin(); outer_meas_iter != model_iter->new_assoc_meas_.end(); ++outer_meas_iter) {
@@ -137,35 +154,40 @@ void DataTreeClusterAssociationPolicy<tModel>::CalculateWeights(System<tModel>& 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-void DataTreeClusterAssociationPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys) {
+void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys) {
 
     typename tModel::ModelLikelihoodUpdateInfo info;
-    info.in_local_surveillance_region = true;
+    
 
     for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++model_iter) {
 
         model_iter->model_likelihood_update_info_.clear();
 
-        for(auto source_iter = sys.sources_.begin(); source_iter != sys.sources_.end(); ++ source_iter) {
+        for(auto source_iter = sys.sources_.begin(); source_iter != sys.sources_.end(); ++source_iter) {
 
-            if( source_iter->StateInsideSurveillanceRegion(model_iter->state_) ) {
-                info.source_index = source_iter->params_.source_index_;
+            if(source_produced_meas_[source_iter->params_.source_index_]) {
+                if( source_iter->StateInsideSurveillanceRegion(model_iter->state_) ) {
+                    info.source_index = source_iter->params_.source_index_;
 
-                // Set default values
-                info.num_assoc_meas = 0;
-                info.source_index = 0;
-                info.volume = 1;
-                
-                // see if there are measurements with the source
-                for(auto outer_meas_iter = model_iter->new_assoc_meas_.begin(); outer_meas_iter != model_iter->new_assoc_meas_.end(); ++ outer_meas_iter) {
-                    if (outer_meas_iter->begin()->source_index == source_iter->params_.source_index_) {
-                        info.num_assoc_meas = outer_meas_iter->size();
-                        info.vol = outer_meas_iter->begin()->vol;
-                        break;
+                    info.in_local_surveillance_region = true;
+                    info.num_assoc_meas = 0; // set default value
+                    info.vol = 1;
+
+                    // see if there are measurements with the source
+                    for(auto outer_meas_iter = model_iter->new_assoc_meas_.begin(); outer_meas_iter != model_iter->new_assoc_meas_.end(); ++ outer_meas_iter) {
+                        if (outer_meas_iter->begin()->source_index == source_iter->params_.source_index_) {
+                            info.num_assoc_meas = outer_meas_iter->size();
+                            info.vol = outer_meas_iter->begin()->vol;
+                            break;
+                        }
                     }
+
+
+                } else {
+                    info.in_local_surveillance_region = false;
                 }
 
-
+                model_iter->model_likelihood_update_info_.push_back(info);
             }
         }
     }
@@ -174,13 +196,15 @@ void DataTreeClusterAssociationPolicy<tModel>::CalculateModelUpdateInfo(System<t
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-bool DataTreeClusterAssociationPolicy<tModel>::InValidationRegion(const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance, double& distance) {
+bool ModelPDFPolicy<tModel>::InValidationRegion(const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance, double& distance) {
 
-    Eigen::MatrixXd err = (*(model.sources_))[meas.source_index].OMinus(meas, (*(model.sources_))[meas.source_index].GetEstMeas(model.state_));
+    typename tModel::Source& source = (*(model.sources_))[meas.source_index]
+
+    Eigen::MatrixXd err = source.OMinus(meas, source.GetEstMeas(model.state_));
 
     distance = err*innovation_covariance.inverse()*err.transpose();
 
-    if(distance < (*(model.sources_))[meas.source_index].params_.gate_threshold_) {
+    if(distance < source.params_.gate_threshold_) {
         return true;
     } else {
         return false;
@@ -191,14 +215,17 @@ bool DataTreeClusterAssociationPolicy<tModel>::InValidationRegion(const Meas& me
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-double DataTreeClusterAssociationPolicy<tModel>::GetVolume(const System<tModel>& sys, const double det_inn_cov_sqrt, const double source_index) {
+double ModelPDFPolicy<tModel>::GetVolume(const System<tModel>& sys, const double det_inn_cov_sqrt, const double source_index) {
     return sys.sources_[source_index].params_.vol_unit_hypershpere_ * sys.sources_[source_index].params_.gate_threshold_sqrt_*det_inn_cov_sqrt;
 }
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+template<typename tModel>
+double ModelPDFPolicy<tModel>::GetLikelihood(const double distance, const double dimensions, const double det_inn_cov_sqrt) {
+    return exp(-distance/2.0)/(pow(2.0*M_PI,dimensions/2.0)*det_inn_cov_sqrt);
+}
 
  } // namespace rransac
 

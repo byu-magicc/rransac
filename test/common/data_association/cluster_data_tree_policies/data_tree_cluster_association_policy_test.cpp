@@ -45,10 +45,8 @@ TEST(DataTreeClusterAssociationPolicyTest, PolicyDataAssociationClusterDataTree)
     
     Meas m;
     m.source_index = 0;
-    unsigned int num_sources = 10;
-    unsigned int num_meas_per_src = 1000;
-    std::list<std::list<Meas>> all_measurements(num_sources);
-    std::list<Meas> measurements(num_meas_per_src);
+    unsigned int num_meas= 1000;
+    std::list<Meas> measurements(num_meas);
 
     for(auto iter = measurements.begin(); iter != measurements.end(); ++iter) {
         iter->time_stamp = 0;
@@ -58,11 +56,8 @@ TEST(DataTreeClusterAssociationPolicyTest, PolicyDataAssociationClusterDataTree)
     }
 
 
-    for(auto iter = all_measurements.begin(); iter != all_measurements.end(); ++iter) {
-        *iter = measurements;
-    }
 
-    sys.new_meas_ = all_measurements;
+    sys.new_meas_ = measurements;
     data_association.AssociateNewMeasurements(sys);
 
     ASSERT_EQ(sys.data_tree_.Size(), num_sources*num_meas_per_src);

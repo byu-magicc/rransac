@@ -19,11 +19,10 @@ class DataTreeClusterAssociationPolicy {
 public:
 
     static void  PolicyDataAssociationClusterDataTree(System<tModel>& sys) {
-        for(auto outer_iter = sys.new_meas_.begin(); outer_iter != sys.new_meas_.end(); ++outer_iter) {
-            for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
-                sys.data_tree_.AddMeasurement(sys, *inner_iter);
-            }
+        for(auto iter = sys.new_meas_.begin(); iter != sys.new_meas_.end(); ++iter) {
+                sys.data_tree_.AddMeasurement(sys, *iter);            
         }
+        
         sys.new_meas_.clear();
     }
 
