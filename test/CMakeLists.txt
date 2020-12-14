@@ -126,13 +126,17 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 #---------------------------------------
 # Data Association
 #---------------------------------------
-add_executable(cluster_data_tree_data_associationTest 
-common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy_test.cpp
+# add_executable(cluster_data_tree_data_associationTest 
+# common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(cluster_data_tree_data_associationTest lie_groups)
+# target_link_libraries(cluster_data_tree_data_associationTest gtest_main lie_groups)
+
+add_executable(model_pdf_policyTest 
+common/data_association/model_policies/model_pdf_policy_test.cpp
 ../src/parameters.cpp)
-add_dependencies(cluster_data_tree_data_associationTest lie_groups)
-target_link_libraries(cluster_data_tree_data_associationTest gtest_main lie_groups)
-
-
+add_dependencies(model_pdf_policyTest lie_groups)
+target_link_libraries(model_pdf_policyTest gtest_main lie_groups)
 # add_executable(rransacTest
 # rransac_test.cpp
 # ../src/parameters.cpp

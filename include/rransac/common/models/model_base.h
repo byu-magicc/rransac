@@ -505,7 +505,7 @@ Eigen::MatrixXd ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnov
     Eigen::MatrixXd R;                                                          // Measurement noise covariance
 
     if((*sources_)[m.source_index].params_.meas_cov_fixed_) {                   // Find measurement covariance depending on it being fixed or not
-        R = (*sources_)[m.source_index].params.meas_cov_;
+        R = (*sources_)[m.source_index].params_.meas_cov_;
     } else {
         R = m.meas_cov;
     }
@@ -537,7 +537,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::AddNewMeasurement( 
 
     // Create a new sub list and add the measurement
     if(!meas_added) {
-        this->new_assoc_meas_.emplace_back(std::list<Meas>(meas));
+        this->new_assoc_meas_.emplace_back(std::vector<Meas>{meas});
     }
 
 }
