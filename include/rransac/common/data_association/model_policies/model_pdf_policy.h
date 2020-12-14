@@ -120,32 +120,26 @@ void ModelPDFPolicy<tModel>::CalculateWeights(System<tModel>& sys) {
 
     for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++model_iter) {
         for(auto outer_meas_iter = model_iter->new_assoc_meas_.begin(); outer_meas_iter != model_iter->new_assoc_meas_.end(); ++outer_meas_iter) {
-            std::vector<double> likelihood_ratios(outer_meas_iter->size());
-            auto vec_iter = likelihood_ratios.begin();
+            double total_likelihood_ratio = 0;
 
             typename tModel::Source& source = sys.sources_[outer_meas_iter->begin()->source_index];
 
             // Calculate the partial likelihood ratios
             for(auto inner_meas_iter = outer_meas_iter->begin(); inner_meas_iter != outer_meas_iter->end(); ++inner_meas_iter) {                
 
-                *vec_iter = inner_meas_iter->likelihood*source.params_.probability_of_detection_/ source.params_.expected_num_false_meas_;
-                ++vec_iter;
+                total_likelihood_ratio += inner_meas_iter->likelihood;
             }
 
             // Get the total likelihood ratio
-            double total_likelihood_ratio = std::accumulate(likelihood_ratios.begin(), likelihood_ratios.end(), 0.0);
+            total_likelihood_ratio *= (source.params_.probability_of_detection_/ source.params_.expected_num_false_meas_);
 
-            // calculate the weights
-            vec_iter = likelihood_ratios.begin();
-            double && denominator = 1 - source.params_.probability_of_detection_*source.params_.gate_probability_ + total_likelihood_ratio;
+            // calculate the weights            
+            double && denominator = 1.0 - source.params_.probability_of_detection_*source.params_.gate_probability_ + total_likelihood_ratio;
             for(auto inner_meas_iter = outer_meas_iter->begin(); inner_meas_iter != outer_meas_iter->end(); ++inner_meas_iter) {                
 
-                inner_meas_iter->weight = *vec_iter/denominator;
+                inner_meas_iter->weight = inner_meas_iter->likelihood*source.params_.probability_of_detection_/ (source.params_.expected_num_false_meas_*denominator);
 
-                ++vec_iter;
             }
-
-
         }
     }
 
@@ -166,8 +160,8 @@ void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::
         for(auto source_iter = sys.sources_.begin(); source_iter != sys.sources_.end(); ++source_iter) {
 
             if(source_produced_meas[source_iter->params_.source_index_]) {
+                info.source_index = source_iter->params_.source_index_;
                 if( source_iter->StateInsideSurveillanceRegion(model_iter->state_) ) {
-                    info.source_index = source_iter->params_.source_index_;
 
                     info.in_local_surveillance_region = true;
                     info.num_assoc_meas = 0; // set default value
@@ -185,6 +179,8 @@ void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::
 
                 } else {
                     info.in_local_surveillance_region = false;
+                    info.num_assoc_meas = 0; // set default value
+                    info.volume = 1;
                 }
 
                 model_iter->model_likelihood_update_info_.push_back(info);
@@ -203,10 +199,6 @@ bool ModelPDFPolicy<tModel>::InValidationRegion(const Meas& meas, const tModel& 
     Eigen::MatrixXd err = source.OMinus(meas, source.GetEstMeas(model.state_));
 
     distance = (err.transpose()*innovation_covariance.inverse()*err)(0,0);
-
-    // std::cout << "meas: " << std::endl << meas.pose << std::endl;
-    // std::cout << "state: " << std::endl << model.state_.g_.data_ << std::endl;
-    // std::cout << "err: " << std::endl << err << std::endl;
 
     if(distance <= source.params_.gate_threshold_) {
         return true;
