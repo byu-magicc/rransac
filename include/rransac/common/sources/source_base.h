@@ -67,7 +67,6 @@ struct SourceParameters {
  * 
  */ 
 
-
 template<typename tState, typename tDerived>
 class SourceBase
 {
