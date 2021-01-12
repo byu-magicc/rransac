@@ -41,6 +41,17 @@ typename tModel::State LinearLMLEPolicy<tModel>::GenerateStateEstimatePolicy(con
     typename tModel::State x;   // hypothetical state
     
 
+    // Matrices to be used
+    Eigen::MatrixXd H;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXd F;
+    Eigen::MatrixXd G;
+    Eigen::MatrixXd HF;
+    Eigen::MatrixXd HG;
+    Eigen::MatrixXd S_inv;
+    Eigen::Matrix<double,tModel::State::g_type_::dim_*2,1> y
+
+
     // // Assume to be identity
     // Eigen::MatrixXd V = tModel::GetLinObsMatSensorNoise(sources,x,meas_subset.begin()->inner_it->source_index);
 
@@ -52,25 +63,25 @@ typename tModel::State LinearLMLEPolicy<tModel>::GenerateStateEstimatePolicy(con
 
         int src_index = iter->inner_it->source_index;
         double dt = iter->inner_it->time_stamp - sys.current_time_;
-        Eigen::MatrixXd H = tModel::GetLinObsMatState(sys.sources_,x,src_index);
-        Eigen::MatrixXd F = tModel::GetLinTransFuncMatState(x,dt);
-        Eigen::MatrixXd G = tModel::GetLinTransFuncMatNoise(x,dt);
-        Eigen::MatrixXd HF = H*F;
-        Eigen::MatrixXd HG = H*G;
-        Eigen::MatrixXd S_inv;
+        H = tModel::GetLinObsMatState(sys.sources_,x,src_index);
+        V = tModel::GetLinObsMatSensorNoise(sys.sources_,x,src_index);
+        F = tModel::GetLinTransFuncMatState(x,dt);
+        G = tModel::GetLinTransFuncMatNoise(x,dt);
+        HF = H*F;
+        HG = H*G;
+        
 
         // Build innovation covariance depending on if the measurement covariance is fixed or not. 
         if (sys.sources_[src_index].params_.meas_cov_fixed_) {
-            S_inv = (sys.sources_[src_index].params_.meas_cov_ + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
+            S_inv = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
         } else {
-            S_inv = (iter->inner_it->meas_cov+ HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
+            S_inv = (V*iter->inner_it->meas_cov*V.transpose()+ HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
         }
         
         
         if (iter->inner_it->type == MeasurementTypes::RN_POS)
             e_sum += HF.transpose()*S_inv*iter->inner_it->pose;
         else {
-            Eigen::Matrix<double,tModel::State::g_type_::dim_*2,1> y;
             y.block(0,0,tModel::State::g_type_::dim_,1) = iter->inner_it->pose; 
             y.block(tModel::State::g_type_::dim_,0,tModel::State::g_type_::dim_,1) = iter->inner_it->twist; 
             e_sum += HF.transpose()*S_inv*y;

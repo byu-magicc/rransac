@@ -39,12 +39,15 @@ struct SourceParameters {
     float gate_probability_;         /**< The probability that a true measurement will be inside the validation region of a track. This value must
                                           be between 0 and 1. */
 
+    double RANSAC_inlier_probability_; /**< The probability that a measurement is an inlier according to a chi squared distribution. */
+
     
     unsigned int source_index_;  /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
 
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
     bool has_twist;                      /**< Indicates if the measurement has velocity data in addition to position */
     double gate_threshold_;              /**< The gate threshold of the validation region */
+    double RANSAC_inlier_threshold_;      /**< the inlier threshold used in RANSAC to see if a measurement is an inlier to a hypothetical state estimate"
     double gate_threshold_sqrt_;         /**< The square root of the gate threshold */    
     double vol_unit_hypershpere_;        /**< The Volume of the unit hypershpere */
 
@@ -245,11 +248,13 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
         this->params_.has_twist = true;
         boost::math::chi_squared dist(meas_dim_*2);
         this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+        this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
         this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim_))/boost::math::tgamma(static_cast<double>(meas_dim_) +1.0);
     } else {
         this->params_.has_twist = false;
         boost::math::chi_squared dist(meas_dim_);
         this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+        this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
         this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim_)/2.0)/boost::math::tgamma(static_cast<double>(meas_dim_)/2.0 +1.0);
     }
     
@@ -375,6 +380,11 @@ void SourceBase<tState, tDerived>::VerifySourceParameters(const SourceParameters
     // Verify the gate probability
     if (params.gate_probability_ < 0 || params.gate_probability_ > 1) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: gate_probability_ must be between 0 and 1. ");
+    }
+
+    // Verify the gate probability
+    if (params.RANSAC_inlier_probability_ < 0 || params.RANSAC_inlier_probability_ > 1) {
+        throw std::runtime_error("SourceBase::VerifySourceParameters: RANSAC_inlier_probability_ must be between 0 and 1. ");
     }
 
 }

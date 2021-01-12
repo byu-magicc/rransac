@@ -64,10 +64,11 @@ double cluster_position_threshold_;   /**< In order fo a measurement to be a nei
 // RANSAC Parameters
 unsigned int RANSAC_max_iters_;  /**< The maximum number of RANSAC iterations per run. */
 
-float RANSAC_stopping_criteria_; /**< During any iteration, if the probability of a model hypothesis
+double RANSAC_stopping_criteria_; /**< During any iteration, if the probability of a model hypothesis
                                       a valid model is above this threshold, RANSAC stops early and
                                       uses the current model hypothesis to generate a new model.
                                       This value must be between 0 and 1.*/
+
 
 unsigned int RANSAC_minimum_subset_;    /** The minimum number of measurements from different time steps required to observe the system */
 

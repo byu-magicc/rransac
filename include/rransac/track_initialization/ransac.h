@@ -42,22 +42,34 @@ static State GenerateHypotheticalStateEstimate(const std::vector<Cluster::ConstI
     return GenerateHypotheticalStateEstimatePolicy(meas_subset, sys);
 }
 
-static int ScoreHypotheticalStateEstimate(const State& xh, const System<tModel>& sys, std::vector<Cluster::ConstIteratorPair>)
+
+/**
+ * Finds all of the inliers to the hypothetical state estimate xh from cluster and scores the estimate using the inliers.
+ * @param xh The hypothetical state estimate
+ * @param cluster The cluster from which xh was generated
+ * @param sys Contains the system information
+ * @param inliers A vector of iterators from the measurements in cluster that are inliers to the hypothetical state estimate. The inliers are in chronological order
+ */ 
+static int ScoreHypotheticalStateEstimate(const State& xh, const Cluster& cluster, const System<tModel>& sys, std::vector<Cluster::ConstIteratorPair>& inliers);
 
 private:
 
 
 };
 
-template< typename tModel>
-Ransac<tModel>::Ransac() {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
+Ransac<tModel, tLMLEPolicy>::Ransac() {
     srand(time(NULL));
 }
 
 //----------------------------------------------------------------------------------------------------------
 
-template< typename tModel>
-std::vector<Cluster::ConstIteratorPair > Ransac<tModel>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
+template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
+std::vector<Cluster::ConstIteratorPair > Ransac<tModel, tLMLEPolicy>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
    
 
 
@@ -91,6 +103,64 @@ std::vector<Cluster::ConstIteratorPair > Ransac<tModel>::GenerateMinimumSubset(c
 }
 
 
+//----------------------------------------------------------------------------------------------------------
+template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
+int Ransac<tModel, tLMLEPolicy>::ScoreHypotheticalStateEstimate(const State& xh, const Cluster& cluster, const System<tModel>& sys, std::vector<Cluster::ConstIteratorPair>& inliers) {
+
+    inliers.clear(); // Make sure it is empty
+    int score = 0;
+    int current_time = sys.current_time_;
+    int dt = 0;
+    int src_index = 0;
+    double d = 0;          // The distance
+
+    std::vector<Eigen::MatrixXd> innov_cov_inv(sys.sources_.size());
+    std::vector<Meas> estimated_meas(sys.sources_.size());
+    std::vector<bool> innov_cov_set(sys.sources_.size(),false);
+
+    // Matrices to be used
+    Eigen::MatrixXd G;
+    Eigen::MatrixXd Q_bar;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXd H;
+    Eigen::MatrixXd e;
+
+    // Find all of the inliers. The outer iterator passes through different time steps and the inner iterator passes through different measurements
+    for (auto outer_iter = cluster.data_.begin(); outer_iter != cluster.data_.end(); ++outer_iter) {
+
+        dt = outer_iter->begin()->time_stamp - current_time;                              // Get time difference
+        G = tModel::GetLinTransFuncMatNoise(xh,dt);
+        Q_bar = G*sys.params_.process_noise_covariance_*G.transpose();
+        std::fill(innov_cov_set.begin(), innov_cov_set.end(), false);                     // Reset vector since we are moving to a new time step
+
+        for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter.end(); ++inner_iter) {
+
+            src_index = inner_iter->source_index;
+
+            // Get the estimate measurement and the innovation covariance
+            if(!innov_cov_set[src_index]) {
+                H = tModel::GetLinObsMatState(sys.sources_,xh,src_index);
+                V = tModel::GetLinObsMatSensorNoise(sys.sources_,xh,src_index);
+                innov_cov_inv[src_index] = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + Q_bar).inverse();
+                estimated_meas[src_index] = sys.sources_[src_index].GetEstMeas(xh);
+                innov_cov_set[src_index] = true;
+            }
+
+            e = sys.sources_[src_index].OMinus(*inner_iter, estimated_meas[src_index]);
+            d = e.transpose()*innov_cov_inv[src_index]*e;
+
+
+            // If the measurement is an inlier, add it. 
+            if (d < sys.sources_[src_index].RANSAC_inlier_threshold_) {
+
+            }
+
+            
+        }
+    }
+
+
+}
 
 } //namespace rransac
 
