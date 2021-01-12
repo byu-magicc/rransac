@@ -12,6 +12,19 @@ class Cluster {
 
 public:
 
+
+/**
+ * \struct ConstIteratorPair
+ * Contains a match of iterators that cannot change the data they point to. 
+ * The outer iterator pertains to the outer container for the data object, and
+ * the inner container pertains to the inner container for the data object. So the outer iterator points to an 
+ * element in the list and the inner iterator points to and element of tContainer.
+ */ 
+struct ConstIteratorPair {
+    std::list<std::list<Meas>>::const_iterator outer_it;
+    std::list<Meas>::const_iterator inner_it;
+};
+
 /**
  * \struct IteratorPair
  * Contains a match of iterators. The outer iterator pertains to the outer container for the data object, and

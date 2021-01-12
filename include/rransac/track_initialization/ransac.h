@@ -7,13 +7,17 @@
 #include <time.h>
 #include <algorithm> 
 #include <numeric>
+#include <random>
 
 namespace rransac {
 
-template< typename tLMLEPolicy>
-class Ransac : public tLMLEPolicy {
+template< typename tModel>
+class Ransac {
 
 public: 
+
+typedef typename tModel::State State;
+typedef typename tModel::Source Source;
 
 Ransac();
 
@@ -26,26 +30,37 @@ Ransac();
  * @param cluster The cluster from which to the measurements will be sampled. 
  * @return Returns the indicess of the randomply sampled measurements 
  */ 
-static std::vector<Cluster::IteratorPair> GenerateMinimumSubset(const unsigned int num_meas, const Cluster& cluster);
+static std::vector<Cluster::ConstIteratorPair> GenerateMinimumSubset(const unsigned int num_meas, const Cluster& cluster);
+
+/**
+ * Generates a hypothetical state at the current time step using the provided measurements in meas_subset. This method is used only
+ * with linear models. 
+ * @param meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state
+ * @param curr_time The current time
+ * @param sources The vector of sources used. 
+ */ 
+static State GenerateLinearStateEstimate(const Cluster::ConstIteratorPair& meas_subset, const double curr_time, const std::vector<Source>& sources);
+
+// static GenerateNonlinearStateEstimate();
 
 private:
 
 
 };
 
-template< typename tLMLEPolicy>
-Ransac<tLMLEPolicy>::Ransac() {
+template< typename tState>
+Ransac<tState>::Ransac() {
     srand(time(NULL));
 }
 
 //----------------------------------------------------------------------------------------------------------
 
-template< typename tLMLEPolicy>
-std::vector<Cluster::IteratorPair> Ransac<tLMLEPolicy>::GenerateMinimumSubset(const unsigned int num_meas, const Cluster& cluster) {
+template< typename tState>
+std::vector<Cluster::ConstIteratorPair > Ransac<tState>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
    
 
 
-    std::vector<Cluster::IteratorPair> meas_index(num_meas);
+    std::vector<Cluster::ConstIteratorPair> meas_index(num_meas);
 
     // Get a random measurement from current time step
     meas_index.back().outer_it = std::prev(cluster.data_.end());
@@ -59,17 +74,13 @@ std::vector<Cluster::IteratorPair> Ransac<tLMLEPolicy>::GenerateMinimumSubset(co
     // Get the time indices for the other randomly sampled measurements
     std::vector<int> time_indices(num_meas-1);
     std::iota(time_indices.begin(), time_indices.end(), 0);
-    std::shuffle(time_indices.begin(), time_indices.end(), rand() );
-
-   
-
-    std::list<Meas>::iterator outer_iter;
+    std::shuffle(time_indices.begin(), time_indices.end(), std::default_random_engine(time(NULL)) );
 
     // Randomly samples other measurements
     for (unsigned int ii = 0; ii < num_meas-1; ++ii) {
 
         meas_index[ii].outer_it = std::next(cluster.data_.begin(), time_indices[ii]);
-        meas_index[ii].inner_it = rand() % meas_index[ii].outer_it->size();
+        meas_index[ii].inner_it = std::next(meas_index[ii].outer_it->begin(), rand() % meas_index[ii].outer_it->size());
 
 
     }

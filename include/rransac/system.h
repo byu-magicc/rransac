@@ -37,6 +37,8 @@ template <typename tModel>
 class System {
 
 typedef tModel Model;
+typedef typename tModel::State State; 
+typedef typename tModel::Source Source; 
 
 public:
 
