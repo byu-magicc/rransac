@@ -11,8 +11,8 @@
 
 namespace rransac {
 
-template< typename tModel>
-class Ransac {
+template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
+class Ransac : public tLMLEPolicy<tModel> {
 
 public: 
 
@@ -33,13 +33,14 @@ Ransac();
 static std::vector<Cluster::ConstIteratorPair> GenerateMinimumSubset(const unsigned int num_meas, const Cluster& cluster);
 
 /**
- * Generates a hypothetical state at the current time step using the provided measurements in meas_subset. This method is used only
- * with linear models. 
+ * Generates a hypothetical state at the current time step using the provided measurements in meas_subset.The method is determined by the policy
  * @param meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateLinearStateEstimate(const Cluster::ConstIteratorPair& meas_subset, const double curr_time, const std::vector<Source>& sources);
+static State GenerateStateEstimate(const Cluster::ConstIteratorPair& meas_subset, const double curr_time, const std::vector<Source>& sources){
+    return GenerateStateEstimatePolicy(meas_subset, curr_time, sources);
+}
 
 // static GenerateNonlinearStateEstimate();
 
@@ -48,15 +49,15 @@ private:
 
 };
 
-template< typename tState>
-Ransac<tState>::Ransac() {
+template< typename tModel>
+Ransac<tModel>::Ransac() {
     srand(time(NULL));
 }
 
 //----------------------------------------------------------------------------------------------------------
 
-template< typename tState>
-std::vector<Cluster::ConstIteratorPair > Ransac<tState>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
+template< typename tModel>
+std::vector<Cluster::ConstIteratorPair > Ransac<tModel>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
    
 
 
@@ -88,6 +89,7 @@ std::vector<Cluster::ConstIteratorPair > Ransac<tState>::GenerateMinimumSubset(c
     return meas_index;
     
 }
+
 
 
 } //namespace rransac

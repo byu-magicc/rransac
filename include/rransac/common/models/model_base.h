@@ -140,7 +140,7 @@ public:
      * @param[in] dt A time interval
      * @return The Jacobian \f$ F_k\f$. 
      */ 
-    Mat GetLinTransFuncMatState(const State& state, const double dt) {
+    static Mat GetLinTransFuncMatState(const State& state, const double dt) {
         return static_cast<tDerived*>(this)->DerivedGetLinTransFuncMatState(state, dt);        
     }
 
@@ -150,7 +150,7 @@ public:
      * @param[in] dt  A time interval
      * @return Returns the Jacobian \f$ G_k \f$
      */
-    Mat GetLinTransFuncMatNoise(const State& state, const double dt){
+    static Mat GetLinTransFuncMatNoise(const State& state, const double dt){
         return static_cast<tDerived*>(this)->DerivedGetLinTransFuncMatNoise(state, dt);
 
     }
@@ -190,7 +190,7 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns the Jacobian \f$H_k\f$
      */ 
-    Eigen::MatrixXd GetLinObsMatState(const State& state, const unsigned int source_ID){
+    static Eigen::MatrixXd GetLinObsMatState(const State& state, const unsigned int source_ID){
         return (*sources_)[source_ID].GetLinObsMatState(state);
     }
 
@@ -201,7 +201,7 @@ public:
      * @param source_ID A unique identifier to identify the source. 
      * @return Returns the Jacobian \f$V_k\f$
      */ 
-    Eigen::MatrixXd GetLinObsMatSensorNoise(const State& state, const unsigned int source_ID){
+    static Eigen::MatrixXd GetLinObsMatSensorNoise(const State& state, const unsigned int source_ID){
         return (*sources_)[source_ID].GetLinObsMatSensorNoise(state);
     }
 

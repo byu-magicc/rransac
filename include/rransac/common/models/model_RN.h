@@ -59,19 +59,27 @@ static State DerivedGetRandomState(){ return State::Random();}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tState, template <class ttState> typename tTransformation>
-typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {    
-    this->F_.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
-    return this->F_;
+typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {   
+    
+    // static constexpr unsigned int g_dim_ = tState::g_type_::dim_;
+    // typedef Eigen::Matrix<double,2*g_dim_,2*g_dim_> Mat;
+    
+    Mat F = Mat::Identity();
+    F.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
+    return F;
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, template <class ttState> typename tTransformation>
 typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
-    this->G_.block(0,0,g_dim_, g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
-    this->G_.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt*dt/2;
-    this->G_.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
-    return this->G_;
+    
+    Mat G;
+    G.block(g_dim_,0,g_dim_,g_dim_).setZero();
+    G.block(0,0,g_dim_, g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
+    G.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt*dt/2;
+    G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
+    return G;
 
 }
 
