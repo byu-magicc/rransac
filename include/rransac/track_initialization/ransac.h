@@ -38,11 +38,11 @@ static std::vector<Cluster::ConstIteratorPair> GenerateMinimumSubset(const unsig
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateStateEstimate(const Cluster::ConstIteratorPair& meas_subset, const double curr_time, const std::vector<Source>& sources){
-    return GenerateStateEstimatePolicy(meas_subset, curr_time, sources);
+static State GenerateHypotheticalStateEstimate(const std::vector<Cluster::ConstIteratorPair>& meas_subset, const System<tModel>& sys){
+    return GenerateHypotheticalStateEstimatePolicy(meas_subset, sys);
 }
 
-// static GenerateNonlinearStateEstimate();
+static int ScoreHypotheticalStateEstimate(const State& xh, const System<tModel>& sys, std::vector<Cluster::ConstIteratorPair>)
 
 private:
 

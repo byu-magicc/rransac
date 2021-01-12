@@ -60,7 +60,7 @@ TEST(DataTreeClusterAssociationPolicyTest, PolicyDataAssociationClusterDataTree)
     sys.new_meas_ = measurements;
     data_association.AssociateNewMeasurements(sys);
 
-    ASSERT_EQ(sys.data_tree_.Size(), num_sources*num_meas_per_src);
+    ASSERT_EQ(sys.data_tree_.Size(), num_meas);
     ASSERT_EQ(sys.new_meas_.size(), 0);
 
 

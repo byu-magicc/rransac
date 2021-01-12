@@ -159,7 +159,7 @@ void ModelManager<tModel>::PropagateModels(System<tModel>& sys, const double dt)
 template <typename tModel>
 void ModelManager<tModel>::UpdateModels(System<tModel>& sys) {
     for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
-        it->UpdateModel(sys.params_);
+        it->UpdateModel(sys.sources_, sys.params_);
     }
 }
 

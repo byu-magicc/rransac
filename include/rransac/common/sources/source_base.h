@@ -94,20 +94,20 @@ public:
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd GetLinObsMatState(const State& state){
+    Eigen::MatrixXd GetLinObsMatState(const State& state) const {
        
         // std::cout << typeid(M).name() << std::endl;
-        return static_cast<tDerived*>(this)->DerivedGetLinObsMatState(state);
+        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatState(state);
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd GetLinObsMatSensorNoise(const State& state){
-        return static_cast<tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
+    Eigen::MatrixXd GetLinObsMatSensorNoise(const State& state) const {
+        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
     }                         
 
     /** Computes the estimated measurement given a state */
-    Meas GetEstMeas(const State& state){
-        return static_cast<tDerived*>(this)->DerivedGetEstMeas(state);
+    Meas GetEstMeas(const State& state) const {
+        return static_cast<const tDerived*>(this)->DerivedGetEstMeas(state);
     } 
 
     /**
@@ -115,8 +115,8 @@ public:
      * @param m1 a measurement
      * @param m2 a measurement
      */
-    Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
-        return static_cast<tDerived*>(this)->DerivedOMinus(m1, m2);
+    Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) const {
+        return static_cast<const tDerived*>(this)->DerivedOMinus(m1, m2);
     } 
 
     /**

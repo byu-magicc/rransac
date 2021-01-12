@@ -278,7 +278,7 @@ m.pose = Eigen::Matrix<double,3,1>::Random();
 
 
 Model model;
-model.Init(sys.sources_,sys.params_);
+model.Init(sys.params_);
 model.state_.g_.data_ << 1,1,1;
 model.state_.u_.data_ << 2,3,4;
 
@@ -349,7 +349,7 @@ m.pose = Eigen::Matrix<double,2,1>::Random();
 
 
 Model model;
-model.Init(sys.sources_,sys.params_);
+model.Init(sys.params_);
 model.state_.g_.data_ << 1,1;
 model.state_.u_.data_ << 2,3;
 model.err_cov_ == Eigen::Matrix4d::Identity();

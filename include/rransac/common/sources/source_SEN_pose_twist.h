@@ -28,18 +28,18 @@ void DerivedInit(const SourceParameters& params);
 /** Returns the jacobian of the observation function w.r.t. the states 
  * @param state A state of a model.
 */
-Eigen::MatrixXd DerivedGetLinObsMatState(tState const& state){return this->H_;};                        
+Eigen::MatrixXd DerivedGetLinObsMatState(tState const& state) const {return this->H_;};                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state){return this->V_;}                        
+Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state) const {return this->V_;}                        
 
 /** Computes the estimated measurement given a state */
-Meas DerivedGetEstMeas(const tState& state);
+Meas DerivedGetEstMeas(const tState& state) const ;
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
+Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2) const ;
 
 /**
  * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
@@ -92,7 +92,7 @@ void SourceSENPoseTwist<tState>::DerivedInit(const SourceParameters& params) {
 
 //----------------------------------------------------------------------------------------
 template<class tState>
-Meas SourceSENPoseTwist<tState>::DerivedGetEstMeas(const tState& state) {
+Meas SourceSENPoseTwist<tState>::DerivedGetEstMeas(const tState& state) const {
     Meas m;
     m.pose = state.g_.data_;
     m.twist = state.u_.data_;
@@ -101,7 +101,7 @@ Meas SourceSENPoseTwist<tState>::DerivedGetEstMeas(const tState& state) {
 
 //----------------------------------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPoseTwist<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
+Eigen::MatrixXd SourceSENPoseTwist<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) const {
 
     if (this->params_.type_ == MeasurementTypes::SEN_POSE) {
         return State::g_type_::OMinus(m1.pose,m2.pose);

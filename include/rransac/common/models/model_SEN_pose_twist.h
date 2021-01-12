@@ -23,7 +23,7 @@ typedef Eigen::Matrix<double,2*g_dim_,2*g_dim_> Mat;
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -31,7 +31,7 @@ Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
 
 /**
 * Update the state of the model using the provided state_update
@@ -56,20 +56,25 @@ static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist<tS
 
 template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {    
-    this->F_.block(0,0,g_dim_, g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
-    this->F_.block(0,g_dim_,g_dim_,g_dim_) = (state.u_*dt).Jr()*dt;
-    return this->F_;
+    Mat F;
+    F.block(g_dim_,0,g_dim_,g_dim_).setZero();
+    F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity();
+    F.block(0,0,g_dim_, g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
+    F.block(0,g_dim_,g_dim_,g_dim_) = (state.u_*dt).Jr()*dt;
+    return F;
 }
 
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+    Mat G;
     Eigen::Matrix<double, g_dim_, g_dim_> tmp = (state.u_*dt).Jr()*dt;
-    this->G_.block(0,0,g_dim_, g_dim_) = tmp;
-    this->G_.block(0,g_dim_,g_dim_,g_dim_) = tmp*dt/2.0;
-    this->G_.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
-    return this->G_;
+    G.block(g_dim_,0,g_dim_,g_dim_).setZero();
+    G.block(0,0,g_dim_, g_dim_) = tmp;
+    G.block(0,g_dim_,g_dim_,g_dim_) = tmp*dt/2.0;
+    G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,g_dim_,g_dim_>::Identity()*dt;
+    return G;
 
 }
 

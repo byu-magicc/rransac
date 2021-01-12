@@ -36,12 +36,12 @@ public:
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state){
+    Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state) const {
         return this->H_;
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state){
+    Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state)const {
         return this->V_;
     }                         
 

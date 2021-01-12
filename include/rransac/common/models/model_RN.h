@@ -24,7 +24,7 @@ typedef Eigen::Matrix<double,2*g_dim_,2*g_dim_> Mat;
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -32,7 +32,7 @@ Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
 
 /**
 * Update the state of the model using the provided state_update

@@ -34,6 +34,7 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     cluster_time_threshold_ = new_params.cluster_time_threshold_;
     cluster_velocity_threshold_ = new_params.cluster_velocity_threshold_;
     RANSAC_minimum_subset_ = new_params.RANSAC_minimum_subset_;
+    process_noise_covariance_ = new_params.process_noise_covariance_;
 
     bool successfull = true;
 

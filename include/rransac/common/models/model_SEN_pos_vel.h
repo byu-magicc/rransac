@@ -25,7 +25,7 @@ typedef Eigen::Matrix<double,cov_dim_,cov_dim_> Mat;
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -33,7 +33,7 @@ Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
 
 /**
 * Update the state of the model using the provided state_update. The state_update provided is augmented to account
@@ -65,24 +65,29 @@ static Eigen::Matrix<double,cov_dim_,1> DerivedOMinus(const ModelSENPosVel<tStat
 
 template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {  
+    Mat F;
+    F.block(g_dim_,0,l_dim_,g_dim_).setZero();
+    F.block(g_dim_, g_dim_, l_dim_, l_dim_).setIdentity();
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt;  
-    this->F_.block(0,0,g_dim_,g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
-    this->F_.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1); // Jacobian w.r.t. rho x
-    this->F_.block(0,g_dim_+1, g_dim_, State::u_type_::dim_a_vel_) = tmp.block(0, State::u_type_::dim_t_vel_, g_dim_, State::u_type_::dim_a_vel_); // Jacobian w.r.t. angular velocities
-    return this->F_;
+    F.block(0,0,g_dim_,g_dim_) = typename State::g_type_(State::u_type_::Exp(state.u_.data_*dt)).Adjoint();
+    F.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1); // Jacobian w.r.t. rho x
+    F.block(0,g_dim_+1, g_dim_, State::u_type_::dim_a_vel_) = tmp.block(0, State::u_type_::dim_t_vel_, g_dim_, State::u_type_::dim_a_vel_); // Jacobian w.r.t. angular velocities
+    return F;
 }
 
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, template <class ttState> typename tTransformation>
 typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+    Mat G;
     Eigen::Matrix<double, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
-    this->G_.block(0,0,g_dim_, g_dim_) = tmp;
-    this->G_.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1)*dt/2.0;
-    this->G_.block(0,g_dim_+1, g_dim_, State::u_type_::dim_a_vel_) = tmp.block(0, State::u_type_::dim_t_vel_, g_dim_, State::u_type_::dim_a_vel_)*dt/2.0; // Jacobian w.r.t. angular velocities
+    G.block(g_dim_,0,l_dim_,g_dim_).setZero();
+    G.block(0,0,g_dim_, g_dim_) = tmp;
+    G.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1)*dt/2.0;
+    G.block(0,g_dim_+1, g_dim_, State::u_type_::dim_a_vel_) = tmp.block(0, State::u_type_::dim_t_vel_, g_dim_, State::u_type_::dim_a_vel_)*dt/2.0; // Jacobian w.r.t. angular velocities
 
-    this->G_.block(g_dim_,g_dim_,l_dim_,l_dim_)= Eigen::Matrix<double,l_dim_,l_dim_>::Identity()*dt;
-    return this->G_;
+    G.block(g_dim_,g_dim_,l_dim_,l_dim_)= Eigen::Matrix<double,l_dim_,l_dim_>::Identity()*dt;
+    return G;
 
 }
 

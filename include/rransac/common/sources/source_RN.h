@@ -29,18 +29,18 @@ SourceRN()=default;
 void DerivedInit(const SourceParameters& params);      
 
 /** Returns the jacobian of the observation function w.r.t. the states */
-Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state) {return this->H_;}                        
+Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state) const {return this->H_;}                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state) {return this->V_;}                         
+Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state) const {return this->V_;}                         
 
 /** Computes the estimated measurement given a state */
-Meas DerivedGetEstMeas(const tState& state);
+Meas DerivedGetEstMeas(const tState& state) const ;
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
+Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2) const;
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
@@ -99,7 +99,7 @@ void SourceRN<tState>::DerivedInit(const SourceParameters& params) {
 //---------------------------------------------------------------------------
 
 template<class tState>
-Meas SourceRN<tState>::DerivedGetEstMeas(const tState& state) {
+Meas SourceRN<tState>::DerivedGetEstMeas(const tState& state) const {
     Meas m;
     m.pose = state.g_.data_;
     m.twist = state.u_.data_;
@@ -108,7 +108,7 @@ Meas SourceRN<tState>::DerivedGetEstMeas(const tState& state) {
 
 //---------------------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceRN<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
+Eigen::MatrixXd SourceRN<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) const {
 
     if (this->params_.type_ == MeasurementTypes::RN_POS) {
         return m1.pose - m2.pose;

@@ -84,7 +84,7 @@ update_info.push_back(info3);
 params.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
 
 // Setup the model
-model.Init(sources, params);
+model.Init(params);
 model.model_likelihood_update_info_ = update_info;
 
 
@@ -104,7 +104,7 @@ std::vector<ModelLikelihoodUpdateInfo> update_info;
 
 TEST_F(ModelBaseTest2, UpdateLikelihood_TEST) {
     ASSERT_EQ(this->model.model_likelihood_,0);
-    this->model.UpdateModelLikelihood();
+    this->model.UpdateModelLikelihood(this->sources);
 
     double tmp1 = std::log(1+this->source1.params_.gate_probability_*this->source1.params_.probability_of_detection_*(this->update_info[0].num_assoc_meas/(source1.params_.expected_num_false_meas_*update_info[0].volume) -1));   
     double tmp2 = std::log(1+this->source2.params_.gate_probability_*this->source2.params_.probability_of_detection_*(this->update_info[1].num_assoc_meas/(source2.params_.expected_num_false_meas_*update_info[1].volume) -1));   
@@ -120,7 +120,7 @@ TEST_F(ModelBaseTest2, UpdateLikelihood_TEST) {
 
     // Update it with associated measurements so that the likelihood increases
     for (int ii = 0; ii < 100; ++ii) {
-        this->model.UpdateModelLikelihood();
+        this->model.UpdateModelLikelihood(this->sources);
     }
     // std::cout << this->model.model_likelihood_ << std::endl;
     
@@ -134,7 +134,7 @@ TEST_F(ModelBaseTest2, UpdateLikelihood_TEST) {
 
     // Update it with no associated measurements so that the likelihood decreases
     for (int ii = 0; ii < 100; ++ii) {
-        this->model.UpdateModelLikelihood();
+        this->model.UpdateModelLikelihood(this->sources);
     }
 
     ASSERT_LE(model.model_likelihood_, -50); // It should be at about -344

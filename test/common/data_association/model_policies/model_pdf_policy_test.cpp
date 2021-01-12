@@ -105,22 +105,22 @@ sys.sources_.push_back(source3);
 
 
 
-model1.Init(sys.sources_, params);
+model1.Init(params);
 model1.state_.g_.data_ << 0,0;
 model1.state_.u_.data_ << 0,0;
 model1.err_cov_ = Eigen::Matrix4d::Identity();
 
-model2.Init(sys.sources_, params);
+model2.Init(params);
 model2.state_.g_.data_ << -2,-0.5;
 model2.state_.u_.data_ << 1,1;
 model2.err_cov_ = Eigen::Matrix4d::Identity();
 
-model3.Init(sys.sources_, params);
+model3.Init(params);
 model3.state_.g_.data_ << 10,-10;
 model3.state_.u_.data_ << -2,2;
 model3.err_cov_ = Eigen::Matrix4d::Identity();
 
-model4.Init(sys.sources_, params);
+model4.Init(params);
 model4.state_.g_.data_ << 100, 100;
 model4.state_.u_.data_ << -10, -40;
 model4.err_cov_ = Eigen::Matrix4d::Identity();

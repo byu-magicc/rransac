@@ -48,6 +48,7 @@ typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_PO
 
 
 using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+// using MyTypes = ::testing::Types<ModelHelper3, ModelHelper5 >;
 // using MyTypes = ::testing::Types< ModelHelper1>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +188,7 @@ G = Filter*G_tmp*Filter.transpose();
 }
 
 //-----------------------------------------------------------------------------------------------
-
+typedef typename Model::Model model;
 SourceParameters source_params1;
 SourceParameters source_params2;
 Eigen::Matrix<double,meas_dim, meas_dim> meas_cov1;
@@ -227,9 +228,7 @@ TYPED_TEST_SUITE(ModelTest, MyTypes);
 TYPED_TEST(ModelTest, AllFunctions) {
 
 // Test init function and set parameters function
-this->track.Init(this->sources, this->params);
-ASSERT_EQ((*this->track.sources_)[0].params_.source_index_, this->sources[0].params_.source_index_);
-ASSERT_EQ((*this->track.sources_)[1].params_.source_index_, 1);
+this->track.Init(this->params);
 ASSERT_EQ(this->track.Q_, this->params.process_noise_covariance_);
 ASSERT_EQ(this->track.err_cov_, TypeParam::Model::Mat::Identity());
 
@@ -244,9 +243,10 @@ ASSERT_EQ(this->state.u_.data_, this->states.back().u_.data_);
 // std::cout << "this->F: " << std::endl << this->F << std::endl << std::endl;
 // std::cout << "track->F: " << std::endl << this->track.GetLinTransFuncMatState(this->state0,this->dt) << std::endl;
 // std::cout << "err: " << std::endl << this->track.GetLinTransFuncMatState(this->state0,this->dt) - this->F << std::endl;
-
-ASSERT_LE( (this->track.GetLinTransFuncMatState(this->state0,this->dt) - this->F).norm(), 1e-12);
-ASSERT_LE( (this->track.GetLinTransFuncMatNoise(this->state0,this->dt) - this->G).norm(), 1e-12);
+// std::cout << "F: " << std::endl << this->track.GetLinTransFuncMatState(this->state0,this->dt) << std::endl;
+// std::cout << "Ft: " << std::endl << this->F << std::endl << std::endl;
+ASSERT_LE( ( this->track.GetLinTransFuncMatState(this->state0,this->dt) - this->F).norm(), 1e-12);
+ASSERT_LE( ( this->track.GetLinTransFuncMatNoise(this->state0,this->dt) - this->G).norm(), 1e-12);
 
 // Test the Propagate Model Function
 this->track.state_ = this->state0;
@@ -276,7 +276,7 @@ for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
 
     this->track.PropagateModel(this->dt);
     this->track.new_assoc_meas_ = this->new_meas[ii];
-    this->track.UpdateModel(this->params);
+    this->track.UpdateModel(this->sources, this->params);
 
 }
 
@@ -295,7 +295,7 @@ if (TypeParam::MeasType1 == MeasurementTypes::SEN_POS|| TypeParam::MeasType1 == 
     // std::cerr << "norm error: " << error.norm() << std::endl;
     // std::cerr << " cov inverse: " << this->meas_cov2.inverse() << std::endl;
     // std::cerr << " blah er: " << (*this->track.sources_)[1].OMinus( this->new_meas.back().back().back(),(*this->track.sources_)[1].GetEstMeas(this->track.state_))<< std::endl;
-    Eigen::MatrixXd error = this->meas_cov2.inverse().sqrt()*(*this->track.sources_)[1].OMinus( this->new_meas.back().back().back(),(*this->track.sources_)[1].GetEstMeas(this->track.state_));
+    Eigen::MatrixXd error = this->meas_cov2.inverse().sqrt()*this->sources[1].OMinus( this->new_meas.back().back().back(),this->sources[1].GetEstMeas(this->track.state_));
     EXPECT_LE( error.norm(),  5) << "This result might not always be true since updating the track is not deterministic";
 
 

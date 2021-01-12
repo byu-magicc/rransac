@@ -35,7 +35,7 @@ static void CalculateWeights(System<tModel>& sys);
 
 static void CalculateModelUpdateInfo(System<tModel>& sys, std::vector<bool>& source_produced_meas);
 
-static bool InValidationRegion(const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance, double& distance);
+static bool InValidationRegion(const std::vector<typename tModel::Source>& sources, const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance, double& distance);
 
 static double GetVolume(const System<tModel>& sys, const double det_inn_cov_sqrt, const double source_index);
 
@@ -91,11 +91,11 @@ void ModelPDFPolicy<tModel>::AssociateMeasurements(System<tModel>& sys, std::vec
         // Iterate through all of the models
         for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++ model_iter) {
             
-            const Eigen::MatrixXd& innovation_covariance = model_iter->GetInnovationCovariance(*meas_iter);
+            const Eigen::MatrixXd& innovation_covariance = model_iter->GetInnovationCovariance(sys.sources_, *meas_iter);
             double distance = 0;
             double det_inn_cov_sqrt = sqrt(innovation_covariance.determinant());
 
-            if(InValidationRegion(*meas_iter, *model_iter, innovation_covariance,distance)) {
+            if(InValidationRegion(sys.sources_, *meas_iter, *model_iter, innovation_covariance,distance)) {
                 meas_associated = true;
                 meas_iter->likelihood = GetLikelihood(distance, innovation_covariance.rows(), det_inn_cov_sqrt); 
                 meas_iter->vol = GetVolume(sys, det_inn_cov_sqrt, meas_iter->source_index);
@@ -192,15 +192,15 @@ void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-bool ModelPDFPolicy<tModel>::InValidationRegion(const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance, double& distance) {
+bool ModelPDFPolicy<tModel>::InValidationRegion(const std::vector<typename tModel::Source>& sources, const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance, double& distance) {
 
-    typename tModel::Source& source = (*(model.sources_))[meas.source_index];
+    // typename tModel::Source& source = sources[meas.source_index];
 
-    Eigen::MatrixXd err = source.OMinus(meas, source.GetEstMeas(model.state_));
+    Eigen::MatrixXd err = sources[meas.source_index].OMinus(meas, sources[meas.source_index].GetEstMeas(model.state_));
 
     distance = (err.transpose()*innovation_covariance.inverse()*err)(0,0);
 
-    if(distance <= source.params_.gate_threshold_) {
+    if(distance <= sources[meas.source_index].params_.gate_threshold_) {
         return true;
     } else {
         return false;

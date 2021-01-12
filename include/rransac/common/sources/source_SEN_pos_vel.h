@@ -32,18 +32,18 @@ void DerivedInit(const SourceParameters& params);
 /** Returns the jacobian of the observation function w.r.t. the states 
  * 
 */
-Eigen::MatrixXd DerivedGetLinObsMatState(tState const& state);                        
+Eigen::MatrixXd DerivedGetLinObsMatState(tState const& state) const;                        
 
 /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state){return this->V_;}                        
+Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state) const {return this->V_;}                        
 
 /** Computes the estimated measurement given a state */
-Meas DerivedGetEstMeas(const tState& state);
+Meas DerivedGetEstMeas(const tState& state) const ;
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
+Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2) const;
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
@@ -95,25 +95,28 @@ void SourceSENPosVel<tState>::DerivedInit(const SourceParameters& params) {
 
 //-----------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPosVel<tState>::DerivedGetLinObsMatState(const tState& state) {
+Eigen::MatrixXd SourceSENPosVel<tState>::DerivedGetLinObsMatState(const tState& state) const {
+
+    Eigen::MatrixXd H = this->H_;
 
     switch (this->params_.type_)
     {
     case MeasurementTypes::SEN_POS:
         
-        this->H_.block(0,0,meas_dim_, meas_dim_) = state.g_.R_;
-        return this->H_;
+        
+        H.block(0,0,meas_dim_, meas_dim_) = state.g_.R_;
+        return H;
         break;
     case MeasurementTypes::SEN_POS_VEL:
 
-        this->H_.block(0,0,meas_dim_, meas_dim_) = state.g_.R_; //dt/dt
-        this->H_.block(meas_dim_, tState::g_type_::dim_, tState::u_type_::dim_t_vel_,1) = state.g_.R_.block(0,0,tState::u_type_::dim_t_vel_,1); //dtd/rho_x
+        H.block(0,0,meas_dim_, meas_dim_) = state.g_.R_; //dt/dt
+        H.block(meas_dim_, tState::g_type_::dim_, meas_dim_,1) = state.g_.R_.block(0,0,tState::u_type_::dim_t_vel_,1); //dtd/rho_x
         if ( meas_dim_== 2) { 
-            this->H_.block(meas_dim_,meas_dim_, tState::u_type_::dim_t_vel_, tState::g_type_::rot_algebra::dim_) = state.g_.R_ * tState::g_type_::rot_algebra::Wedge(Eigen::Matrix<double,tState::g_type_::rot_algebra::dim_,1>::Ones()) * state.u_.p_;
+            H.block(meas_dim_,meas_dim_, meas_dim_, tState::g_type_::rot_algebra::dim_) = state.g_.R_ * tState::g_type_::rot_algebra::Wedge(Eigen::Matrix<double,tState::g_type_::rot_algebra::dim_,1>::Ones()) * state.u_.p_;
         } else {
-            this->H_.block(meas_dim_,meas_dim_, tState::u_type_::dim_t_vel_, tState::g_type_::rot_algebra::dim_) = -state.g_.R_ * tState::g_type_::rot_algebra::Wedge(state.u_.p_.block(0,0,tState::g_type_::rot_algebra::dim_,1));
+            H.block(meas_dim_,meas_dim_, meas_dim_, tState::g_type_::rot_algebra::dim_) = -state.g_.R_ * tState::g_type_::rot_algebra::Wedge(state.u_.p_.block(0,0,tState::g_type_::rot_algebra::dim_,1));
         }
-        return this->H_;
+        return H;
         break;
     default:
         throw std::runtime_error("SourceSENPosVel::GetLinObsMatState Measurement type not supported.");
@@ -124,7 +127,7 @@ Eigen::MatrixXd SourceSENPosVel<tState>::DerivedGetLinObsMatState(const tState& 
 
 //-----------------------------------------------------------------
 template<class tState>
-Meas SourceSENPosVel<tState>::DerivedGetEstMeas(const tState& state) {
+Meas SourceSENPosVel<tState>::DerivedGetEstMeas(const tState& state) const{
     Meas m;
     m.pose = state.g_.t_;
 
@@ -136,7 +139,7 @@ Meas SourceSENPosVel<tState>::DerivedGetEstMeas(const tState& state) {
 
 //-----------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPosVel<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
+Eigen::MatrixXd SourceSENPosVel<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) const {
 
     if (this->params_.type_ == MeasurementTypes::SEN_POS) {
         return m1.pose - m2.pose;
