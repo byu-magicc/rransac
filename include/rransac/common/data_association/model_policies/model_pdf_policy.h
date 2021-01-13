@@ -27,6 +27,16 @@ public:
 
 static void  PolicyDataAssociationModel(System<tModel>& sys);
 
+
+/**
+ * This policy is used after RANSAC has found a hypothetical state estimate with sufficient inliers.
+ * In chronological order, the inliers are added as new measurements to the model. Once added, the weights
+ * and model update info is calculated for all the inliers of the same time step. Then the model is updated.
+ * This process is repeated for every time step until all inliers are added.
+ * @param model The model that is being filtered.
+ */ 
+static void PolicyModelFilteringStatistics(tModel& model);
+
 private: 
 
 static void AssociateMeasurements(System<tModel>& sys, std::vector<bool>& source_produced_meas);

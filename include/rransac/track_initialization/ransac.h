@@ -17,7 +17,7 @@ class Ransac : public tLMLEPolicy<tModel> {
 public: 
 
 typedef typename tModel::State State;
-typedef typename tModel::Source Source;
+// typedef typename tModel::Source Source;
 
 Ransac();
 
@@ -51,6 +51,15 @@ static State GenerateHypotheticalStateEstimate(const std::vector<Cluster::ConstI
  * @param inliers A vector of iterators from the measurements in cluster that are inliers to the hypothetical state estimate. The inliers are in chronological order
  */ 
 static int ScoreHypotheticalStateEstimate(const State& xh, const Cluster& cluster, const System<tModel>& sys, std::vector<Cluster::ConstIteratorPair>& inliers);
+
+
+/**
+ * Generates a track using the hypothetical state estimate with the best score and the inliers to the hypothetical state estimate.
+ * @param xh The best hypothetical state estimate generated from the cluster
+ * @param inliers The measurements that support the hypothetical state estimate
+ * 
+ */ 
+static tModel GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<Cluster::ConstIteratorPair>& inliers);
 
 private:
 
@@ -114,9 +123,12 @@ int Ransac<tModel, tLMLEPolicy>::ScoreHypotheticalStateEstimate(const State& xh,
     int src_index = 0;
     double d = 0;          // The distance
 
+    Cluster::ConstIteratorPair pair;
+
     std::vector<Eigen::MatrixXd> innov_cov_inv(sys.sources_.size());
     std::vector<Meas> estimated_meas(sys.sources_.size());
     std::vector<bool> innov_cov_set(sys.sources_.size(),false);
+    std::vector<bool> src_contributed(sys.sources_.size(),false);
 
     // Matrices to be used
     Eigen::MatrixXd G;
@@ -131,7 +143,8 @@ int Ransac<tModel, tLMLEPolicy>::ScoreHypotheticalStateEstimate(const State& xh,
         dt = outer_iter->begin()->time_stamp - current_time;                              // Get time difference
         G = tModel::GetLinTransFuncMatNoise(xh,dt);
         Q_bar = G*sys.params_.process_noise_covariance_*G.transpose();
-        std::fill(innov_cov_set.begin(), innov_cov_set.end(), false);                     // Reset vector since we are moving to a new time step
+        std::fill(innov_cov_set.begin(), innov_cov_set.end(), false);                         // Reset vector since we are moving to a new time step
+        std::fill(src_contributed.begin(), src_contributed.end(), false);                     // Reset vector since we are moving to a new time step
 
         for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter.end(); ++inner_iter) {
 
@@ -152,13 +165,52 @@ int Ransac<tModel, tLMLEPolicy>::ScoreHypotheticalStateEstimate(const State& xh,
 
             // If the measurement is an inlier, add it. 
             if (d < sys.sources_[src_index].RANSAC_inlier_threshold_) {
+                pair.outer_it = outer_iter;
+                pair.inner_it = inner_iter;
+                inliers.push_back(pair);
 
-            }
-
-            
+                // If the measurement is the first inlier from the source src_index at this time, increment the score once. 
+                // This is becuase multiple measurements from the same measurements source observed at the same time can only count as one total.
+                if (!src_contributed[src_index]) {
+                    score++;
+                    src_contributed[src_index] = true;
+                }
+            }            
         }
     }
 
+    return score;
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------
+template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
+tModel Ransac<tModel, tLMLEPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<Cluster::ConstIteratorPair>& inliers) {
+
+    // Create new track with state estimate at the same time step as the oldest inlier measurement
+    tModel new_track;
+    new_track.Init(sys.parameters);
+    double dt = inliers.begin()->inner_it->time_stamp - sys.current_time_;
+    new_track.state_ = tModel::PropagateState(xh,dt); 
+
+    // Initialize objects
+    std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info(sys.sources_.size());                      
+
+
+    for (auto iter = inliers.begin(); iter != inliers.end(); ) {
+        double curr_time = iter->inner_it->time_stamp;
+
+        while(iter != inlies.end() && iter->inner_it->time_stamp == curr_time) {
+
+
+
+            iter++;
+        }
+
+        new_track.UpdateModel(sys.sources_,sys.params_);
+    }
+    // assign the new measurements
+    // fill out model likelihood update info
+    // update model
 
 }
 

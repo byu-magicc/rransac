@@ -24,14 +24,19 @@ namespace rransac
  * This struct contains the parameters needed by a measurement source.
  */ 
 struct SourceParameters {
+
+    unsigned int source_index_;       /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
+    MeasurementTypes type_;          /** < The measurement type @see MeasurementTypes */
+
+
     bool meas_cov_fixed_;            /** < Flag used to indicate if the measurement covariance is the same for every measurement. 
                                       If it is, then the measurement covariance needs to be given to the source. If it isn't, 
                                       then the measurement covariance needs to be given with the measurement. @see Meas */
+                                      
     Eigen::MatrixXd meas_cov_;       /** < The fixed measurement covariance.*/
-    float expected_num_false_meas_;  /** < The expected number of false measurements. We assume that the expected number of false 
-                                        measurements from a source per sensor scan can be modeled using a Poisson distribution. */
 
-    MeasurementTypes type_;          /** < The measurement type @see MeasurementTypes */
+    float expected_num_false_meas_;  /** < The expected number of false measurements. We assume that the expected number of false 
+                                        measurements from a source per sensor scan can be modeled using a Poisson distribution. */    
 
     float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a source during
                                       a single scan. This value must be between 0 and 1.*/
@@ -42,7 +47,7 @@ struct SourceParameters {
     double RANSAC_inlier_probability_; /**< The probability that a measurement is an inlier according to a chi squared distribution. */
 
     
-    unsigned int source_index_;  /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
+    
 
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
     bool has_twist;                      /**< Indicates if the measurement has velocity data in addition to position */
@@ -50,6 +55,15 @@ struct SourceParameters {
     double RANSAC_inlier_threshold_;      /**< the inlier threshold used in RANSAC to see if a measurement is an inlier to a hypothetical state estimate"
     double gate_threshold_sqrt_;         /**< The square root of the gate threshold */    
     double vol_unit_hypershpere_;        /**< The Volume of the unit hypershpere */
+
+    // Sets some parameters to default
+    SourceParameters() {
+        meas_cov_fixed_ = true;
+        expected_num_false_meas_ = 0.1;
+        probability_of_detection_ = 0.9;
+        gate_probability_ = 0.8;
+        RANSAC_inlier_probability_ = 0.8;
+    }
 
 };
 
