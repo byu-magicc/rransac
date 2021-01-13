@@ -132,11 +132,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(cluster_data_tree_data_associationTest lie_groups)
 # target_link_libraries(cluster_data_tree_data_associationTest gtest_main lie_groups)
 
-# add_executable(model_pdf_policyTest 
-# common/data_association/model_policies/model_pdf_policy_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(model_pdf_policyTest lie_groups)
-# target_link_libraries(model_pdf_policyTest gtest_main lie_groups)
+add_executable(model_pdf_policyTest 
+common/data_association/model_policies/model_pdf_policy_test.cpp
+../src/parameters.cpp)
+add_dependencies(model_pdf_policyTest lie_groups)
+target_link_libraries(model_pdf_policyTest gtest_main lie_groups)
 
 #---------------------------------------
 # Track Initialization
@@ -148,11 +148,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(linear_lmle_policyTest lie_groups)
 # target_link_libraries(linear_lmle_policyTest gtest_main lie_groups)
 
-add_executable(ransacTest 
-track_initialization/ransac_test.cpp
-../src/parameters.cpp)
-add_dependencies(ransacTest lie_groups)
-target_link_libraries(ransacTest gtest_main lie_groups)
+# add_executable(ransacTest 
+# track_initialization/ransac_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(ransacTest lie_groups)
+# target_link_libraries(ransacTest gtest_main lie_groups)
 
 
 

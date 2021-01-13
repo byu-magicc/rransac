@@ -460,12 +460,43 @@ ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model4_source2));
 ASSERT_FALSE(HasUpdateInfo(*model_iter,info_model1_source1));
 
 
+// Time to test the filtering model policy
 
+Model x;
 
+for (auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++model_iter) {
 
+    x.err_cov_ = model_iter->err_cov_;
+    x.state_ = model_iter->state_;
+    x.new_assoc_meas_ = model_iter->new_assoc_meas_;
 
+    // Clear the measurement history
+    for (auto meas_outer_iter = x.new_assoc_meas_.begin(); meas_outer_iter != x.new_assoc_meas_.end(); ++meas_outer_iter) {
+        for (auto meas_inner_iter = meas_outer_iter->begin(); meas_inner_iter != meas_outer_iter->end(); ++ meas_inner_iter) {
+            meas_inner_iter->likelihood = 0;
+            meas_inner_iter->vol = 0;
+            meas_inner_iter->weight = 0;
+        }
+    }
 
+    data_associate.PolicyModelFiltering(sys, x);
 
+    // verify measurements
+    for (int ii = 0; ii < x.new_assoc_meas_.size(); ++ii) {
+        for (int jj = 0; jj < x.new_assoc_meas_[ii].size(); ++jj) {
+            ASSERT_DOUBLE_EQ(x.new_assoc_meas_[ii][jj].likelihood, model_iter->new_assoc_meas_[ii][jj].likelihood);
+            ASSERT_DOUBLE_EQ(x.new_assoc_meas_[ii][jj].weight, model_iter->new_assoc_meas_[ii][jj].weight);
+        }
+    }
 
+    // verify model likelihood
+    for (int ii = 0; ii < x.model_likelihood_update_info_.size(); ++ii) {
+        ASSERT_EQ(x.model_likelihood_update_info_[ii].num_assoc_meas, model_iter->model_likelihood_update_info_[ii].num_assoc_meas);
+        ASSERT_EQ(x.model_likelihood_update_info_[ii].source_index, model_iter->model_likelihood_update_info_[ii].source_index);
+        ASSERT_DOUBLE_EQ(x.model_likelihood_update_info_[ii].volume, model_iter->model_likelihood_update_info_[ii].volume);
+        ASSERT_TRUE(x.model_likelihood_update_info_[ii].in_local_surveillance_region ==  model_iter->model_likelihood_update_info_[ii].in_local_surveillance_region  );
+    }
+
+}
 
 }

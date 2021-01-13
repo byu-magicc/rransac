@@ -25,6 +25,8 @@ int num_assoc_meas;                       /** < Indicates the number of measurem
 unsigned int source_index;                /** < The source index */
 double volume;                            /** < The volume of the validation region */
 
+
+
 };
 
 /**

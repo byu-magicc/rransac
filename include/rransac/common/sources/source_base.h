@@ -52,7 +52,7 @@ struct SourceParameters {
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
     bool has_twist;                      /**< Indicates if the measurement has velocity data in addition to position */
     double gate_threshold_;              /**< The gate threshold of the validation region */
-    double RANSAC_inlier_threshold_;      /**< the inlier threshold used in RANSAC to see if a measurement is an inlier to a hypothetical state estimate"
+    double RANSAC_inlier_threshold_;      /**< the inlier threshold used in RANSAC to see if a measurement is an inlier to a hypothetical state estimate */
     double gate_threshold_sqrt_;         /**< The square root of the gate threshold */    
     double vol_unit_hypershpere_;        /**< The Volume of the unit hypershpere */
 
@@ -163,7 +163,7 @@ public:
     /**
      * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
      */
-    bool StateInsideSurveillanceRegion(const State& state) {
+    bool StateInsideSurveillanceRegion(const State& state) const {
         return state_in_surveillance_region_callback_(state);
     }
 
