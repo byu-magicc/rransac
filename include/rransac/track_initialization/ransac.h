@@ -11,8 +11,8 @@
 
 namespace rransac {
 
-template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
-class Ransac : public tLMLEPolicy<tModel> {
+template< typename tModel, template<typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
+class Ransac : public tLMLEPolicy<tModel> , tAssociationPolicy<tModel>{
 
 public: 
 
@@ -63,6 +63,10 @@ static tModel GenerateTrack(const State&xh, const System<tModel>& sys, const std
 
 private:
 
+static void CalculateMeasurmentAndLikelihoodData(const System<tModel>& sys, tModel& model) {
+    CalculateMeasurmentAndLikelihoodDataPolicy(sys, model);
+}
+
 
 };
 
@@ -70,15 +74,15 @@ private:
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
-Ransac<tModel, tLMLEPolicy>::Ransac() {
+template< typename tModel, template<typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
+Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::Ransac() {
     srand(time(NULL));
 }
 
 //----------------------------------------------------------------------------------------------------------
 
-template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
-std::vector<Cluster::ConstIteratorPair > Ransac<tModel, tLMLEPolicy>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
+template< typename tModel, template<typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
+std::vector<Cluster::ConstIteratorPair > Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
    
 
 
@@ -113,8 +117,8 @@ std::vector<Cluster::ConstIteratorPair > Ransac<tModel, tLMLEPolicy>::GenerateMi
 
 
 //----------------------------------------------------------------------------------------------------------
-template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
-int Ransac<tModel, tLMLEPolicy>::ScoreHypotheticalStateEstimate(const State& xh, const Cluster& cluster, const System<tModel>& sys, std::vector<Cluster::ConstIteratorPair>& inliers) {
+template< typename tModel, template<typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
+int Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalStateEstimate(const State& xh, const Cluster& cluster, const System<tModel>& sys, std::vector<Cluster::ConstIteratorPair>& inliers) {
 
     inliers.clear(); // Make sure it is empty
     int score = 0;
@@ -183,8 +187,8 @@ int Ransac<tModel, tLMLEPolicy>::ScoreHypotheticalStateEstimate(const State& xh,
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
-template< typename tModel, template<typename ttModel> typename tLMLEPolicy>
-tModel Ransac<tModel, tLMLEPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<Cluster::ConstIteratorPair>& inliers) {
+template< typename tModel, template<typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
+tModel Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<Cluster::ConstIteratorPair>& inliers) {
 
     // Create new track with state estimate at the same time step as the oldest inlier measurement
     tModel new_track;
@@ -201,11 +205,11 @@ tModel Ransac<tModel, tLMLEPolicy>::GenerateTrack(const State&xh, const System<t
 
         while(iter != inlies.end() && iter->inner_it->time_stamp == curr_time) {
 
-
+            new_track.AddNewMeasurement(*iter->inner_it);
 
             iter++;
         }
-
+        CalculateMeasurmentAndLikelihoodData(sys,new_track);
         new_track.UpdateModel(sys.sources_,sys.params_);
     }
     // assign the new measurements

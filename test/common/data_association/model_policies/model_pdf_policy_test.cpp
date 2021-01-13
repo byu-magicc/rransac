@@ -479,7 +479,7 @@ for (auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++m
         }
     }
 
-    data_associate.PolicyModelFiltering(sys, x);
+    data_associate.CalculateMeasurmentAndLikelihoodDataPolicy(sys, x);
 
     // verify measurements
     for (int ii = 0; ii < x.new_assoc_meas_.size(); ++ii) {
@@ -489,12 +489,18 @@ for (auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++m
         }
     }
 
+    
+
     // verify model likelihood
-    for (int ii = 0; ii < x.model_likelihood_update_info_.size(); ++ii) {
-        ASSERT_EQ(x.model_likelihood_update_info_[ii].num_assoc_meas, model_iter->model_likelihood_update_info_[ii].num_assoc_meas);
-        ASSERT_EQ(x.model_likelihood_update_info_[ii].source_index, model_iter->model_likelihood_update_info_[ii].source_index);
-        ASSERT_DOUBLE_EQ(x.model_likelihood_update_info_[ii].volume, model_iter->model_likelihood_update_info_[ii].volume);
-        ASSERT_TRUE(x.model_likelihood_update_info_[ii].in_local_surveillance_region ==  model_iter->model_likelihood_update_info_[ii].in_local_surveillance_region  );
+    for (auto x_iter = x.model_likelihood_update_info_.begin(); x_iter != x.model_likelihood_update_info_.end(); ++x_iter) {
+        bool found = false;
+        for (auto iter = model_iter->model_likelihood_update_info_.begin(); iter !=model_iter->model_likelihood_update_info_.end(); ++ iter) {
+            if ( x_iter->source_index == iter->source_index && x_iter->in_local_surveillance_region == iter->in_local_surveillance_region && x_iter->num_assoc_meas == iter->num_assoc_meas && fabs(x_iter->volume - iter->volume) < 1e-8) {
+                found = true;
+            }
+        }
+
+        ASSERT_TRUE(found );
     }
 
 }

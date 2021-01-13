@@ -35,7 +35,7 @@ static void  PolicyDataAssociationModel(System<tModel>& sys);
  * This process is repeated for every time step until all inliers are added. NOTE: This method is not compatible for measurements with non fixed measurement covariance.
  * @param model The model that is being filtered.
  */ 
-static void PolicyModelFiltering(const System<tModel>& sys, tModel& model);
+static void CalculateMeasurmentAndLikelihoodDataPolicy(const System<tModel>& sys, tModel& model);
 
 private: 
 
@@ -92,7 +92,7 @@ void ModelPDFPolicy<tModel>::PolicyDataAssociationModel(System<tModel>& sys) {
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-void ModelPDFPolicy<tModel>::PolicyModelFiltering(const System<tModel>& sys, tModel& model) {
+void ModelPDFPolicy<tModel>::CalculateMeasurmentAndLikelihoodDataPolicy(const System<tModel>& sys, tModel& model) {
 
     FilteringCalculateMeasStatistics(sys,model);
     CalculateWeightsForModel(sys, model);
