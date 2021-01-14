@@ -14,8 +14,8 @@ public:
 
 typedef R2_r2 State;
 typedef SourceR2 Source;
-typedef TransformHomography<State, Eigen::Matrix4d> Transform;
-typedef ModelRN<State, Transform> Model;
+typedef TransformHomography<State> Transform;
+typedef ModelRN<State, TransformHomography> Model;
 typedef Eigen::Matrix<double,2,1> MatData;
 
 void SetUp() override {
@@ -271,7 +271,7 @@ ASSERT_EQ(sys_.data_tree_.data_.size(),0);
 // Add a bunch of measurements 
 Eigen::Matrix<double,1,1> time;
 unsigned int num_measurements = 2000;
-for (unsigned int ii; ii < num_measurements; ++ii) {
+for (unsigned int ii=0; ii < num_measurements; ++ii) {
     time.setRandom();
     m_.time_stamp = time(0,0)*10;
     m_.pose = MatData::Random()*10;
@@ -280,14 +280,14 @@ for (unsigned int ii; ii < num_measurements; ++ii) {
 
 // Get an expiration time from a measurement time stamp
 double expiration_time;
-time.setRandom();
 auto iter = sys_.data_tree_.data_.begin();
-iter = std::next(iter,std::round(fabs(time(0,0)*sys_.data_tree_.data_.size())));  // Get random iter
+time.setRandom()*iter->data_.size();
+iter = std::next(iter,std::round(fabs(time(0,0)*sys_.data_tree_.data_.size())));  // Get a random cluster
 if (iter == sys_.data_tree_.data_.end())
     --iter;
 
 auto outer_iter = iter->data_.begin();
-outer_iter = std::next(outer_iter,std::round(fabs(time(0,0)*iter->data_.size())));  // Get random iter
+outer_iter = std::next(outer_iter,std::round(fabs(time(0,0)*iter->data_.size())));  // Get a random time step list
 if (outer_iter == iter->data_.end())
     --outer_iter;
 
@@ -312,6 +312,11 @@ for( auto cluster_iter = sys_.data_tree_.data_.begin(); cluster_iter !=sys_.data
 ASSERT_NE(sys_.data_tree_.Size(), 0);
 
 }
+
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 TEST_F(DataTreeClustersTestObject, ConstructClusters) {
 

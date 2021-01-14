@@ -101,18 +101,6 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(model_managerTest lie_groups)
 # target_link_libraries(model_managerTest gtest_main lie_groups)
 
-
-#---------------------------------------
-# Data Trees
-#---------------------------------------
-
-# add_executable(data_tree_clustersTest 
-# data_containers/data_tree/data_tree_clusters_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(data_tree_clustersTest lie_groups)
-# target_link_libraries(data_tree_clustersTest gtest_main lie_groups)
-
-
 #---------------------------------------
 # Cluster 
 #---------------------------------------
@@ -124,6 +112,17 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # target_link_libraries(cluster_listTest gtest_main lie_groups)
 
 #---------------------------------------
+# Data Trees
+#---------------------------------------
+
+add_executable(data_tree_clustersTest 
+data_containers/data_tree/data_tree_clusters_test.cpp
+../src/parameters.cpp)
+add_dependencies(data_tree_clustersTest lie_groups)
+target_link_libraries(data_tree_clustersTest gtest_main lie_groups)
+
+
+#---------------------------------------
 # Data Association
 #---------------------------------------
 # add_executable(cluster_data_tree_data_associationTest 
@@ -132,11 +131,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(cluster_data_tree_data_associationTest lie_groups)
 # target_link_libraries(cluster_data_tree_data_associationTest gtest_main lie_groups)
 
-add_executable(model_pdf_policyTest 
-common/data_association/model_policies/model_pdf_policy_test.cpp
-../src/parameters.cpp)
-add_dependencies(model_pdf_policyTest lie_groups)
-target_link_libraries(model_pdf_policyTest gtest_main lie_groups)
+# add_executable(model_pdf_policyTest 
+# common/data_association/model_policies/model_pdf_policy_test.cpp
+# ../src/parameters.cpp)
+# add_dependencies(model_pdf_policyTest lie_groups)
+# target_link_libraries(model_pdf_policyTest gtest_main lie_groups)
 
 #---------------------------------------
 # Track Initialization

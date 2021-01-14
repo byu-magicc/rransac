@@ -46,7 +46,7 @@ cluster_.AddMeasurement(m);
 
 }
 
-typedef TransformHomography<R2_r2, Eigen::Matrix<double,4,4>> Transform;
+typedef TransformHomography<R2_r2> Transform;
 
 Transform trans_;
 Cluster cluster_;

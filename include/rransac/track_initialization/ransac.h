@@ -2,6 +2,7 @@
 #define RRANSAC_TRACK_INITIALIZATION_RANSAC_H_
 
 #include "system.h"
+#include "common/models/model_base.h"
 #include "data_containers/cluster.h"
 #include <stdlib.h>
 #include <time.h>
@@ -22,6 +23,14 @@ typedef typename tModel::State State;
 Ransac();
 
 ~Ransac() = default;
+
+/**
+ * This is the only function that needs to be called. It performs RANSAC on every cluster with sufficient number of measurements from 
+ * different time steps. If a strong enough hypothetical state estimate is generated, then it will create a new track by filtering the 
+ * hypothetical state estimate using its inliers.
+ * @param system Contains all of the data used by R-RANSAC
+ */ 
+static void Run(System<tModel>& sys);
 
 /**
  * Randomly selects a measurement from the latest time step and randomly selects 
@@ -64,8 +73,10 @@ static tModel GenerateTrack(const State&xh, const System<tModel>& sys, const std
 private:
 
 static void CalculateMeasurmentAndLikelihoodData(const System<tModel>& sys, tModel& model) {
-    CalculateMeasurmentAndLikelihoodDataPolicy(sys, model);
+    Ransac::CalculateMeasurmentAndLikelihoodDataPolicy(sys, model);
 }
+
+// static  RunSingle(const Cluster& cluster, const System<tModel>& sys);
 
 
 };
@@ -84,7 +95,8 @@ Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::Ransac() {
 template< typename tModel, template<typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
 std::vector<Cluster::ConstIteratorPair > Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::GenerateMinimumSubset(const unsigned int num_meas, const  Cluster& cluster) {
    
-
+    if (num_meas > cluster.data_.size() || num_meas < 0)
+        throw std::runtime_error("RANSAC: GenerateMinimumSubset: num_meas must be less than the number of different time steps of measurements in cluster and greater than zero.");
 
     std::vector<Cluster::ConstIteratorPair> meas_index(num_meas);
 
@@ -123,11 +135,12 @@ int Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalStateEstim
     inliers.clear(); // Make sure it is empty
     int score = 0;
     int current_time = sys.current_time_;
-    int dt = 0;
+    double dt = 0;
     int src_index = 0;
     double d = 0;          // The distance
 
     Cluster::ConstIteratorPair pair;
+    typename tModel::State xh_p;         // propagated state
 
     std::vector<Eigen::MatrixXd> innov_cov_inv(sys.sources_.size());
     std::vector<Meas> estimated_meas(sys.sources_.size());
@@ -144,31 +157,37 @@ int Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalStateEstim
     // Find all of the inliers. The outer iterator passes through different time steps and the inner iterator passes through different measurements
     for (auto outer_iter = cluster.data_.begin(); outer_iter != cluster.data_.end(); ++outer_iter) {
 
+        // std::cerr << "outer " << std::endl;
+
         dt = outer_iter->begin()->time_stamp - current_time;                              // Get time difference
-        G = tModel::GetLinTransFuncMatNoise(xh,dt);
+        xh_p = tModel::PropagateState(xh,dt);
+        G = tModel::GetLinTransFuncMatNoise(xh_p,dt);
         Q_bar = G*sys.params_.process_noise_covariance_*G.transpose();
         std::fill(innov_cov_set.begin(), innov_cov_set.end(), false);                         // Reset vector since we are moving to a new time step
         std::fill(src_contributed.begin(), src_contributed.end(), false);                     // Reset vector since we are moving to a new time step
 
-        for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter.end(); ++inner_iter) {
+        for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
+
+            // std::cerr << "inner " << std::endl;
+
 
             src_index = inner_iter->source_index;
 
             // Get the estimate measurement and the innovation covariance
             if(!innov_cov_set[src_index]) {
-                H = tModel::GetLinObsMatState(sys.sources_,xh,src_index);
-                V = tModel::GetLinObsMatSensorNoise(sys.sources_,xh,src_index);
-                innov_cov_inv[src_index] = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + Q_bar).inverse();
-                estimated_meas[src_index] = sys.sources_[src_index].GetEstMeas(xh);
+                H = tModel::GetLinObsMatState(sys.sources_,xh_p,src_index);
+                V = tModel::GetLinObsMatSensorNoise(sys.sources_,xh_p,src_index);
+                innov_cov_inv[src_index] = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + H*Q_bar*H.transpose()).inverse();
+                estimated_meas[src_index] = sys.sources_[src_index].GetEstMeas(xh_p);
                 innov_cov_set[src_index] = true;
             }
 
             e = sys.sources_[src_index].OMinus(*inner_iter, estimated_meas[src_index]);
-            d = e.transpose()*innov_cov_inv[src_index]*e;
+            d = (e.transpose()*innov_cov_inv[src_index]*e)(0,0);
 
 
             // If the measurement is an inlier, add it. 
-            if (d < sys.sources_[src_index].RANSAC_inlier_threshold_) {
+            if (d < sys.sources_[src_index].params_.RANSAC_inlier_threshold_) {
                 pair.outer_it = outer_iter;
                 pair.inner_it = inner_iter;
                 inliers.push_back(pair);
@@ -192,18 +211,23 @@ tModel Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(const Stat
 
     // Create new track with state estimate at the same time step as the oldest inlier measurement
     tModel new_track;
-    new_track.Init(sys.parameters);
+    new_track.Init(sys.params_);
     double dt = inliers.begin()->inner_it->time_stamp - sys.current_time_;
     new_track.state_ = tModel::PropagateState(xh,dt); 
+    double curr_time = 0;
+    double propagate_time = inliers.begin()->inner_it->time_stamp;
 
     // Initialize objects
     std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info(sys.sources_.size());                      
 
 
     for (auto iter = inliers.begin(); iter != inliers.end(); ) {
-        double curr_time = iter->inner_it->time_stamp;
+        curr_time = iter->inner_it->time_stamp;
+        dt = curr_time - propagate_time;
+        propagate_time = curr_time;
+        new_track.PropagateModel(dt);
 
-        while(iter != inlies.end() && iter->inner_it->time_stamp == curr_time) {
+        while(iter != inliers.end() && iter->inner_it->time_stamp == curr_time) {
 
             new_track.AddNewMeasurement(*iter->inner_it);
 
@@ -211,10 +235,19 @@ tModel Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(const Stat
         }
         CalculateMeasurmentAndLikelihoodData(sys,new_track);
         new_track.UpdateModel(sys.sources_,sys.params_);
+        new_track.UpdateModelLikelihood(sys.sources_);
     }
     // assign the new measurements
     // fill out model likelihood update info
     // update model
+    return new_track;
+
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------
+
+template< typename tModel, template<typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
+void Ransac<tModel, tLMLEPolicy, tAssociationPolicy>::Run(System<tModel>& sys) {
 
 }
 
