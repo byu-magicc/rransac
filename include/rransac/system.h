@@ -51,7 +51,7 @@ public:
     unsigned int model_label_ =0;                              /** < The label incrementer for good models */
     double current_time_;                                      /** < The current system time */
     DataTreeClusters data_tree_;                               /** < Contains measurements that are not in a consensus set */
-    std::vector<Cluster*> clusters_;                           /** < Reference to clusters. RANSAC tries to form measurements from each clusters */
+    std::vector<std::list<Cluster>::iterator> clusters_;       /** < Iterators to clusters. RANSAC tries to form measurements from each clusters */
 
     
 

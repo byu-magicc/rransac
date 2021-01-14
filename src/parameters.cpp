@@ -13,7 +13,8 @@ Parameters::Parameters()
     transform_consensus_set_ = false;
     meas_time_window_ = 1;
     RANSAC_max_iters_ = 5000;
-    RANSAC_stopping_criteria_ = 0.5;
+    RANSAC_score_stopping_criteria_ = 10;
+    RANSAC_score_minimum_requirement_ = 5;
 }
 
 //------------------------------------------------------------------------------------
@@ -35,6 +36,7 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     cluster_velocity_threshold_ = new_params.cluster_velocity_threshold_;
     RANSAC_minimum_subset_ = new_params.RANSAC_minimum_subset_;
     process_noise_covariance_ = new_params.process_noise_covariance_;
+    RANSAC_score_minimum_requirement_ = new_params.RANSAC_score_minimum_requirement_;
 
     bool successfull = true;
 
@@ -77,14 +79,14 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     }
 
     // Ensure that RANSAC_stopping_criteria_ has a realistic value.
-    if (new_params.RANSAC_stopping_criteria_ <=0 || new_params.RANSAC_stopping_criteria_ >=1)
+    if (new_params.RANSAC_score_stopping_criteria_ <=0)
     {
-        throw std::runtime_error("Parameters::SetParameters The provided value of RANSAC_stopping_criteria_ is not between 0 and 1.");
+        throw std::runtime_error("Parameters::SetParameters The provided value of RANSAC_score_stopping_criteria_ must be greater than 1.");
         successfull = false;
     }
     else
     {
-        RANSAC_stopping_criteria_ = new_params.RANSAC_stopping_criteria_;
+        RANSAC_score_stopping_criteria_ = new_params.RANSAC_score_stopping_criteria_;
     }
 
 

@@ -345,8 +345,8 @@ sys_.data_tree_.ConstructClusters(sys_);
 
 ASSERT_GE(sys_.clusters_.size(),3);
 
-for (auto ptr: sys_.clusters_) {
-    ASSERT_GE(ptr->data_.size(), sys_.params_.RANSAC_minimum_subset_);
+for (auto iter: sys_.clusters_) {
+    ASSERT_GE(iter->data_.size(), sys_.params_.RANSAC_minimum_subset_);
 }
 
 

@@ -24,7 +24,7 @@ typedef tModel Model;
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateStateEstimatePolicy(const std::vector<Cluster::ConstIteratorPair>& meas_subset, const System<tModel>& sys);
+static State GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
 
 
 
@@ -36,7 +36,7 @@ static State GenerateStateEstimatePolicy(const std::vector<Cluster::ConstIterato
 //                Definitions
 /////////////////////////////////////////////////////////////////////////////////////
 template<typename tModel>    
-typename tModel::State LinearLMLEPolicy<tModel>::GenerateStateEstimatePolicy(const std::vector<Cluster::ConstIteratorPair>& meas_subset, const System<tModel>& sys){
+typename tModel::State LinearLMLEPolicy<tModel>::GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys){
     
     typename tModel::State x;   // hypothetical state
     

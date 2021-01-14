@@ -17,7 +17,7 @@ using namespace lie_groups;
 
 template<typename tModel>
 struct LMLEDummy {
-    static void GenerateStateEstimatePolicy(const std::vector<Cluster::ConstIteratorPair>& meas_subset, const System<tModel>& sys);
+    static void GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
 };
 
 template<typename tModel>
@@ -75,7 +75,7 @@ while (num_min_subset < 1) {
 }
 
 
-std::vector<Cluster::ConstIteratorPair> meas_index = ransac.GenerateMinimumSubset(num_min_subset, cluster);
+std::vector<Cluster::IteratorPair> meas_index = ransac.GenerateMinimumSubset(num_min_subset, cluster);
 
 // Make sure there is a measurement from the current time step and that they are all from different time steps
 int times[meas_index.size()];
@@ -215,7 +215,7 @@ for (double ii = start_time; ii < steps*dt; ii += dt ) {
 
 
 // Get score and inliers
-std::vector<Cluster::ConstIteratorPair> inliers;
+std::vector<Cluster::IteratorPair> inliers;
 Ransac<Model, LMLEDummy, ModelPDFPolicy> ransac;
 int score = ransac.ScoreHypotheticalStateEstimate(x.state_,cluster,sys,inliers);
 
