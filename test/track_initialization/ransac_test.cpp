@@ -249,5 +249,106 @@ ASSERT_LT( (x.state_.u_.data_-track.state_.u_.data_).norm(), 1e-1  );
 ASSERT_LT(track.err_cov_.determinant(), x.err_cov_.determinant());
 
 
+}
+
+// ---------------------------------------------------------------------------------------------
+
+TEST(RANSAC_TEST, RUN_TEST) {
+
+// typedef ModelRN<R2_r2, TransformNULL> Model;
+typedef ModelRN<R2_r2, TransformNULL> Model;
+
+// Setup sources
+double noise = 1e-2;
+SourceParameters source_params1, source_params2, source_params3;
+source_params1.type_ = MeasurementTypes::RN_POS;
+source_params1.source_index_ = 0;
+source_params1.meas_cov_ = Eigen::Matrix2d::Identity()*noise;
+source_params1.RANSAC_inlier_probability_ = 0.9;
+
+source_params2.type_ = MeasurementTypes::RN_POS_VEL;
+source_params2.source_index_ = 1;
+source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
+source_params2.RANSAC_inlier_probability_ = 0.9;
+
+source_params3.type_ = MeasurementTypes::RN_POS_VEL;
+source_params3.source_index_ = 2;
+source_params3.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
+source_params3.RANSAC_inlier_probability_ = 0.9;
+
+
+SourceR2 source1,source2, source3;
+source1.Init(source_params1);
+source2.Init(source_params2);
+source3.Init(source_params3);
+
+// Setup system
+Parameters params;
+params.process_noise_covariance_ = Eigen::Matrix4d::Identity()*noise;
+params.RANSAC_max_iters_ = 100;
+params.RANSAC_minimum_subset_ = 3;
+params.RANSAC_score_stopping_criteria_ = 10;
+params.RANSAC_score_minimum_requirement_ = 6;
+params.meas_time_window_ = 5;                   // 5 seconds
+params.cluster_time_threshold_ = 2;
+params.cluster_velocity_threshold_ = 1;
+params.cluster_position_threshold_ = 0.5;
+params.max_num_models_ = 5;
+
+System<Model> sys;
+sys.sources_.push_back(source1);
+sys.sources_.push_back(source2);
+sys.sources_.push_back(source3);
+sys.params_ = params;
+
+// Setup Measurements
+Meas m1, m2, m3, m4;
+m1.source_index = 0;
+m1.type = MeasurementTypes::RN_POS;
+
+
+m2.source_index = 1;
+m2.type = MeasurementTypes::RN_POS_VEL;
+
+// This measurement is noise
+m3.source_index = 2;
+m3.type = MeasurementTypes::RN_POS;
+
+
+// Setup the models that will produce the measurements in the clusters
+std::vector<tracks>;
+Model track1, track2, track3, track4;
+track1.Init(sys.params_);
+track2.Init(sys.params_);
+track3.Init(sys.params_);
+track4.Init(sys.params_);
+
+double pos = 5;
+double vel = -0.1;
+
+track1.state_.g_.data_ << pos,pos;
+track1.state_.u_.data_ << 0, -vel;
+track2.state_.g_.data_ << pos, -pos;
+track2.state_.u_.data_ << -vel,0;
+track3.state_.g_.data_ << -pos, -pos;
+track3.state_.u_.data_ << 0, vel;
+track4.state_.g_.data_ << -pos, pos;
+track4.state_.u_.data_ << vel,0;
+
+// Create simulation data
+double dt = 0.1;
+double time = 10; // seconds;
+Meas temp1;
+
+for (double ii =0; ii < time; ii += dt) {
+
+    Meas tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
+    Meas tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+    Meas tmp4 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+
+
+
+}
+
 
 }
