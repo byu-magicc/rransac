@@ -59,6 +59,7 @@ double cluster_velocity_threshold_;   /**< In order for a measurement to be a ne
                                            normalized by the time difference between the two measurements must be less than or equal to the cluster_velocity_threshold_ */
 double cluster_position_threshold_;   /**< In order fo a measurement to be a neighbor to another measurement of the same time stamp, the distance in pose
                                             must be less than or equal to the cluster_position_threshold_ */
+unsigned int cluster_min_size_requirement_; /** < A cluster must have at least this many measurements to be used with RANSAC */
 
 
 // RANSAC Parameters

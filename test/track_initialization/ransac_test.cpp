@@ -16,14 +16,19 @@
 using namespace rransac;
 using namespace lie_groups;
 
-template<typename tModel>
-struct LMLEDummy {
-    static void GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
+template<typename tModel, template<typename > typename tSeed> 
+struct LMLEDummy : tSeed<tModel>{
+    static void GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
 };
 
 template<typename tModel>
 struct StatisticDummy{
     static void CalculateMeasurmentAndLikelihoodDataPolicy(const System<tModel>& sys, tModel& model);
+};
+
+template<typename tModel>
+struct SeedDummy {
+    typedef tModel Model;
 };
 
 TEST(RANSAC_TEST, GenerateMinimumSubsetTest) {
@@ -34,7 +39,7 @@ typedef ModelRN<R2_r2, TransformNULL> Model;
 
 
 Cluster cluster;
-Ransac<Model, LMLEDummy, StatisticDummy> ransac;
+Ransac<Model, SeedDummy, LMLEDummy, StatisticDummy> ransac;
 
 srand(time(NULL));
 
@@ -217,7 +222,7 @@ for (double ii = start_time; ii < steps*dt; ii += dt ) {
 
 // Get score and inliers
 std::vector<Cluster::IteratorPair> inliers;
-Ransac<Model, LMLEDummy, ModelPDFPolicy> ransac;
+Ransac<Model, SeedDummy, LMLEDummy, ModelPDFPolicy> ransac;
 int score = ransac.ScoreHypotheticalStateEstimate(x.state_,cluster,sys,inliers);
 
 // std::cout << "score: " << score << std::endl;
@@ -313,13 +318,13 @@ m2.type = MeasurementTypes::RN_POS_VEL;
 
 // This measurement is noise
 m3.source_index = 2;
-m3.type = MeasurementTypes::RN_POS;
+m3.type = MeasurementTypes::RN_POS_VEL;
 
 m4.source_index = 0;
 m4.type = MeasurementTypes::RN_POS;
 
 // setup ransac
-Ransac<Model, LinearLMLEPolicy, ModelPDFPolicy> ransac;
+Ransac<Model, SeedDummy, LinearLMLEPolicy, ModelPDFPolicy> ransac;
 
 // Setup the models that will produce the measurements in the clusters
 std::vector<Model> tracks(4);
@@ -358,6 +363,7 @@ for (double ii =start_time; ii < end_time; ii += dt) {
         tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
         tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
         tmp3.pose = Eigen::Matrix<double,2,1>::Random()*fov;
+        tmp3.twist = Eigen::Matrix<double,2,1>::Random();
         tmp4 = sys.sources_[m4.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
 
         m1.time_stamp = ii;
@@ -367,6 +373,7 @@ for (double ii =start_time; ii < end_time; ii += dt) {
         m2.twist = tmp2.twist;
         m3.time_stamp = ii;
         m3.pose = tmp3.pose;
+        m3.twist = tmp3.twist;
         m4.time_stamp = ii;
         m4.pose = tmp4.pose;
 
@@ -377,7 +384,15 @@ for (double ii =start_time; ii < end_time; ii += dt) {
     }
 }
 
+sys.data_tree_.ConstructClusters(sys);
+
+for (std::list<Cluster>::iterator& iter : sys.clusters_) {
+    std::cout << "size: " << iter->Size() << std::endl;
+}
+
 
 ransac.Run(sys);
+
+std::cout << "done!" << std::endl;
 
 }

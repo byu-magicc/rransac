@@ -16,7 +16,7 @@ namespace rransac
  * the LMLE optimization. In the linear case, tSeed is ignored. 
  */ 
 
-template<typename tModel, typename tSeed>    
+template<typename tModel, template<typename > typename tSeed>    
 class LinearLMLEPolicy {
 
 public:
@@ -31,7 +31,7 @@ typedef tModel Model;
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
+static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
 
 
 
@@ -42,8 +42,8 @@ static State GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair
 /////////////////////////////////////////////////////////////////////////////////////
 //                Definitions
 /////////////////////////////////////////////////////////////////////////////////////
-template<typename tModel, typename tSeed>    
-typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys){
+template<typename tModel, template<typename > typename tSeed>      
+typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys){
     
     typename tModel::State x;   // hypothetical state
     
@@ -56,7 +56,7 @@ typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateStateEstimatePol
     Eigen::MatrixXd HF;
     Eigen::MatrixXd HG;
     Eigen::MatrixXd S_inv;
-    Eigen::Matrix<double,tModel::State::g_type_::dim_*2,1> y
+    Eigen::Matrix<double,tModel::State::g_type_::dim_*2,1> y;
 
 
     // // Assume to be identity

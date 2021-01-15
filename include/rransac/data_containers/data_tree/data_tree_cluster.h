@@ -141,7 +141,7 @@ void DataTreeClusters::DerivedConstructClusters(tSystem& sys) {
 
     sys.clusters_.clear();
     for(auto cluster_iter = this->data_.begin(); cluster_iter != this->data_.end(); ++cluster_iter) {
-        if(cluster_iter->data_.size() >= sys.params_.RANSAC_minimum_subset_)
+        if(cluster_iter->data_.size() >= sys.params_.cluster_min_size_requirement_)
             sys.clusters_.push_back(cluster_iter);
     }
 

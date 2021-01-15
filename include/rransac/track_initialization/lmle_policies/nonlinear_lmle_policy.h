@@ -19,7 +19,7 @@ namespace rransac
  * the LMLE optimization. 
  */ 
 
-template<typename tModel, typename tSeed>   
+template<typename tModel, template<typename > typename tSeed>    
 class NonLinearLMLEPolicy {
 
 public:
