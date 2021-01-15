@@ -334,7 +334,7 @@ tracks[2].Init(sys.params_);
 tracks[3].Init(sys.params_);
 
 double pos = 5;
-double vel = -0.1;
+double vel = 0.1;
 
 tracks[0].state_.g_.data_ << pos,pos;
 tracks[0].state_.u_.data_ << 0, -vel;
@@ -386,13 +386,47 @@ for (double ii =start_time; ii < end_time; ii += dt) {
 
 sys.data_tree_.ConstructClusters(sys);
 
-for (std::list<Cluster>::iterator& iter : sys.clusters_) {
-    std::cout << "size: " << iter->Size() << std::endl;
+ransac.Run(sys);
+
+// make sure that the tracks were created
+for (auto& created_track: sys.models_) {
+
+    bool found = false;
+    for (auto& sim_track: tracks) {
+
+        if (sim_track.state_.OMinus(created_track.state_).norm() < 1e-1) {
+            found = true;
+            ASSERT_LT(created_track.err_cov_.norm(), 1);
+        }
+        
+    }
+    ASSERT_TRUE(found);
+
+}
+
+// Make sure that the consensus set is not empty and that the model likelihood is greater than 0.
+for (auto& track : sys.models_) {
+    ASSERT_GE(track.cs_.Size(), sys.params_.RANSAC_score_minimum_requirement_);
+    ASSERT_GE(track.model_likelihood_, 10);
 }
 
 
-ransac.Run(sys);
+// make sure that all of the measurement are removed
+for (auto track_iter = sys.models_.begin(); track_iter != sys.models_.end(); ++track_iter) {
+for (auto track_meas_outer = track_iter->cs_.consensus_set_.begin(); track_meas_outer != track_iter->cs_.consensus_set_.end(); ++track_meas_outer) {
+for (auto track_meas_inner = track_meas_outer->begin(); track_meas_inner != track_meas_outer->end(); ++ track_meas_inner) {
+for (auto cluster_iter = sys.data_tree_.data_.begin(); cluster_iter != sys.data_tree_.data_.end(); ++cluster_iter) {
+for (auto cluster_meas_outer = cluster_iter->data_.begin(); cluster_meas_outer != cluster_iter->data_.end(); ++ cluster_meas_outer) {
+for (auto cluster_meas_inner = cluster_meas_outer->begin(); cluster_meas_inner != cluster_meas_outer->end(); ++ cluster_meas_inner) {
 
-std::cout << "done!" << std::endl;
+    
+    if (cluster_meas_inner->source_index == track_meas_inner->source_index && cluster_meas_inner->time_stamp == track_meas_inner->time_stamp) {
+        
+        ASSERT_GT(sys.sources_[cluster_meas_inner->source_index].OMinus(*cluster_meas_inner, *track_meas_inner).norm(), 1e-8 );
+        
+    }
+
+
+}}}}}}
 
 }

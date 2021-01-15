@@ -262,6 +262,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const std
     int best_score = 0;
     int score = 0;
     unsigned int iterations = 0;
+    unsigned int iteration_stopping_criteria = 10; // If after this many iterations the best score is still zero, then it will terminate. 
     std::vector<Cluster::IteratorPair> meas_subset;
     typename tModel::State hypothetical_state;
     typename tModel::State best_hypothetical_state;
@@ -279,8 +280,13 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const std
         }
 
         ++iterations;
-        std::cerr << "iterations: " << iterations << std::endl;
-        std::cerr << "score: " << score << std::endl;
+
+        // The first few estimates are so bad that the measurements used to create them aren't even inliers.
+        // There is a good chance that the cluster just has a clutter of noisy measurements so terminate early.
+        if (iterations >= iteration_stopping_criteria && best_score == 0) {
+            break;
+        }
+
     }
 
     if (best_score > sys.params_.RANSAC_score_minimum_requirement_) {
