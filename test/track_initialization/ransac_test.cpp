@@ -11,6 +11,7 @@
 #include "common/transformations/transformation_null.h"
 #include "common/sources/source_RN.h"
 #include "common/data_association/model_policies/model_pdf_policy.h"
+#include "track_initialization/lmle_policies/linear_lmle_policy.h"
 
 using namespace rransac;
 using namespace lie_groups;
@@ -314,41 +315,69 @@ m2.type = MeasurementTypes::RN_POS_VEL;
 m3.source_index = 2;
 m3.type = MeasurementTypes::RN_POS;
 
+m4.source_index = 0;
+m4.type = MeasurementTypes::RN_POS;
+
+// setup ransac
+Ransac<Model, LinearLMLEPolicy, ModelPDFPolicy> ransac;
 
 // Setup the models that will produce the measurements in the clusters
-std::vector<tracks>;
-Model track1, track2, track3, track4;
-track1.Init(sys.params_);
-track2.Init(sys.params_);
-track3.Init(sys.params_);
-track4.Init(sys.params_);
+std::vector<Model> tracks(4);
+tracks[0].Init(sys.params_);
+tracks[1].Init(sys.params_);
+tracks[2].Init(sys.params_);
+tracks[3].Init(sys.params_);
 
 double pos = 5;
 double vel = -0.1;
 
-track1.state_.g_.data_ << pos,pos;
-track1.state_.u_.data_ << 0, -vel;
-track2.state_.g_.data_ << pos, -pos;
-track2.state_.u_.data_ << -vel,0;
-track3.state_.g_.data_ << -pos, -pos;
-track3.state_.u_.data_ << 0, vel;
-track4.state_.g_.data_ << -pos, pos;
-track4.state_.u_.data_ << vel,0;
+tracks[0].state_.g_.data_ << pos,pos;
+tracks[0].state_.u_.data_ << 0, -vel;
+tracks[1].state_.g_.data_ << pos, -pos;
+tracks[1].state_.u_.data_ << -vel,0;
+tracks[2].state_.g_.data_ << -pos, -pos;
+tracks[2].state_.u_.data_ << 0, vel;
+tracks[3].state_.g_.data_ << -pos, pos;
+tracks[3].state_.u_.data_ << vel,0;
 
 // Create simulation data
 double dt = 0.1;
-double time = 10; // seconds;
-Meas temp1;
+double end_time = 5; // seconds;
+double start_time = 0; // seconds;
+double fov = 10;  // The surveillance region is a square centered at zero with side length 20
+Meas tmp1, tmp2, tmp3, tmp4;
 
-for (double ii =0; ii < time; ii += dt) {
+for (double ii =start_time; ii < end_time; ii += dt) {
 
-    Meas tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
-    Meas tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
-    Meas tmp4 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+    for (auto& track: tracks) {
 
+        if (ii !=start_time) {
+            track.PropagateModel(dt);
+        }
 
+        tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
+        tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+        tmp3.pose = Eigen::Matrix<double,2,1>::Random()*fov;
+        tmp4 = sys.sources_[m4.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
 
+        m1.time_stamp = ii;
+        m1.pose = tmp1.pose;
+        m2.time_stamp = ii;
+        m2.pose = tmp2.pose;
+        m2.twist = tmp2.twist;
+        m3.time_stamp = ii;
+        m3.pose = tmp3.pose;
+        m4.time_stamp = ii;
+        m4.pose = tmp4.pose;
+
+        sys.data_tree_.AddMeasurement(sys, m1);
+        sys.data_tree_.AddMeasurement(sys, m2);
+        sys.data_tree_.AddMeasurement(sys, m3);
+        sys.data_tree_.AddMeasurement(sys, m4);
+    }
 }
 
+
+ransac.Run(sys);
 
 }

@@ -9,7 +9,14 @@
 namespace rransac
 {
 
-template<typename tModel>    
+/** \class LinearLMLEPolicy
+ * This policy is used for Linear Time Invariant Models. Using a set of measurements, by which the 
+ * model is observable, it produces a current state estimate. The templates for the class
+ * are tModel and tSeed. tModel is the model type and tSeed is a policy to seed
+ * the LMLE optimization. In the linear case, tSeed is ignored. 
+ */ 
+
+template<typename tModel, typename tSeed>    
 class LinearLMLEPolicy {
 
 public:
@@ -35,8 +42,8 @@ static State GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair
 /////////////////////////////////////////////////////////////////////////////////////
 //                Definitions
 /////////////////////////////////////////////////////////////////////////////////////
-template<typename tModel>    
-typename tModel::State LinearLMLEPolicy<tModel>::GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys){
+template<typename tModel, typename tSeed>    
+typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys){
     
     typename tModel::State x;   // hypothetical state
     

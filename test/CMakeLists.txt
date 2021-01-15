@@ -147,11 +147,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_dependencies(linear_lmle_policyTest lie_groups)
 # target_link_libraries(linear_lmle_policyTest gtest_main lie_groups)
 
-# add_executable(ransacTest 
-# track_initialization/ransac_test.cpp
-# ../src/parameters.cpp)
-# add_dependencies(ransacTest lie_groups)
-# target_link_libraries(ransacTest gtest_main lie_groups)
+add_executable(ransacTest 
+track_initialization/ransac_test.cpp
+../src/parameters.cpp)
+add_dependencies(ransacTest lie_groups)
+target_link_libraries(ransacTest gtest_main lie_groups)
 
 
 
@@ -159,11 +159,7 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 
 
 
-add_executable(rransacTest
-rransac_test.cpp
-../src/parameters.cpp
-../src/rransac.cpp)
-target_link_libraries(rransacTest gtest_main lie_groups)
+
 
 
 

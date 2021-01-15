@@ -68,6 +68,7 @@
         "bit": "cpp",
         "*.tpp": "cpp",
         "core": "cpp",
-        "matrixfunctions": "cpp"
+        "matrixfunctions": "cpp",
+        "*.cuh": "cpp"
     }
 }
