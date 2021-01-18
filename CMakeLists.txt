@@ -12,6 +12,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 find_package(Eigen3)
 find_package(Boost)
+find_package(Ceres REQUIRED)
 
 # message(STATUS "${EIGEN3_INCLUDE_DIR}")
 # message(STATUS "here")
@@ -35,6 +36,9 @@ lie_groups/liegroups/src/lie_groups/SO3.cpp
 lie_groups/liegroups/src/lie_groups/SE2.cpp
 lie_groups/liegroups/src/lie_groups/SE3.cpp
 )
+
+
+# target_link_libraries(helloworld Ceres::ceres)
 
 # ########################
 # ## Lie Groups Library ##

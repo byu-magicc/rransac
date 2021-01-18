@@ -5,7 +5,9 @@
 #include "data_containers/cluster.h"
 #include "system.h"
 #include "common/measurement/measurement_base.h"
+#include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Dense>
+#include "ceres/ceres.h"
 
 
 namespace rransac
@@ -20,7 +22,7 @@ namespace rransac
  */ 
 
 template<typename tModel, template<typename > typename tSeed>    
-class NonLinearLMLEPolicy {
+class NonLinearLMLEPolicy : public tSeed<tModel> {
 
 public:
 
@@ -34,13 +36,20 @@ typedef tModel Model;
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
+static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
+
+private:
+
+static void GenerateSeedPolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::State::g_type_::dim_*2], const int size) {
+    NonLinearLMLEPolicy::GenerateSeed(meas_subset, sys, x, size);
+}
+
+// Cost functor used in the nonlinear LMLE
 
 
-template<typename tModel>
 struct CostFunctor {
 
-    CostFunctor(Meas m, double dt, const System<tModel>& sys) : m_(m), dt_(dt), sys_(sys) {
+    CostFunctor(Meas m, const System<tModel>& sys) : m_(m), sys_(sys) {
         dt_ = m.time_stamp - sys_.current_time_;
         src_index_ = m_.source_index;
     }
@@ -50,66 +59,107 @@ struct CostFunctor {
      * 
      */ 
     template <typename T>
-    bool operator(const T* const x , const T* const y, T* r) const {
+    bool operator() (const T* const x,  T* r)  const {
 
     // Convert array to Eigen vector
-    for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
-        x_vector_(ii,0) = x[ii];
+    const Eigen::Map<const Eigen::Matrix<T,tModel::g_dim_*2,1>> x_vector(x);
+    // for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
+    //     x_vector_(ii,0) = x[ii];
 
     // Convert to state, propagate state to the time step of the measurement and get the error
     // between the estimated measurement and the measurement
-    state_ = exp(x_vector_);
-    state_ = tModel::PropagateState(state_,dt);
-    e_ = sys.sources_[src_index_].OMinus(m_, sys.sources_[src_index_].GetEstMeas(state_));
+    typename tModel::State state;
+    state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::g_dim_,1));
+    state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
+    state = tModel::PropagateState(state,dt_);
+    Eigen::Matrix<T,Eigen::Dynamic,1> e = sys_.sources_[src_index_].OMinus(m_, sys_.sources_[src_index_].GetEstMeas(state));
 
     // Construct innovation covariance
-    H_ = tModel::GetLinObsMatState(sys_.sources_,state_,src_index);
-    V_ = tModel::GetLinObsMatSensorNoise(sys_.sources_,state_,src_index);
-    F_ = tModel::GetLinTransFuncMatState(state_,dt);
-    G_ = tModel::GetLinTransFuncMatNoise(state_,dt);
-    HF_ = H_*F_;
-    HG_ = H_*G_;
-    S_inv_sqrt = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse().sqrt();
+    Eigen::MatrixXd H = tModel::GetLinObsMatState(sys_.sources_,state,src_index_);
+    Eigen::MatrixXd V = tModel::GetLinObsMatSensorNoise(sys_.sources_,state,src_index_);
+    Eigen::MatrixXd F = tModel::GetLinTransFuncMatState(state,dt_);
+    Eigen::MatrixXd G = tModel::GetLinTransFuncMatNoise(state,dt_);
+    Eigen::MatrixXd HF = H*F;
+    Eigen::MatrixXd HG = H*G;
+    Eigen::MatrixXd S_inv_sqrt = (V*sys_.sources_[src_index_].params_.meas_cov_*V.transpose() + HG*sys_.params_.process_noise_covariance_ *HG.transpose()).inverse().sqrt();
     
     // Compute Normalized Error
-    e_ = S_inv_sqrt*e;
+    e = S_inv_sqrt*e;
+    
+    r = e.data();
 
-    for (int ii =0; ii < tModel::State::meas_dim_; ++ii) {
-        r[ii] = e(ii,0);
-    }
+    return true;
 
     }
 
     private:
     int src_index_;
-    Eigen::Matrix<double,tModel::g_dim_*2,1> x_vector_;  /** < Places x in an Eigen vector */  
-    Eigen::MatrixXd e_;         /** < Measurement error */  
-    Eigen::MatrixXd S_inv_sqrt; /** < The square root  of the inverse innovation Covariance */
     Meas m_;                    /** < Measurement */
     double dt_;                 /** < Time interval between the current time and the measurement time */
     const System<tModel>& sys_; /** < A reference to the object containing all of R-RANSAC data */
-    typename tModel::State state_; /** < The representation of x as a state */
 
-    // Matrices to be used
-    Eigen::MatrixXd H_;
-    Eigen::MatrixXd V_;
-    Eigen::MatrixXd F_;
-    Eigen::MatrixXd G_;
-    Eigen::MatrixXd HF_;
-    Eigen::MatrixXd HG_;
+
 
 };
 
 
 };
 
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template<typename tModel, template<typename > typename tSeed>     
+typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys) {
+
+    double x[tModel::State::g_type_::dim_*2];
+    GenerateSeedPolicy(meas_subset, sys, x, tModel::State::g_type_::dim_*2);
+
+    ceres::Problem problem;
+
+    for (auto iter = meas_subset.begin(); iter != meas_subset.end(); ++iter) {
+        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,tModel::State::g_type_::dim_*2,tModel::State::g_type_::dim_*2>(new CostFunctor(*iter->inner_it, sys));
+        problem.AddResidualBlock(cost_function, nullptr, x);
+    }
+
+
+
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::DENSE_QR;
+    options.minimizer_progress_to_stdout = true;
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
+
+    std::cout << summary.BriefReport() << "\n";
+    std::cout << "x: " << std::endl;
+
+    Eigen::Matrix<double, tModel::g_dim_*2, 1> x_vector;
+    typename tModel::State state;
+
+    //     // Convert array to Eigen vector
+    // for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
+    //     x_vector(ii,0) = x[ii];
+    x_vector = Eigen::Map<Eigen::Matrix<double,tModel::g_dim_*2,1>>(x);
+
+    // Convert to state, propagate state to the time step of the measurement and get the error
+    // between the estimated measurement and the measurement
+    state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::State::g_type_::dim_,1));
+    state.u_.data_ = x_vector.block(tModel::State::g_type_::dim_,0, tModel::State::u_type_::dim_,1);
+
+    std::cout << "g: " << std::endl << state.g_.data_ << std::endl;
+    std::cout << "u:" << std::endl << state.u_.data_ << std::endl;
+
+   return state;
+
+    
+
+}
 
 
 } // namespace rransac
-
-
-
-
-
-
 #endif // RRANSAC_TRACK_INITIALIZATION_LMLE_POLICIES_NONLINEAR_LMLE_POLICY_H_

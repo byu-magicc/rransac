@@ -107,9 +107,9 @@ for (auto outer_iter = measurements.begin(); outer_iter != measurements.end(); +
 sys.current_time_ = start_time + steps*dt;
 
 // Generate Current state estimate
-LinearLMLEPolicy<Model> policy;
+NonLinearLMLEPolicy<Model, SeedNULL> policy;
 
-typename Model::State state = policy.GenerateStateEstimatePolicy(meas_subset,sys);
+typename Model::State state = policy.GenerateHypotheticalStateEstimatePolicy(meas_subset,sys);
 
 ASSERT_LT( state.OMinus(x.state_).norm(), 1e-1 );
 

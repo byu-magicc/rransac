@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/src/**",
                 "/usr/include/eigen3",
-                "/usr/include/gtest"
+                "/usr/include/gtest",
+                "/usr/local/include/ceres"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",
