@@ -62,30 +62,30 @@ struct CostFunctor {
     bool operator() (const T* const x,  T* r)  const {
 
     // Convert array to Eigen vector
-    const Eigen::Map<const Eigen::Matrix<T,tModel::g_dim_*2,1>> x_vector(x);
-    // for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
-    //     x_vector_(ii,0) = x[ii];
+    Eigen::Matrix<T,tModel::g_dim_*2,1> x_vector;
+    for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
+        x_vector(ii,0) = x[ii];
 
     // Convert to state, propagate state to the time step of the measurement and get the error
     // between the estimated measurement and the measurement
     typename tModel::State state;
-    state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::g_dim_,1));
-    state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
-    state = tModel::PropagateState(state,dt_);
-    Eigen::Matrix<T,Eigen::Dynamic,1> e = sys_.sources_[src_index_].OMinus(m_, sys_.sources_[src_index_].GetEstMeas(state));
+    // state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::g_dim_,1));
+    // state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
+    // state = tModel::PropagateState(state,dt_);
+    // Eigen::Matrix<T,Eigen::Dynamic,1> e = sys_.sources_[src_index_].OMinus(m_, sys_.sources_[src_index_].GetEstMeas(state));
 
-    // Construct innovation covariance
-    Eigen::MatrixXd H = tModel::GetLinObsMatState(sys_.sources_,state,src_index_);
-    Eigen::MatrixXd V = tModel::GetLinObsMatSensorNoise(sys_.sources_,state,src_index_);
-    Eigen::MatrixXd F = tModel::GetLinTransFuncMatState(state,dt_);
-    Eigen::MatrixXd G = tModel::GetLinTransFuncMatNoise(state,dt_);
-    Eigen::MatrixXd HF = H*F;
-    Eigen::MatrixXd HG = H*G;
-    Eigen::MatrixXd S_inv_sqrt = (V*sys_.sources_[src_index_].params_.meas_cov_*V.transpose() + HG*sys_.params_.process_noise_covariance_ *HG.transpose()).inverse().sqrt();
+    // // Construct innovation covariance
+    // Eigen::MatrixXd H = tModel::GetLinObsMatState(sys_.sources_,state,src_index_);
+    // Eigen::MatrixXd V = tModel::GetLinObsMatSensorNoise(sys_.sources_,state,src_index_);
+    // Eigen::MatrixXd F = tModel::GetLinTransFuncMatState(state,dt_);
+    // Eigen::MatrixXd G = tModel::GetLinTransFuncMatNoise(state,dt_);
+    // Eigen::MatrixXd HF = H*F;
+    // Eigen::MatrixXd HG = H*G;
+    // Eigen::MatrixXd S_inv_sqrt = (V*sys_.sources_[src_index_].params_.meas_cov_*V.transpose() + HG*sys_.params_.process_noise_covariance_ *HG.transpose()).inverse().sqrt();
     
-    // Compute Normalized Error
-    e = S_inv_sqrt*e;
-    
+    // // Compute Normalized Error
+    // e = S_inv_sqrt*e;
+    Eigen::Matrix<T,Eigen::Dynamic,1> e = x_vector;
     r = e.data();
 
     return true;
