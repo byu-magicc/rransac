@@ -27,11 +27,6 @@ struct SourceParameters {
 
     unsigned int source_index_;       /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
     MeasurementTypes type_;          /** < The measurement type @see MeasurementTypes */
-
-
-    bool meas_cov_fixed_;            /** < Flag used to indicate if the measurement covariance is the same for every measurement. 
-                                      If it is, then the measurement covariance needs to be given to the source. If it isn't, 
-                                      then the measurement covariance needs to be given with the measurement. @see Meas */
                                       
     Eigen::MatrixXd meas_cov_;       /** < The fixed measurement covariance.*/
 
@@ -58,7 +53,6 @@ struct SourceParameters {
 
     // Sets some parameters to default
     SourceParameters() {
-        meas_cov_fixed_ = true;
         expected_num_false_meas_ = 0.1;
         probability_of_detection_ = 0.9;
         gate_probability_ = 0.8;
@@ -119,7 +113,7 @@ public:
     /** Returns the jacobian of the observation function w.r.t. the states */
     static MatXd GetLinObsMatState(const State& state, const MeasurementTypes type) {
        
-        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatState(state, type);
+        return tDerived::DerivedGetLinObsMatState(state, type);
     }                            
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
@@ -129,7 +123,7 @@ public:
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
     static MatXd GetLinObsMatSensorNoise(const State& state, const MeasurementTypes type)  {
-        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state, type);
+        return tDerived::DerivedGetLinObsMatSensorNoise(state, type);
     }                      
 
     /** Computes the estimated measurement given a state */
@@ -139,7 +133,7 @@ public:
 
     /** Computes the estimated measurement given a state */
     static Meas<tDataType> GetEstMeas(const State& state, const MeasurementTypes type)  {
-        return static_cast<const tDerived*>(this)->DerivedGetEstMeas(state);
+        return tDerived::DerivedGetEstMeas(state,type);
     } 
 
     /**
@@ -147,25 +141,17 @@ public:
      * @param m1 a measurement
      * @param m2 a measurement
      */
-    static Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
-        return static_cast<const tDerived*>(this)->DerivedOMinus(m1, m2);
+    static MatXd OMinus(const Meas<tDataType>& m1, const Meas<tDataType>& m2) {
+        return tDerived::DerivedOMinus(m1, m2);
     } 
 
-    /**
-     * Maps the pose to Euclidean space. If the pose is already Euclidean space, then it returns the pose; otherwise
-     * it returns the mapped pose.
-     * @param Meas The measurement whose pose needs to be transformed
-     */
-    Eigen::MatrixXd ToEuclidean(const Meas& m)  {
-        return static_cast<tDerived*>(this)->DerivedToEuclidean(m); 
-    }
 
    /**
      * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
      * @param state The state that serves as the mean in the Gaussian distribution
      * @param meas_std The measurement covariance
      */ 
-    Meas GenerateRandomMeasurement(const State& state, const Eigen::MatrixXd& meas_std){
+    Meas<tDataType> GenerateRandomMeasurement(const State& state, const MatXd& meas_std){
         return static_cast<tDerived*>(this)->DerivedGenerateRandomMeasurement(state,meas_std);
     }
 
@@ -173,7 +159,7 @@ public:
      * Generates a vector of random numbers from a Gaussian distribution of zero mean and 1 standard deviation
      * @param randn_nums The Gaussian random numbers to be generated
      */ 
-    Eigen::MatrixXd GaussianRandomGenerator(const int size);
+    MatXd GaussianRandomGenerator(const int size);
 
     /**
      * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
@@ -197,7 +183,7 @@ public:
      * \return Returns temporal distance between two measurements
      */
    
-    static double GetTemporalDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
+    static tDataType GetTemporalDistance(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
 
     /**
      * Calculates the geodesic distance between two measurements depending on the type of measurement.
@@ -207,7 +193,7 @@ public:
      * \return Returns spatial distance between two measurements
      */
     
-    double GetSpatialDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
+    tDataType GetSpatialDistance(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
     /**
      * Finds the geodesic distance between two measurements of different time stamps and normalizes by the temproal distance.
@@ -216,7 +202,7 @@ public:
      * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
      * \return Returns spatial distance between two measurements
      */
-    double GetVelocityDistance(const Meas& meas1, const Meas& meas2, const Parameters& params) const {
+    tDataType GetVelocityDistance(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) const {
         if (meas1.time_stamp == meas2.time_stamp) {
             throw std::runtime_error("SourceBase::GetVelocityDistance Measurements have the same time stamp");
         } else {
@@ -225,8 +211,8 @@ public:
     }
 
 // protected:
-    Eigen::MatrixXd H_;
-    Eigen::MatrixXd V_;
+    MatXd H_;
+    MatXd V_;
     
 
 // private:
@@ -242,14 +228,14 @@ private:
      */ 
     void VerifySourceParameters(const SourceParameters& params);
 
-    typedef double (*GSDFuncPTR)(const Meas&, const Meas&, const Parameters&);
+    typedef double (*GSDFuncPTR)(const Meas<tDataType>&, const Meas<tDataType>&, const Parameters&);
 
     GSDFuncPTR **gsd_ptr_;
 
-    static double GSD_RN_RN_POS(const Meas& meas1, const Meas& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
-    static double GSD_SEN_SEN_POSE(const Meas& meas1, const Meas& meas2, const Parameters& params){return (State::g_type_::OMinus(meas1.pose,meas2.pose)).norm(); }
-    static double GSD_SEN_SEN_POS(const Meas& meas1, const Meas& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
-    static double GSD_NotImplemented(const Meas& meas1, const Meas& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
+    static double GSD_RN_RN_POS(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
+    static double GSD_SEN_SEN_POSE(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params){return (State::Group::OMinus(meas1.pose,meas2.pose)).norm(); }
+    static double GSD_SEN_SEN_POS(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
+    static double GSD_NotImplemented(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
 
     
 
@@ -258,16 +244,16 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename tState, typename tDerived>
-void SourceBase<tState,tDerived>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
+template<typename tState, typename tDerived, typename tDataType>
+void SourceBase<tState,tDerived, tDataType>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
     this->Init(params);
     this->state_in_surveillance_region_callback_ = state_in_surveillance_region_callback;
 }
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived>
-void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
+template<typename tState, typename tDerived, typename tDataType>
+void SourceBase<tState,tDerived, tDataType>::Init(const SourceParameters& params) {
 
     VerifySourceParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown.
     this->state_in_surveillance_region_callback_ = StateInsideSurveillanceRegionDefaultCallback;
@@ -295,16 +281,16 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived>
-Eigen::MatrixXd  SourceBase<tState, tDerived>::GaussianRandomGenerator(const int size){
+template<typename tState, typename tDerived, typename tDataType>
+Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic>  SourceBase<tState, tDerived,tDataType>::GaussianRandomGenerator(const int size){
 
     return utilities::GaussianRandomGenerator(size);
 }
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived>
-SourceBase<tState, tDerived>::SourceBase() {
+template<typename tState, typename tDerived, typename tDataType>
+SourceBase<tState, tDerived,tDataType>::SourceBase() {
 
     // Generate two dimensional array of function pointers.
     gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
@@ -339,8 +325,8 @@ SourceBase<tState, tDerived>::SourceBase() {
 
 //---------------------------------------------------
 
-template<typename tState, typename tDerived>
-SourceBase<tState, tDerived>::~SourceBase() {
+template<typename tState, typename tDerived, typename tDataType>
+SourceBase<tState, tDerived,tDataType>::~SourceBase() {
 
     // std::cerr << "Destructing" << std::endl;
 
@@ -353,28 +339,26 @@ SourceBase<tState, tDerived>::~SourceBase() {
 
 //---------------------------------------------------
 
-template<typename tState, typename tDerived>
-void SourceBase<tState, tDerived>::VerifySourceParameters(const SourceParameters& params) {
+template<typename tState, typename tDerived, typename tDataType>
+void SourceBase<tState, tDerived, tDataType>::VerifySourceParameters(const SourceParameters& params) {
 
-    // Measurement covariance
-    if (params.meas_cov_fixed_) { // Make sure that the measurement covariance is set properly.
+ 
 
-        if (params.meas_cov_.rows() ==0 ) { // Make sure that it is not empty
-            throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance cannot be empty if the measurement covariance is fixed.");
-        } 
+    if (params.meas_cov_.rows() ==0 ) { // Make sure that it is not empty
+        throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance cannot be empty if the measurement covariance is fixed.");
+    } 
 
-        if (  ((params.meas_cov_ + params.meas_cov_.transpose())/2.0 - params.meas_cov_).norm() > 1e-12 ) {
-            throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not symmetic. ");
-        }
-
-        Eigen::VectorXcd eigen_values = params.meas_cov_.eigenvalues();
-        for (int ii =0; ii < eigen_values.rows(); ++ii){                       // positive definite
-            if(std::real(eigen_values(ii)) <0) {
-                throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not positive definite. ");
-            }
-        }
-
+    if (  ((params.meas_cov_ + params.meas_cov_.transpose())/2.0 - params.meas_cov_).norm() > 1e-12 ) {
+        throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not symmetic. ");
     }
+
+    Eigen::VectorXcd eigen_values = params.meas_cov_.eigenvalues();
+    for (int ii =0; ii < eigen_values.rows(); ++ii){                       // positive definite
+        if(std::real(eigen_values(ii)) <0) {
+            throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not positive definite. ");
+        }
+    }
+
 
     // Expected number of false measurements
     if (params.expected_num_false_meas_ < 0 || params.expected_num_false_meas_ > 1) {

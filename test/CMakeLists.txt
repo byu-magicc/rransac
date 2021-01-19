@@ -60,10 +60,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # ../src/parameters.cpp)
 # target_link_libraries(source_SEN_Pos_VelTest gtest_main )
 
-# add_executable(source_SEN_Pose_TwistTest
-# common/sources/source_SEN_pose_twist_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
+add_executable(source_SEN_Pose_TwistTest
+common/sources/source_SEN_pose_twist_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 
 #---------------------------------------
 # Transformations
@@ -139,11 +139,11 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # ../src/parameters.cpp)
 # target_link_libraries(ransacTest gtest_main )
 
-add_executable(nonlinear_lmle_policyTest 
-track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
-../src/parameters.cpp)
-target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
-)
+# add_executable(nonlinear_lmle_policyTest 
+# track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
+# )
 
 
 

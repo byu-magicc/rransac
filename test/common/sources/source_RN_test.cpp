@@ -9,7 +9,6 @@ TEST(Source_RN, INIT){
 
 // This source should only have states of type RN_rn. Make sure invalid types dont work.
 SourceParameters params;
-params.meas_cov_fixed_ = true;
 params.meas_cov_ = Eigen::Matrix2d::Identity();
 params.expected_num_false_meas_ = 0.1;
 params.type_ = MeasurementTypes::RN_POS;
@@ -66,7 +65,6 @@ TEST(Source_RN, OTHER){
 
 // Test the functions using R2_r2
 SourceParameters params;
-params.meas_cov_fixed_ = true;
 params.meas_cov_ = Eigen::Matrix2d::Identity();
 params.expected_num_false_meas_ = 0.1;
 params.type_ = MeasurementTypes::RN_POS;
@@ -83,19 +81,24 @@ V1.setIdentity();
 
 ASSERT_EQ(source1.GetLinObsMatState(state),H1);
 ASSERT_EQ(source1.GetLinObsMatSensorNoise(state),V1);
-Meas m = source1.GetEstMeas(state);
+ASSERT_EQ(source1.GetLinObsMatState(state,params.type_),H1);
+ASSERT_EQ(source1.GetLinObsMatSensorNoise(state,params.type_),V1);
+Meas<double> m = source1.GetEstMeas(state);
+ASSERT_EQ(m.pose, state.g_.data_);
+ASSERT_EQ(m.twist, state.u_.data_);
+m.pose.setZero(); 
+m.twist.setZero();
+m = SourceR2::GetEstMeas(state,m.type);
+ASSERT_EQ(m.pose, state.g_.data_);
+m.pose.setZero(); 
+m.twist.setZero();
+m.type = MeasurementTypes::RN_POS_VEL;
+m = SourceR2::GetEstMeas(state,m.type);
 ASSERT_EQ(m.pose, state.g_.data_);
 ASSERT_EQ(m.twist, state.u_.data_);
 
-// Test ToEuclidean
-Meas m2;
-m2.pose = Eigen::Matrix<double,2,1>::Zero();
-m2.pose << 1,2;
-m2.pose_euclidean = source1.ToEuclidean(m2);
-ASSERT_EQ(m2.pose,m2.pose_euclidean);
-
 // Test OMinus
-Meas m3, m4;
+Meas<double> m3, m4;
 m3.pose = Eigen::Matrix<double,2,1>::Random();
 m3.twist = Eigen::Matrix<double,2,1>::Random();
 m4.pose = Eigen::Matrix<double,2,1>::Random();
@@ -107,7 +110,6 @@ error2.block(2,0,2,1) = m3.twist - m4.twist;
 
 
 SourceParameters params2;
-params2.meas_cov_fixed_ = true;
 params2.meas_cov_ = Eigen::Matrix<double,4,4>::Identity();
 params2.expected_num_false_meas_ = 0.1;
 params2.type_ = MeasurementTypes::RN_POS_VEL;
@@ -117,8 +119,11 @@ params2.probability_of_detection_ = 0.9;
 
 SourceR2 source2;
 source2.Init(params2);
-
+m3.type = MeasurementTypes::RN_POS;
+m4.type = MeasurementTypes::RN_POS;
 ASSERT_EQ( source1.OMinus(m3,m4), m3.pose - m4.pose);
+m3.type = MeasurementTypes::RN_POS_VEL;
+m4.type = MeasurementTypes::RN_POS_VEL;
 ASSERT_EQ( source2.OMinus(m3,m4), error2);
 
 // Test Random Measurements
@@ -126,8 +131,8 @@ const int num_rand = 10000;
 double std_scalar = 0.1;
 Eigen::Matrix2d std1 = Eigen::Matrix2d::Identity()*std_scalar;
 Eigen::Matrix4d std2 = Eigen::Matrix4d::Identity()*std_scalar;
-std::vector<Meas> rand_meas1(num_rand);
-std::vector<Meas> rand_meas2(num_rand);
+std::vector<Meas<double>> rand_meas1(num_rand);
+std::vector<Meas<double>> rand_meas2(num_rand);
 std::vector<Eigen::Matrix<double,2,1>> error_1(num_rand);
 std::vector<Eigen::Matrix<double,4,1>> error_2(num_rand);
 Eigen::Matrix<double,2,1> error_mean1;
@@ -140,11 +145,14 @@ error_mean2.setZero();
 // Generate the random measurement, calculate the error between the state and measurement, and get the mean of the error
 for (unsigned long int ii = 0; ii < num_rand; ++ii) {
 
+    rand_meas1[ii].type = MeasurementTypes::RN_POS;
     rand_meas1[ii] = source1.GenerateRandomMeasurement(state,std1);
+    rand_meas2[ii].type = MeasurementTypes::RN_POS_VEL;
     rand_meas2[ii] = source2.GenerateRandomMeasurement(state,std2);
+    
 
-    error_1[ii] = source1.OMinus(rand_meas1[ii], source1.GetEstMeas(state));
-    error_2[ii] = source2.OMinus(rand_meas2[ii], source2.GetEstMeas(state));
+    error_1[ii] = source1.OMinus(rand_meas1[ii], source1.GetEstMeas(state,rand_meas1[ii].type));
+    error_2[ii] = source2.OMinus(rand_meas2[ii], source2.GetEstMeas(state,rand_meas2[ii].type));
     error_mean1+=error_1[ii];
     error_mean2+=error_2[ii];
 
