@@ -15,11 +15,12 @@ namespace rransac
  * 
  */
 
-template <typename tData, typename tDerived>
+template <typename tData, template<typename> typename tDerived, typename tDataType=double>
 class DataTreeBase {
 
 typedef tData Data;
-typedef tDerived Derived;
+typedef tDerived<tDataType> Derived;
+typedef tDataType DataType;
    
 public:
 
@@ -28,7 +29,7 @@ public:
  * @param[in] meas The measurement to be added.
  */
 template <typename tSystem>
-void AddMeasurement(const tSystem& sys, const Meas& meas) {
+void AddMeasurement(const tSystem& sys, const Meas<DataType>& meas) {
     static_cast<tDerived*>(this)->DerivedAddMeasurement(sys, meas);
 } 
 
@@ -38,7 +39,7 @@ void AddMeasurement(const tSystem& sys, const Meas& meas) {
  * measurement.
  */ 
 template <typename tSystem, typename tContainerMeas>
-void AddMeasurements(const tSystem& sys, const tContainerMeas& measurements ){
+void AddMeasurements(const tSystem& sys, const tContainerMeas<DataType>& measurements ){
     for (auto iter = measurements.begin(); iter != measurements.end(); ++iter) {
         AddMeasurement(sys, *iter);
     }

@@ -25,6 +25,7 @@ typedef tData Data;
 typedef tState State;
 typedef tMatCov MatCov;
 typedef tDerived Derived;
+typedef typename tState::DataType DataType;
 
 
 /**
@@ -57,7 +58,7 @@ tData GetData() {
  * Transforms the measurement using data_ from the previous surveillance frame to the current one.
  * @param meas The measurement to be transformed.
  */ 
-void TransformMeasurement(Meas& meas) const {
+void TransformMeasurement(Meas<DataType>& meas) const {
     static_cast<const tDerived*>(this)->DerivedTransformMeasurement(meas);
 }
 

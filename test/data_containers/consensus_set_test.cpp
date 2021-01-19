@@ -2,7 +2,7 @@
 #include "Eigen/Core"
 #include <vector>
 #include "common/measurement/measurement_base.h"
-#include "data_structures/consensus_set.h"
+#include "data_containers/consensus_set.h"
 #include <stdlib.h>
 #include <time.h> 
 #include <chrono>
@@ -25,7 +25,7 @@ class TransformScalar : public TransformBase<double, lie_groups::R2_r2, Eigen::M
 public:
 void DerivedSetData(double data){ data_ = data;}
 
-void DerivedTransformMeasurement(Meas& meas) const{
+void DerivedTransformMeasurement(Meas<double>& meas) const{
     meas.pose = meas.pose*data_;
     meas.twist = meas.twist*data_;
 }
@@ -38,7 +38,7 @@ void TransformTrack(lie_groups::R2_r2& state, Eigen::Matrix4d&cov) const {}
 
 TEST(CONSENSUS_TEST, ADD_MEASUREMENT) {
 
-Meas m1, m2,m3,m4,m5,m6;
+Meas<double> m1, m2,m3,m4,m5,m6;
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
 m3.time_stamp = 0.5;
@@ -47,7 +47,7 @@ m5.time_stamp = 0.2;
 m5.source_index = 1;
 m6.time_stamp = 0.2;
 m6.source_index = 2;
-ConsensusSet<Meas> cs;
+ConsensusSet<Meas<double>> cs;
 
 cs.AddMeasToConsensusSet(m1);
 ASSERT_EQ(cs.consensus_set_.size(), 1);
@@ -64,7 +64,7 @@ ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 
 // m3 should come after m1 and m2
 cs.AddMeasToConsensusSet(m3);
-std::list<std::vector<Meas>>::iterator iter = cs.consensus_set_.begin();
+std::list<std::vector<Meas<double>>>::iterator iter = cs.consensus_set_.begin();
 ASSERT_EQ(cs.consensus_set_.size(), 3);
 ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 ASSERT_EQ((*(++iter)).back().time_stamp, m2.time_stamp);
@@ -120,12 +120,12 @@ TEST(CONSENSUS_TEST, ADD_MEASUREMENTS) {
 
 
 int num_meas = 1000;
-ConsensusSet<Meas> cs;
+ConsensusSet<Meas<double>> cs;
 srand (time(NULL));
-std::vector<Meas> measurements;
+std::vector<Meas<double>> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    Meas m1;
+    Meas<double> m1;
     m1.time_stamp = rand() % 200 - 100;
     measurements.push_back(m1);
 }
@@ -162,9 +162,9 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 TEST(CONSENSUS_TEST, ADD_MEASUREMENTS_SAME_TIME_STAMP) {
 
 
-ConsensusSet<Meas> cs;
-Meas m1,m2,m3,m4,m5;
-std::vector<Meas> mv1, mv2, mv3, mv4, mv5, mv6;
+ConsensusSet<Meas<double>> cs;
+Meas<double> m1,m2,m3,m4,m5;
+std::vector<Meas<double>> mv1, mv2, mv3, mv4, mv5, mv6;
 m1.time_stamp = 0.1;
 m2.time_stamp = -0.1;
 m3.time_stamp = 0.4;
@@ -196,10 +196,10 @@ ASSERT_EQ(iter->size(), 4);
 int num_meas = 1000;
 
 srand (time(NULL));
-std::vector<Meas> measurements;
+std::vector<Meas<double>> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    Meas m;
+    Meas<double> m;
     m.time_stamp = rand() % 200 - 100;
     measurements.clear();
     measurements.push_back(m);
@@ -236,7 +236,7 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 
 TEST(CONSENSUS_TEST, PRUNE_CONSENSUS_SET) {
 
-Meas m1, m2,m3,m4,m5,m6;
+Meas<double> m1, m2,m3,m4,m5,m6;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -244,9 +244,9 @@ m3.time_stamp = 0.5;
 m4.time_stamp = -0.1;
 m5.time_stamp = 0.2;
 m6.time_stamp = 0.2;
-std::vector<Meas> meas {m1,m2,m3,m4,m5,m6};
+std::vector<Meas<double>> meas {m1,m2,m3,m4,m5,m6};
 
-ConsensusSet<Meas> cs;
+ConsensusSet<Meas<double>> cs;
 cs.AddMeasurementsToConsensusSet(meas);
 
 // Remove all measurements
@@ -277,7 +277,7 @@ ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m5.time_stamp);
 
 TEST(CONSENSUS_TEST, TRANSFORM_CONSENSUS_SET) {
 
-Meas m1, m2,m3,m4,m5,m6;
+Meas<double> m1, m2,m3,m4,m5,m6;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -300,9 +300,9 @@ m4.twist = Eigen::Vector2d::Random();
 m5.twist = Eigen::Vector2d::Random();
 m6.twist = Eigen::Vector2d::Random();
 
-std::vector<Meas> meas {m1,m2,m3,m4,m5,m6};
+std::vector<Meas<double>> meas {m1,m2,m3,m4,m5,m6};
 
-ConsensusSet<Meas> cs, cs_copy;
+ConsensusSet<Meas<double>> cs, cs_copy;
 cs.AddMeasurementsToConsensusSet(meas);
 
 
@@ -332,7 +332,7 @@ ASSERT_EQ( (*iter)[0].pose, m3.pose*data  );
 
 TEST(CONSENSUS_TEST, MERGE_CONSENSUS_SETS) {
 
-Meas m1,m2,m3,m4,m5,m6,m7,m8,m9,m10;
+Meas<double> m1,m2,m3,m4,m5,m6,m7,m8,m9,m10;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -346,17 +346,17 @@ m9.time_stamp = 0.3;
 m10.time_stamp = 0.6;
 
 
-std::vector<Meas> meas1 {m1,m2,m3,m4,m5,m6};
-std::vector<Meas> meas2 {m7,m8,m9,m10};
+std::vector<Meas<double>> meas1 {m1,m2,m3,m4,m5,m6};
+std::vector<Meas<double>> meas2 {m7,m8,m9,m10};
 
-ConsensusSet<Meas> cs1;
-ConsensusSet<Meas> cs2;
-ConsensusSet<Meas> merged_cs;
+ConsensusSet<Meas<double>> cs1;
+ConsensusSet<Meas<double>> cs2;
+ConsensusSet<Meas<double>> merged_cs;
 
 cs1.AddMeasurementsToConsensusSet(meas1);
 cs2.AddMeasurementsToConsensusSet(meas2);
 
-merged_cs = ConsensusSet<Meas>::MergeConsensusSets(cs1,cs2);
+merged_cs = ConsensusSet<Meas<double>>::MergeConsensusSets(cs1,cs2);
 
 ASSERT_EQ(merged_cs.consensus_set_.size(), 8);
 

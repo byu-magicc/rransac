@@ -20,6 +20,7 @@ class SourceSENPosVel: public SourceBase<tState,SourceSENPosVel<tState,tDataType
 public:
 
 typedef tState State;
+typedef tDataType DataType;
 typedef Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 static constexpr unsigned int l_dim_ =  tState::Algebra::dim_a_vel_ + 1;
 static constexpr unsigned int meas_dim_ = tState::Group::dim_pos_;

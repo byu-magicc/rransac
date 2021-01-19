@@ -26,7 +26,7 @@ homography.block(2,2,1,1)<< 1;
 
 trans_.Init();
 trans_.SetData(homography);
-Meas m;
+Meas<double> m;
 
 Eigen::Matrix<double,1,1> time_;
 
@@ -49,7 +49,7 @@ cluster_.AddMeasurement(m);
 typedef TransformHomography<R2_r2> Transform;
 
 Transform trans_;
-Cluster cluster_;
+Cluster<double> cluster_;
 Parameters params_;
 
 unsigned int num_meas_ = 1000;
@@ -86,7 +86,7 @@ for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end()
 
 // Construct a vector of measurements to add.
 Eigen::Matrix<double,1,1> time;
-std::vector<Meas> vec_meas(num_additional_meas);
+std::vector<Meas<double>> vec_meas(num_additional_meas);
 for (auto& m : vec_meas) {
     time.setRandom();
     m.time_stamp = std::round(time(0,0)*10);
@@ -99,8 +99,8 @@ cluster_.AddMeasurements(vec_meas);
 
 
 // Construct a list of measurements to add.
-std::list<Meas> list_meas(num_additional_meas);
-Meas list_m;
+std::list<Meas<double>> list_meas(num_additional_meas);
+Meas<double> list_m;
 for (auto iter = list_meas.begin(); iter != list_meas.end(); ++iter) {
     time.setRandom();
     list_m.time_stamp = std::round(time(0,0)*10);
@@ -137,9 +137,9 @@ ASSERT_EQ(cluster_.Size(), size);
 /////////////////////////////////
 
 // Remove random measurements
-typename Cluster::IteratorPair iter_pair;
-std::vector<Cluster::IteratorPair> iter_pairs;
-std::vector<Meas> meas_to_remove;
+typename Cluster<double>::IteratorPair iter_pair;
+std::vector<Cluster<double>::IteratorPair> iter_pairs;
+std::vector<Meas<double>> meas_to_remove;
 for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end(); ++outer_iter) {
 
     time.setRandom();
@@ -235,18 +235,18 @@ params.cluster_velocity_threshold_ = 1;
 params.cluster_position_threshold_ = 1;
 params.cluster_time_threshold_ = 2;
 
-Cluster cluster;
+Cluster<double> cluster;
 
 SourceR2 source; // We need the source for calculating distances
 SourceParameters source_params;
 source_params.expected_num_false_meas_ = 0.1;
 source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.8;
-source_params.meas_cov_fixed_ = false;
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.type_ = MeasurementTypes::RN_POS;
 source.Init(source_params);
 
-Meas m, new_meas;
+Meas<double> m, new_meas;
 unsigned int num_meas = 10;
 m.type = MeasurementTypes::RN_POS;
 new_meas.type = MeasurementTypes::RN_POS;

@@ -20,6 +20,7 @@ class SourceRN : public SourceBase<tState, SourceRN<tState,tDataType>, tDataType
 public:
 
 typedef tState State;
+typedef tDataType DataType;
 typedef Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 static constexpr unsigned int meas_dim_ = tState::Group::dim_;
 

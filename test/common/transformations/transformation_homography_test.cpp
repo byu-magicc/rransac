@@ -72,14 +72,14 @@ TEST(TransformHomographyTest, R2_r2_TransformationR2) {
 TransformHomography<R2_r2> trans;
 
 // Construct Homography.
-SO3 R = SO3::Random();
+SO3<double> R = SO3<double>::Random();
 Eigen::Matrix3d H{R.data_};
 
 trans.Init();
 trans.SetData(H);
 
 // Construct pixel measurement
-Meas m1,m2,m3;
+Meas<double> m1,m2,m3;
 m1.pose = Eigen::Matrix<double,2,1>::Random();
 m1.twist = Eigen::Matrix<double,2,1>::Random();
 m1.type = MeasurementTypes::RN_POS_VEL;
@@ -199,7 +199,7 @@ while (state.u_.data_.norm() < 1e-5) {
 }
 
 // Construct Homography.
-SO2 R_psi = SO2::Random();
+SO2<double> R_psi = SO2<double>::Random();
 Eigen::Matrix<double,3,1> t,n;
 t.setRandom();
 n << 0,0,1;

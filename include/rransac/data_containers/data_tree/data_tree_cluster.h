@@ -7,9 +7,12 @@
 namespace rransac
 {
 
-class DataTreeClusters : public DataTreeBase<std::list<Cluster>, DataTreeClusters> {
+template<typename tDataType = double>
+class DataTreeClusters : public DataTreeBase<std::list<Cluster>, DataTreeClusters, tDataType> {
 
 public:
+
+typedef tDataType DataType;
 
 /**
  * \struct MeasurementLocationInfo
@@ -18,8 +21,8 @@ public:
  */ 
 struct MeasurementLocationInfo {
 
-    std::list<Cluster>::iterator cluster_iter;
-    Cluster::IteratorPair iter_pair;
+    std::list<Cluster<DataType>>::iterator cluster_iter;
+    Cluster<DataType>::IteratorPair iter_pair;
 
 };
 
@@ -28,7 +31,7 @@ struct MeasurementLocationInfo {
  * @param[in] meas The measurement to be added.
  */
 template <typename tSystem>
-void DerivedAddMeasurement(const tSystem& sys, const Meas& meas);
+void DerivedAddMeasurement(const tSystem& sys, const Meas<DataType>& meas);
 
 /**
  * Removes a measurement from the data tree using meas_info. If a cluster is empty after removing a measurement, the cluster is removed.
@@ -70,7 +73,7 @@ private:
  * @param[in] iter1 An iterator to a cluster;
  * @param[in] iter2 An iterator to a cluster
  */ 
-void MergeClusters(const std::list<Cluster>::iterator iter1, const std::list<Cluster>::iterator iter2);
+void MergeClusters(const typename std::list<Cluster<DataType>>::iterator iter1, const typename std::list<Cluster<DataType>>::iterator iter2);
 
 };
 
@@ -78,8 +81,9 @@ void MergeClusters(const std::list<Cluster>::iterator iter1, const std::list<Clu
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename tSystem>
-void DataTreeClusters::DerivedAddMeasurement(const tSystem& sys, const Meas& meas) {
+template<typename tDataType>
+template<typename tSystem>
+void DataTreeClusters<tDataType>::DerivedAddMeasurement(const tSystem& sys, const Meas<tDataType>& meas) {
 
     std::vector<std::list<Cluster>::iterator> neighbor_clusters;
 
@@ -110,8 +114,8 @@ void DataTreeClusters::DerivedAddMeasurement(const tSystem& sys, const Meas& mea
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-
-void DataTreeClusters::MergeClusters(const std::list<Cluster>::iterator iter1, const std::list<Cluster>::iterator iter2) {
+template<typename tDataType>
+void DataTreeClusters<tDataType>::MergeClusters(const typename std::list<Cluster<tDataType>>::iterator iter1, const typename std::list<Cluster<tDataType>>::iterator iter2) {
 
     for(auto outer_iter = iter2->data_.begin(); outer_iter != iter2->data_.end(); ++outer_iter ) {
         for (auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
@@ -124,8 +128,8 @@ void DataTreeClusters::MergeClusters(const std::list<Cluster>::iterator iter1, c
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-
-void DataTreeClusters::DerivedRemoveMeasurement(const MeasurementLocationInfo& meas_info) {
+template<typename tDataType>
+void DataTreeClusters<tDataType>::DerivedRemoveMeasurement(const MeasurementLocationInfo& meas_info) {
 
     meas_info.cluster_iter->RemoveMeasurement(meas_info.iter_pair);
     if (meas_info.cluster_iter->Size() == 0)
@@ -136,8 +140,9 @@ void DataTreeClusters::DerivedRemoveMeasurement(const MeasurementLocationInfo& m
 
 //-----------------------------------------------------------------------------------------------------------------------
 
-template <typename tSystem>
-void DataTreeClusters::DerivedConstructClusters(tSystem& sys) {
+template<typename tDataType>
+template<typename tSystem>
+void DataTreeClusters<tDataType>::DerivedConstructClusters(tSystem& sys) {
 
     sys.clusters_.clear();
     for(auto cluster_iter = this->data_.begin(); cluster_iter != this->data_.end(); ++cluster_iter) {
@@ -149,8 +154,9 @@ void DataTreeClusters::DerivedConstructClusters(tSystem& sys) {
 
 //-----------------------------------------------------------------------------------------------------------------------
 
+template<typename tDataType>
 template <typename tSystem>
-void DataTreeClusters::DerivedPruneDataTree(const tSystem sys, const double expiration_time) {
+void DataTreeClusters<tDataType>::DerivedPruneDataTree(const tSystem sys, const double expiration_time) {
     for(auto iter = this->data_.begin(); iter != this->data_.end(); ++iter) {
         double size_diff = iter->Size();
         iter->PruneCluster(expiration_time);

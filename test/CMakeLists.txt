@@ -60,10 +60,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # ../src/parameters.cpp)
 # target_link_libraries(source_SEN_Pos_VelTest gtest_main )
 
-add_executable(source_SEN_Pose_TwistTest
-common/sources/source_SEN_pose_twist_test.cpp
-../src/parameters.cpp)
-target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
+# add_executable(source_SEN_Pose_TwistTest
+# common/sources/source_SEN_pose_twist_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 
 #---------------------------------------
 # Transformations
@@ -78,10 +78,10 @@ target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # Model
 #---------------------------------------
 
-# add_executable(model_baseTest
-# common/models/model_base_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(model_baseTest gtest_main )
+add_executable(model_baseTest
+common/models/model_base_test.cpp
+../src/parameters.cpp)
+target_link_libraries(model_baseTest gtest_main )
 
 # add_executable(model_baseTest2
 # common/models/model_base_test2.cpp
@@ -97,10 +97,10 @@ target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # Cluster 
 #---------------------------------------
 
-# add_executable(cluster_listTest 
+# add_executable(cluster_Test 
 # data_containers/cluster_test.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(cluster_listTest gtest_main )
+# target_link_libraries(cluster_Test gtest_main )
 
 #---------------------------------------
 # Data Trees

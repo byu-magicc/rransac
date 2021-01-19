@@ -26,7 +26,7 @@ SourceParameters source_params;
 source_params.expected_num_false_meas_ = 0.1;
 source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.8;
-source_params.meas_cov_fixed_ = false;
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.type_ = MeasurementTypes::RN_POS;
 source.Init(source_params);
 
@@ -54,7 +54,7 @@ m_.pose = MatData::Zero();
 }
 
 System<Model> sys_;
-Meas m_;
+Meas<double> m_;
 
 };
 
@@ -75,15 +75,15 @@ ASSERT_EQ(sys_.data_tree_.Size(), size);
 ASSERT_EQ(sys_.data_tree_.data_.front().data_.front().front().pose,m_.pose);
 
 // Create three clusters of 10 measurements that are disjoint by a spacial distance of three;
-Meas m1 = m_;
+Meas<double> m1 = m_;
 m1.pose << 0,0;
 
-Meas m2 = m_;
+Meas<double> m2 = m_;
 m2.pose << 3,0;
 sys_.data_tree_.AddMeasurement(sys_, m2);
 ++size;
 
-Meas m3 = m_;
+Meas<double> m3 = m_;
 m3.pose << sqrt(9- pow(1.5,2)), sqrt(9- pow(1.5,2));
 sys_.data_tree_.AddMeasurement(sys_, m3);
 ++size;

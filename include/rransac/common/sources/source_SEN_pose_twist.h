@@ -19,6 +19,7 @@ class SourceSENPoseTwist : public SourceBase<tState,SourceSENPoseTwist<tState>> 
 public:
 
 typedef tState State;
+typedef tDataType DataType;
 typedef Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 static constexpr unsigned int meas_dim_ = tState::Group::dim_;
 

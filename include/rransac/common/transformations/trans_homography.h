@@ -20,17 +20,21 @@ constexpr int TransformHomographyCovDim(int state_dim) {
 */
 
 template<class tState>
-class TransformHomography : public TransformBase<Eigen::Matrix3d, tState, Eigen::Matrix<double,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, TransformHomography<tState>> {
+class TransformHomography : public TransformBase<Eigen::Matrix<typename tState::DataType,3,3>, tState, Eigen::Matrix<typename tState::DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, TransformHomography<tState>> {
 
 public:
-
-typedef Eigen::Matrix<double,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov;
+typedef typename tState::DataType DataType;
+typedef Eigen::Matrix<DataType,2,1> Vec2d;
+typedef Eigen::Matrix<DataType,2,2> Mat2d;
+typedef Eigen::Matrix<DataType,3,3> Mat3d;
+typedef Eigen::Matrix<DataType,4,4> Mat4d;
+typedef Eigen::Matrix<DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov;
 
 // Components of the Homograpy H = [H1, h2; h3_T^T, h4] where T stands for transpose.
 Eigen::Matrix2d H1_;
-Eigen::Matrix<double,2,1> h2_;
-Eigen::Matrix<double,1,2> h3_T_;
-Eigen::Matrix<double,1,1> h4_;
+Eigen::Matrix<DataType,2,1> h2_;
+Eigen::Matrix<DataType,1,2> h3_T_;
+Eigen::Matrix<DataType,1,1> h4_;
 
 
 void DerivedInit() {
@@ -42,7 +46,7 @@ void DerivedInit() {
  * opportunity to perform other calculations using the data. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void DerivedSetData(Eigen::Matrix3d data) {
+void DerivedSetData(Mat3d data) {
     this->data_ = data;
     H1_ = data.block(0,0,2,2);
     h2_ = data.block(0,2,2,1);
@@ -54,10 +58,10 @@ void DerivedSetData(Eigen::Matrix3d data) {
  * Transforms the measurement using data_ from the previous surveillance frame to the current one.
  * @param meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(Meas& meas) const {
+void DerivedTransformMeasurement(Meas<DataType>& meas) const {
 
     if (meas.type == MeasurementTypes::RN_POS_VEL) {
-        Eigen::Matrix2d&& tmp = ConstructTranslationalVelTransform(meas.pose);
+        Mat2d&& tmp = ConstructTranslationalVelTransform(meas.pose);
         meas.twist = tmp*meas.twist;
     }
 
@@ -79,8 +83,8 @@ void DerivedTransformTrack(tState& state, MatCov& cov) const {
  * Transforms the position of the pixel from the previous frame to the current frame
  * @param pos The pixel location
  */ 
-Eigen::Matrix<double,2,1> TransformPosition(const Eigen::Matrix<double,2,1>& pos) const{
-    double tmp = (h3_T_*pos + h4_)(0,0);
+Vec2d TransformPosition(const Vec2d& pos) const{
+    DataType tmp = (h3_T_*pos + h4_)(0,0);
     return (H1_*pos + h2_)/tmp;
 }
 
@@ -89,8 +93,8 @@ Eigen::Matrix<double,2,1> TransformPosition(const Eigen::Matrix<double,2,1>& pos
  * the current pixel position
  * @param pos The pixel location
  */ 
-Eigen::Matrix2d ConstructTranslationalVelTransform(const Eigen::Matrix<double,2,1>& pos) const {
-    double&& tmp = (h3_T_*pos + h4_)(0,0);
+Mat2d ConstructTranslationalVelTransform(const Vec2d& pos) const {
+    DataType&& tmp = (h3_T_*pos + h4_)(0,0);
     return (tmp*H1_ - (H1_*pos +h2_)*h3_T_)/(tmp*tmp);
 }
 
@@ -99,25 +103,25 @@ Eigen::Matrix2d ConstructTranslationalVelTransform(const Eigen::Matrix<double,2,
  * @param pos The pixel location
  * @param vel The pixel velocity
  */ 
-Eigen::Matrix2d ConstructCovTrans12(const Eigen::Matrix<double,2,1>& pos, const Eigen::Matrix<double,2,1>& vel) const {
-    double&& tmp = (h3_T_*pos + h4_)(0,0);
-    double&& tmp2 = tmp*tmp;
-    double&& tmp3 = tmp2*tmp;
-    return 2.0*(H1_*pos + h2_)*(h3_T_*vel)*h3_T_/tmp3 - H1_*(vel*h3_T_)/tmp2 - H1_*(h3_T_*vel)/tmp2;
+Mat2d ConstructCovTrans12(const Vec2d& pos, const Vec2d& vel) const {
+    DataType&& tmp = (h3_T_*pos + h4_)(0,0);
+    DataType&& tmp2 = tmp*tmp;
+    DataType&& tmp3 = tmp2*tmp;
+    return static_cast<DataType>(2.0)*(H1_*pos + h2_)*(h3_T_*vel)*h3_T_/tmp3 - H1_*(vel*h3_T_)/tmp2 - H1_*(h3_T_*vel)/tmp2;
 }
 
 /**
  * Constructs the new rotation matrix using the transformed velocity
  * @param vel_transformed The velocity transformed into the current surveillance frame
  */ 
-Eigen::Matrix2d TransformRotation(const Eigen::Matrix<double,2,1>& vel_transformed) const {
+Mat2d TransformRotation(const Vec2d& vel_transformed) const {
 
     // The velocity is small so set the rotation to identity.
     if (vel_transformed.norm() == 0)
-        return Eigen::Matrix2d::Identity();
+        return Mat2d::Identity();
 
-    Eigen::Matrix<double,2,1> tmp = vel_transformed.normalized();
-    Eigen::Matrix2d R_transformed;
+    Vec2d tmp = vel_transformed.normalized();
+    Mat2d R_transformed;
     R_transformed << tmp(0), -tmp(1), tmp(1), tmp(0);
     return R_transformed;
 
@@ -130,13 +134,13 @@ Eigen::Matrix2d TransformRotation(const Eigen::Matrix<double,2,1>& vel_transform
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 template<>
-void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<double,4,4>& cov) const {
+void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<typename lie_groups::R2_r2::DataType,4,4>& cov) const {
 
 
-    Eigen::Matrix2d&& G = ConstructTranslationalVelTransform(state.g_.data_);
+    Mat2d&& G = ConstructTranslationalVelTransform(state.g_.data_);
     
     // Transform the covariance
-    Eigen::Matrix4d cov_trans;    // matrix used to transform the covariance
+    Mat4d cov_trans;    // matrix used to transform the covariance
     cov_trans.block(0,0,2,2) = G;
     cov_trans.block(2,2,2,2) = G;
     cov_trans.block(0,2,2,2).setZero();
@@ -155,7 +159,7 @@ void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 template<>
-void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups::SE2_se2& state, Eigen::Matrix<double,5,5>& cov) const {
+void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups::SE2_se2& state, Eigen::Matrix<typename lie_groups::SE2_se2::DataType,5,5>& cov) const {
         
     // Constraining the Homomgraphy to SE2 greatly simplifies the transformation.
 
@@ -173,8 +177,8 @@ void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups:
 
     
     // Transform the covariance
-    double&& alpha = 1/h4_(0);
-    Eigen::Matrix<double,5,5> T;
+    DataType&& alpha = static_cast<DataType>(1.0)/h4_(0);
+    Eigen::Matrix<DataType,5,5> T;
     T.setZero();
     T.diagonal() << alpha, alpha, 1, alpha, 1;
     cov = T*cov*T.transpose();
