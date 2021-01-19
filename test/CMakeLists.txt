@@ -48,26 +48,22 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_executable(source_baseTest
 # common/sources/source_base_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(source_baseTest lie_groups)
-# target_link_libraries(source_baseTest gtest_main lie_groups)
+# target_link_libraries(source_baseTest gtest_main )
 
 # add_executable(source_RNTest
 # common/sources/source_RN_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(source_RNTest lie_groups)
-# target_link_libraries(source_RNTest gtest_main lie_groups)
+# target_link_libraries(source_RNTest gtest_main )
 
 # add_executable(source_SEN_Pos_VelTest
 # common/sources/source_SEN_pos_vel_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(source_SEN_Pos_VelTest lie_groups)
-# target_link_libraries(source_SEN_Pos_VelTest gtest_main lie_groups)
+# target_link_libraries(source_SEN_Pos_VelTest gtest_main )
 
 # add_executable(source_SEN_Pose_TwistTest
 # common/sources/source_SEN_pose_twist_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(source_SEN_Pose_TwistTest lie_groups)
-# target_link_libraries(source_SEN_Pose_TwistTest gtest_main lie_groups)
+# target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 
 #---------------------------------------
 # Transformations
@@ -76,8 +72,7 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_executable(trans_homographyTest
 # common/transformations/transformation_homography_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(trans_homographyTest lie_groups)
-# target_link_libraries(trans_homographyTest gtest_main lie_groups)
+# target_link_libraries(trans_homographyTest gtest_main )
 
 #---------------------------------------
 # Model
@@ -86,20 +81,17 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_executable(model_baseTest
 # common/models/model_base_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(model_baseTest lie_groups)
-# target_link_libraries(model_baseTest gtest_main lie_groups)
+# target_link_libraries(model_baseTest gtest_main )
 
 # add_executable(model_baseTest2
 # common/models/model_base_test2.cpp
 # ../src/parameters.cpp)
-# add_dependencies(model_baseTest2 lie_groups)
-# target_link_libraries(model_baseTest2 gtest_main lie_groups)
+# target_link_libraries(model_baseTest2 gtest_main )
 
 # add_executable(model_managerTest 
 # common/models/model_manager_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(model_managerTest lie_groups)
-# target_link_libraries(model_managerTest gtest_main lie_groups)
+# target_link_libraries(model_managerTest gtest_main )
 
 #---------------------------------------
 # Cluster 
@@ -108,8 +100,7 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_executable(cluster_listTest 
 # data_containers/cluster_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(cluster_listTest lie_groups)
-# target_link_libraries(cluster_listTest gtest_main lie_groups)
+# target_link_libraries(cluster_listTest gtest_main )
 
 #---------------------------------------
 # Data Trees
@@ -118,8 +109,7 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_executable(data_tree_clustersTest 
 # data_containers/data_tree/data_tree_clusters_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(data_tree_clustersTest lie_groups)
-# target_link_libraries(data_tree_clustersTest gtest_main lie_groups)
+# target_link_libraries(data_tree_clustersTest gtest_main )
 
 
 #---------------------------------------
@@ -128,14 +118,12 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_executable(cluster_data_tree_data_associationTest 
 # common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(cluster_data_tree_data_associationTest lie_groups)
-# target_link_libraries(cluster_data_tree_data_associationTest gtest_main lie_groups)
+# target_link_libraries(cluster_data_tree_data_associationTest gtest_main )
 
 # add_executable(model_pdf_policyTest 
 # common/data_association/model_policies/model_pdf_policy_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(model_pdf_policyTest lie_groups)
-# target_link_libraries(model_pdf_policyTest gtest_main lie_groups)
+# target_link_libraries(model_pdf_policyTest gtest_main )
 
 #---------------------------------------
 # Track Initialization
@@ -144,20 +132,17 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # add_executable(linear_lmle_policyTest 
 # track_initialization/lmle_policies/linear_lmle_policy_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(linear_lmle_policyTest lie_groups)
-# target_link_libraries(linear_lmle_policyTest gtest_main lie_groups)
+# target_link_libraries(linear_lmle_policyTest gtest_main )
 
 # add_executable(ransacTest 
 # track_initialization/ransac_test.cpp
 # ../src/parameters.cpp)
-# add_dependencies(ransacTest lie_groups)
-# target_link_libraries(ransacTest gtest_main lie_groups)
+# target_link_libraries(ransacTest gtest_main )
 
 add_executable(nonlinear_lmle_policyTest 
 track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
 ../src/parameters.cpp)
-add_dependencies(nonlinear_lmle_policyTest lie_groups)
-target_link_libraries(nonlinear_lmle_policyTest gtest_main lie_groups Ceres::ceres
+target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
 )
 
 

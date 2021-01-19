@@ -8,6 +8,8 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Dense>
 #include "ceres/ceres.h"
+#include "state.h"
+#include "lie_groups/SE3.h"
 
 
 namespace rransac
@@ -66,11 +68,16 @@ struct CostFunctor {
     for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
         x_vector(ii,0) = x[ii];
 
+    Eigen::Matrix<double,tModel::g_dim_*2,tModel::g_dim_*2> test;
+    test.setIdentity();
+    x_vector = test * x_vector;
+
     // Convert to state, propagate state to the time step of the measurement and get the error
     // between the estimated measurement and the measurement
-    typename tModel::State state;
-    // state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::g_dim_,1));
-    // state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
+    // typename tModel::State state;
+    lie_groups::State<lie_groups::SE3,T,6> state;
+    state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::g_dim_,1));
+    state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
     // state = tModel::PropagateState(state,dt_);
     // Eigen::Matrix<T,Eigen::Dynamic,1> e = sys_.sources_[src_index_].OMinus(m_, sys_.sources_[src_index_].GetEstMeas(state));
 

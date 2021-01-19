@@ -43,7 +43,7 @@ Meas DerivedGetEstMeas(const tState& state) const ;
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2) const;
+static Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
@@ -139,11 +139,11 @@ Meas SourceSENPosVel<tState>::DerivedGetEstMeas(const tState& state) const{
 
 //-----------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPosVel<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) const {
+Eigen::MatrixXd SourceSENPosVel<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
 
-    if (this->params_.type_ == MeasurementTypes::SEN_POS) {
+    if (m1.type == MeasurementTypes::SEN_POS && m1.type == m2.type) {
         return m1.pose - m2.pose;
-    } else if (this->params_.type_ == MeasurementTypes::SEN_POS_VEL){
+    } else if (m1.type == MeasurementTypes::SEN_POS_VEL && m1.type == m2.type){
         Eigen::Matrix<double, meas_dim_*2,1> error;
         error.block(0,0,meas_dim_,1) = m1.pose - m2.pose;
         error.block(meas_dim_,0,meas_dim_,1) = m1.twist - m2.twist;

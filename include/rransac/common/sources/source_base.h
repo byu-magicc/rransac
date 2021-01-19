@@ -84,13 +84,14 @@ struct SourceParameters {
  * 
  */ 
 
-template<typename tState, typename tDerived>
+template<typename tState, typename tDerived, typename tDataType=double>
 class SourceBase
 {
 
 public:
 
     typedef tState State;
+    typedef Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
     static constexpr unsigned int meas_dim_ = tDerived::meas_dim_;               /**< The Dimension of the measurement */
     std::function<bool(const State&)> state_in_surveillance_region_callback_;
 
@@ -111,19 +112,33 @@ public:
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd GetLinObsMatState(const State& state) const {
-       
-        // std::cout << typeid(M).name() << std::endl;
+    MatXd GetLinObsMatState(const State& state) const {
         return static_cast<const tDerived*>(this)->DerivedGetLinObsMatState(state);
-    }                              
+    }    
+
+    /** Returns the jacobian of the observation function w.r.t. the states */
+    static MatXd GetLinObsMatState(const State& state, const MeasurementTypes type) {
+       
+        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatState(state, type);
+    }                            
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd GetLinObsMatSensorNoise(const State& state) const {
+    MatXd GetLinObsMatSensorNoise(const State& state) const {
         return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
-    }                         
+    }       
+
+    /** Returns the jacobian of the observation function w.r.t. the sensor noise */
+    static MatXd GetLinObsMatSensorNoise(const State& state, const MeasurementTypes type)  {
+        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state, type);
+    }                      
 
     /** Computes the estimated measurement given a state */
-    Meas GetEstMeas(const State& state) const {
+    Meas<tDataType> GetEstMeas(const State& state) const {
+        return static_cast<const tDerived*>(this)->DerivedGetEstMeas(state);
+    } 
+
+    /** Computes the estimated measurement given a state */
+    static Meas<tDataType> GetEstMeas(const State& state, const MeasurementTypes type)  {
         return static_cast<const tDerived*>(this)->DerivedGetEstMeas(state);
     } 
 
@@ -132,7 +147,7 @@ public:
      * @param m1 a measurement
      * @param m2 a measurement
      */
-    Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) const {
+    static Eigen::MatrixXd OMinus(const Meas& m1, const Meas& m2) {
         return static_cast<const tDerived*>(this)->DerivedOMinus(m1, m2);
     } 
 

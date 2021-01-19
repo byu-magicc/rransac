@@ -40,7 +40,7 @@ Meas DerivedGetEstMeas(const tState& state) const ;
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2) const;
+static Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2);
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
@@ -72,7 +72,7 @@ void SourceRN<tState>::DerivedInit(const SourceParameters& params) {
     const unsigned int sizeu = tState::u_type_::dim_;
 
     // Make sure that the state is a valid type
-    if (typeid(tState).name() != typeid(lie_groups::State<lie_groups::Rn<sizeg>>).name())
+    if (typeid(tState).name() != typeid(lie_groups::State<lie_groups::Rn,double,sizeg>).name())
     {
         throw std::runtime_error("SourceRNPos::Init State is not supported by this source type");
     }
@@ -108,11 +108,11 @@ Meas SourceRN<tState>::DerivedGetEstMeas(const tState& state) const {
 
 //---------------------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceRN<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) const {
+Eigen::MatrixXd SourceRN<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
 
-    if (this->params_.type_ == MeasurementTypes::RN_POS) {
+    if (m1.type_ == MeasurementTypes::RN_POS && m2.type_ == m1.type_) {
         return m1.pose - m2.pose;
-    } else if (this->params_.type_ == MeasurementTypes::RN_POS_VEL){
+    } else if (m1.type_ == MeasurementTypes::RN_POS_VEL && m2.type_ == m1.type_){
         Eigen::Matrix<double, tState::g_type_::dim_*2,1> error;
         error.block(0,0,tState::g_type_::dim_,1) = m1.pose - m2.pose;
         error.block(tState::g_type_::dim_,0,tState::g_type_::dim_,1) = m1.twist - m2.twist;

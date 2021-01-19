@@ -39,7 +39,7 @@ Meas DerivedGetEstMeas(const tState& state) const ;
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2) const ;
+static Eigen::MatrixXd DerivedOMinus(const Meas& m1, const Meas& m2) ;
 
 /**
  * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
@@ -101,11 +101,11 @@ Meas SourceSENPoseTwist<tState>::DerivedGetEstMeas(const tState& state) const {
 
 //----------------------------------------------------------------------------------------
 template<class tState>
-Eigen::MatrixXd SourceSENPoseTwist<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) const {
+Eigen::MatrixXd SourceSENPoseTwist<tState>::DerivedOMinus(const Meas& m1, const Meas& m2) {
 
-    if (this->params_.type_ == MeasurementTypes::SEN_POSE) {
+    if (m1.type == MeasurementTypes::SEN_POSE && m1.type == m2.type) {
         return State::g_type_::OMinus(m1.pose,m2.pose);
-    } else if (this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST){
+    } else if (m1.type == MeasurementTypes::SEN_POSE_TWIST && m1.type == m2.type){
         Eigen::Matrix<double, meas_dim_*2,1> error;
         error.block(0,0,meas_dim_,1) = State::g_type_::OMinus(m1.pose,m2.pose);
         error.block(meas_dim_,0,meas_dim_,1) = m1.twist - m2.twist;

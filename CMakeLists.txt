@@ -26,16 +26,16 @@ include_directories(
     src)
 
 
-add_library(lie_groups
-lie_groups/liegroups/src/lie_algebras/so2.cpp
-lie_groups/liegroups/src/lie_algebras/so3.cpp
-lie_groups/liegroups/src/lie_algebras/se2.cpp
-lie_groups/liegroups/src/lie_algebras/se3.cpp
-lie_groups/liegroups/src/lie_groups/SO2.cpp
-lie_groups/liegroups/src/lie_groups/SO3.cpp
-lie_groups/liegroups/src/lie_groups/SE2.cpp
-lie_groups/liegroups/src/lie_groups/SE3.cpp
-)
+# add_library(lie_groups
+# lie_groups/liegroups/src/lie_algebras/so2.cpp
+# lie_groups/liegroups/src/lie_algebras/so3.cpp
+# lie_groups/liegroups/src/lie_algebras/se2.cpp
+# lie_groups/liegroups/src/lie_algebras/se3.cpp
+# lie_groups/liegroups/src/lie_groups/SO2.cpp
+# lie_groups/liegroups/src/lie_groups/SO3.cpp
+# lie_groups/liegroups/src/lie_groups/SE2.cpp
+# lie_groups/liegroups/src/lie_groups/SE3.cpp
+# )
 
 
 # target_link_libraries(helloworld Ceres::ceres)
