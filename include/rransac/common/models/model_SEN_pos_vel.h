@@ -15,6 +15,9 @@ typedef tState State;
 typedef typename State::DataType DataType;
 typedef tTransformation<tState> Transformation;
 
+template <typename tScalar, template<typename> typename tStateTemplate>
+using ModelTemplate = ModelSENPosVel<tStateTemplate<tScalar>,tTransformation>;
+
 static constexpr unsigned int g_dim_ = State::Group::dim_;
 static constexpr unsigned int cov_dim_ = State::Group::dim_ + State::Algebra::dim_ - State::Algebra::dim_t_vel_ + 1;
 static constexpr unsigned int l_dim_ =  State::Algebra::dim_a_vel_ + 1;

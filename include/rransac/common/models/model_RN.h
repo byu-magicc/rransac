@@ -6,14 +6,20 @@
 
 namespace rransac {
 
-template <typename tState, template <typename > typename tTransformation>
-class ModelRN : public ModelBase<SourceRN<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelRN<tState, tTransformation>> {
+// template <typename tState, template <typename > typename tTransformation>
+template <typename tDataType, typename tGroup, typename tGroupDim, template <typename > typename tTransformation>
+class ModelRN : public ModelBase<SourceRN<lie_groups::State<tGroup,tDataType,tGroupDim>>, tTransformation<lie_groups::State<tGroup,tDataType,tGroupDim>>, tState::Group::dim_*2, ModelRN<tDataType, tGroup, tGroupDim, tTransformation>> {
 
 public:
 
-typedef tState State;
+typedef lie_groups::State<tGroup,tDataType,tGroupDim> State;
 typedef typename State::DataType DataType;
 typedef tTransformation<tState> Transformation;
+
+template <typename tScalar, template<typename> typename tStateTemplate>
+using ModelTemplate = ModelRN<tStateTemplate<tScalar>,tTransformation>;
+
+
 static constexpr unsigned int cov_dim_ = tState::Group::dim_*2;
 // static constexpr unsigned int cov_dim_ = tState::Group::dim_*2;
 static constexpr unsigned int g_dim_ = State::Group::dim_;
@@ -49,7 +55,7 @@ static State DerivedGetRandomState(){ return State::Random();}
 /**
  * 
  */
- static Eigen::Matrix<DataType,cov_dim_,1> DerivedOMinus(const ModelRN<State, Transformation>& model1, const ModelRN<State, Transformation>& model2 ) {
+ static Eigen::Matrix<DataType,cov_dim_,1> DerivedOMinus(const ModelRN & model1, const ModelRN& model2 ) {
      return model1.state_.OMinus(model1.state_, model2.state_);
  }
 
@@ -58,9 +64,10 @@ static State DerivedGetRandomState(){ return State::Random();}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template <typename tState, template <typename > typename tTransformation>
-typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {   
+template <typename tDataType, typename tGroup, typename tGroupDim, template <typename > typename tTransformation>
+// template <typename tState, template <typename > typename tTransformation>
+// typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {   
+typename ModelRN<tDataType,tGroup,tGroupDim,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {   
     
     // static constexpr unsigned int g_dim_ = tState::Group::dim_;
     // typedef Eigen::Matrix<double,2*g_dim_,2*g_dim_> Mat;
@@ -71,9 +78,11 @@ typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::D
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
+template <typename tDataType, typename tGroup, typename tGroupDim, template <typename > typename tTransformation>
 
-template <typename tState, template <typename > typename tTransformation>
-typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+// template <typename tState, template <typename > typename tTransformation>
+// typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+typename ModelRN<tDataType,tGroup,tGroupDim,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
     
     Mat G;
     G.block(g_dim_,0,g_dim_,g_dim_).setZero();

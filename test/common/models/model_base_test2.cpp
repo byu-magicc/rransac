@@ -30,21 +30,21 @@ public:
 void SetUp() override {
 
 // Setup the sources
-source_params1.meas_cov_fixed_ = false;
+source_params1.meas_cov_ = Eigen::Matrix3d::Identity();
 source_params1.expected_num_false_meas_ = 0.5;
 source_params1.type_ = MeasurementTypes::RN_POS;
 source_params1.gate_probability_ = 0.75;
 source_params1.probability_of_detection_ = 0.95;
 source_params1.source_index_ = 0;
 
-source_params2.meas_cov_fixed_ = false;
+source_params2.meas_cov_ = Eigen::Matrix<double,6,6>::Identity();
 source_params2.expected_num_false_meas_ = 0.2;
 source_params2.type_ = MeasurementTypes::RN_POS_VEL;
 source_params2.gate_probability_ = 0.8;
 source_params2.probability_of_detection_ = 0.94;
 source_params2.source_index_ = 1;
 
-source_params3.meas_cov_fixed_ = false;
+source_params3.meas_cov_ = Eigen::Matrix<double,6,6>::Identity();
 source_params3.expected_num_false_meas_ = 0.45;
 source_params3.type_ = MeasurementTypes::RN_POS_VEL;
 source_params3.gate_probability_ = 0.85;

@@ -8,6 +8,7 @@
 #include "common/transformations/transformation_null.h"
 #include "common/models/model_SEN_pose_twist.h"
 #include "common/models/model_SEN_pos_vel.h"
+#include "common/models/model_RN.h"
 #include "common/sources/source_SEN_pose_twist.h"
 #include "common/sources/source_base.h"
 #include "data_containers/cluster.h"
@@ -35,7 +36,7 @@ source1.Init(source_params1);
 source2.Init(source_params2);
 
 // Setup measurements
-Meas m1, m2;
+Meas<double> m1, m2;
 m1.source_index = 0;
 m1.type = MeasurementTypes::SEN_POSE;
 m2.source_index = 1;
@@ -55,11 +56,11 @@ track.state_ = Model::State::Random();
 double start_time = 0;
 double end_time = 0.5;
 double dt = 0.1;
-Meas tmp1, tmp2;
-std::list<std::list<Meas>> measurements;
-std::list<Meas> meas_time;
-std::vector<Cluster::IteratorPair> meas_subset;
-Cluster::IteratorPair iter_pair;
+Meas<double> tmp1, tmp2;
+std::list<std::list<Meas<double>>> measurements;
+std::list<Meas<double>> meas_time;
+std::vector<Cluster<double>::IteratorPair> meas_subset;
+Cluster<double>::IteratorPair iter_pair;
 
 
 

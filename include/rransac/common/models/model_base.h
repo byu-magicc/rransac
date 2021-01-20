@@ -235,7 +235,7 @@ public:
 
     void TransformConsensusSet(const Transformation& T) {
         if (!T.transform_null_)
-            cs_.TransformConsensusSet<Transformation>(T);
+            cs_.TransformConsensusSet(T);
     }
 
     /**
@@ -331,7 +331,7 @@ cov_sum.setZero();
 // std::cout << "state: " << std::endl << state_.g_.data_ << std::endl;
 
 // loop through the measurements per source
-for (std::vector<Meas> meas : new_assoc_meas_) {
+for (std::vector<Meas<DataType>> meas : new_assoc_meas_) {
 
         GetInnovationAndCovariance(sources, meas, state_update, cov);
 
@@ -382,7 +382,7 @@ Eigen::MatrixXd covSum(V.rows(),V.rows());
 covSum.setZero();
 // std::cerr << "H: " << std::endl << H << std::endl << std::endl;
 // std::cerr << "V: " << std::endl << V << std::endl << std::endl;
-Meas estimated_meas = sources[meas.front().source_index].GetEstMeas(state_);
+Meas<DataType> estimated_meas = sources[meas.front().source_index].GetEstMeas(state_);
 
 // std::cerr << "tmp: " << std::endl << tmp << std::endl << std::endl;
 // std::cerr << "H*err_cov_*H.transpose() : " << std::endl << H*err_cov_*H.transpose()  << std::endl << std::endl;
@@ -397,7 +397,7 @@ K = err_cov_*H.transpose()*S_inverse;
 double B0 = 1;
 
 // Get total weighted innovation and part of the cov_tilde
-for (Meas m : meas) {
+for (Meas<DataType> m : meas) {
     nu_i = sources[m.source_index].OMinus(m, estimated_meas);
     nu += m.weight*nu_i;
     covSum+= m.weight*nu_i*nu_i.transpose();
@@ -479,7 +479,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::AddNewMeasurement( 
 
     // Create a new sub list and add the measurement
     if(!meas_added) {
-        this->new_assoc_meas_.emplace_back(std::vector<Meas>{meas});
+        this->new_assoc_meas_.emplace_back(std::vector<Meas<DataType>>{meas});
     }
 
 }

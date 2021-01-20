@@ -29,6 +29,7 @@ class NonLinearLMLEPolicy : public tSeed<tModel> {
 public:
 
 typedef typename tModel::State State;
+typedef typename State::DataType DataType;
 typedef typename tModel::Source Source;
 typedef tModel Model;
 
@@ -38,11 +39,11 @@ typedef tModel Model;
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
+static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys);
 
 private:
 
-static void GenerateSeedPolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::State::g_type_::dim_*2], const int size) {
+static void GenerateSeedPolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::State::Group::dim_*2], const int size) {
     NonLinearLMLEPolicy::GenerateSeed(meas_subset, sys, x, size);
 }
 
@@ -51,7 +52,7 @@ static void GenerateSeedPolicy(const std::vector<Cluster::IteratorPair>& meas_su
 
 struct CostFunctor {
 
-    CostFunctor(Meas m, const System<tModel>& sys) : m_(m), sys_(sys) {
+    CostFunctor(Meas<DataType> m, const System<tModel>& sys) : m_(m), sys_(sys) {
         dt_ = m.time_stamp - sys_.current_time_;
         src_index_ = m_.source_index;
     }
@@ -62,6 +63,9 @@ struct CostFunctor {
      */ 
     template <typename T>
     bool operator() (const T* const x,  T* r)  const {
+
+    
+    // typename tModel::template ModelTemplate<float, State::StateTemplate> modelf;
 
     // Convert array to Eigen vector
     Eigen::Matrix<T,tModel::g_dim_*2,1> x_vector;
@@ -78,7 +82,7 @@ struct CostFunctor {
     lie_groups::State<lie_groups::SE3,T,6> state;
     state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::g_dim_,1));
     state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
-    // state = tModel::PropagateState(state,dt_);
+    // state = ModelT::PropagateState(state,dt_);
     // Eigen::Matrix<T,Eigen::Dynamic,1> e = sys_.sources_[src_index_].OMinus(m_, sys_.sources_[src_index_].GetEstMeas(state));
 
     // // Construct innovation covariance
@@ -101,7 +105,7 @@ struct CostFunctor {
 
     private:
     int src_index_;
-    Meas m_;                    /** < Measurement */
+    Meas<DataType> m_;                    /** < Measurement */
     double dt_;                 /** < Time interval between the current time and the measurement time */
     const System<tModel>& sys_; /** < A reference to the object containing all of R-RANSAC data */
 
@@ -122,7 +126,7 @@ struct CostFunctor {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename tModel, template<typename > typename tSeed>     
-typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys) {
+typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys) {
 
     double x[tModel::State::g_type_::dim_*2];
     GenerateSeedPolicy(meas_subset, sys, x, tModel::State::g_type_::dim_*2);

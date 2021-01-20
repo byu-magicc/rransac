@@ -14,6 +14,10 @@ public:
 typedef tState State;
 typedef typename State::DataType DataType;
 typedef tTransformation<tState> Transformation;
+
+template <typename tScalar, template<typename> typename tStateTemplate>
+using ModelTemplate = ModelSENPoseTwist<tStateTemplate<tScalar>,tTransformation>;
+
 static constexpr unsigned int cov_dim_ = State::Group::dim_*2;
 static constexpr unsigned int g_dim_ = State::Group::dim_;
 typedef Eigen::Matrix<DataType,2*g_dim_,2*g_dim_> Mat;

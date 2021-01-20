@@ -85,7 +85,7 @@ class SourceBase
 public:
 
     typedef tState State;
-    typedef tDataType::DataType;
+    typedef tDataType DataType;
     typedef Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
     static constexpr unsigned int meas_dim_ = tDerived::meas_dim_;               /**< The Dimension of the measurement */
     std::function<bool(const State&)> state_in_surveillance_region_callback_;
