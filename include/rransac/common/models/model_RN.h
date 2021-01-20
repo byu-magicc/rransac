@@ -6,13 +6,12 @@
 
 namespace rransac {
 
-// template <typename tState, template <typename > typename tTransformation>
-template <typename tDataType, typename tGroup, typename tGroupDim, template <typename > typename tTransformation>
-class ModelRN : public ModelBase<SourceRN<lie_groups::State<tGroup,tDataType,tGroupDim>>, tTransformation<lie_groups::State<tGroup,tDataType,tGroupDim>>, tState::Group::dim_*2, ModelRN<tDataType, tGroup, tGroupDim, tTransformation>> {
+template <typename tState, template <typename > typename tTransformation>
+class ModelRN : public ModelBase<SourceRN<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelRN<tState, tTransformation>> {
 
 public:
 
-typedef lie_groups::State<tGroup,tDataType,tGroupDim> State;
+typedef tState State;
 typedef typename State::DataType DataType;
 typedef tTransformation<tState> Transformation;
 
@@ -31,7 +30,7 @@ typedef Eigen::Matrix<DataType,2*g_dim_,2*g_dim_> Mat;
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -39,7 +38,7 @@ static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-static Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt);
 
 /**
 * Update the state of the model using the provided state_update
@@ -64,10 +63,8 @@ static State DerivedGetRandomState(){ return State::Random();}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename tDataType, typename tGroup, typename tGroupDim, template <typename > typename tTransformation>
-// template <typename tState, template <typename > typename tTransformation>
-// typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {   
-typename ModelRN<tDataType,tGroup,tGroupDim,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {   
+template <typename tState, template <typename > typename tTransformation>
+typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {   
     
     // static constexpr unsigned int g_dim_ = tState::Group::dim_;
     // typedef Eigen::Matrix<double,2*g_dim_,2*g_dim_> Mat;
@@ -78,11 +75,9 @@ typename ModelRN<tDataType,tGroup,tGroupDim,tTransformation>::Mat ModelRN<tState
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
-template <typename tDataType, typename tGroup, typename tGroupDim, template <typename > typename tTransformation>
 
-// template <typename tState, template <typename > typename tTransformation>
-// typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
-typename ModelRN<tDataType,tGroup,tGroupDim,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+template <typename tState, template <typename > typename tTransformation>
+typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     
     Mat G;
     G.block(g_dim_,0,g_dim_,g_dim_).setZero();

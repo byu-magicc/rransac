@@ -128,7 +128,7 @@ public:
      *                a positive value would indicate forward propagation and a negative value would indicate backward propagation.
      * @return Returns the propagated state.
      */ 
-    static State PropagateState(const State& state, const double dt) {
+    static State PropagateState(const State& state, const DataType dt) {
         State tmp = state;
         tmp.g_.OPlusEq(tmp.u_.data_*dt);
         return tmp;
@@ -141,7 +141,7 @@ public:
      * @param[in] dt A time interval
      * @return The Jacobian \f$ F_k\f$. 
      */ 
-    static Mat GetLinTransFuncMatState(const State& state, const double dt) {
+    static Mat GetLinTransFuncMatState(const State& state, const DataType dt) {
         return tDerived::DerivedGetLinTransFuncMatState(state, dt);        
     }
 
@@ -151,7 +151,7 @@ public:
      * @param[in] dt  A time interval
      * @return Returns the Jacobian \f$ G_k \f$
      */
-    static Mat GetLinTransFuncMatNoise(const State& state, const double dt){
+    static Mat GetLinTransFuncMatNoise(const State& state, const DataType dt){
         return tDerived::DerivedGetLinTransFuncMatNoise(state, dt);
 
     }
@@ -160,7 +160,7 @@ public:
      * Propagates the state estimate and error covariance to the current time.
      * @param[in] dt  The amount of time the model needs to be propagated.
      */ 
-    void PropagateModel(const double dt);
+    void PropagateModel(const DataType dt);
 
     /**
      * Uses the newly associated measurements to update the statMeas_dime estimate, error covariance, and consensus set using a 
@@ -260,7 +260,7 @@ public:
     /**
      * Removes all of the measurements past the expiration time. 
      */
-    void PruneConsensusSet(const double expiration_time) {
+    void PruneConsensusSet(const DataType expiration_time) {
         cs_.PruneConsensusSet(expiration_time);
     } 
 
@@ -297,7 +297,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(const Paramete
 //-------------------------------------------------------------------------------------------------------------------
 
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived> 
-void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(const double dt) {
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(const DataType dt) {
 
     // Construct matrices to transform covariance.
     F_ = GetLinTransFuncMatState(state_,dt);
@@ -394,7 +394,7 @@ K = err_cov_*H.transpose()*S_inverse;
 // std::cerr << "K: " << std::endl << K << std::endl << std::endl;
 
 
-double B0 = 1;
+DataType B0 = 1;
 
 // Get total weighted innovation and part of the cov_tilde
 for (Meas<DataType> m : meas) {

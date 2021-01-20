@@ -14,14 +14,14 @@ namespace rransac {
  * measurements are on RN or on RN and its tangent space. Compatible with 
  * MeasurementType::SEN_POS and MeasurementType::SEN_POS_VEL 
  */ 
-template<class tState, typename tDataType=double>
-class SourceSENPosVel: public SourceBase<tState,SourceSENPosVel<tState,tDataType>, tDataType> {
+template<class tState>
+class SourceSENPosVel: public SourceBase<tState,SourceSENPosVel<tState>> {
 
 public:
 
 typedef tState State;
-typedef tDataType DataType;
-typedef Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
+typedef typename tState::DataType DataType;
+typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 static constexpr unsigned int l_dim_ =  tState::Algebra::dim_a_vel_ + 1;
 static constexpr unsigned int meas_dim_ = tState::Group::dim_pos_;
 static constexpr unsigned int cov_dim_ = tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1;
@@ -46,28 +46,28 @@ MatXd DerivedGetLinObsMatSensorNoise(const tState& state) const {return this->V_
 static MatXd DerivedGetLinObsMatSensorNoise(const State& state, const MeasurementTypes type);
 
 /** Computes the estimated measurement given a state */
-Meas<tDataType> DerivedGetEstMeas(const tState& state) const ;
+Meas<DataType> DerivedGetEstMeas(const tState& state) const ;
 
 /** Computes the estimated measurement given a state and measurement type. This method is not optimized.*/
-static Meas<tDataType> DerivedGetEstMeas(const State& state, const MeasurementTypes type);
+static Meas<DataType> DerivedGetEstMeas(const State& state, const MeasurementTypes type);
 
 /**
  * Returns the error between the estimated measurement and the measurement
  */
-static MatXd DerivedOMinus(const Meas<tDataType>& m1, const Meas<tDataType>& m2);
+static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2);
 
 /**
  * Maps the pose to Euclidean space. In this case, it just returns the pose.
- * @param Meas<tDataType> The measurement whose pose needs to be transformed
+ * @param Meas<DataType> The measurement whose pose needs to be transformed
  */
-MatXd DerivedToEuclidean(const Meas<tDataType>& m)  { return m.pose;}
+MatXd DerivedToEuclidean(const Meas<DataType>& m)  { return m.pose;}
 
 /**
  * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
  * @param state The state that serves as the mean in the Gaussian distribution
  * @param meas_std The measurement standard deviation
  */ 
-Meas<tDataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std);
+Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std);
 
 
 };
@@ -77,8 +77,8 @@ Meas<tDataType> DerivedGenerateRandomMeasurement(const tState& state, const MatX
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-template<class tState, typename tDataType>
-void SourceSENPosVel<tState,tDataType>::DerivedInit(const SourceParameters& params) {
+template<class tState>
+void SourceSENPosVel<tState>::DerivedInit(const SourceParameters& params) {
 
     // Verify state
     if (typeid(tState).name() != typeid(lie_groups::SE2_se2).name() && typeid(tState).name() != typeid(lie_groups::SE3_se3).name())
@@ -105,8 +105,8 @@ void SourceSENPosVel<tState,tDataType>::DerivedInit(const SourceParameters& para
 }
 
 //-----------------------------------------------------------------
-template<class tState, typename tDataType>
-Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState,tDataType>::DerivedGetLinObsMatState(const tState& state) const {
+template<class tState>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState>::DerivedGetLinObsMatState(const tState& state) const {
 
     MatXd H = this->H_;
 
@@ -137,9 +137,9 @@ Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState,tD
 }
 
 //-----------------------------------------------------------------
-template<class tState, typename tDataType>
-Meas<tDataType> SourceSENPosVel<tState,tDataType>::DerivedGetEstMeas(const tState& state) const{
-    Meas<tDataType> m;
+template<class tState>
+Meas<typename tState::DataType> SourceSENPosVel<tState>::DerivedGetEstMeas(const tState& state) const{
+    Meas<DataType> m;
     m.pose = state.g_.t_;
     m.type = this->params_.type_;
 
@@ -150,13 +150,13 @@ Meas<tDataType> SourceSENPosVel<tState,tDataType>::DerivedGetEstMeas(const tStat
 } 
 
 //-----------------------------------------------------------------
-template<class tState, typename tDataType>
-Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState,tDataType>::DerivedOMinus(const Meas<tDataType>& m1, const Meas<tDataType>& m2) {
+template<class tState>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
 
     if (m1.type == MeasurementTypes::SEN_POS && m1.type == m2.type) {
         return m1.pose - m2.pose;
     } else if (m1.type == MeasurementTypes::SEN_POS_VEL && m1.type == m2.type){
-        Eigen::Matrix<double, meas_dim_*2,1> error;
+        Eigen::Matrix<DataType, meas_dim_*2,1> error;
         error.block(0,0,meas_dim_,1) = m1.pose - m2.pose;
         error.block(meas_dim_,0,meas_dim_,1) = m1.twist - m2.twist;
         return error;
@@ -168,9 +168,9 @@ Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState,tD
 }
 
 //----------------------------------------------------------------------------------------
-template<class tState, typename tDataType>
-Meas<tDataType> SourceSENPosVel<tState,tDataType>::DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std){
-    Meas<tDataType> m;
+template<class tState>
+Meas<typename tState::DataType> SourceSENPosVel<tState>::DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std){
+    Meas<DataType> m;
     m.source_index = this->params_.source_index_;
 
     MatXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
@@ -196,10 +196,10 @@ Meas<tDataType> SourceSENPosVel<tState,tDataType>::DerivedGenerateRandomMeasurem
 
 //----------------------------------------------------------------------------------------
 
-template<class tState, typename tDataType >
-Meas<tDataType> SourceSENPosVel<tState, tDataType>::DerivedGetEstMeas(const tState& state, const MeasurementTypes type) {
+template<class tState>
+Meas<typename tState::DataType> SourceSENPosVel<tState>::DerivedGetEstMeas(const tState& state, const MeasurementTypes type) {
 
-    Meas<tDataType> m;
+    Meas<DataType> m;
     m.pose = state.g_.t_;
     m.type = type;
 
@@ -213,8 +213,8 @@ Meas<tDataType> SourceSENPosVel<tState, tDataType>::DerivedGetEstMeas(const tSta
 
 //-------------------------------------------------------------------------------------------------------------------------
 
-template<class tState, typename tDataType >
-Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState, tDataType>::DerivedGetLinObsMatState(const tState& state, const MeasurementTypes type) {
+template<class tState>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState>::DerivedGetLinObsMatState(const tState& state, const MeasurementTypes type) {
 
     const unsigned int sizeg = tState::Group::dim_;
     const unsigned int sizeu = tState::Algebra::dim_;
@@ -224,11 +224,11 @@ Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState, t
     switch (type)
     {
     case MeasurementTypes::SEN_POS:
-        H = Eigen::Matrix<tDataType, meas_dim_, cov_dim_>::Zero();
+        H = Eigen::Matrix<DataType, meas_dim_, cov_dim_>::Zero();
         H.block(0,0,meas_dim_, meas_dim_) = state.g_.R_;
         break;
     case MeasurementTypes::SEN_POS_VEL:
-        H = Eigen::Matrix<tDataType,meas_dim_+tState::Algebra::dim_t_vel_, cov_dim_>::Zero();
+        H = Eigen::Matrix<DataType,meas_dim_+tState::Algebra::dim_t_vel_, cov_dim_>::Zero();
         H.block(0,0,meas_dim_, meas_dim_) = state.g_.R_; //dt/dt
         H.block(meas_dim_, tState::Group::dim_, meas_dim_,1) = state.g_.R_.block(0,0,tState::Algebra::dim_t_vel_,1); //dtd/rho_x
         if ( meas_dim_== 2) { 
@@ -247,8 +247,8 @@ Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState, t
 
 //-------------------------------------------------------------------------------------------------------------------------
 
-template<class tState, typename tDataType >
-Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState, tDataType>::DerivedGetLinObsMatSensorNoise(const tState& state, const MeasurementTypes type) {
+template<class tState>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState>::DerivedGetLinObsMatSensorNoise(const tState& state, const MeasurementTypes type) {
 
     const unsigned int sizeg = tState::Group::dim_;
     const unsigned int sizeu = tState::Algebra::dim_;
@@ -259,10 +259,10 @@ Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState, t
     switch (type)
     {
     case MeasurementTypes::SEN_POS:
-        V = Eigen::Matrix<tDataType,meas_dim_,meas_dim_>::Identity();
+        V = Eigen::Matrix<DataType,meas_dim_,meas_dim_>::Identity();
         break;
     case MeasurementTypes::SEN_POS_VEL:
-        V = Eigen::Matrix<tDataType,meas_dim_ + meas_dim_,meas_dim_+ tState::Algebra::dim_t_vel_>::Identity();
+        V = Eigen::Matrix<DataType,meas_dim_ + meas_dim_,meas_dim_+ tState::Algebra::dim_t_vel_>::Identity();
         break;
     default:
         throw std::runtime_error("SourceRN::Init Measurement type not supported.");

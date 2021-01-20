@@ -12,6 +12,7 @@ class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransfo
 public:
 
 typedef tState State;
+typedef SourceSENPoseTwist<tState> Source;
 typedef typename State::DataType DataType;
 typedef tTransformation<tState> Transformation;
 
@@ -28,7 +29,7 @@ typedef Eigen::Matrix<DataType,2*g_dim_,2*g_dim_> Mat;
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -36,7 +37,7 @@ static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-static Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt);
 
 /**
 * Update the state of the model using the provided state_update
@@ -60,7 +61,7 @@ static Eigen::Matrix<DataType,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist&
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tState, template <typename > typename tTransformation>
-typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {    
+typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {    
     Mat F;
     F.block(g_dim_,0,g_dim_,g_dim_).setZero();
     F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity();
@@ -72,7 +73,7 @@ typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, template <typename > typename tTransformation>
-typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     Mat G;
     Eigen::Matrix<DataType, g_dim_, g_dim_> tmp = (state.u_*dt).Jr()*dt;
     G.block(g_dim_,0,g_dim_,g_dim_).setZero();

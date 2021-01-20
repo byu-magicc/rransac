@@ -78,15 +78,15 @@ struct SourceParameters {
  * 
  */ 
 
-template<typename tState, typename tDerived, typename tDataType=double>
+template<typename tState, typename tDerived>
 class SourceBase
 {
 
 public:
 
     typedef tState State;
-    typedef tDataType DataType;
-    typedef Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
+    typedef typename tState::DataType DataType;
+    typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
     static constexpr unsigned int meas_dim_ = tDerived::meas_dim_;               /**< The Dimension of the measurement */
     std::function<bool(const State&)> state_in_surveillance_region_callback_;
 
@@ -128,12 +128,12 @@ public:
     }                      
 
     /** Computes the estimated measurement given a state */
-    Meas<tDataType> GetEstMeas(const State& state) const {
+    Meas<DataType> GetEstMeas(const State& state) const {
         return static_cast<const tDerived*>(this)->DerivedGetEstMeas(state);
     } 
 
     /** Computes the estimated measurement given a state */
-    static Meas<tDataType> GetEstMeas(const State& state, const MeasurementTypes type)  {
+    static Meas<DataType> GetEstMeas(const State& state, const MeasurementTypes type)  {
         return tDerived::DerivedGetEstMeas(state,type);
     } 
 
@@ -142,7 +142,7 @@ public:
      * @param m1 a measurement
      * @param m2 a measurement
      */
-    static MatXd OMinus(const Meas<tDataType>& m1, const Meas<tDataType>& m2) {
+    static MatXd OMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
         return tDerived::DerivedOMinus(m1, m2);
     } 
 
@@ -152,7 +152,7 @@ public:
      * @param state The state that serves as the mean in the Gaussian distribution
      * @param meas_std The measurement covariance
      */ 
-    Meas<tDataType> GenerateRandomMeasurement(const State& state, const MatXd& meas_std){
+    Meas<DataType> GenerateRandomMeasurement(const State& state, const MatXd& meas_std){
         return static_cast<tDerived*>(this)->DerivedGenerateRandomMeasurement(state,meas_std);
     }
 
@@ -184,7 +184,7 @@ public:
      * \return Returns temporal distance between two measurements
      */
    
-    static tDataType GetTemporalDistance(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
+    static DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
 
     /**
      * Calculates the geodesic distance between two measurements depending on the type of measurement.
@@ -194,7 +194,7 @@ public:
      * \return Returns spatial distance between two measurements
      */
     
-    tDataType GetSpatialDistance(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
+    DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
     /**
      * Finds the geodesic distance between two measurements of different time stamps and normalizes by the temproal distance.
@@ -203,7 +203,7 @@ public:
      * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
      * \return Returns spatial distance between two measurements
      */
-    tDataType GetVelocityDistance(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) const {
+    DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {
         if (meas1.time_stamp == meas2.time_stamp) {
             throw std::runtime_error("SourceBase::GetVelocityDistance Measurements have the same time stamp");
         } else {
@@ -229,14 +229,14 @@ private:
      */ 
     void VerifySourceParameters(const SourceParameters& params);
 
-    typedef double (*GSDFuncPTR)(const Meas<tDataType>&, const Meas<tDataType>&, const Parameters&);
+    typedef double (*GSDFuncPTR)(const Meas<DataType>&, const Meas<DataType>&, const Parameters&);
 
     GSDFuncPTR **gsd_ptr_;
 
-    static double GSD_RN_RN_POS(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
-    static double GSD_SEN_SEN_POSE(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params){return (State::Group::OMinus(meas1.pose,meas2.pose)).norm(); }
-    static double GSD_SEN_SEN_POS(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
-    static double GSD_NotImplemented(const Meas<tDataType>& meas1, const Meas<tDataType>& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
+    static double GSD_RN_RN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
+    static double GSD_SEN_SEN_POSE(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (State::Group::OMinus(meas1.pose,meas2.pose)).norm(); }
+    static double GSD_SEN_SEN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
+    static double GSD_NotImplemented(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
 
     
 
@@ -245,16 +245,16 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename tState, typename tDerived, typename tDataType>
-void SourceBase<tState,tDerived, tDataType>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
+template<typename tState, typename tDerived>
+void SourceBase<tState,tDerived>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
     this->Init(params);
     this->state_in_surveillance_region_callback_ = state_in_surveillance_region_callback;
 }
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived, typename tDataType>
-void SourceBase<tState,tDerived, tDataType>::Init(const SourceParameters& params) {
+template<typename tState, typename tDerived>
+void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
 
     VerifySourceParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown.
     this->state_in_surveillance_region_callback_ = StateInsideSurveillanceRegionDefaultCallback;
@@ -282,16 +282,16 @@ void SourceBase<tState,tDerived, tDataType>::Init(const SourceParameters& params
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived, typename tDataType>
-Eigen::Matrix<tDataType,Eigen::Dynamic,Eigen::Dynamic>  SourceBase<tState, tDerived,tDataType>::GaussianRandomGenerator(const int size){
+template<typename tState, typename tDerived>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic>  SourceBase<tState,tDerived>::GaussianRandomGenerator(const int size){
 
     return utilities::GaussianRandomGenerator(size);
 }
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived, typename tDataType>
-SourceBase<tState, tDerived,tDataType>::SourceBase() {
+template<typename tState, typename tDerived>
+SourceBase<tState,tDerived>::SourceBase() {
 
     // Generate two dimensional array of function pointers.
     gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
@@ -326,8 +326,8 @@ SourceBase<tState, tDerived,tDataType>::SourceBase() {
 
 //---------------------------------------------------
 
-template<typename tState, typename tDerived, typename tDataType>
-SourceBase<tState, tDerived,tDataType>::~SourceBase() {
+template<typename tState, typename tDerived>
+SourceBase<tState,tDerived>::~SourceBase() {
 
     // std::cerr << "Destructing" << std::endl;
 
@@ -340,8 +340,8 @@ SourceBase<tState, tDerived,tDataType>::~SourceBase() {
 
 //---------------------------------------------------
 
-template<typename tState, typename tDerived, typename tDataType>
-void SourceBase<tState, tDerived, tDataType>::VerifySourceParameters(const SourceParameters& params) {
+template<typename tState, typename tDerived>
+void SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters& params) {
 
  
 

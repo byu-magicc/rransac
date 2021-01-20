@@ -29,7 +29,7 @@ typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -37,7 +37,7 @@ static Mat DerivedGetLinTransFuncMatState(const State& state, const double dt);
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-static Mat DerivedGetLinTransFuncMatNoise(const State& state, const double dt);
+static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt);
 
 /**
 * Update the state of the model using the provided state_update. The state_update provided is augmented to account
@@ -68,7 +68,7 @@ static Eigen::Matrix<DataType,cov_dim_,1> DerivedOMinus(const ModelSENPosVel& mo
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tState, template <typename > typename tTransformation>
-typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const double dt) {  
+typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {  
     Mat F;
     F.block(g_dim_,0,l_dim_,g_dim_).setZero();
     F.block(g_dim_, g_dim_, l_dim_, l_dim_).setIdentity();
@@ -82,7 +82,7 @@ typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tT
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, template <typename > typename tTransformation>
-typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const double dt){
+typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     Mat G;
     Eigen::Matrix<DataType, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
     G.block(g_dim_,0,l_dim_,g_dim_).setZero();
