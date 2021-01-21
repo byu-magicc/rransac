@@ -111,12 +111,12 @@ struct CostFunctor {
     MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
     MatXd HF = H*F;
     MatXd HG = H*G;
-    // Eigen::MatrixXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse().sqrt();
+    MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
     
     // // Compute Normalized Error
-    // e = S_inv_sqrt*e;
+    e = S_inv_sqrt*e;
     // Eigen::Matrix<T,Eigen::Dynamic,1> e = x_vector;
-    // r = e.data();
+    r = e.data();
 
     return true;
 
