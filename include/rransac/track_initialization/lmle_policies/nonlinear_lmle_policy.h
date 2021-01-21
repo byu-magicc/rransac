@@ -69,12 +69,16 @@ struct CostFunctor {
 
     // Convert array to Eigen vector
     Eigen::Matrix<T,tModel::g_dim_*2,1> x_vector;
-    for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
+    for (int ii = 0; ii < tModel::g_dim_*2; ++ii) {
+        std::cout << "ii: " << x[ii] << std::endl;
         x_vector(ii,0) = x[ii];
+    }
 
-    Eigen::Matrix<double,tModel::g_dim_*2,tModel::g_dim_*2> test;
-    test.setIdentity();
-    x_vector = test * x_vector;
+    // Eigen::Matrix<double,tModel::g_dim_*2,tModel::g_dim_*2> test;
+    // test.setIdentity();
+    // x_vector = test * x_vector;
+
+    std::cout << "x vector: " << std::endl << x_vector << std::endl;
 
     // Convert to state, propagate state to the time step of the measurement and get the error
     // between the estimated measurement and the measurement
@@ -87,18 +91,25 @@ struct CostFunctor {
     Meas<T> tmp;
     tmp.type = m_.type;
     tmp.pose = m_.pose.template cast<T>();
-    tmp.twist = m_.twist.template cast<T>();
+    // tmp.twist = m_.twist.template cast<T>();
     T dt = static_cast<T>(dt_);
     MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
     MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
 
     StateT state;
     state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::g_dim_,1));
+    // std::cout << "state: " << std::endl << state.g_.data_ << std::endl;
     state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
-    state = ModelT::PropagateState(state,dt);
-    typename SourceT::DataType hh;
-  
+    // std::cout << "state u: " << std::endl << state.u_.data_ << std::endl;
 
+    state = ModelT::PropagateState(state,dt);
+    // typename SourceT::DataType hh;
+  
+    // Meas<T> tmp2 = SourceT::GetEstMeas(state,m_.type);
+
+    // std::cout << "tmp1: " << std::endl << tmp.pose << std::endl;
+    // std::cout << "tmp2: " << std::endl << tmp2.pose << std::endl;
+    // std::cout << "state: " << std::endl << state.g_.data_ << std::endl;
 
     
     // SourceT::OMinus(m_, tmp);
@@ -116,7 +127,13 @@ struct CostFunctor {
     // // Compute Normalized Error
     e = S_inv_sqrt*e;
     // Eigen::Matrix<T,Eigen::Dynamic,1> e = x_vector;
-    r = e.data();
+
+    std::cout << "e: " << std::endl << e << std::endl;
+
+    for (unsigned int ii = 0; ii < e.rows(); ++ii) {
+        r[ii] = e(ii);
+    }
+    // r = e.data();
 
     return true;
 
@@ -151,10 +168,18 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     GenerateSeedPolicy(meas_subset, sys, x, tModel::State::g_type_::dim_*2);
 
     ceres::Problem problem;
+    constexpr unsigned int meas_dim = tModel::Source::meas_dim_;
 
     for (auto iter = meas_subset.begin(); iter != meas_subset.end(); ++iter) {
-        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,tModel::State::g_type_::dim_*2,tModel::State::g_type_::dim_*2>(new CostFunctor(*iter->inner_it, sys));
-        problem.AddResidualBlock(cost_function, nullptr, x);
+        if (sys.sources_[iter->inner_it->source_index].params_.has_twist) {
+            ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,meas_dim*2,tModel::State::g_type_::dim_*2>(new CostFunctor(*iter->inner_it, sys));
+            problem.AddResidualBlock(cost_function, nullptr, x);
+        } else {
+            ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,meas_dim,tModel::State::g_type_::dim_*2>(new CostFunctor(*iter->inner_it, sys));
+            problem.AddResidualBlock(cost_function, nullptr, x);
+        }
+        
+        
     }
 
 

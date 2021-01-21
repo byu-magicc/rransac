@@ -38,9 +38,10 @@ source2.Init(source_params2);
 Meas<double> m1, m2;
 m1.source_index = 0;
 m1.type = MeasurementTypes::SEN_POSE;
-m2.source_index = 1;
-m2.type = MeasurementTypes::SEN_POSE_TWIST;
-
+// m2.source_index = 1;
+// m2.type = MeasurementTypes::SEN_POSE_TWIST;
+m2.source_index = 0;
+m2.type = MeasurementTypes::SEN_POSE;
 // Setup system
 Parameters params;
 params.process_noise_covariance_ = Eigen::Matrix<double,12,12>::Identity()*noise;
@@ -71,11 +72,12 @@ for (double ii = start_time; ii < end_time; ii += dt) {
     meas_time.clear();
 
     tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
-    tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,12,12>::Identity()*sqrt(noise));
+    tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
+    // tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,12,12>::Identity()*sqrt(noise));
     m1.pose = tmp1.pose;
     m1.time_stamp = ii;
     m2.pose = tmp2.pose;
-    m2.twist = tmp2.twist;
+    // m2.twist = tmp2.twist;
     m2.time_stamp = ii;
     meas_time.push_back(m1);
     meas_time.push_back(m2);

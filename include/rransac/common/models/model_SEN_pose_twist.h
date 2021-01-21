@@ -66,12 +66,6 @@ typename ModelSENPoseTwist<tState,tTransformation>::Mat ModelSENPoseTwist<tState
     Mat F;
     F.block(g_dim_,0,g_dim_,g_dim_).setZero();
     F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity();
-    std::cout << "g_dim " << g_dim_ << std::endl;
-    MatXd tmp1 = State::Algebra::Exp(state.u_.data_*dt);
-    std::cout << "tmp1: " << std::endl << tmp1 << std::endl;
-
-    MatXd tmp = typename State::Group(tmp1).Adjoint();
-    std::cout << "tmp: " << std::endl << tmp << std::endl;
     F.block(0,0,g_dim_, g_dim_) = typename State::Group(State::Algebra::Exp(state.u_.data_*dt)).Adjoint();
     F.block(0,g_dim_,g_dim_,g_dim_) = (state.u_*dt).Jr()*dt;
     return F;
