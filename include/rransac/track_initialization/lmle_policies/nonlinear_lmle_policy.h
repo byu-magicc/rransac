@@ -93,21 +93,21 @@ struct CostFunctor {
     
     Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceT::OMinus(tmp, SourceT::GetEstMeas(state,m_.type));
 
-    if (!sys.params_.NonLinearInnovCovId_) {
-        // Construct innovation covariance
-        MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
-        MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
-        MatXd H = SourceT::GetLinObsMatState(state,m_.type);
-        MatXd V = SourceT::GetLinObsMatSensorNoise(state,m_.type);
-        MatXd F = ModelT::GetLinTransFuncMatState(state,dt);
-        MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
-        MatXd HF = H*F;
-        MatXd HG = H*G;
-        MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
+    // if (!sys_.params_.NonLinearInnovCovId_) {
+    //     // Construct innovation covariance
+    //     MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
+    //     MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
+    //     MatXd H = SourceT::GetLinObsMatState(state,m_.type);
+    //     MatXd V = SourceT::GetLinObsMatSensorNoise(state,m_.type);
+    //     MatXd F = ModelT::GetLinTransFuncMatState(state,dt);
+    //     MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
+    //     MatXd HF = H*F;
+    //     MatXd HG = H*G;
+    //     MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
         
-        // Compute Normalized Error
-        e = S_inv_sqrt*e;
-    }
+    //     // Compute Normalized Error
+    //     e = S_inv_sqrt*e;
+    // }
 
 
     for (unsigned int ii = 0; ii < e.rows(); ++ii) {

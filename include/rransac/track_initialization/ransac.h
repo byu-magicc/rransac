@@ -40,7 +40,7 @@ static void Run(System<tModel>& sys);
  * measurements from other time steps until there are num_meas randomly selected.
  * @param num_meas The total number of random numbers to select. 
  * @param cluster The cluster from which to the measurements will be sampled. 
- * @return Returns the indicess of the randomply sampled measurements 
+ * @return Returns the indicess of the randomply sampled measurements. They are not gauranteed to be in chronological order
  */ 
 static std::vector<Cluster::IteratorPair> GenerateMinimumSubset(const unsigned int num_meas, Cluster& cluster);
 

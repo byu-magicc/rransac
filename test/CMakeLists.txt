@@ -146,6 +146,12 @@ target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
 )
 
 
+# add_executable(SE2_pol_policyTest 
+# track_initialization/seed_policies/SE2_pos_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(SE2_pol_policyTest gtest_main
+# )
+
 
 
 
