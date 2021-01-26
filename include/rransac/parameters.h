@@ -89,6 +89,7 @@ int max_num_models_;               /** The maximum number of models that RRANSAC
 // Nonlinear LMLE 
 bool NonLinearInnovCovId_;
 unsigned int NonLinearLMLECeresThreads_;
+unsigned int NonLinearLMLECeresMaxNumIters_;
 
 };
 } // namespace rransac

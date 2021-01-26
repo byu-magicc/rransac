@@ -90,12 +90,12 @@ void SourceSENPosVel<tState>::DerivedInit(const SourceParameters& params) {
     switch (this->params_.type_)
     {
     case MeasurementTypes::SEN_POS:
-        this->V_ = Eigen::Matrix<double,meas_dim_,meas_dim_>::Identity();
-        this->H_ = Eigen::Matrix<double, meas_dim_, this->cov_dim_>::Zero();
+        this->V_ = Eigen::Matrix<DataType,meas_dim_,meas_dim_>::Identity();
+        this->H_ = Eigen::Matrix<DataType, meas_dim_, this->cov_dim_>::Zero();
         break;
     case MeasurementTypes::SEN_POS_VEL:
-        this->V_ = Eigen::Matrix<double,meas_dim_ + meas_dim_,meas_dim_+ tState::Algebra::dim_t_vel_>::Identity();
-        this->H_ = Eigen::Matrix<double,meas_dim_+tState::Algebra::dim_t_vel_, this->cov_dim_>::Zero();
+        this->V_ = Eigen::Matrix<DataType,meas_dim_ + meas_dim_,meas_dim_+ tState::Algebra::dim_t_vel_>::Identity();
+        this->H_ = Eigen::Matrix<DataType,meas_dim_+tState::Algebra::dim_t_vel_, this->cov_dim_>::Zero();
         // this->H_.block(S::Group::dim_pos_,S::Group::dim_,S::Algebra::dim_t_vel_,S::Algebra::dim_).setIdentity();
         break;
     default:
@@ -123,7 +123,7 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
         H.block(0,0,meas_dim_, meas_dim_) = state.g_.R_; //dt/dt
         H.block(meas_dim_, tState::Group::dim_, meas_dim_,1) = state.g_.R_.block(0,0,tState::Algebra::dim_t_vel_,1); //dtd/rho_x
         if ( meas_dim_== 2) { 
-            H.block(meas_dim_,meas_dim_, meas_dim_, tState::Group::RotAlgebra::dim_) = state.g_.R_ * tState::Group::RotAlgebra::Wedge(Eigen::Matrix<double,tState::Group::RotAlgebra::dim_,1>::Ones()) * state.u_.p_;
+            H.block(meas_dim_,meas_dim_, meas_dim_, tState::Group::RotAlgebra::dim_) = state.g_.R_ * tState::Group::RotAlgebra::Wedge(Eigen::Matrix<DataType,tState::Group::RotAlgebra::dim_,1>::Ones()) * state.u_.p_;
         } else {
             H.block(meas_dim_,meas_dim_, meas_dim_, tState::Group::RotAlgebra::dim_) = -state.g_.R_ * tState::Group::RotAlgebra::Wedge(state.u_.p_.block(0,0,tState::Group::RotAlgebra::dim_,1));
         }
@@ -232,7 +232,7 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
         H.block(0,0,meas_dim_, meas_dim_) = state.g_.R_; //dt/dt
         H.block(meas_dim_, tState::Group::dim_, meas_dim_,1) = state.g_.R_.block(0,0,tState::Algebra::dim_t_vel_,1); //dtd/rho_x
         if ( meas_dim_== 2) { 
-            H.block(meas_dim_,meas_dim_, meas_dim_, tState::Group::RotAlgebra::dim_) = state.g_.R_ * tState::Group::RotAlgebra::Wedge(Eigen::Matrix<double,tState::Group::RotAlgebra::dim_,1>::Ones()) * state.u_.p_;
+            H.block(meas_dim_,meas_dim_, meas_dim_, tState::Group::RotAlgebra::dim_) = state.g_.R_ * tState::Group::RotAlgebra::Wedge(Eigen::Matrix<DataType,tState::Group::RotAlgebra::dim_,1>::Ones()) * state.u_.p_;
         } else {
             H.block(meas_dim_,meas_dim_, meas_dim_, tState::Group::RotAlgebra::dim_) = -state.g_.R_ * tState::Group::RotAlgebra::Wedge(state.u_.p_.block(0,0,tState::Group::RotAlgebra::dim_,1));
         }

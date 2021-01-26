@@ -19,6 +19,7 @@
 using namespace rransac;
 using namespace lie_groups;
 
+
 TEST(NONLinearPolicyTest, SE3PoseTest) {
 
 typedef ModelSENPoseTwist<SE3_se3,TransformNULL> Model;
@@ -121,6 +122,10 @@ ASSERT_LT( (track.state_.u_.data_-state.u_.data_).norm(), 0.1  );
 
 }
 
+
+//---------------------------------------------------------------------------------------
+
+
 TEST(NONLinearPolicyTest, SE2PosTest) {
 
 srand((unsigned int) time(0));
@@ -147,6 +152,9 @@ source1.Init(source_params1);
 source2.Init(source_params2);
 
 Parameters params;
+params.process_noise_covariance_ = Eigen::Matrix<double,5,5>::Identity()*noise;
+params.NonLinearInnovCovId_ = false;
+params.NonLinearLMLECeresMaxNumIters_ = 10;
 sys.params_ = params;
 sys.sources_.push_back(source1);
 sys.sources_.push_back(source2);
@@ -179,9 +187,9 @@ for (double ii = start_time; ii < end_time; ii += dt) {
     }
     meas_time.clear();
 
-    tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
+    tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,2,2>::Identity()*sqrt(noise));
     // tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
-    tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,12,12>::Identity()*sqrt(noise));
+    tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
     m1.pose = tmp1.pose;
     m1.time_stamp = ii;
     m2.pose = tmp2.pose;
@@ -194,18 +202,37 @@ for (double ii = start_time; ii < end_time; ii += dt) {
 
 }
 
-for (auto outer_iter = measurements.begin(); outer_iter != measurements.end(); ++outer_iter) {
-    for (auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter) {
-        iter_pair.inner_it = inner_iter;
-        iter_pair.outer_it = outer_iter;
-        meas_subset.push_back(iter_pair);
-    }
-}
+// for (auto outer_iter = measurements.begin(); outer_iter != measurements.end(); ++outer_iter) {
+//     for (auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter) {
+//         iter_pair.inner_it = inner_iter;
+//         iter_pair.outer_it = outer_iter;
+//         meas_subset.push_back(iter_pair);
+//     }
+// }
 
+iter_pair.outer_it = measurements.begin();
+iter_pair.inner_it = measurements.begin()->begin();
+meas_subset.push_back(iter_pair);
+iter_pair.outer_it = std::prev(measurements.end());
+iter_pair.inner_it = std::prev(std::prev(measurements.end())->end());
+meas_subset.push_back(iter_pair);
+iter_pair.outer_it = std::prev(measurements.end(),5);
+iter_pair.inner_it = std::prev(std::prev(measurements.end(),5)->end());
+meas_subset.push_back(iter_pair);
 
+// NonLinearLMLEPolicy<Model,NULLSeedPolicy> policy;
 NonLinearLMLEPolicy<Model,SE2PosSeedPolicy> policy;
 bool success;
 typename Model::State state = policy.GenerateHypotheticalStateEstimatePolicy(meas_subset,sys,success);
+
+ASSERT_LT( (track.state_.g_.data_-state.g_.data_).norm(), 0.2  );
+ASSERT_LT( (track.state_.u_.data_-state.u_.data_).norm(), 0.3  );
+
+// std::cout << " track g: " << std::endl << track.state_.g_.data_ << std::endl;
+// std::cout << " track u: " << std::endl << track.state_.u_.data_ << std::endl;
+// std::cout << " est g: " << std::endl << state.g_.data_ << std::endl;
+// std::cout << " est u: " << std::endl << state.u_.data_ << std::endl;
+// std::cout << "success: " << success << std::endl;
 
 
 }

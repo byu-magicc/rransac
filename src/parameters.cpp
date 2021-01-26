@@ -18,6 +18,7 @@ Parameters::Parameters()
     cluster_min_size_requirement_ = 10;
     NonLinearLMLECeresThreads_= 1;
     NonLinearInnovCovId_ = false;
+    NonLinearLMLECeresMaxNumIters_ = 50;
 }
 
 //------------------------------------------------------------------------------------
@@ -43,6 +44,7 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     cluster_min_size_requirement_ = new_params.cluster_min_size_requirement_;
     NonLinearLMLECeresThreads_ = new_params.NonLinearLMLECeresThreads_;
     NonLinearInnovCovId_ = new_params.NonLinearInnovCovId_;
+    NonLinearLMLECeresMaxNumIters_ = new_params.NonLinearLMLECeresMaxNumIters_;
 
     bool successfull = true;
 
