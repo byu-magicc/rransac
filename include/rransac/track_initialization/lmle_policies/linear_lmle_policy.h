@@ -31,7 +31,7 @@ typedef tModel Model;
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
+static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
 
 
 
@@ -43,10 +43,10 @@ static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::
 //                Definitions
 /////////////////////////////////////////////////////////////////////////////////////
 template<typename tModel, template<typename > typename tSeed>      
-typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys){
+typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success){
     
     typename tModel::State x;   // hypothetical state
-    
+    success = true;
 
     // Matrices to be used
     Eigen::MatrixXd H;

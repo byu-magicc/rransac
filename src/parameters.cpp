@@ -16,6 +16,8 @@ Parameters::Parameters()
     RANSAC_score_stopping_criteria_ = 10;
     RANSAC_score_minimum_requirement_ = 5;
     cluster_min_size_requirement_ = 10;
+    NonLinearLMLECeresThreads_= 1;
+    NonLinearInnovCovId_ = false;
 }
 
 //------------------------------------------------------------------------------------
@@ -39,6 +41,8 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     process_noise_covariance_ = new_params.process_noise_covariance_;
     RANSAC_score_minimum_requirement_ = new_params.RANSAC_score_minimum_requirement_;
     cluster_min_size_requirement_ = new_params.cluster_min_size_requirement_;
+    NonLinearLMLECeresThreads_ = new_params.NonLinearLMLECeresThreads_;
+    NonLinearInnovCovId_ = new_params.NonLinearInnovCovId_;
 
     bool successfull = true;
 

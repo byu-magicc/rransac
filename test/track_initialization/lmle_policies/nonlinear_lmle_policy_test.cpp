@@ -99,9 +99,9 @@ NonLinearLMLEPolicy<Model,NULLSeedPolicy> policy;
 
 typename Model::State state = policy.GenerateHypotheticalStateEstimatePolicy(meas_subset,sys);
 
-std::cout << "track g: " << std::endl << track.state_.g_.data_ << std::endl;
-std::cout << "track u: " << std::endl << track.state_.u_.data_ << std::endl;
-std::cout << "est g: " << std::endl << state.g_.data_ << std::endl;
-std::cout << "est u: " << std::endl << state.u_.data_ << std::endl;
+ASSERT_LT( (track.state_.g_.data_-state.g_.data_).norm(), 0.05  );
+ASSERT_LT( (track.state_.u_.data_-state.u_.data_).norm(), 0.05  );
+
+
 
 }

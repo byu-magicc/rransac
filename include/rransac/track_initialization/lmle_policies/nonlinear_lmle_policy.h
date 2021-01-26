@@ -39,7 +39,7 @@ typedef tModel Model;
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys);
+static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
 
 private:
 
@@ -82,8 +82,7 @@ struct CostFunctor {
     tmp.pose = m_.pose.template cast<T>();
     tmp.twist = m_.twist.template cast<T>();
     T dt = static_cast<T>(dt_);
-    MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
-    MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
+
 
     StateT state;
     state.g_.data_ =  StateT::Algebra::Exp(x_vector.block(0,0, tModel::g_dim_,1));
@@ -94,17 +93,21 @@ struct CostFunctor {
     
     Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceT::OMinus(tmp, SourceT::GetEstMeas(state,m_.type));
 
-    // // Construct innovation covariance
-    MatXd H = SourceT::GetLinObsMatState(state,m_.type);
-    MatXd V = SourceT::GetLinObsMatSensorNoise(state,m_.type);
-    MatXd F = ModelT::GetLinTransFuncMatState(state,dt);
-    MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
-    MatXd HF = H*F;
-    MatXd HG = H*G;
-    MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
-    
-    // Compute Normalized Error
-    e = S_inv_sqrt*e;
+    if (!sys.params_.NonLinearInnovCovId_) {
+        // Construct innovation covariance
+        MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
+        MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
+        MatXd H = SourceT::GetLinObsMatState(state,m_.type);
+        MatXd V = SourceT::GetLinObsMatSensorNoise(state,m_.type);
+        MatXd F = ModelT::GetLinTransFuncMatState(state,dt);
+        MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
+        MatXd HF = H*F;
+        MatXd HG = H*G;
+        MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
+        
+        // Compute Normalized Error
+        e = S_inv_sqrt*e;
+    }
 
 
     for (unsigned int ii = 0; ii < e.rows(); ++ii) {
@@ -139,7 +142,9 @@ struct CostFunctor {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename tModel, template<typename > typename tSeed>     
-typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys) {
+typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success) {
+
+    success = false;
 
     double x[tModel::State::g_type_::dim_*2];
     GenerateSeedPolicy(meas_subset, sys, x, tModel::State::g_type_::dim_*2);
@@ -160,22 +165,24 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     }
 
 
-
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_QR;
+    // options.linear_solver_type = ceres::DENSE_QR;
     options.minimizer_progress_to_stdout = true;
+    options.num_threads =sys.params_.NonLinearLMLECeresThreads_;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
 
     std::cout << summary.BriefReport() << "\n";
     std::cout << "x: " << std::endl;
+    std::cout << "terminatin: " << summary.termination_type << std::endl;
+
+    if (summary.termination_type == ceres::TerminationType::CONVERGENCE || summary.termination_type == ceres::TerminationType::USER_SUCCESS)
+        success = true;
 
     Eigen::Matrix<double, tModel::g_dim_*2, 1> x_vector;
     typename tModel::State state;
 
-    //     // Convert array to Eigen vector
-    // for (int ii = 0; ii < tModel::g_dim_*2; ++ii)
-    //     x_vector(ii,0) = x[ii];
+    // Convert array to Eigen vector
     x_vector = Eigen::Map<Eigen::Matrix<double,tModel::g_dim_*2,1>>(x);
 
     // Convert to state, propagate state to the time step of the measurement and get the error
@@ -183,8 +190,7 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::State::g_type_::dim_,1));
     state.u_.data_ = x_vector.block(tModel::State::g_type_::dim_,0, tModel::State::u_type_::dim_,1);
 
-    std::cout << "g: " << std::endl << state.g_.data_ << std::endl;
-    std::cout << "u:" << std::endl << state.u_.data_ << std::endl;
+
 
    return state;
 

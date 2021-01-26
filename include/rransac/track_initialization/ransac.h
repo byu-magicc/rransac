@@ -50,8 +50,8 @@ static std::vector<Cluster::IteratorPair> GenerateMinimumSubset(const unsigned i
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateHypotheticalStateEstimate(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys){
-    return Ransac::GenerateHypotheticalStateEstimatePolicy(meas_subset, sys);
+static State GenerateHypotheticalStateEstimate(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success){
+    return Ransac::GenerateHypotheticalStateEstimatePolicy(meas_subset, sys,success);
 }
 
 
@@ -261,6 +261,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const std
 
     int best_score = 0;
     int score = 0;
+    bool success = false;
     unsigned int iterations = 0;
     unsigned int iteration_stopping_criteria = 10; // If after this many iterations the best score is still zero, then it will terminate. 
     std::vector<Cluster::IteratorPair> meas_subset;
@@ -270,8 +271,12 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const std
     std::vector<Cluster::IteratorPair> best_inliers;
     while (best_score < sys.params_.RANSAC_score_stopping_criteria_ && iterations < sys.params_.RANSAC_max_iters_) {
         meas_subset = GenerateMinimumSubset(sys.params_.RANSAC_minimum_subset_, *cluster_iter);
-        hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys);
-        score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);
+        hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys,success);
+        if (success)
+            score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);
+        else
+            score = -1;
+        
 
         if (score > best_score) {
             best_hypothetical_state = hypothetical_state;

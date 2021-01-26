@@ -86,7 +86,9 @@ double max_missed_detection_time_; /** < A model that has  not received an assoc
 double similar_tracks_threshold_;
 int max_num_models_;               /** The maximum number of models that RRANSAC will store */
 
-
+// Nonlinear LMLE 
+bool NonLinearInnovCovId_;
+unsigned int NonLinearLMLECeresThreads_;
 
 };
 } // namespace rransac
