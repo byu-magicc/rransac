@@ -133,7 +133,7 @@ source_params2.source_index_ = 1;
 source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 source_params2.RANSAC_inlier_probability_ = 0.9;
 
-source_params3.type_ = MeasurementTypes::RN_POS;
+source_params3.type_ = MeasurementTypes::RN_POS_VEL;
 source_params3.source_index_ = 2;
 source_params3.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 source_params3.RANSAC_inlier_probability_ = 0.9;
@@ -173,7 +173,7 @@ m2.type = MeasurementTypes::RN_POS_VEL;
 
 // This measurement is noise
 m3.source_index = 2;
-m3.type = MeasurementTypes::RN_POS;
+m3.type = MeasurementTypes::RN_POS_VEL;
 
 // Another measurement of source 2
 m4.source_index = 1;
