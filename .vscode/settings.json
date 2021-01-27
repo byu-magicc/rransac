@@ -69,6 +69,7 @@
         "*.tpp": "cpp",
         "core": "cpp",
         "matrixfunctions": "cpp",
-        "*.cuh": "cpp"
+        "*.cuh": "cpp",
+        "dense": "cpp"
     }
 }

@@ -220,6 +220,10 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalSta
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
 tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<typename Cluster<DataType>::IteratorPair>& inliers) {
 
+
+    // std::cerr << "State g: " << std::endl << xh.g_.data_ << std::endl;
+    // std::cerr << "State u: " << std::endl << xh.u_.data_ << std::endl << std::endl;
+
     // Create new track with state estimate at the same time step as the oldest inlier measurement
     tModel new_track;
     new_track.Init(sys.params_);
@@ -227,6 +231,9 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(con
     new_track.state_ = tModel::PropagateState(xh,dt); 
     double curr_time = 0;
     double propagate_time = inliers.begin()->inner_it->time_stamp;
+
+    // std::cerr << "before new_track g: " << std::endl << new_track.state_.g_.data_ << std::endl;
+    // std::cerr << "before new_track u: " << std::endl << new_track.state_.u_.data_ << std::endl << std::endl;
 
     // Initialize objects
     std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info(sys.sources_.size());                      
@@ -238,6 +245,13 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(con
         propagate_time = curr_time;
         new_track.PropagateModel(dt);
 
+        if (isnan(new_track.state_.g_.data_(0.0))) {
+
+            std::cerr << "current time: " << curr_time << std::endl;
+            std::cerr << "new_track g: " << std::endl << new_track.state_.g_.data_ << std::endl;
+            std::cerr << "new_track u: " << std::endl << new_track.state_.u_.data_ << std::endl << std::endl;
+        }
+
         while(iter != inliers.end() && iter->inner_it->time_stamp == curr_time) {
 
             new_track.AddNewMeasurement(*iter->inner_it);
@@ -248,9 +262,11 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(con
         new_track.UpdateModel(sys.sources_,sys.params_);
         new_track.UpdateModelLikelihood(sys.sources_);
     }
-    // assign the new measurements
-    // fill out model likelihood update info
-    // update model
+
+
+    // std::cerr << "new_track g: " << std::endl << new_track.state_.g_.data_ << std::endl;
+    // std::cerr << "new_track u: " << std::endl << new_track.state_.u_.data_ << std::endl << std::endl;
+
     return new_track;
 
 }
@@ -274,9 +290,13 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typ
     while (best_score < sys.params_.RANSAC_score_stopping_criteria_ && iterations < sys.params_.RANSAC_max_iters_) {
         meas_subset = GenerateMinimumSubset(sys.params_.RANSAC_minimum_subset_, *cluster_iter);
         hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys,success);
-        if (success)
+        // std::cerr << "hypothetical_state g: " << std::endl << hypothetical_state.g_.data_ << std::endl;
+        // std::cerr << "hypothetical_state u: " << std::endl << hypothetical_state.u_.data_ << std::endl << std::endl;
+        // std::cerr << "success: " << success << std::endl;
+        if (success) {
             score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);
-        else
+            // std::cerr << "score: " << score << std::endl << std::endl;
+        } else
             score = -1;
         
 

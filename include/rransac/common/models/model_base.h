@@ -347,9 +347,8 @@ for (std::vector<Meas<DataType>> meas : new_assoc_meas_) {
 // std::cout << "cov_sum: " << std::endl << cov_sum << std::endl;
 
 
+// update = err_cov_ * state_update_sum;
 
-// Update the state
-update = err_cov_ * state_update_sum;
 // std::cout << "state_update_sum: " << std::endl << state_update_sum << std::endl;
 // std::cout << "update: " << std::endl << update << std::endl;
 
@@ -357,6 +356,11 @@ update = err_cov_ * state_update_sum;
 // Update the error covariance
 error_cov_inverse += cov_sum;
 err_cov_ = error_cov_inverse.inverse();
+// err_cov_ = cov;
+
+// Update the state
+update = err_cov_ * state_update_sum;
+// update = cov * state_update_sum;
 
 return update;
 
@@ -418,6 +422,8 @@ covSum -= nu*nu.transpose();
 
 // construct covariance
 cov_update +=  K*(covSum*K.transpose() -(1-B0)*H*err_cov_); 
+
+// cov_update +=  K*H*err_cov_; 
 // cov_update = H.transpose()*tmp*H;
 state_update = H.transpose()*S_inverse*nu;
 
