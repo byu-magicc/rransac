@@ -25,6 +25,8 @@ class ModelPDFPolicy {
 
 public:
 
+typedef typename tModel::DataType DataType;
+
 static void  PolicyDataAssociationModel(System<tModel>& sys);
 
 
@@ -55,7 +57,7 @@ static void CalculateWeightsForModel(const System<tModel>& sys, tModel& model);
 static void CalculateWeights(System<tModel>& sys);
 
 
-static double GetDistance(const std::vector<typename tModel::Source>& sources, const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance);
+static double GetDistance(const std::vector<typename tModel::Source>& sources, const Meas<DataType>& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance);
 
 static void CalculateModelUpdateInfo(System<tModel>& sys, std::vector<bool>& source_produced_meas);
 
@@ -281,7 +283,7 @@ void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-double ModelPDFPolicy<tModel>::GetDistance(const std::vector<typename tModel::Source>& sources, const Meas& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance) {
+double ModelPDFPolicy<tModel>::GetDistance(const std::vector<typename tModel::Source>& sources, const Meas<DataType>& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance) {
     Eigen::MatrixXd err = sources[meas.source_index].OMinus(meas, sources[meas.source_index].GetEstMeas(model.state_));
     return (err.transpose()*innovation_covariance.inverse()*err)(0,0);
 }

@@ -30,7 +30,7 @@ public:
  */
 template <typename tSystem>
 void AddMeasurement(const tSystem& sys, const Meas<DataType>& meas) {
-    static_cast<tDerived*>(this)->DerivedAddMeasurement(sys, meas);
+    static_cast<Derived*>(this)->DerivedAddMeasurement(sys, meas);
 } 
 
 /**
@@ -39,7 +39,7 @@ void AddMeasurement(const tSystem& sys, const Meas<DataType>& meas) {
  * measurement.
  */ 
 template <typename tSystem, typename tContainerMeas>
-void AddMeasurements(const tSystem& sys, const tContainerMeas<DataType>& measurements ){
+void AddMeasurements(const tSystem& sys, const tContainerMeas& measurements ){
     for (auto iter = measurements.begin(); iter != measurements.end(); ++iter) {
         AddMeasurement(sys, *iter);
     }
@@ -51,7 +51,7 @@ void AddMeasurements(const tSystem& sys, const tContainerMeas<DataType>& measure
  */
 template <typename tMeasurementLocationInfo>
 void RemoveMeasurement(const tMeasurementLocationInfo& meas_info){
-    static_cast<tDerived*>(this)->DerivedRemoveMeasurement(meas_info);
+    static_cast<Derived*>(this)->DerivedRemoveMeasurement(meas_info);
 } 
 
 /**
@@ -74,7 +74,7 @@ void RemoveMeasurements(const tContainerMeasurementLocationInfo& container_meas_
  */
 template <typename tSystem>
 void ConstructClusters(tSystem& sys) {
-    static_cast<tDerived*>(this)->DerivedConstructClusters(sys);
+    static_cast<Derived*>(this)->DerivedConstructClusters(sys);
 }
 
 /**
@@ -85,7 +85,7 @@ void ConstructClusters(tSystem& sys) {
  */ 
 template <typename tSystem>
 void PruneDataTree(const tSystem& sys, const double expiration_time) {
-    static_cast<tDerived*>(this)->DerivedPruneDataTree(sys, expiration_time);
+    static_cast<Derived*>(this)->DerivedPruneDataTree(sys, expiration_time);
 }
 
 /**
@@ -93,7 +93,7 @@ void PruneDataTree(const tSystem& sys, const double expiration_time) {
  */ 
 template< typename tTransform>
 void TransformMeasurements(const tTransform& transform) {
-    static_cast<tDerived*>(this)->DerivedTransformMeasurements(transform);
+    static_cast<Derived*>(this)->DerivedTransformMeasurements(transform);
 }
 
 unsigned int Size() {return size_;};
@@ -103,7 +103,7 @@ tData data_;
 private:
 DataTreeBase()=default;
 ~DataTreeBase()=default;
-friend tDerived;
+friend Derived;
 
 
 

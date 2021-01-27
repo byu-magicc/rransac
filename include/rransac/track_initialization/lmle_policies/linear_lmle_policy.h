@@ -24,6 +24,7 @@ public:
 typedef typename tModel::State State;
 typedef typename tModel::Source Source;
 typedef tModel Model;
+typedef typename tModel::DataType DataType;
 
 /**
  * Generates a hypothetical state at the current time step using the provided measurements in meas_subset.
@@ -31,7 +32,7 @@ typedef tModel Model;
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
+static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
 
 
 
@@ -43,7 +44,7 @@ static State GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::
 //                Definitions
 /////////////////////////////////////////////////////////////////////////////////////
 template<typename tModel, template<typename > typename tSeed>      
-typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success){
+typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success){
     
     typename tModel::State x;   // hypothetical state
     success = true;
@@ -79,11 +80,7 @@ typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStat
         
 
         // Build innovation covariance depending on if the measurement covariance is fixed or not. 
-        if (sys.sources_[src_index].params_.meas_cov_fixed_) {
-            S_inv = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
-        } else {
-            S_inv = (V*iter->inner_it->meas_cov*V.transpose()+ HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
-        }
+        S_inv = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
         
         
         if (iter->inner_it->type == MeasurementTypes::RN_POS)

@@ -8,7 +8,7 @@ namespace rransac
 {
 
 template<typename tDataType = double>
-class DataTreeClusters : public DataTreeBase<std::list<Cluster>, DataTreeClusters, tDataType> {
+class DataTreeClusters : public DataTreeBase<std::list<Cluster<tDataType>>, DataTreeClusters, tDataType> {
 
 public:
 
@@ -21,8 +21,8 @@ typedef tDataType DataType;
  */ 
 struct MeasurementLocationInfo {
 
-    std::list<Cluster<DataType>>::iterator cluster_iter;
-    Cluster<DataType>::IteratorPair iter_pair;
+    typename std::list<Cluster<DataType>>::iterator cluster_iter;
+    typename Cluster<DataType>::IteratorPair iter_pair;
 
 };
 
@@ -62,7 +62,7 @@ void DerivedPruneDataTree(const tSystem sys, const double expiration_time);
  */ 
 template< typename tTransform>
 void DerivedTransformMeasurements(const tTransform& transform) {
-    for(auto iter = data_.begin(); iter!= data_.end(); ++iter)
+    for(auto iter = this->data_.begin(); iter!= this->data_.end(); ++iter)
         iter->TransformMeasurements(transform);
 }
 
@@ -85,7 +85,7 @@ template<typename tDataType>
 template<typename tSystem>
 void DataTreeClusters<tDataType>::DerivedAddMeasurement(const tSystem& sys, const Meas<tDataType>& meas) {
 
-    std::vector<std::list<Cluster>::iterator> neighbor_clusters;
+    std::vector<typename std::list<Cluster<DataType>>::iterator> neighbor_clusters;
 
     // Search through all of the clusters and see which ones the measurement is a neighbor to
     for(auto iter = this->data_.begin(); iter != this->data_.end(); ++iter) {
@@ -97,7 +97,7 @@ void DataTreeClusters<tDataType>::DerivedAddMeasurement(const tSystem& sys, cons
     }
     
     if (neighbor_clusters.size() == 0) {           // The measurement is not a neighbor to any cluster, so make a new one
-        this->data_.emplace_back(Cluster(meas));
+        this->data_.emplace_back(Cluster<DataType>(meas));
     } else if (neighbor_clusters.size() == 1) {    // The measurement is only a neighbor to one cluster, so add it
 
         neighbor_clusters.front()->AddMeasurement(meas);
@@ -135,7 +135,7 @@ void DataTreeClusters<tDataType>::DerivedRemoveMeasurement(const MeasurementLoca
     if (meas_info.cluster_iter->Size() == 0)
         this->data_.erase(meas_info.cluster_iter);
 
-    --size_;
+    --this->size_;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
@@ -161,19 +161,19 @@ void DataTreeClusters<tDataType>::DerivedPruneDataTree(const tSystem sys, const 
         double size_diff = iter->Size();
         iter->PruneCluster(expiration_time);
         size_diff -= iter->Size();
-        size_ -= size_diff;
+        this->size_ -= size_diff;
 
         // After pruning the cluster, if it doesn't have any elements, remove it
         if(iter->Size() == 0) {
-            iter = data_.erase(iter);
+            iter = this->data_.erase(iter);
             --iter;                       // Since erase returns an iterator to the next iterator, we need to back it up one; otherwise, the for loop would skip it 
         } 
         // If the latest measurement in the cluster has a time stamp before the current time minus the time threshold,
         // It won't receive any other measurements and it hasn't been made into a model. Thus it won't ever become a model
         // so it should be removed. 
         else if (iter->data_.back().front().time_stamp <= (sys.current_time_ - sys.params_.cluster_time_threshold_)) {
-            size_ -= iter->Size();
-            iter = data_.erase(iter);
+            this->size_ -= iter->Size();
+            iter = this->data_.erase(iter);
             --iter;
         }
  

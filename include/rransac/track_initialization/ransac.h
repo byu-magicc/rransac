@@ -21,7 +21,8 @@ class Ransac : public tLMLEPolicy<tModel,tSeed> , tAssociationPolicy<tModel>{
 public: 
 
 typedef typename tModel::State State;
-// typedef typename tModel::Source Source;
+typedef typename tModel::Source Source;
+typedef typename tModel::DataType DataType;
 
 Ransac();
 
@@ -42,7 +43,7 @@ static void Run(System<tModel>& sys);
  * @param cluster The cluster from which to the measurements will be sampled. 
  * @return Returns the indicess of the randomply sampled measurements. They are not gauranteed to be in chronological order
  */ 
-static std::vector<Cluster::IteratorPair> GenerateMinimumSubset(const unsigned int num_meas, Cluster& cluster);
+static std::vector<typename Cluster<DataType>::IteratorPair> GenerateMinimumSubset(const unsigned int num_meas, Cluster<DataType>& cluster);
 
 /**
  * Generates a hypothetical state at the current time step using the provided measurements in meas_subset.The method is determined by the policy
@@ -50,7 +51,7 @@ static std::vector<Cluster::IteratorPair> GenerateMinimumSubset(const unsigned i
  * @param curr_time The current time
  * @param sources The vector of sources used. 
  */ 
-static State GenerateHypotheticalStateEstimate(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success){
+static State GenerateHypotheticalStateEstimate(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success){
     return Ransac::GenerateHypotheticalStateEstimatePolicy(meas_subset, sys,success);
 }
 
@@ -62,7 +63,7 @@ static State GenerateHypotheticalStateEstimate(const std::vector<Cluster::Iterat
  * @param sys Contains the system information
  * @param inliers A vector of iterators from the measurements in cluster that are inliers to the hypothetical state estimate. The inliers are in chronological order
  */ 
-static int ScoreHypotheticalStateEstimate(const State& xh, Cluster& cluster, const System<tModel>& sys, std::vector<Cluster::IteratorPair>& inliers);
+static int ScoreHypotheticalStateEstimate(const State& xh, Cluster<DataType>& cluster, const System<tModel>& sys, std::vector<typename Cluster<DataType>::IteratorPair>& inliers);
 
 
 /**
@@ -71,7 +72,7 @@ static int ScoreHypotheticalStateEstimate(const State& xh, Cluster& cluster, con
  * @param inliers The measurements that support the hypothetical state estimate
  * 
  */ 
-static tModel GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<Cluster::IteratorPair>& inliers);
+static tModel GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<typename Cluster<DataType>::IteratorPair>& inliers);
 
 private:
 
@@ -85,7 +86,7 @@ static void CalculateMeasurmentAndLikelihoodData(const System<tModel>& sys, tMod
  * @param cluster_iter An iterator to a cluster on which RANSAC will be performed
  * @param sys An object containing all the R-RANSAC data
  */ 
-static  void RunSingle(const std::list<Cluster>::iterator cluster_iter, System<tModel>& sys);
+static  void RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys);
 
 
 };
@@ -102,12 +103,12 @@ Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::Ransac() {
 //----------------------------------------------------------------------------------------------------------
 
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
-std::vector<Cluster::IteratorPair > Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateMinimumSubset(const unsigned int num_meas,  Cluster& cluster) {
+std::vector<typename Cluster<typename tModel::DataType>::IteratorPair > Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateMinimumSubset(const unsigned int num_meas,  Cluster<DataType>& cluster) {
    
     if (num_meas > cluster.data_.size() || num_meas < 0)
         throw std::runtime_error("RANSAC: GenerateMinimumSubset: num_meas must be less than the number of different time steps of measurements in cluster and greater than zero.");
 
-    std::vector<Cluster::IteratorPair> meas_index(num_meas);
+    std::vector<typename Cluster<DataType>::IteratorPair> meas_index(num_meas);
 
     // Get a random measurement from current time step
     meas_index.back().outer_it = std::prev(cluster.data_.end());
@@ -139,7 +140,7 @@ std::vector<Cluster::IteratorPair > Ransac<tModel, tSeed, tLMLEPolicy, tAssociat
 
 //----------------------------------------------------------------------------------------------------------
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
-int Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalStateEstimate(const State& xh, Cluster& cluster, const System<tModel>& sys, std::vector<Cluster::IteratorPair>& inliers) {
+int Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalStateEstimate(const State& xh, Cluster<DataType>& cluster, const System<tModel>& sys, std::vector<typename Cluster<DataType>::IteratorPair>& inliers) {
 
     inliers.clear(); // Make sure it is empty
     int score = 0;
@@ -148,11 +149,11 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalSta
     int src_index = 0;
     double d = 0;          // The distance
 
-    Cluster::IteratorPair pair;
+    typename Cluster<DataType>::IteratorPair pair;
     typename tModel::State xh_p;         // propagated state
 
     std::vector<Eigen::MatrixXd> innov_cov_inv(sys.sources_.size());
-    std::vector<Meas> estimated_meas(sys.sources_.size());
+    std::vector<Meas<DataType>> estimated_meas(sys.sources_.size());
     std::vector<bool> innov_cov_set(sys.sources_.size(),false);
     std::vector<bool> src_contributed(sys.sources_.size(),false);
 
@@ -188,6 +189,7 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalSta
                 V = tModel::GetLinObsMatSensorNoise(sys.sources_,xh_p,src_index);
                 innov_cov_inv[src_index] = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + H*Q_bar*H.transpose()).inverse();
                 estimated_meas[src_index] = sys.sources_[src_index].GetEstMeas(xh_p);
+                estimated_meas[src_index].type = sys.sources_[src_index].params_.type_;
                 innov_cov_set[src_index] = true;
             }
 
@@ -216,7 +218,7 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalSta
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
-tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<Cluster::IteratorPair>& inliers) {
+tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<typename Cluster<DataType>::IteratorPair>& inliers) {
 
     // Create new track with state estimate at the same time step as the oldest inlier measurement
     tModel new_track;
@@ -257,18 +259,18 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(con
 
 
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
-void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const std::list<Cluster>::iterator cluster_iter, System<tModel>& sys) {
+void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys) {
 
     int best_score = 0;
     int score = 0;
     bool success = false;
     unsigned int iterations = 0;
     unsigned int iteration_stopping_criteria = 10; // If after this many iterations the best score is still zero, then it will terminate. 
-    std::vector<Cluster::IteratorPair> meas_subset;
+    std::vector<typename Cluster<DataType>::IteratorPair> meas_subset;
     typename tModel::State hypothetical_state;
     typename tModel::State best_hypothetical_state;
-    std::vector<Cluster::IteratorPair> inliers;
-    std::vector<Cluster::IteratorPair> best_inliers;
+    std::vector<typename Cluster<DataType>::IteratorPair> inliers;
+    std::vector<typename Cluster<DataType>::IteratorPair> best_inliers;
     while (best_score < sys.params_.RANSAC_score_stopping_criteria_ && iterations < sys.params_.RANSAC_max_iters_) {
         meas_subset = GenerateMinimumSubset(sys.params_.RANSAC_minimum_subset_, *cluster_iter);
         hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys,success);
@@ -296,7 +298,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const std
 
     if (best_score > sys.params_.RANSAC_score_minimum_requirement_) {
         tModel new_track =  GenerateTrack(best_hypothetical_state, sys, best_inliers);
-        DataTreeClusters::MeasurementLocationInfo info;
+        typename DataTreeClusters<DataType>::MeasurementLocationInfo info;
         info.cluster_iter = cluster_iter;
         std::mutex m;
         
@@ -326,7 +328,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::Run(System<tModel>&
 
 std::vector<std::thread> threads;
 
-for (std::list<Cluster>::iterator& cluster_iter : sys.clusters_) {
+for (auto& cluster_iter : sys.clusters_) {
     
     if (cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_) {
 

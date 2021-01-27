@@ -18,7 +18,7 @@ using namespace lie_groups;
 
 template<typename tModel, template<typename > typename tSeed> 
 struct LMLEDummy : tSeed<tModel>{
-    static void GenerateHypotheticalStateEstimatePolicy(const std::vector<Cluster::IteratorPair>& meas_subset, const System<tModel>& sys);
+    static void GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<typename tModel::DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
 };
 
 template<typename tModel>
@@ -38,12 +38,12 @@ typedef ModelRN<R2_r2, TransformNULL> Model;
 
 
 
-Cluster cluster;
+Cluster<double> cluster;
 Ransac<Model, SeedDummy, LMLEDummy, StatisticDummy> ransac;
 
 srand(time(NULL));
 
-Meas m;
+Meas<double> m;
 m.pose = Eigen::Matrix<double,2,1>::Random();
 m.type = MeasurementTypes::RN_POS;
 unsigned int max_times = 20;
@@ -81,7 +81,7 @@ while (num_min_subset < 1) {
 }
 
 
-std::vector<Cluster::IteratorPair> meas_index = ransac.GenerateMinimumSubset(num_min_subset, cluster);
+std::vector<Cluster<double>::IteratorPair> meas_index = ransac.GenerateMinimumSubset(num_min_subset, cluster);
 
 // Make sure there is a measurement from the current time step and that they are all from different time steps
 int times[meas_index.size()];
@@ -133,7 +133,7 @@ source_params2.source_index_ = 1;
 source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 source_params2.RANSAC_inlier_probability_ = 0.9;
 
-source_params3.type_ = MeasurementTypes::RN_POS_VEL;
+source_params3.type_ = MeasurementTypes::RN_POS;
 source_params3.source_index_ = 2;
 source_params3.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 source_params3.RANSAC_inlier_probability_ = 0.9;
@@ -154,7 +154,7 @@ sys.sources_.push_back(source3);
 sys.params_ = params;
 
 // Setup cluster 
-Cluster cluster;
+Cluster<double> cluster;
 
 // Setup the model
 Model x;
@@ -163,7 +163,7 @@ x.state_.g_.data_.setRandom();
 x.state_.u_.data_.setRandom();
 
 // Setup Measurements
-Meas m1, m2, m3, m4;
+Meas<double> m1, m2, m3, m4;
 m1.source_index = 0;
 m1.type = MeasurementTypes::RN_POS;
 
@@ -191,9 +191,9 @@ double start_time = 0;
 
 for (double ii = start_time; ii < steps*dt; ii += dt ) {
     x.PropagateModel(dt);
-    Meas tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
-    Meas tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
-    Meas tmp4 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+    Meas<double> tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
+    Meas<double> tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+    Meas<double> tmp4 = sys.sources_[m4.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
     m1.time_stamp = ii + dt;
     m1.pose = tmp1.pose;
 
@@ -221,7 +221,7 @@ for (double ii = start_time; ii < steps*dt; ii += dt ) {
 
 
 // Get score and inliers
-std::vector<Cluster::IteratorPair> inliers;
+std::vector<Cluster<double>::IteratorPair> inliers;
 Ransac<Model, SeedDummy, LMLEDummy, ModelPDFPolicy> ransac;
 int score = ransac.ScoreHypotheticalStateEstimate(x.state_,cluster,sys,inliers);
 
@@ -308,7 +308,7 @@ sys.sources_.push_back(source3);
 sys.params_ = params;
 
 // Setup Measurements
-Meas m1, m2, m3, m4;
+Meas<double> m1, m2, m3, m4;
 m1.source_index = 0;
 m1.type = MeasurementTypes::RN_POS;
 
@@ -350,7 +350,7 @@ double dt = 0.1;
 double end_time = 5; // seconds;
 double start_time = 0; // seconds;
 double fov = 10;  // The surveillance region is a square centered at zero with side length 20
-Meas tmp1, tmp2, tmp3, tmp4;
+Meas<double> tmp1, tmp2, tmp3, tmp4;
 
 for (double ii =start_time; ii < end_time; ii += dt) {
 

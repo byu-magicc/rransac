@@ -444,15 +444,8 @@ Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> M
 
     MatXd H = GetLinObsMatState(sources, this->state_,m.source_index);         // Jacobian of observation function w.r.t. state
     MatXd V = GetLinObsMatSensorNoise(sources, this->state_,m.source_index);   // Jacobian of observation function w.r.t. noise
-    MatXd R;                                                          // Measurement noise covariance
 
-    if(sources[m.source_index].params_.meas_cov_fixed_) {                   // Find measurement covariance depending on it being fixed or not
-        R = sources[m.source_index].params_.meas_cov_;
-    } else {
-        R = m.meas_cov;
-    }
-
-    return H*err_cov_*H.transpose() + V*R*V.transpose();
+    return H*err_cov_*H.transpose() + V*sources[m.source_index].params_.meas_cov_*V.transpose();
 }
 
 //---------------------------------------------------------------------------------------------------------
