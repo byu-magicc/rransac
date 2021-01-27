@@ -127,9 +127,6 @@ void ModelPDFPolicy<tModel>::FilteringCalculateMeasStatistics(const System<tMode
         // The innovation covariance will be the same for all measurements of the same measurement source
         S = model.GetInnovationCovariance(sys.sources_, outer_iter->front());
         det_S = S.determinant();
-        // if (det_S <= 0) {
-        //     throw std::runtime_error("ModelPDFPolicy: The determinant of the innovation covariance is negative. It should be positive");
-        // }
         det_S_sqrt = sqrt(det_S);
         
         info.volume = GetVolume(sys, det_S_sqrt, src_index);
@@ -138,8 +135,11 @@ void ModelPDFPolicy<tModel>::FilteringCalculateMeasStatistics(const System<tMode
 
             distance = GetDistance(sys.sources_, *inner_iter, model, S);
             inner_iter->likelihood = GetLikelihood(distance, S.rows(), det_S_sqrt); 
+            info.num_assoc_meas++; // increment the number of associated measurements for the source
 
+#ifdef DEBUG_BUILD
             if (isnan(inner_iter->likelihood)) {
+                std::cerr << "Model PDF policy: measurement likelihood is NAN. Showing some values" << std::endl;
                 std::cerr << "meas pose: "  << std::endl << inner_iter->pose << std::endl;
                 std::cerr << "meas twist: " << std::endl << inner_iter->twist << std::endl;
                 std::cerr << "distance: " << distance << std::endl;
@@ -150,8 +150,8 @@ void ModelPDFPolicy<tModel>::FilteringCalculateMeasStatistics(const System<tMode
                 std::cerr << "P.determinant(): " << model.err_cov_.determinant() << std::endl;
                 std::cerr << "here: " << std::endl;
             }
+#endif
 
-            info.num_assoc_meas++; // increment the number of associated measurements for the source
 
         }
 
@@ -237,10 +237,6 @@ void ModelPDFPolicy<tModel>::CalculateWeightsForModel(const System<tModel>& sys,
         for(auto inner_meas_iter = outer_meas_iter->begin(); inner_meas_iter != outer_meas_iter->end(); ++inner_meas_iter) {                
 
             inner_meas_iter->weight = inner_meas_iter->likelihood*source.params_.probability_of_detection_/ (source.params_.expected_num_false_meas_*denominator);
-
-            if (isnan(inner_meas_iter->weight)  || inner_meas_iter->weight <=0  || inner_meas_iter->weight > 1e6) {
-                std::cerr << "weight: " << inner_meas_iter->weight << std::endl;
-            }
 
         }
     }

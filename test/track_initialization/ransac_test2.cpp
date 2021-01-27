@@ -40,7 +40,7 @@ struct Test1 {
     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
     typedef Eigen::Matrix<double,4,4> ProcessNoiseCov;
     std::vector<State> states;
-    typedef Eigen::Matrix<double,2,1> VecR;
+    typedef Eigen::Matrix<double,2,1> VecU;
     std::string test_name = "R2 Test";
 
     Test1() {
@@ -75,7 +75,7 @@ struct Test2 {
     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
     typedef Eigen::Matrix<double,6,6> ProcessNoiseCov;
     std::vector<State> states;
-    typedef Eigen::Matrix<double,3,1> VecR;
+    typedef Eigen::Matrix<double,3,1> VecU;
     std::string test_name = "R3 Test";
 
     Test2() {
@@ -110,7 +110,7 @@ struct Test3 {
     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
     typedef Eigen::Matrix<double,6,6> ProcessNoiseCov;
     std::vector<State> states;
-    typedef Eigen::Matrix<double,3,1> VecR;
+    typedef Eigen::Matrix<double,3,1> VecU;
     std::string test_name = "SE2 Pose Test";
 
     Test3() {
@@ -152,7 +152,7 @@ struct Test4 {
     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
     typedef Eigen::Matrix<double,12,12> ProcessNoiseCov;
     std::vector<State> states;
-    typedef Eigen::Matrix<double,6,1> VecR;
+    typedef Eigen::Matrix<double,6,1> VecU;
     std::string test_name = "SE3 Pose Test";
 
     Test4() {
@@ -180,6 +180,94 @@ struct Test4 {
 
   
 };
+
+//---------------------------------------------------------------------------------------------------------
+
+struct Test5 {
+    public:
+    typedef ModelSENPosVel<SE2_se2, TransformNULL> Model;
+    typedef typename Model::State State;
+    typedef typename State::Algebra Algebra;
+    typedef typename Model::Source Source;
+    typedef Ransac<Model, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC;
+    typedef Eigen::Matrix<double,2,2> MatR;
+    typedef Eigen::Matrix<double,4,4> MatR2;
+    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POS;
+    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POS_VEL;
+    typedef Eigen::Matrix<double,5,5> ProcessNoiseCov;
+    std::vector<State> states;
+    typedef Eigen::Matrix<double,3,1> VecU;
+    std::string test_name = "SE2 Pos Test";
+
+    Test5() {
+        double pos = 5;
+        double rot = 0.1;
+        double t_vel = 0.5;
+        double a_vel = 0.1;
+        Eigen::Matrix<double,3,1> pose;
+        states.resize(4);
+        pose << pos, pos, 0;
+        states[0].g_.data_ = State::Algebra::Exp(pose);
+        states[0].u_.data_ << t_vel, 0,0;
+        pose << pos, -pos, rot*2;
+        states[1].g_.data_ = State::Algebra::Exp(pose);
+        states[1].u_.data_ << t_vel,0,0;
+        pose << -pos, -pos, rot;
+        states[2].g_.data_ = State::Algebra::Exp(pose);
+        states[2].u_.data_ << t_vel, 0, a_vel;
+        pose << -pos, pos, -rot;
+        states[3].g_.data_ = State::Algebra::Exp(pose);
+        states[3].u_.data_ << t_vel,0,-a_vel;
+    }
+
+  
+};
+
+//---------------------------------------------------------------------------------------------------------
+
+// This test needs a good seed policy to work 
+
+// struct Test6 {
+//     public:
+//     typedef ModelSENPosVel<SE3_se3, TransformNULL> Model;
+//     typedef typename Model::State State;
+//     typedef typename State::Algebra Algebra;
+//     typedef typename Model::Source Source;
+//     typedef Ransac<Model, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC;
+//     typedef Eigen::Matrix<double,3,3> MatR;
+//     typedef Eigen::Matrix<double,6,6> MatR2;
+//     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POS;
+//     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POS_VEL;
+//     typedef Eigen::Matrix<double,10,10> ProcessNoiseCov;
+//     std::vector<State> states;
+//     typedef Eigen::Matrix<double,6,1> VecU;
+//     std::string test_name = "SE3 Pos Test";
+
+//     Test6() {
+//         double pos = 10;
+//         double rot1 = 0;
+//         double rot2 = 0.2;
+//         double rot3 = 0;
+//         double t_vel = 0.5;
+//         double a_vel = 0.1;
+//         Eigen::Matrix<double,6,1> pose;
+//         states.resize(4);
+//         pose << pos, pos, pos, rot1, rot2, rot3;
+//         states[0].g_.data_ = State::Algebra::Exp(pose);
+//         states[0].u_.data_ << t_vel, 0, 0, 0, 0, 0;
+//         pose << -pos, pos, -pos, rot1, -rot2, rot3;
+//         states[1].g_.data_ = State::Algebra::Exp(pose);
+//         states[1].u_.data_ << t_vel, 0, 0, 0, 0, 0;
+//         pose << pos, -pos, pos, -rot1, rot2, -rot3;
+//         states[2].g_.data_ = State::Algebra::Exp(pose);
+//         states[2].u_.data_ << t_vel, 0, 0, 0, -a_vel, 0;
+//         pose << -pos, -pos, -pos, -rot1, -rot2, -rot3;
+//         states[3].g_.data_ = State::Algebra::Exp(pose);
+//         states[3].u_.data_ << t_vel, 0, 0, 0, 0, -a_vel;
+//     }
+
+  
+// };
 
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
@@ -229,6 +317,7 @@ params.cluster_time_threshold_ = 2;
 params.cluster_velocity_threshold_ = 1;
 params.cluster_position_threshold_ = 0.5;
 params.max_num_models_ = 5;
+// params.NonLinearInnovCovId_ = true;
 
 sys.sources_.push_back(source1);
 sys.sources_.push_back(source2);
@@ -275,7 +364,7 @@ for (double ii =start_time; ii < end_time; ii += dt) {
 
         State rand_state;
         rand_state.g_.data_ = T::State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
-        rand_state.u_.data_ = T::VecR::Random();
+        rand_state.u_.data_ = T::VecU::Random();
 
         tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,T::MatR::Identity()*sqrt(noise)*0);
         tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,T::MatR2::Identity()*sqrt(noise)*0);
@@ -318,8 +407,8 @@ RANSAC ransac;
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4>;
-using MyTypes = ::testing::Types<Test4>;
+using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
+// using MyTypes = ::testing::Types<Test6>;
 TYPED_TEST_SUITE(RANSACTest, MyTypes);
 
 TYPED_TEST(RANSACTest, FullTest) {
@@ -328,7 +417,7 @@ TYPED_TEST(RANSACTest, FullTest) {
     this->ransac.Run(this->sys);
     auto end = std::chrono::system_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()/1e9;
-    std::cout << this->test_data.test_name << " : " <<  elapsed << '\n';
+    std::cout << "RANSAC test benchmark for " << this->test_data.test_name << " : " <<  elapsed << '\n';
 
 
 // for (auto& created_track: this->sys.models_) {

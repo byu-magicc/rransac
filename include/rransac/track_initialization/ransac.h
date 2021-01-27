@@ -245,12 +245,13 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(con
         propagate_time = curr_time;
         new_track.PropagateModel(dt);
 
-        if (isnan(new_track.state_.g_.data_(0.0))) {
 
-            std::cerr << "current time: " << curr_time << std::endl;
-            std::cerr << "new_track g: " << std::endl << new_track.state_.g_.data_ << std::endl;
-            std::cerr << "new_track u: " << std::endl << new_track.state_.u_.data_ << std::endl << std::endl;
-        }
+        // if (isnan(new_track.state_.g_.data_(0.0))) {
+
+        //     std::cerr << "current time: " << curr_time << std::endl;
+        //     std::cerr << "new_track g: " << std::endl << new_track.state_.g_.data_ << std::endl;
+        //     std::cerr << "new_track u: " << std::endl << new_track.state_.u_.data_ << std::endl << std::endl;
+        // }
 
         while(iter != inliers.end() && iter->inner_it->time_stamp == curr_time) {
 

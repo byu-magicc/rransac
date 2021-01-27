@@ -344,19 +344,17 @@ for (std::vector<Meas<DataType>> meas : new_assoc_meas_) {
     // cov_sum += cov;
 }
 
-// std::cout << "cov_sum: " << std::endl << cov_sum << std::endl;
-
-
-// update = err_cov_ * state_update_sum;
-
-// std::cout << "state_update_sum: " << std::endl << state_update_sum << std::endl;
-// std::cout << "update: " << std::endl << update << std::endl;
 
 
 // Update the error covariance
 error_cov_inverse += cov_sum;
 err_cov_ = error_cov_inverse.inverse();
 // err_cov_ = cov;
+
+#ifdef DEBUG_BUILD
+     if (err_cov_.determinant() <=0 )
+        throw std::runtime_error("ModelBase::GetStateUpdate The determinant of the error covariance is <=0. It must be positive since it is a positive definite matrix. ") ;
+#endif
 
 // Update the state
 update = err_cov_ * state_update_sum;

@@ -14,6 +14,14 @@ find_package(Eigen3)
 find_package(Boost)
 find_package(Ceres REQUIRED)
 
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+message(STATUS "Build type is Debug")
+message(STATUS ${CMAKE_BUILD_TYPE})
+add_compile_definitions(DEBUG_BUILD)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+
+
+
 # message(STATUS "${EIGEN3_INCLUDE_DIR}")
 # message(STATUS "here")
 
