@@ -46,7 +46,7 @@ void DerivedInit() {
  * opportunity to perform other calculations using the data. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void DerivedSetData(Mat3d data) {
+void DerivedSetData(const Mat3d data) {
     this->data_ = data;
     H1_ = data.block(0,0,2,2);
     h2_ = data.block(0,2,2,1);

@@ -29,7 +29,7 @@ void DerivedInit() {
  * opportunity to perform other calculations using the data. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void DerivedSetData(Mat3d data) {
+void DerivedSetData(const Mat3d data) {
     throw std::runtime_error("TransformNULL::SetData Not Implemented.");
 }
 

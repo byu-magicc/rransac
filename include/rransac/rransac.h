@@ -19,6 +19,7 @@ template<typename tModel, template<class> typename tModelDataAssociationPolicyCl
 struct RRANSACTemplateParameters {
 
     typedef DataAssociationHost<tModel,tModelDataAssociationPolicyClass,tClusterDataTreeAssociationPolicyClass> DataAssociation_;
+    typedef tModel Model_;
     typedef typename tModel::DataType DataType_;
     typedef typename tModel::Source Source_;
     typedef typename tModel::State State_;
@@ -53,6 +54,7 @@ class RRANSAC {
 public:
 
     typedef typename tRRANSACTemplateParameters::DataAssociation_ DataAssociation_;
+    typedef typename tRRANSACTemplateParameters::Model_ Model_;
     typedef typename tRRANSACTemplateParameters::DataType_ DataType_;
     typedef typename tRRANSACTemplateParameters::Source_ Source_;
     typedef typename tRRANSACTemplateParameters::State_ State_;
@@ -131,11 +133,11 @@ public:
     /**
      * Returns a constant pointer to the system which contains all of the R-RANSAC data. 
      */ 
-    const System<tModel>* GetSystemInformation() {return &sys_};
+    const System<Model_>* GetSystemInformation() {return &sys_;};
 
 private:
 
-    System<tModel> sys_;
+    System<Model_> sys_;
     Ransac_ ransac_;
 
         /**
@@ -158,12 +160,11 @@ template<typename tRRANSACTemplateParameters>
 bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& params) {
 
     if (params.source_index_ != sys_.source_index_counter_) {
-        throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. 
-        Your source index is " + std::to_string(params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
+        throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. Your source index is " + std::to_string(params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
         return false;
     } else {
         Source_ source;
-        source.init(params);
+        source.Init(params);
         sys_.sources_.push_back(source);
         ++sys_.source_index_counter_;
         return true;
@@ -178,12 +179,11 @@ template<typename tRRANSACTemplateParameters>
 bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& params, std::function<bool(const State_&)> state_in_surveillance_region_callback) {
 
     if (params.source_index_ != sys_.source_index_counter_) {
-        throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. 
-        Your source index is " + std::to_string(params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
+        throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. Your source index is " + std::to_string(params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
         return false;
     } else {
         Source_ source;
-        source.init(params,state_in_surveillance_region_callback);
+        source.Init(params,state_in_surveillance_region_callback);
         sys_.sources_.push_back(source);
         ++sys_.source_index_counter_;
         return true;
@@ -196,14 +196,15 @@ bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& para
 
 template<typename tRRANSACTemplateParameters>
 bool RRANSAC<tRRANSACTemplateParameters>::ChangeSourceParameters(const SourceParameters &new_params) {
-    if (new_params.source_index < 0 || source_index >= sys_.sources_.size())
+    if (new_params.source_index_ < 0 || new_params.source_index_ >= sys_.sources_.size()) {
         throw std::runtime_error("RANSAC::ChangeSourceParameters The source index must be greater than 0 and less than " + std::to_string(sys_.sources_.size()));
         return false;
-    else if (sys_.sources_[source_index].params_.source_index_ != new_params.source_index) {
-        throw std::runtime_error("RANSAC::ChangeSourceParameters Cannot change the source index.")
+    }
+    else if (sys_.sources_[new_params.source_index_].params_.source_index_ != new_params.source_index_) {
+        throw std::runtime_error("RANSAC::ChangeSourceParameters Cannot change the source index.");
         return false;
     } else {
-        return sys_.sources_[source_index].ChangeSourceParameters(new_params);
+        return sys_.sources_[new_params.source_index_].SetParameters(new_params);
     }
     
 }
@@ -219,7 +220,7 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
 
     if (sys_.time_set_) {
         if (time_stamp < sys_.current_time_) {
-            throw std::runtime_error("RRANSAC::VerifyMeasurements The measurement time stamp is less than the current system time stamp. Measurements must be provided in chronological order")
+            throw std::runtime_error("RRANSAC::VerifyMeasurements The measurement time stamp is less than the current system time stamp. Measurements must be provided in chronological order");
         success = false;
         }
     }
@@ -246,7 +247,7 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
             success = false;
         }
 
-        if (sys_.source_[meas_iter->source_index].params_.has_twist && meas_iter->twist.rows() != Source_::meas_dim_) {
+        if (sys_.sources_[meas_iter->source_index].params_.has_twist && meas_iter->twist.rows() != Source_::meas_dim_) {
             throw std::runtime_error("RANSAC::VerifyMeasurements The twist of the measurement is not the correct dimension.");
             success = false;
         }

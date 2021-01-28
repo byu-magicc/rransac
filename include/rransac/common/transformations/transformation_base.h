@@ -42,7 +42,7 @@ void Init() {
  * other stuff needs to be done. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void SetData(tData& data) {
+void SetData(const tData& data) {
     static_cast<tDerived*>(this)->DerivedSetData(data);
 }
 
