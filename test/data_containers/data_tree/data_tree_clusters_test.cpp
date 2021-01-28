@@ -17,6 +17,7 @@ typedef SourceR2 Source;
 typedef TransformHomography<State> Transform;
 typedef ModelRN<State, TransformHomography> Model;
 typedef Eigen::Matrix<double,2,1> MatData;
+typedef Meas<double> Measurement;
 
 void SetUp() override {
 
@@ -35,6 +36,7 @@ params.cluster_time_threshold_ = 2;
 params.cluster_position_threshold_ = 2.2;
 params.cluster_velocity_threshold_ = 1;
 params.RANSAC_minimum_subset_ = 5;
+params.process_noise_covariance_ = Eigen::Matrix4d::Identity();
 
 Transform trans;
 Eigen::Matrix3d homography;
@@ -54,13 +56,15 @@ m_.pose = MatData::Zero();
 }
 
 System<Model> sys_;
-Meas<double> m_;
+Measurement m_;
 
 };
 
 
 // This tests the AddMeasurement, AddMeasurrement, MergeClusters and TransformMeasurements functions
 TEST_F(DataTreeClustersTestObject, AddMeasurementsTest) {
+
+typedef Meas<double> Measurement;
 
 double size = 0;
 ASSERT_EQ(sys_.data_tree_.Size(), size);  // Make sure size is initialized to zero
@@ -136,7 +140,7 @@ for (auto outer_iter = sys_.data_tree_.data_.begin()->data_.begin(); outer_iter 
 
 // Construct a vector of measurements to add.
 unsigned int num_additional_meas = 100;
-std::vector<Meas> vec_meas(num_additional_meas);
+std::vector<Measurement> vec_meas(num_additional_meas);
 for (auto& m : vec_meas) {
     m.time_stamp = 10;
     m.pose = Eigen::Matrix<double,2,1>::Random();
@@ -147,8 +151,8 @@ sys_.data_tree_.AddMeasurements(sys_,vec_meas);
 ASSERT_EQ(sys_.data_tree_.Size(), size);
 
 // Construct a list of measurements to add.
-std::list<Meas> list_meas(num_additional_meas);
-Meas list_m;
+std::list<Measurement> list_meas(num_additional_meas);
+Measurement list_m;
 for (auto iter = list_meas.begin(); iter != list_meas.end(); ++iter) {
     list_m.time_stamp = 10;
     list_m.pose = Eigen::Matrix<double,2,1>::Random();
@@ -201,8 +205,8 @@ for (unsigned int ii; ii < num_measurements; ++ii) {
 }
 
 // Get random measurements to remove until all of them are removed
-DataTreeClusters::MeasurementLocationInfo measurement_location;
-std::vector<DataTreeClusters::MeasurementLocationInfo> measurements_location;
+DataTreeClusters<double>::MeasurementLocationInfo measurement_location;
+std::vector<DataTreeClusters<double>::MeasurementLocationInfo> measurements_location;
 
 while (sys_.data_tree_.Size() != 0) {
 

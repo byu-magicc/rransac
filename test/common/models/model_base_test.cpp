@@ -59,6 +59,8 @@ class ModelTest : public ::testing::Test {
 
 protected:
 
+typedef Meas<double> Measurement;
+
 static constexpr unsigned int meas_dim = Model::Model::Source::meas_dim_;
 static constexpr unsigned int state_dim = Model::Model::State::g_type_::dim_*2;
 static constexpr unsigned int cov_dim = Model::Model::cov_dim_;
@@ -87,7 +89,6 @@ meas_cov1.setIdentity();
 meas_cov1 *= meas_cov_scale;
 meas_std1.setIdentity();
 meas_std1 *= sqrt(meas_cov_scale);
-source_params1.meas_cov_fixed_ = true;
 // source_params1.meas_cov_fixed_ = false;
 source_params1.meas_cov_ = meas_cov1;
 source_params1.type_ = Model::MeasType1;
@@ -96,7 +97,6 @@ source_params1.expected_num_false_meas_ = 0.8;
 source_params1.probability_of_detection_ = 0.8;
 source_params1.gate_probability_ = 0.8;
 
-source_params2.meas_cov_fixed_ = false;
 meas_cov2.setIdentity();
 meas_cov2 *= meas_cov_scale;
 // source_params2.meas_cov_fixed_ = true;
@@ -106,6 +106,7 @@ source_params2.source_index_ = 1;
 source_params2.expected_num_false_meas_ = 0.8;
 source_params2.probability_of_detection_ = 0.8;
 source_params2.gate_probability_ = 0.8;
+source_params2.meas_cov_ = meas_cov2;
 meas_std2.setIdentity();
 meas_std2 *= sqrt(meas_cov_scale);
 
@@ -125,11 +126,11 @@ params.process_noise_covariance_ = Eigen::Matrix<double,cov_dim,cov_dim>::Identi
 // std::cerr << "here 1" << std::endl;
 
 // Generate Trajectory and measurements
-Meas m1;
-Meas m2;
-std::vector<std::vector<Meas>> gen_meas(2);
-std::vector<Meas> meas1(num_meas);
-std::vector<Meas> meas2(num_meas);
+Measurement m1;
+Measurement m2;
+std::vector<std::vector<Measurement>> gen_meas(2);
+std::vector<Measurement> meas1(num_meas);
+std::vector<Measurement> meas2(num_meas);
 
 state = Model::Model::GetRandomState();
 
@@ -152,7 +153,7 @@ for (unsigned int ii = 0; ii < num_iters; ++ii) {
 
         m1 = source1.GenerateRandomMeasurement(state, meas_std1);
         m2 = source2.GenerateRandomMeasurement(state, meas_std2);
-        m2.meas_cov = meas_cov2;
+        // m2.meas_cov = meas_cov2;
         m1.weight = 1.0/(num_meas+1);
         m2.weight = 1.0/(num_meas+1);
         m1.time_stamp = ii*dt;
@@ -203,7 +204,7 @@ std::vector<typename Model::Model::State> states;
 
 std::vector<typename Model::Model::Source> sources;
 
-std::vector<std::vector<std::vector<Meas>>> new_meas; // time, source, measurements
+std::vector<std::vector<std::vector<Measurement>>> new_meas; // time, source, measurements
 
 int num_meas = 2;
 int num_iters = 10;
@@ -318,10 +319,10 @@ if (TypeParam::MeasType1 == MeasurementTypes::SEN_POS|| TypeParam::MeasType1 == 
 // Verify the Consensus Set
 ASSERT_EQ(this->track.cs_.Size(), this->num_iters);
 
-ConsensusSet<Meas> set;
+ConsensusSet<Meas<double>> set;
 set.consensus_set_.begin();
 
-for( std::list<std::vector<Meas>>::iterator it = this->track.cs_.consensus_set_.begin(); it!= this->track.cs_.consensus_set_.end(); ++it) {
+for( std::list<std::vector<Meas<double>>>::iterator it = this->track.cs_.consensus_set_.begin(); it!= this->track.cs_.consensus_set_.end(); ++it) {
     ASSERT_EQ( (*it).size(), 4);
 }
 

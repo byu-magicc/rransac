@@ -1,97 +1,93 @@
 #include <string>
 #include <gtest/gtest.h>
-#include <rransac.h>
+#include "rransac.h"
+#include "common/models/model_RN.h"
+#include "state.h"
+#include "common/transformations/transformation_null.h"
+#include "common/transformations/trans_homography.h"
+#include "common/data_association/model_policies/model_pdf_policy.h"
+#include "common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
+#include "track_initialization/seed_policies/null_policy.h"
+#include "track_initialization/lmle_policies/linear_lmle_policy.h"
 
-namespace rransac {
 
 
-//--------------------------------------------------------
+using namespace rransac;
+using namespace lie_groups;
+
+template <typename State>
+struct CallbackClass {
+
+bool func(const State& state) {
+    if (state.g_.data_.norm() < 5)
+        return true;
+    else 
+        return false;
+}
+};
+
+typedef ModelRN<R2_r2,TransformHomography> Model;
+typedef RRANSACTemplateParameters<Model,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RANSACParams;
 
 TEST(RRANSACTest, AddSource) {
 
-SourceParameters source_params1;
-SourceParameters source_params2;
-SourceParameters source_params3;
-SourceParameters source_params4;
-SourceParameters source_params5;
-SourceParameters source_params6;
-RRANSAC r;
+RRANSAC<RANSACParams> rransac;
 
-// This is a valid source. Make sure we can add it
-source_params1.source_id_ = 0;
-source_params1.meas_cov_fixed_ = false;
-source_params1.expected_num_false_meas_ = 0.1;
-source_params1.type_ = SourceTypes::R2_POS;
-source_params2.probability_of_detection_ = 0.89;
+CallbackClass<RANSACParams::State_> call;
 
-ASSERT_TRUE(r.AddSource(source_params1));
-// You shouldn't be able to add it again
-ASSERT_ANY_THROW(r.AddSource(source_params1));
+// Init sources
+typename RANSACParams::Source_ source1, source2, source3, source4;
+SourceParameters source_params1, source_params2, source_params3, source_params4;
 
-// This is an invalid source since the number of false measurements
-// is negative.
-source_params2 = source_params1;
-source_params2.source_id_ = 1;
-source_params2.expected_num_false_meas_ = -0.1;
+source_params1.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params1.type_ = MeasurementTypes::RN_POS;
+source_params2.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params2.type_ = MeasurementTypes::RN_POS;
+source_params3.meas_cov_ = Eigen::Matrix4d::Identity();
+source_params3.type_ = MeasurementTypes::RN_POS_VEL;
+source_params4.meas_cov_ = Eigen::Matrix4d::Identity();
+source_params4.type_ = MeasurementTypes::RN_POS_VEL;
 
-ASSERT_ANY_THROW(r.AddSource(source_params2));
+// Test invalid source index
+source_params1.source_index_ = -1;
+ASSERT_ANY_THROW(rransac.AddSource(source_params1));
+ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State_>::func, call, std::placeholders::_1)));
+source_params1.source_index_ = 1;
+ASSERT_ANY_THROW(rransac.AddSource(source_params1));
+ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State_>::func, call, std::placeholders::_1));
 
+// Add valid source index
+source_params1 = 0;
+ASSERT_NO_THROW(rransac.AddSource(source_params1));
 
-// This is an invalid source since the measurement covariance is fixed
-// but it is not initialized
-source_params3 = source_params1;
-source_params3.source_id_ = 2;
-source_params3.meas_cov_fixed_ = true;
-// source_params3.meas_cov_ = Eigen::Matrix2d::Identity();
+// Test invalid source index
+ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State_>::func, call, std::placeholders::_1));
 
+// Test valid source index
+source_params2.source_index_ = 1;
+ASSERT_ANY_THROW(rransac.AddSource(source_params2,std::bind(&CallbackClass<RANSACParams::State_>::func, call, std::placeholders::_1));
 
-ASSERT_ANY_THROW(r.AddSource(source_params3));
+// Test invalid source index
+source_params3.source_index_ = 0;
+ASSERT_ANY_THROW(rransac.AddSource(source_params3));
 
+// Test valid source index
+source_params3.source_index_ = 2;
+ASSERT_NO_THROW(rransac.AddSource(source_params3));
 
-// This is an invalid source since the type doesn't exist
-source_params4.source_id_ = 3;
-source_params4.meas_cov_fixed_ = false;
-source_params4.expected_num_false_meas_ = 0.1;
-ASSERT_ANY_THROW(r.AddSource(source_params4));
+// Test invalid source index
+source_params4.source_index_ = 4;
+ASSERT_ANY_THROW(rransac.AddSource(source_params4));
 
-// This is an invalid source since the source id's must be in order
-source_params5 = source_params1;
-source_params5.source_id_ = 2;
-ASSERT_ANY_THROW(r.AddSource(source_params5));
-
-// This is an invalid source since the probability of detection is not between 0 and 1
-source_params6 = source_params1;
-source_params6.probability_of_detection_ = -0.1;
-ASSERT_ANY_THROW(r.AddSource(source_params6));
-source_params6.probability_of_detection_ = 1.01;
-ASSERT_ANY_THROW(r.AddSource(source_params6));
-
-// Add valid sources
-for (int i = 1; i < 20; ++i) {
-    SourceParameters source_params = source_params1;
-    source_params.source_id_ = i;
-    r.AddSource(source_params);
-}
-
-// There should be 20 valid sources
-ASSERT_EQ(20, params.sources_.size());
+// Test valid source index
+source_params4.source_index_ = 3;
+ASSERT_NO_THROW(rransac.AddSource(source_params4));
 
 }
 
 
 
 
-//-----------------------------------------------------
-
-TEST(RRANSACTest, SetParameters) {
 
 
-Parameters P;
-RRANSAC r;
 
-ASSERT_TRUE(r.SetParameters(p));
-
-}
-
-
-} // namespace rransac

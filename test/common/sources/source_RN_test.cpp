@@ -49,6 +49,7 @@ params.type_ = MeasurementTypes::RN_POS;
 ASSERT_NO_THROW(source_r2.Init(params));
 
 params.type_ = MeasurementTypes::RN_POS_VEL;
+params.meas_cov_ = Eigen::Matrix4d::Identity();
 ASSERT_NO_THROW(source_r2.Init(params));
 
 // Make sure parameters were set correctly.

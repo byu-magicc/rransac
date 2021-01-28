@@ -55,28 +55,27 @@ typedef R2_r2 State;
 typedef ModelRN<State,TransformNULL> Model;
 typedef Model::Source Source;
 typedef System<Model> Sys;
+typedef Meas<double> Measurement;
 
 void SetUp() override {
 
 // None of these paramters matter for these tests. They just need to be set.
 Parameters params;
 params.meas_time_window_ = 10;
-params.fixed_time_interval_ = true;
-params.time_interval_ = 0.1;
 params.transform_consensus_set_ = false;
 params.cluster_position_threshold_ = 1;
 params.cluster_time_threshold_ = 1;
 params.cluster_position_threshold_ = 1;
 params.RANSAC_minimum_subset_ = 2;
 params.RANSAC_max_iters_ = 100;
-params.RANSAC_stopping_criteria_ = 20;
+params.RANSAC_score_stopping_criteria_ = 20;
 params.process_noise_covariance_ = Eigen::Matrix4d::Identity();
 
 // Setup the sources
 SourceParameters source_params1,source_params2, source_params3;
 Source source1, source2, source3;
 
-source_params1.meas_cov_fixed_ = true;
+// source_params1.meas_cov_fixed_ = true;
 source_params1.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params1.expected_num_false_meas_ = 0.1;
 source_params1.type_ = MeasurementTypes::RN_POS;
@@ -84,7 +83,7 @@ source_params1.probability_of_detection_ = 0.9;
 source_params1.gate_probability_ = 0.393469340287367;  // select it so that the gate threshold is 1
 source_params1.source_index_ = 0;
 
-source_params2.meas_cov_fixed_ = false;
+source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*3;
 source_params2.expected_num_false_meas_ = 0.2;
 source_params2.type_ = MeasurementTypes::RN_POS_VEL;
 source_params2.probability_of_detection_ = 0.9;
@@ -161,7 +160,6 @@ m4.pose = Eigen::Matrix<double,2,1>::Zero();
 m4.pose << 0.5, 0.5;
 m4.twist = Eigen::Matrix<double,2,1>::Zero();
 m4.twist << -0.5, 0.5;
-m4.meas_cov = Eigen::Matrix4d::Identity()*3;
 
 // Will be in the validation region of model 2
 m5.time_stamp = 0;
@@ -171,7 +169,6 @@ m5.pose = Eigen::Matrix<double,2,1>::Zero();
 m5.pose << -2.3, 0;
 m5.twist = Eigen::Matrix<double,2,1>::Zero();
 m5.twist << 0.7, 1.3;
-m5.meas_cov = Eigen::Matrix4d::Identity()*3;
 
 
 // Will be in the validation region of model 3
@@ -182,7 +179,6 @@ m6.pose = Eigen::Matrix<double,2,1>::Zero();
 m6.pose << 10.1, -9.6;
 m6.twist = Eigen::Matrix<double,2,1>::Zero();
 m6.twist << -2.3, 1.8;
-m6.meas_cov = Eigen::Matrix4d::Identity()*3;
 
 
 // Noisy Measurement
@@ -193,7 +189,6 @@ m7.pose = Eigen::Matrix<double,2,1>::Zero();
 m7.pose << -100, -100;
 m7.twist = Eigen::Matrix<double,2,1>::Zero();
 m7.twist << -2.3, 1.8;
-m7.meas_cov = Eigen::Matrix4d::Identity()*3;
 
 
 // Noisy Measurement
@@ -228,7 +223,7 @@ sys.new_meas_.push_back(m8);
 
 //--------------------------------------------------------------------------------------------
 
-bool HasMeasurement(const Model& model, const Meas& meas) {
+bool HasMeasurement(const Model& model, const Meas<double>& meas) {
 
     for(auto outer_iter = model.new_assoc_meas_.begin(); outer_iter != model.new_assoc_meas_.end(); ++ outer_iter) {
         for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
@@ -239,7 +234,7 @@ bool HasMeasurement(const Model& model, const Meas& meas) {
     return false;
 }
 
-bool HasMeasurementWeights(const Model& model, const Meas& meas){
+bool HasMeasurementWeights(const Model& model, const Meas<double>& meas){
 
     for(auto outer_iter = model.new_assoc_meas_.begin(); outer_iter != model.new_assoc_meas_.end(); ++ outer_iter) {
         for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
@@ -273,7 +268,7 @@ bool HasUpdateInfo(const Model& model, const ModelLikelihoodUpdateInfo& info) {
 
 //-----------------------------------------------------------------------------------------------------
 
-void CalculateLikelihood(Meas& meas, const Model& model) {
+void CalculateLikelihood(Meas<double>& meas, const Model& model) {
     if (meas.source_index == 0) {
         Eigen::Matrix2d S = Eigen::Matrix2d::Identity()*2.0;
         double det = 4;
@@ -292,7 +287,7 @@ void CalculateLikelihood(Meas& meas, const Model& model) {
 //-----------------------------------------------------------------------------------------------------
 
 
-Meas m1, m2, m3, m4, m5, m6, m7, m8, m9;
+Meas<double> m1, m2, m3, m4, m5, m6, m7, m8, m9;
 
 Model model1, model2, model3, model4;
 Sys sys;

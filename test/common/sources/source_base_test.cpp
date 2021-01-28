@@ -81,6 +81,10 @@ source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.9;
 ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 
+// Measurement covariance of wrong dimension
+source_params.meas_cov_ = Eigen::Matrix3d::Identity();
+ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
+
 // not symmetric measurement covariance
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.meas_cov_ << 0, 1, 2, 0;
@@ -134,6 +138,7 @@ ASSERT_LE( fabs(1- source.params_.gate_threshold_sqrt_), 1e-4);
 ASSERT_LE( fabs(M_PI- source.params_.vol_unit_hypershpere_  ), 1e-6);
 
 source_params.type_ = MeasurementTypes::RN_POS_VEL;
+source_params.meas_cov_ = Eigen::Matrix4d::Identity();
 source_params.gate_probability_ = 0.593994150290162;
 ASSERT_NO_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 ASSERT_LE( fabs(4- source.params_.gate_threshold_), 1e-3);

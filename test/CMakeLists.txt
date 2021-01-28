@@ -140,10 +140,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
 # )
 
-# add_executable(SE2_pol_policyTest 
+# add_executable(SE2_pos_policyTest 
 # track_initialization/seed_policies/SE2_pos_policy_test.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(SE2_pol_policyTest gtest_main
+# target_link_libraries(SE2_pos_policyTest gtest_main
 # )
 
 # add_executable(ransacTest 
@@ -158,9 +158,14 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 
 
+#---------------------------------------
+# RRANSAC
+#---------------------------------------
 
-
-
+add_executable(rransacTest
+rransac_test.cpp
+../src/parameters.cpp)
+target_link_libraries(rransacTest gtest_main)
 
 
 

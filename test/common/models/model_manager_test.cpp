@@ -73,16 +73,17 @@ TEST(ModelManagerTest, ManageModels) {
 
 typedef lie_groups::R3_r3 State;
 typedef ModelRN<State, TransformNULL> Model;
+typedef Meas<double> Measurement;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
 Model model, merge1, merge2; 
 
-Meas m1, m2;
+Measurement m1, m2;
 m1.time_stamp = 0.5; 
 m2.time_stamp = 1;
 
-std::vector<Meas> meas{m1,m2};
+std::vector<Measurement> meas{m1,m2};
 
 model.cs_.AddMeasurementsToConsensusSet(meas);
 model.err_cov_.setIdentity();
@@ -248,13 +249,13 @@ TEST(ModelManagerTest, UpdateModel ) {
 
 typedef lie_groups::R3_r3 State;
 typedef ModelRN<State, TransformNULL> Model;
+typedef Meas<double> Measurement;
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
 
 SourceR3 source;
 SourceParameters source_params;
-source_params.meas_cov_fixed_ = true;
 source_params.meas_cov_ = Eigen::Matrix3d::Identity();
 source_params.expected_num_false_meas_ = 0.1;
 source_params.type_ = MeasurementTypes::RN_POS;
@@ -268,7 +269,7 @@ sys.sources_.push_back(source);
 sys.params_.max_num_models_ = 2;
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
 
-Meas m;
+Measurement m;
 m.source_index = 0;
 m.weight = 1;
 m.likelihood = 1;
@@ -282,7 +283,7 @@ model.Init(sys.params_);
 model.state_.g_.data_ << 1,1,1;
 model.state_.u_.data_ << 2,3,4;
 
-model.new_assoc_meas_ = std::vector<std::vector<Meas>>{std::vector<Meas>{m}};
+model.new_assoc_meas_ = std::vector<std::vector<Measurement>>{std::vector<Measurement>{m}};
 
 double dt = 0.1;
 
@@ -309,6 +310,7 @@ TEST(ModelManagerTest, TransformModelTest ) {
 
 typedef lie_groups::R2_r2 State;
 typedef ModelRN<State, TransformHomography> Model;
+typedef Meas<double> Measurement;
 
 TransformHomography<State> trans;
 
@@ -324,8 +326,7 @@ ModelManager<Model> model_manager;
 
 SourceR2 source;
 SourceParameters source_params;
-source_params.meas_cov_fixed_ = true;
-source_params.meas_cov_ = Eigen::Matrix3d::Identity();
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.expected_num_false_meas_ = 0.1;
 source_params.type_ = MeasurementTypes::RN_POS;
 source_params.probability_of_detection_ = 0.9;
@@ -339,7 +340,7 @@ sys.params_.max_num_models_ = 2;
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity();
 sys.transformaion_ = trans;
 
-Meas m;
+Measurement m;
 m.source_index = 0;
 m.weight = 1;
 m.likelihood = 1;
@@ -354,7 +355,7 @@ model.state_.g_.data_ << 1,1;
 model.state_.u_.data_ << 2,3;
 model.err_cov_ == Eigen::Matrix4d::Identity();
 
-model.new_assoc_meas_ = std::vector<std::vector<Meas>>{std::vector<Meas>{m}};
+model.new_assoc_meas_ = std::vector<std::vector<Measurement>>{std::vector<Measurement>{m}};
 
 for (int ii = 0; ii < 1000; ++ii) {
     m.time_stamp = ii;

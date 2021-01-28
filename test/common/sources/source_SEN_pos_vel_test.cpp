@@ -25,22 +25,23 @@ typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,1> Mat_p;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,1> Mat_pv;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,  TypeParam::Group::dim_pos_> Mat_p_c;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,TypeParam::Group::dim_pos_*2> Mat_pv_c;
+typedef SourceSENPosVel<TypeParam> Source;
 
 SourceParameters params;
 params.expected_num_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
-SourceBase<TypeParam, SourceSENPosVel<TypeParam>> source;
+Source source;
 
 // Valid state type
 if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name() == typeid(SE3_se3).name()) {
 
 // Valid measurement types
 params.type_ = MeasurementTypes::SEN_POS;
-params.meas_cov_ = Eigen::Matrix2d::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_>::Identity();
 ASSERT_NO_THROW(source.Init(params));
-params.meas_cov_ = Eigen::Matrix4d::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2>::Identity();
 params.type_ = MeasurementTypes::SEN_POS_VEL;
 ASSERT_NO_THROW(source.Init(params));
 
@@ -78,13 +79,15 @@ typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,1> Mat_p;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,1> Mat_pv;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,  TypeParam::Group::dim_pos_> Mat_p_c;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,TypeParam::Group::dim_pos_*2> Mat_pv_c;
+typedef SourceSENPosVel<TypeParam> Source;
+
 
 SourceParameters params;
 params.expected_num_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
-SourceBase<TypeParam, SourceSENPosVel<TypeParam>> source;
+Source source;
 
 // Construct a state
 TypeParam state = TypeParam::Random();
@@ -142,7 +145,7 @@ H_pos_vel.block(S::Group::dim_pos_,S::Group::dim_pos_, S::Algebra::dim_t_vel_, S
 
 // Tests
 params.type_ = MeasurementTypes::SEN_POS;
-params.meas_cov_ = Eigen::Matrix2d::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_>::Identity();
 ASSERT_NO_THROW(source.Init(params));
 
 ASSERT_EQ(source.GetLinObsMatState(state),H_pos);
@@ -154,7 +157,7 @@ ASSERT_EQ(source.GetEstMeas(state,params.type_).pose,m.pose);
 // ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
 
 params.type_ = MeasurementTypes::SEN_POS_VEL;
-params.meas_cov_ = Eigen::Matrix4d::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2>::Identity();
 ASSERT_NO_THROW(source.Init(params));
 
 ASSERT_EQ(source.GetLinObsMatState(state),H_pos_vel);
@@ -183,11 +186,11 @@ params2.probability_of_detection_ = 0.9;
 
 
 params1.type_ = MeasurementTypes::SEN_POS;
-params1.meas_cov_ = Eigen::Matrix2d::Identity();
+params1.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_>::Identity();
 params2.type_ = MeasurementTypes::SEN_POS_VEL;
-params2.meas_cov_ = Eigen::Matrix4d::Identity();
+params2.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2>::Identity();
 
-SourceBase<TypeParam, SourceSENPosVel<TypeParam>> source1, source2;
+Source source1, source2;
 source1.Init(params1);
 source2.Init(params2);
 

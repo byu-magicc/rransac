@@ -22,6 +22,9 @@ TYPED_TEST(SEN_POSE_TWIST_Test, INIT) {
 
 typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
+typedef SourceSENPoseTwist<TypeParam> Source;
+typedef Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_> MatMeas1;
+typedef Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2> MatMeas2;
 
 SourceParameters params;
 params.expected_num_false_meas_ = 0.1;
@@ -29,31 +32,31 @@ params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
 
-SourceBase<TypeParam, SourceSENPoseTwist<TypeParam>> source;
+Source source;
 
 // Valid state type
 if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name() == typeid(SE3_se3).name()) {
 
 // Valid measurement types
 params.type_ = MeasurementTypes::SEN_POSE;
-params.meas_cov_ = Mat6d::Identity();
+params.meas_cov_ = MatMeas1::Identity();
 ASSERT_NO_THROW(source.Init(params));
 params.type_ = MeasurementTypes::SEN_POSE_TWIST;
-params.meas_cov_ = Mat12d::Identity();
+params.meas_cov_ = MatMeas2::Identity();
 ASSERT_NO_THROW(source.Init(params));
 
 // Invalid measurements
 params.type_ = MeasurementTypes::RN_POS;
-params.meas_cov_ = Mat6d::Identity();
+params.meas_cov_ = MatMeas1::Identity();
 ASSERT_ANY_THROW(source.Init(params));
 params.type_ = MeasurementTypes::RN_POS_VEL;
-params.meas_cov_ = Mat12d::Identity();
+params.meas_cov_ = MatMeas2::Identity();
 ASSERT_ANY_THROW(source.Init(params));
 params.type_ = MeasurementTypes::SEN_POS;
-params.meas_cov_ = Mat6d::Identity();
+params.meas_cov_ = MatMeas1::Identity();
 ASSERT_ANY_THROW(source.Init(params));
 params.type_ = MeasurementTypes::SEN_POS_VEL;
-params.meas_cov_ = Mat12d::Identity();
+params.meas_cov_ = MatMeas2::Identity();
 ASSERT_ANY_THROW(source.Init(params));
 
 
@@ -64,7 +67,7 @@ else {
 
     // Valid measurement types
     params.type_ = MeasurementTypes::SEN_POSE;
-    params.meas_cov_ = Mat6d::Identity();
+    params.meas_cov_ = MatMeas1::Identity();
     ASSERT_ANY_THROW(source.Init(params));
 
 }
@@ -77,6 +80,9 @@ TYPED_TEST(SEN_POSE_TWIST_Test, Funcs) {
 
 typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
+typedef SourceSENPoseTwist<TypeParam> Source;
+typedef Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_> MatMeas1;
+typedef Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2> MatMeas2;
 
 typedef TypeParam S;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_,1> Mat_p;
@@ -90,7 +96,7 @@ params.expected_num_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
-SourceBase<TypeParam, SourceSENPoseTwist<TypeParam>> source;
+Source source;
 TypeParam state = TypeParam::Random();
 
 
@@ -116,7 +122,7 @@ Eigen::MatrixXd H_pose_twist = Eigen::Matrix<double,S::dim_,S::dim_>::Identity()
 
 // Tests
 params.type_ = MeasurementTypes::SEN_POSE;
-params.meas_cov_ = Mat6d::Identity();
+params.meas_cov_ = MatMeas1::Identity();
 ASSERT_NO_THROW(source.Init(params));
 
 ASSERT_EQ(source.GetLinObsMatState(state),H_pose);
@@ -128,7 +134,7 @@ ASSERT_EQ(source.GetEstMeas(state,params.type_).pose,m.pose);
 
 params.type_ = MeasurementTypes::SEN_POSE_TWIST;
 m.type = SEN_POSE_TWIST;
-params.meas_cov_ = Mat12d::Identity();
+params.meas_cov_ = MatMeas2::Identity();
 ASSERT_NO_THROW(source.Init(params));
 
 ASSERT_EQ(source.GetLinObsMatState(state),H_pose_twist);
@@ -148,12 +154,12 @@ ASSERT_EQ(source.GetEstMeas(state,params.type_).twist,m.twist);
 SourceParameters params1, params2;
 
 params1.expected_num_false_meas_ = 0.1;
-params1.meas_cov_ = Mat6d::Identity();
+params1.meas_cov_ = MatMeas1::Identity();
 params1.gate_probability_ = 0.8;
 params1.probability_of_detection_ = 0.9;
 
 params2.expected_num_false_meas_ = 0.1;
-params2.meas_cov_ = Mat12d::Identity();
+params2.meas_cov_ = MatMeas2::Identity();
 params2.gate_probability_ = 0.8;
 params2.probability_of_detection_ = 0.9;
 
@@ -161,7 +167,7 @@ params2.probability_of_detection_ = 0.9;
 params1.type_ = MeasurementTypes::SEN_POSE;
 params2.type_ = MeasurementTypes::SEN_POSE_TWIST;
 
-SourceBase<TypeParam, SourceSENPoseTwist<TypeParam>> source1, source2;
+Source source1, source2;
 source1.Init(params1);
 source2.Init(params2);
 

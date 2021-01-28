@@ -24,10 +24,11 @@ static void  PolicyDataAssociationModel(System<tModel>& sys){}
 TEST(DataTreeClusterAssociationPolicyTest, PolicyDataAssociationClusterDataTree) {  
 
     typedef ModelRN<R2_r2, TransformNULL> Model;
+    typedef Meas<double> Measurement;
 
     SourceParameters source_params;
-    source_params.meas_cov_fixed_ = false;
     source_params.expected_num_false_meas_ = 0.1;
+    source_params.meas_cov_ = Eigen::Matrix2d::Identity();
     source_params.gate_probability_ = 0.8;
     source_params.source_index_ = 0;
     source_params.probability_of_detection_ = 0.8;
@@ -43,10 +44,10 @@ TEST(DataTreeClusterAssociationPolicyTest, PolicyDataAssociationClusterDataTree)
     sys.sources_.push_back(source);
     DataAssociationHost<Model, ModelDummyPolicy, DataTreeClusterAssociationPolicy> data_association;
     
-    Meas m;
+    Measurement m;
     m.source_index = 0;
     unsigned int num_meas= 1000;
-    std::list<Meas> measurements(num_meas);
+    std::list<Measurement> measurements(num_meas);
 
     for(auto iter = measurements.begin(); iter != measurements.end(); ++iter) {
         iter->time_stamp = 0;

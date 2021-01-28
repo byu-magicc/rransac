@@ -42,6 +42,7 @@ source1.Init(source_params1);
 source2.Init(source_params2);
 
 Parameters params;
+params.process_noise_covariance_ = Eigen::Matrix<double,5,5>::Identity();
 sys.params_ = params;
 sys.sources_.push_back(source1);
 sys.sources_.push_back(source2);

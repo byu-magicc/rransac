@@ -211,6 +211,12 @@ public:
         }
     }
 
+    /**
+     * Verify that the parameters are valid. If they are, the parameters are set. 
+     * \return returns true if the parameters were set; otherwise, false.
+     */
+    bool SetParameters(const SourceParameters& params); 
+
 // protected:
     MatXd H_;
     MatXd V_;
@@ -226,8 +232,9 @@ private:
     /**
      * Ensure that the source parameters meet the specified criteria. If a parameter doesn't, and error will be thrown.
      * @param params The source parameters needed to initialize the source. 
+     * \return Returns true if the parameters were successfully set. 
      */ 
-    void VerifySourceParameters(const SourceParameters& params);
+    bool VerifySourceParameters(const SourceParameters& params);
 
     typedef double (*GSDFuncPTR)(const Meas<DataType>&, const Meas<DataType>&, const Parameters&);
 
@@ -256,10 +263,9 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params, std::func
 template<typename tState, typename tDerived>
 void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
 
-    VerifySourceParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown.
+    bool success = SetParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown. Otherwise, the parameters are set.
     this->state_in_surveillance_region_callback_ = StateInsideSurveillanceRegionDefaultCallback;
     
-    this->params_ = params;
     if(this->params_.type_ == MeasurementTypes::RN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST) {
         this->params_.has_twist = true;
         boost::math::chi_squared dist(meas_dim_*2);
@@ -341,22 +347,32 @@ SourceBase<tState,tDerived>::~SourceBase() {
 //---------------------------------------------------
 
 template<typename tState, typename tDerived>
-void SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters& params) {
+bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters& params) {
 
- 
+    bool success = true;
+    unsigned int mult = 1;
 
-    if (params.meas_cov_.rows() ==0 ) { // Make sure that it is not empty
-        throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance cannot be empty if the measurement covariance is fixed.");
+    if(params.type_ == MeasurementTypes::RN_POS_VEL || params.type_ == MeasurementTypes::SEN_POS_VEL || params.type_ == MeasurementTypes::SEN_POSE_TWIST)
+        mult = 2;
+
+
+    if (params.meas_cov_.rows() != tDerived::meas_dim_*mult ) { // Make sure that it is not empty
+        throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not the right dimension");
+        success = false;
     } 
 
     if (  ((params.meas_cov_ + params.meas_cov_.transpose())/2.0 - params.meas_cov_).norm() > 1e-12 ) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not symmetic. ");
+        success = false;
+
     }
 
     Eigen::VectorXcd eigen_values = params.meas_cov_.eigenvalues();
     for (int ii =0; ii < eigen_values.rows(); ++ii){                       // positive definite
         if(std::real(eigen_values(ii)) <0) {
             throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not positive definite. ");
+          success = false;
+
         }
     }
 
@@ -364,6 +380,8 @@ void SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
     // Expected number of false measurements
     if (params.expected_num_false_meas_ < 0 || params.expected_num_false_meas_ > 1) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: The expected number of false measurements must be between 0 and 1. ");
+        success = false;
+
     }
 
     // Verify the number of measurement types
@@ -383,24 +401,43 @@ void SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
         break;  
     default:
         throw std::runtime_error("SourceBase::VerifySourceParameters: The measurement type is not known. ");
+        success = false;
+
         break;
     }
 
     // Verify the probability of detection 
     if (params.probability_of_detection_ < 0 || params.probability_of_detection_ > 1) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: probability_of_detection_ must be between 0 and 1. ");
+        success = false;
+
     }
 
     // Verify the gate probability
     if (params.gate_probability_ < 0 || params.gate_probability_ > 1) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: gate_probability_ must be between 0 and 1. ");
+        success = false;
+
     }
 
     // Verify the gate probability
     if (params.RANSAC_inlier_probability_ < 0 || params.RANSAC_inlier_probability_ > 1) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: RANSAC_inlier_probability_ must be between 0 and 1. ");
+        success = false;
+
     }
 
+    return success;
+
+}
+
+//---------------------------------------------------
+template<typename tState, typename tDerived>
+bool SourceBase<tState,tDerived>::SetParameters(const SourceParameters& params) {
+    bool success = VerifySourceParameters(params);
+    if (success) 
+        this->params_ = params;
+    return success;
 }
 
 
