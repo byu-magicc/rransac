@@ -237,7 +237,7 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
             success = false;
         }
 
-        if (meas_iter->type != sys_.sources_[meas_iter->source_index].type_) {
+        if (meas_iter->type != sys_.sources_[meas_iter->source_index].params_.type_) {
             throw std::runtime_error("RANSAC::VerifyMeasurements Measurement type does not match the source's measurement type. Make sure the source index is correct.");
             success = false;            
         }
@@ -254,6 +254,7 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
 
     }
 
+    return success;
 
 }
 

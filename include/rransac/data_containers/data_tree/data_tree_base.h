@@ -96,7 +96,7 @@ void TransformMeasurements(const tTransform& transform) {
     static_cast<Derived*>(this)->DerivedTransformMeasurements(transform);
 }
 
-unsigned int Size() {return size_;};
+unsigned int Size() const {return size_;};
 
 tData data_;
 

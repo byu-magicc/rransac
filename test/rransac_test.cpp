@@ -33,11 +33,21 @@ typedef Eigen::Matrix<double,2,1> MatPose;
 TEST(RRANSACTest, AddSource_AddMeasurement) {
 
 RRANSAC<RANSACParams> rransac;
-
+const System<RANSACParams::Model_>* sys = rransac.GetSystemInformation();
 CallbackClass<RANSACParams::State_> call;
 
+//
+// Set System Parameters test
+//
+
+Parameters params;
+params.cluster_time_threshold_ = 10;
+ASSERT_ANY_THROW(rransac.SetSystemParameters(params));
+params.process_noise_covariance_ = Eigen::Matrix4d::Identity();
+ASSERT_NO_THROW(rransac.SetSystemParameters(params));
+ASSERT_EQ(sys->params_.process_noise_covariance_,params.process_noise_covariance_);
+
 // Init sources
-typename RANSACParams::Source_ source1, source2, source3, source4;
 SourceParameters source_params1, source_params2, source_params3, source_params4;
 
 source_params1.meas_cov_ = Eigen::Matrix2d::Identity();
@@ -84,7 +94,7 @@ ASSERT_ANY_THROW(rransac.AddSource(source_params4));
 source_params4.source_index_ = 3;
 ASSERT_NO_THROW(rransac.AddSource(source_params4));
 
-const System<RANSACParams::Model_>* sys = rransac.GetSystemInformation();
+
 
 // Make sure the size is right.
 ASSERT_EQ(sys->sources_.size(),4);
@@ -124,7 +134,7 @@ m2.time_stamp = time;
 m3.type = source_params3.type_;
 m3.source_index = source_params3.source_index_;
 m3.time_stamp = time;
-m4.type = source_params3.type_;
+m4.type = source_params4.type_;
 m4.source_index = source_params4.source_index_;
 m4.time_stamp = time+1;
 
@@ -191,7 +201,7 @@ ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements)); // Pose not proper 
 new_measurements.back().pose = MatPose::Identity();
 new_measurements.back().twist = Eigen::Matrix3d::Identity();
 ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements)); // Twist not proper measurement type.
-new_measurements.back().twist = MatPose::Identit();
+new_measurements.back().twist = MatPose::Identity();
 #endif
 
 for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++iter) {
@@ -201,7 +211,7 @@ for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++ite
 ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements));
 
 Eigen::Matrix3d transform_data; // Should transform all measurements to the zero vector
-transform_data << 0, 0, 1, 0, 0, 1, 0, 0, 1;
+transform_data << 0, 0, 0, 0, 0, 0, 0, 0, 1;
 rransac.AddMeasurements(empty_measurements,transform_data);
 ASSERT_EQ(sys->new_meas_.size(), 0);
 ASSERT_EQ(sys->data_tree_.Size(), 9);
