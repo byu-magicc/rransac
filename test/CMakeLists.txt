@@ -152,10 +152,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # target_link_libraries(ransacTest gtest_main )
 
 
-add_executable(ransacTest2 
-track_initialization/ransac_test2.cpp
-../src/parameters.cpp)
-target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
+# add_executable(ransacTest2 
+# track_initialization/ransac_test2.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 
 
 
@@ -172,13 +172,3 @@ target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 
 
 
-# add_executable(nodeTest
-# data_structures/node_test.cpp
-# ../src/data_structures/node.cpp)
-# target_link_libraries(nodeTest gtest_main)
-
-# add_custom_target(gtests_param parameterTest)
-# add_custom_target(gtests_meas measurement_cvTest)
-# add_custom_target(gtests_factory measurement_factoryTest)
-# add_custom_target(gtests_node nodeTest)
-# add_custom_target(gtests_source_R2_posTest source_R2_posTest)

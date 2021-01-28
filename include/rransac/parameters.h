@@ -44,9 +44,6 @@ float meas_time_window_; /**< The duration of time in seconds from the current m
                               into the past during which measurements should be considered. All
                               measurements outside of the time window will be discarded.*/
 
-bool fixed_time_interval_; /**< A flag that indicates if measurements are given to R-RANSAC at fixed time intervals. */
-
-double time_interval_; /**< The fixed time interval at which measurements are received.*/
 
 bool transform_consensus_set_; /**< A flag that indicates if the measurements in the consensus set should
                                     be transformed when a transformation is provided. For faster performance, it is
