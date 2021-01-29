@@ -120,10 +120,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # ../src/parameters.cpp)
 # target_link_libraries(cluster_data_tree_data_associationTest gtest_main )
 
-# add_executable(model_pdf_policyTest 
-# common/data_association/model_policies/model_pdf_policy_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(model_pdf_policyTest gtest_main )
+add_executable(model_pdf_policyTest 
+common/data_association/model_policies/model_pdf_policy_test.cpp
+../src/parameters.cpp)
+target_link_libraries(model_pdf_policyTest gtest_main )
 
 #---------------------------------------
 # Track Initialization
@@ -167,10 +167,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # ../src/parameters.cpp)
 # target_link_libraries(rransacTest gtest_main)
 
-add_executable(rransacFullTest
-rransac_full_test.cpp
-../src/parameters.cpp)
-target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
+# add_executable(rransacFullTest
+# rransac_full_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
 
 
 

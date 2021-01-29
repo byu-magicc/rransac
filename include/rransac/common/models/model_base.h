@@ -163,7 +163,7 @@ public:
     void PropagateModel(const DataType dt);
 
     /**
-     * Uses the newly associated measurements to update the statMeas_dime estimate, error covariance, and consensus set using a 
+     * Uses the newly associated measurements to update the state estimate, error covariance, model likelihood and consensus set using a 
      * centralized measurement fusion.
      * @param[in] param Contains all of the user defined parameters.
      */ 
@@ -177,6 +177,7 @@ public:
         }
         
         new_assoc_meas_.clear();
+        UpdateModelLikelihood(sources);
     }
 
     void OPlusEQ(const Eigen::Matrix<DataType,tCovDim,1>& state_update){
@@ -220,7 +221,7 @@ public:
      * Returns the innovation covariance associated with the measurement
      * @param m The measurement
      */ 
-    MatXd GetInnovationCovariance(const std::vector<Source>& sources, const Meas<DataType>& m);
+    MatXd GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index);
 
     /**
      * Using the transformation data provided by the user, this function transforms the state estimate and error covariance
@@ -438,18 +439,19 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModelLikeliho
             model_likelihood_ += std::log(1 + source.params_.probability_of_detection_*source.params_.gate_probability_*( update_info.num_assoc_meas/(source.params_.expected_num_false_meas_*update_info.volume)-1));
         }
     }
+    model_likelihood_update_info_.clear();
 } 
 
 //---------------------------------------------------------------------------------------------------------
 
 
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
-Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationCovariance(const std::vector<Source>& sources, const Meas<DataType>& m) {
+Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index) {
 
-    MatXd H = GetLinObsMatState(sources, this->state_,m.source_index);         // Jacobian of observation function w.r.t. state
-    MatXd V = GetLinObsMatSensorNoise(sources, this->state_,m.source_index);   // Jacobian of observation function w.r.t. noise
+    MatXd H = GetLinObsMatState(sources, this->state_,source_index);         // Jacobian of observation function w.r.t. state
+    MatXd V = GetLinObsMatSensorNoise(sources, this->state_,source_index);   // Jacobian of observation function w.r.t. noise
 
-    return H*err_cov_*H.transpose() + V*sources[m.source_index].params_.meas_cov_*V.transpose();
+    return H*err_cov_*H.transpose() + V*sources[source_index].params_.meas_cov_*V.transpose();
 }
 
 //---------------------------------------------------------------------------------------------------------

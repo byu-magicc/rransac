@@ -72,8 +72,8 @@ params.RANSAC_score_stopping_criteria_ = 20;
 params.process_noise_covariance_ = Eigen::Matrix4d::Identity();
 
 // Setup the sources
-SourceParameters source_params1,source_params2, source_params3;
-Source source1, source2, source3;
+SourceParameters source_params1,source_params2, source_params3, source_params4;
+Source source1, source2, source3, source4;
 
 // source_params1.meas_cov_fixed_ = true;
 source_params1.meas_cov_ = Eigen::Matrix2d::Identity();
@@ -93,14 +93,20 @@ source_params2.source_index_ = 1;
 source_params3 = source_params1;
 source_params3.source_index_ = 2;
 
+// noisy source
+source_params4 = source_params1;
+source_params4.source_index_ = 3;
+
 // All models will be in the surveillance region of source1, model 4 will not be in the surveillance region of source 2
 source1.Init(source_params1);
 source2.Init(source_params2, &InSurveillanceRegionSource2);
 source3.Init(source_params3);  // This source will not produce any measurements
+source4.Init(source_params4);
 
 sys.sources_.push_back(source1);
 sys.sources_.push_back(source2);
 sys.sources_.push_back(source3);
+sys.sources_.push_back(source4);
 
 
 
@@ -209,6 +215,13 @@ m9.pose << 100, -100;
 m9.twist = Eigen::Matrix<double,2,1>::Zero();
 m9.twist << -50, 1.8;
 
+// Measurement from noisy source
+m10.time_stamp = 0;
+m10.type = source_params4.type_;
+m10.source_index = source_params4.source_index_;
+m10.pose = Eigen::Matrix<double,2,1>::Zero();
+m10.pose << 100, -50;
+
 sys.new_meas_.push_back(m9);
 sys.new_meas_.push_back(m1);
 sys.new_meas_.push_back(m2);
@@ -218,6 +231,7 @@ sys.new_meas_.push_back(m4);
 sys.new_meas_.push_back(m5);
 sys.new_meas_.push_back(m6);
 sys.new_meas_.push_back(m8);
+sys.new_meas_.push_back(m10);
 
 }
 
@@ -287,7 +301,7 @@ void CalculateLikelihood(Meas<double>& meas, const Model& model) {
 //-----------------------------------------------------------------------------------------------------
 
 
-Meas<double> m1, m2, m3, m4, m5, m6, m7, m8, m9;
+Meas<double> m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
 
 Model model1, model2, model3, model4;
 Sys sys;
@@ -303,12 +317,16 @@ data_associate.AssociateNewMeasurements(sys);
 
 ModelLikelihoodUpdateInfo info_model1_source1;
 ModelLikelihoodUpdateInfo info_model1_source2;
+ModelLikelihoodUpdateInfo info_model1_source4;
 ModelLikelihoodUpdateInfo info_model2_source1;
 ModelLikelihoodUpdateInfo info_model2_source2;
+ModelLikelihoodUpdateInfo info_model2_source4;
 ModelLikelihoodUpdateInfo info_model3_source1;
 ModelLikelihoodUpdateInfo info_model3_source2;
+ModelLikelihoodUpdateInfo info_model3_source4;
 ModelLikelihoodUpdateInfo info_model4_source1;
 ModelLikelihoodUpdateInfo info_model4_source2;
+ModelLikelihoodUpdateInfo info_model4_source4;
 
 info_model1_source1.in_local_surveillance_region = true;
 info_model1_source1.num_assoc_meas = 2;
@@ -320,6 +338,11 @@ info_model1_source2.num_assoc_meas = 1;
 info_model1_source2.source_index = 1;
 info_model1_source2.volume = M_PI*M_PI*8.0;
 
+info_model1_source4.in_local_surveillance_region = true;
+info_model1_source4.num_assoc_meas = 0;
+info_model1_source4.source_index = 3;
+info_model1_source4.volume = M_PI *2.0;
+
 info_model2_source1.in_local_surveillance_region = true;
 info_model2_source1.num_assoc_meas = 1;
 info_model2_source1.source_index = 0;
@@ -329,6 +352,11 @@ info_model2_source2.in_local_surveillance_region = true;
 info_model2_source2.num_assoc_meas = 1;
 info_model2_source2.source_index = 1;
 info_model2_source2.volume = M_PI*M_PI*8.0;
+
+info_model2_source4.in_local_surveillance_region = true;
+info_model2_source4.num_assoc_meas = 0;
+info_model2_source4.source_index = 3;
+info_model2_source4.volume = M_PI *2.0;
 
 info_model3_source1.in_local_surveillance_region = true;
 info_model3_source1.num_assoc_meas = 0;
@@ -340,6 +368,11 @@ info_model3_source2.num_assoc_meas = 1;
 info_model3_source2.source_index = 1;
 info_model3_source2.volume = M_PI*M_PI*8.0;
 
+info_model3_source4.in_local_surveillance_region = true;
+info_model3_source4.num_assoc_meas = 0;
+info_model3_source4.source_index = 3;
+info_model3_source4.volume = M_PI*8.0;
+
 info_model4_source1.in_local_surveillance_region = true;
 info_model4_source1.num_assoc_meas = 1;
 info_model4_source1.source_index = 0;
@@ -349,6 +382,13 @@ info_model4_source2.in_local_surveillance_region = false;
 info_model4_source2.num_assoc_meas = 0;
 info_model4_source2.source_index = 1;
 info_model4_source2.volume = M_PI*M_PI*8.0;
+
+info_model4_source4.in_local_surveillance_region = true;
+info_model4_source4.num_assoc_meas = 0;
+info_model4_source4.source_index = 3;
+info_model4_source4.volume = M_PI *2.0;
+
+
 
 
 
@@ -384,9 +424,10 @@ ASSERT_FALSE(HasMeasurement(*model_iter, m6));
 ASSERT_FALSE(HasMeasurement(*model_iter, m7));
 ASSERT_FALSE(HasMeasurement(*model_iter, m8));
 ASSERT_FALSE(HasMeasurement(*model_iter, m9));
-ASSERT_EQ(model_iter->model_likelihood_update_info_.size(), 2);
+ASSERT_EQ(model_iter->model_likelihood_update_info_.size(), 3);
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model1_source1));
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model1_source2));
+ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model1_source4));
 
 
 ++model_iter;
@@ -412,6 +453,7 @@ ASSERT_FALSE(HasMeasurement(*model_iter, m8));
 ASSERT_FALSE(HasMeasurement(*model_iter, m9));
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model2_source1));
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model2_source2));
+ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model2_source4));
 
 
 
@@ -434,6 +476,7 @@ ASSERT_FALSE(HasMeasurement(*model_iter, m8));
 ASSERT_FALSE(HasMeasurement(*model_iter, m9));
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model3_source1));
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model3_source2));
+ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model3_source4));
 
 ++model_iter;
 
@@ -453,6 +496,7 @@ ASSERT_FALSE(HasMeasurement(*model_iter, m9));
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model4_source1));
 ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model4_source2));
 ASSERT_FALSE(HasUpdateInfo(*model_iter,info_model1_source1));
+ASSERT_TRUE(HasUpdateInfo(*model_iter,info_model4_source1));
 
 
 // Time to test the filtering model policy

@@ -125,7 +125,7 @@ void ModelPDFPolicy<tModel>::FilteringCalculateMeasStatistics(const System<tMode
         info.in_local_surveillance_region = true;
 
         // The innovation covariance will be the same for all measurements of the same measurement source
-        S = model.GetInnovationCovariance(sys.sources_, outer_iter->front());
+        S = model.GetInnovationCovariance(sys.sources_, outer_iter->front().source_index);
         det_S = S.determinant();
         det_S_sqrt = sqrt(det_S);
         
@@ -191,7 +191,7 @@ void ModelPDFPolicy<tModel>::AssociateMeasurements(System<tModel>& sys, std::vec
         // Iterate through all of the models
         for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++ model_iter) {
             
-            innovation_covariance = model_iter->GetInnovationCovariance(sys.sources_, *meas_iter);
+            innovation_covariance = model_iter->GetInnovationCovariance(sys.sources_, meas_iter->source_index);
             distance = GetDistance(sys.sources_, *meas_iter, *model_iter, innovation_covariance);
             det_inn_cov_sqrt = sqrt(innovation_covariance.determinant());
 
@@ -260,6 +260,9 @@ template<typename tModel>
 void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::vector<bool>& source_produced_meas) {
 
     ModelLikelihoodUpdateInfo info;
+    Eigen::MatrixXd innovation_covariance;
+    double distance = 0;
+    double det_inn_cov_sqrt = 0;
     
 
     for(auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++model_iter) {
@@ -274,7 +277,7 @@ void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::
 
                     info.in_local_surveillance_region = true;
                     info.num_assoc_meas = 0; // set default value
-                    info.volume = 1;
+                    info.volume = 0;
 
                     // see if there are measurements with the source
                     for(auto outer_meas_iter = model_iter->new_assoc_meas_.begin(); outer_meas_iter != model_iter->new_assoc_meas_.end(); ++ outer_meas_iter) {
@@ -285,12 +288,26 @@ void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::
                         }
                     }
 
+                    // Indicates that there was not a measurement pertaining to this source
+                    if (info.volume == 0) {
+                        innovation_covariance = model_iter->GetInnovationCovariance(sys.sources_, source_iter->params_.source_index_);
+                        det_inn_cov_sqrt = sqrt(innovation_covariance.determinant());
+                        info.volume = GetVolume(sys, det_inn_cov_sqrt, source_iter->params_.source_index_);
+
+                    }
+
 
                 } else {
                     info.in_local_surveillance_region = false;
                     info.num_assoc_meas = 0; // set default value
                     info.volume = 1;
                 }
+
+#ifdef DEBUG_BUILD
+                if (info.volume <= 0) {
+                    throw std::runtime_error("ModelPDFPolicy::CalculateModelUpdateInfo Volume of validation region is less than or equal to 0");
+                }
+#endif
 
                 model_iter->model_likelihood_update_info_.push_back(info);
             }

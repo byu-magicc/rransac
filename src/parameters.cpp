@@ -23,7 +23,7 @@ Parameters::Parameters()
     
     good_model_threshold_ = 100;
     max_missed_detection_time_ = 5;
-    similar_tracks_threshold_ = 0.2;
+    similar_tracks_threshold_ = 1;
     max_num_models_ = 10;
     
     NonLinearInnovCovId_ = false;
