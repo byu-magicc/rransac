@@ -368,7 +368,7 @@ for (double ii =start_time; ii < end_time; ii += dt) {
 
         tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,T::MatR::Identity()*sqrt(noise)*0);
         tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,T::MatR2::Identity()*sqrt(noise)*0);
-        tmp3 = sys.sources_[m3.source_index].GenerateRandomMeasurement(track.state_,T::MatR2::Identity()*sqrt(noise)*0);
+        tmp3 = sys.sources_[m3.source_index].GenerateRandomMeasurement(rand_state,T::MatR2::Identity()*sqrt(noise)*0);
         tmp4 = sys.sources_[m4.source_index].GenerateRandomMeasurement(track.state_,T::MatR::Identity()*sqrt(noise)*0);
 
         m1.time_stamp = ii;

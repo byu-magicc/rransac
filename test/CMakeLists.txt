@@ -162,10 +162,15 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # RRANSAC
 #---------------------------------------
 
-add_executable(rransacTest
-rransac_test.cpp
+# add_executable(rransacTest
+# rransac_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(rransacTest gtest_main)
+
+add_executable(rransacFullTest
+rransac_full_test.cpp
 ../src/parameters.cpp)
-target_link_libraries(rransacTest gtest_main)
+target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
 
 
 
