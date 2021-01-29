@@ -84,7 +84,7 @@ if (Model::MeasType1 == MeasurementTypes::SEN_POS|| Model::MeasType1 == Measurem
 // std::cerr << "setup" << std::endl;
 // Setup the parameters
 double meas_cov_scale = 0.01;
-double system_cov_scale = 0.01;
+double system_cov_scale = 0.1;
 meas_cov1.setIdentity();
 meas_cov1 *= meas_cov_scale;
 meas_std1.setIdentity();
@@ -272,12 +272,24 @@ this->track.state_ = this->track.state_.Identity();
 
 // std::cerr << "state0: " << this->track.state_.g_.data_ << std::endl;
 // std::cerr <<  this->track.state_.u_.data_ << std::endl;
+double model_likelihood_prev;
+ModelLikelihoodUpdateInfo info;
+info.in_local_surveillance_region = true;
+info.num_assoc_meas = 1;
+info.source_index = 0;
+info.volume = 1;
+
 
 for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
 
     this->track.PropagateModel(this->dt);
     this->track.new_assoc_meas_ = this->new_meas[ii];
+    model_likelihood_prev = this->track.model_likelihood_;
+    this->track.model_likelihood_update_info_.push_back(info);
     this->track.UpdateModel(this->sources, this->params);
+
+    // Since it is getting a measurement at every time step, the likelihood should be increasing
+    ASSERT_TRUE(model_likelihood_prev < this->track.model_likelihood_);
 
 }
 
@@ -328,6 +340,27 @@ for( std::list<std::vector<Meas<double>>>::iterator it = this->track.cs_.consens
 
 this->track.PruneConsensusSet(0);
 ASSERT_EQ(this->track.cs_.Size(), this->num_iters-1);
+
+
+// Continue testing model likelihood update
+info.in_local_surveillance_region = true;
+info.num_assoc_meas = 0;
+info.source_index = 0;
+info.volume = 1;
+this->track.model_likelihood_update_info_.clear();
+
+for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
+
+    this->track.PropagateModel(this->dt);
+    model_likelihood_prev = this->track.model_likelihood_;
+    this->track.model_likelihood_update_info_.push_back(info);
+    this->track.UpdateModel(this->sources, this->params);
+
+    // Since it is not getting a measurement at every time step and a source says that 
+    // it is inside the surveillance region, the likelihood should be decreasing
+    ASSERT_TRUE(model_likelihood_prev > this->track.model_likelihood_);
+
+}
 
 }
 

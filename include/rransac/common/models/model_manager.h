@@ -112,6 +112,12 @@ void ModelManager<tModel>::AddModel(System<tModel>& sys, const tModel& model) {
 template <typename tModel>
 void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
 
+    //
+    // IDEA:: WE MIGHT WANT TO PRUNE MODELS WHOSE LIKELIHOOD FALL BELOW A THRESHOLD
+    // THE REASON BEHIND THIS IS THAT A MODEL MIGHT NOT GET A MEASUREMENT FOR A WHILE
+    // BECUASE IT IS HIDDEN OR SOMETHING, BUT BY THE TIME IT DOES RECEIVE A NEW MEASUREMENT
+    // ITS LIKELIHOOD COULD BE SO LOW THAT IT TAKES A WHILE TO HAVE A POSITIVE LIKELIHOOD AGAIN
+
     // Remove the models that have not received a measurement for a while
     for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
         if(it->missed_detection_time_ > sys.params_.max_missed_detection_time_) {
