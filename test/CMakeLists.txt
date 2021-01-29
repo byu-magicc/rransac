@@ -78,10 +78,10 @@ add_subdirectory(${GTEST_DIR}/googletest-src ${GTEST_DIR}/googletest-build EXCLU
 # Model
 #---------------------------------------
 
-add_executable(model_baseTest
-common/models/model_base_test.cpp
-../src/parameters.cpp)
-target_link_libraries(model_baseTest gtest_main )
+# add_executable(model_baseTest
+# common/models/model_base_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(model_baseTest gtest_main )
 
 # add_executable(model_baseTest2
 # common/models/model_base_test2.cpp
@@ -167,10 +167,10 @@ target_link_libraries(model_baseTest gtest_main )
 # ../src/parameters.cpp)
 # target_link_libraries(rransacTest gtest_main)
 
-# add_executable(rransacFullTest
-# rransac_full_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
+add_executable(rransacFullTest
+rransac_full_test.cpp
+../src/parameters.cpp)
+target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
 
 
 

@@ -29,6 +29,8 @@ typedef Eigen::Matrix<DataType,2,2> Mat2d;
 typedef Eigen::Matrix<DataType,3,3> Mat3d;
 typedef Eigen::Matrix<DataType,4,4> Mat4d;
 typedef Eigen::Matrix<DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov;
+typedef Eigen::Matrix<DataType,3,3> MatData;
+
 
 // Components of the Homograpy H = [H1, h2; h3_T^T, h4] where T stands for transpose.
 Eigen::Matrix2d H1_;

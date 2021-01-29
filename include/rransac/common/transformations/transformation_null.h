@@ -18,6 +18,7 @@ public:
 
 typedef typename tState::DataType DataType;
 typedef Eigen::Matrix<DataType,3,3> Mat3d;
+typedef Mat3d MatData;
 
 
 void DerivedInit() {

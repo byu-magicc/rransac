@@ -33,6 +33,8 @@ using namespace rransac;
 struct Test1 {
     public:
     typedef ModelRN<R2_r2, TransformNULL> Model_;
+    typedef typename Model_::Transformation Transformation_;
+    typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
@@ -43,10 +45,13 @@ struct Test1 {
     typedef Eigen::Matrix<double,4,4> MatR2_;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
+    static constexpr bool transform_data_ = false;
     typedef Eigen::Matrix<double,4,4> ProcessNoiseCov_;
     std::vector<State_> states;
     typedef Eigen::Matrix<double,2,1> VecU_;
     std::string test_name = "R2 Test";
+
+    TransformMatData_ transform_data;
 
     Test1() {
         double pos = 5;
@@ -60,6 +65,7 @@ struct Test1 {
         states[2].u_.data_ << 0, vel;
         states[3].g_.data_ << -pos, pos;
         states[3].u_.data_ << vel,0;
+        transform_data.setIdentity();
     }
 
   
@@ -81,10 +87,13 @@ typedef typename T::State_ State_;
 typedef typename T::Source_ Source_;
 typedef typename T::RANSAC_ RANSAC_;
 typedef typename T::RRANSAC_ RRANSAC_;
+typedef typename T::Transformation_ Transformation_;
+static constexpr bool transform_data_ = T::transform_data_;
 
 void SetUp() override {
 
     sys_ = rransac_.GetSystemInformation();
+    transformation_.Init();
 
     // Setup sources
     SourceParameters source_params1, source_params2, source_params3;
@@ -125,12 +134,13 @@ void SetUp() override {
     params.RANSAC_minimum_subset_ = 3;
     params.RANSAC_score_stopping_criteria_ = 10;
     params.RANSAC_score_minimum_requirement_ = 6;
-    params.meas_time_window_ = 5;                   // 5 seconds
+    params.meas_time_window_ = end_time_ - start_time_;                   // 5 seconds
     params.cluster_time_threshold_ = 2;
     params.cluster_velocity_threshold_ = 1;
     params.cluster_position_threshold_ = 1;
     params.max_num_models_ = 5;
     params.similar_tracks_threshold_ = 1;
+    params.good_model_threshold_ = 20;
     // params.NonLinearInnovCovId_ = true;
 
     rransac_.SetSystemParameters(params);
@@ -179,6 +189,11 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             auto& track = this->tracks_[track_index];
 
+            if (T::transform_data_) {
+                transformation_.SetData(test_data_.transform_data);
+                transformation_.TransformTrack(track.state_, track.err_cov_);
+            }
+
             if (ii !=this->start_time_) {
                 track.state_.u_.data_ += Eigen::Matrix<double,T::Algebra_::dim_,T::Algebra_::dim_>::Identity()*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
@@ -186,30 +201,34 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // Generates measurements according to the probability of detection
             rand_num.setRandom();
+            if ( ii + dt_ >= end_time) // Ensure there is a measurement at the last time step
+                rand_num << 0;
+
+
             if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_));
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_));
-                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_));
+                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
+                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
+                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
-                // this->m2_.time_stamp = ii;
-                // this->m2_.pose = tmp2.pose;
-                // this->m2_.twist = tmp2.twist;
-                // this->m4_.time_stamp = ii;
-                // this->m4_.pose = tmp4.pose;
+                this->m2_.time_stamp = ii;
+                this->m2_.pose = tmp2.pose;
+                this->m2_.twist = tmp2.twist;
+                this->m4_.time_stamp = ii;
+                this->m4_.pose = tmp4.pose;
 
                 new_measurements.push_back(this->m1_);
-                // new_measurements.push_back(this->m2_);
-                // new_measurements.push_back(this->m4_);
+                new_measurements.push_back(this->m2_);
+                new_measurements.push_back(this->m4_);
             }
 
 
             State_ rand_state;
             rand_state.g_.data_ = T::Algebra_::Exp(Eigen::Matrix<double,State_::Group::dim_,1>::Random()*this->fov_);
             rand_state.u_.data_ = T::VecU_::Random();
-            tmp3 = this->sources_[this->m3_.source_index].GenerateRandomMeasurement(rand_state,T::MatR2_::Identity()*sqrt(this->noise_));
+            tmp3 = this->sources_[this->m3_.source_index].GenerateRandomMeasurement(rand_state,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
             this->m3_.time_stamp = ii;
             this->m3_.pose = tmp3.pose;
             this->m3_.twist = tmp3.twist;
@@ -217,7 +236,12 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
         }
 
-        this->rransac_.AddMeasurements(new_measurements);
+
+        if (T::transform_data_) {
+            this->rransac_.AddMeasurements(new_measurements,test_data_.transform_data);
+        } else {
+            this->rransac_.AddMeasurements(new_measurements);
+        }
         this->rransac_.RunTrackInitialization();
         this->rransac_.RunTrackManagement();
 
@@ -234,6 +258,7 @@ std::vector<Model_> tracks_;
 RRANSAC_ rransac_;
 const System<Model_>* sys_;
 std::vector<Source_> sources_;
+Transformation_ transformation_;
 
 // Simulation Parameters
 double dt_ = 0.1;
@@ -272,6 +297,29 @@ for (auto& sim_track: this->tracks_) {
 
 }
 
+
+// make sure that the tracks were created
+ASSERT_GE(this->sys_->models_.size(), 3 );
+for (auto& created_track: this->sys_->models_) {
+
+    bool found = false;
+    for (auto& sim_track: this->tracks_) {
+
+        if (sim_track.state_.OMinus(created_track.state_).norm() < 5e-1) {
+            found = true;
+            ASSERT_LT(created_track.err_cov_.norm(), 1); // error covariance should have gotten smaller
+            ASSERT_GT(created_track.model_likelihood_, this->sys_->params_.good_model_threshold_);
+        }
+        
+    }
+    ASSERT_TRUE(found);
+
+}
+
+// there should be three good models
+ASSERT_EQ(this->sys_->good_models_.size(),3);
+
+
 track_indices = {1,2,3};
 
 this->Propagate(this->end_time_+this->dt_,this->end_time_*2.0,track_indices);
@@ -288,5 +336,41 @@ for (auto& sim_track: this->tracks_) {
     std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
 
 }
+
+// make sure that the tracks were created
+int num_models = this->sys_->models_.size();
+ASSERT_GE(this->sys_->models_.size(), 4 );
+for (auto& created_track: this->sys_->models_) {
+
+    bool found = false;
+    for (auto& sim_track: this->tracks_) {
+
+        // This is the track that was created but stopped receiving measurements
+        if (sim_track.missed_detection_time_ > this->end_time_/2) {
+            found = true;
+            ASSERT_LT(sim_track.model_likelihood_, this->sys_->params_.good_model_threshold_);
+        }
+
+        if (sim_track.state_.OMinus(created_track.state_).norm() < 5e-1) {
+            found = true;
+            ASSERT_LT(created_track.err_cov_.norm(), 1); // error covariance should have gotten smaller
+            ASSERT_GT(created_track.model_likelihood_, this->sys_->params_.good_model_threshold_);
+        }
+        
+    }
+    ASSERT_TRUE(found);
+
+}
+
+// there should be three good models. A previous good model stopped receiving measurements and
+// should no longer be good. There should be a new good model to make a total of three
+ASSERT_EQ(this->sys_->good_models_.size(),3);
+
+
+// Propagate the tracks some more in order to kill the track that hasn't been receiving measurements
+this->Propagate(this->end_time_*2.0+this->dt_,this->end_time_*2.0+this->dt_*5,track_indices);
+
+ASSERT_LT(this->sys_->models_.size(), num_models );
+
 
 }
