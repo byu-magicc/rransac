@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
 project(rransac)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -10,9 +10,10 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-find_package(Eigen3)
-find_package(Boost)
+find_package(Eigen3 REQUIRED)
+find_package(Boost REQUIRED)
 find_package(Ceres REQUIRED)
+find_package( OpenCV 4 REQUIRED )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 message(STATUS "Build type is Debug")
@@ -28,6 +29,7 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 include_directories(
     ${EIGEN3_INCLUDE_DIR}
     ${Boost_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
     include/rransac
     lie_groups/liegroups/include
     include
@@ -62,13 +64,14 @@ include_directories(
 ## Testing ##
 #############
 
-# add_executable(main src/main.cpp
-# src/parameters.cpp)
+add_executable(main src/main.cpp
+src/parameters.cpp)
+target_link_libraries(main ${OpenCV_LIBS})
 # ${Boost_LIBRARIES})
 # src/common/sources/source_base.cpp)
 
 
 # option(BUILD_TESTS "Build the Params GTests" OFF)
 # if(BUILD_TESTS)
-  add_subdirectory(test)
+  # add_subdirectory(test)
 # endif()
