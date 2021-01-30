@@ -125,8 +125,8 @@ struct Test3 {
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RRANSACParameters;
+    typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
+    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
 
     typedef Eigen::Matrix<double,3,3> MatR_;
@@ -138,6 +138,7 @@ struct Test3 {
     typedef Eigen::Matrix<double,3,1> VecU_;
     std::string test_name = "SE2 Pose Test";
     TransformMatData_ transform_data;
+    static constexpr bool transform_data_ = false;
 
     Test3() {
         double pos = 5;
@@ -224,12 +225,12 @@ void SetUp() override {
     // Setup system
     Parameters params;
     params.process_noise_covariance_ = T::ProcessNoiseCov_::Identity()*noise_;
-    params.RANSAC_max_iters_ = 50;
+    params.RANSAC_max_iters_ = 5;
     params.RANSAC_minimum_subset_ = 3;
     params.RANSAC_score_stopping_criteria_ = 10;
     params.RANSAC_score_minimum_requirement_ = 6;
     params.meas_time_window_ = end_time_ - start_time_;                   // 5 seconds
-    params.cluster_time_threshold_ = 2;
+    params.cluster_time_threshold_ = 1;
     params.cluster_velocity_threshold_ = 1;
     params.cluster_position_threshold_ = 1;
     params.max_num_models_ = 5;
@@ -289,7 +290,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             }
 
             if (ii !=this->start_time_) {
-                track.state_.u_.data_ += Eigen::Matrix<double,T::Algebra_::dim_,T::Algebra_::dim_>::Identity()*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
+                // track.state_.u_.data_ += Eigen::Matrix<double,T::Algebra_::dim_,T::Algebra_::dim_>::Identity()*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
             }
 
@@ -301,9 +302,9 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
-                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
+                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0));
+                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0));
+                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0));
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
@@ -346,7 +347,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
 
 Meas<double> m1_, m2_, m3_, m4_;
-double noise_ = 1e-1;
+double noise_ = 1e-2;
 T test_data_;
 std::vector<Model_> tracks_;
 RRANSAC_ rransac_;

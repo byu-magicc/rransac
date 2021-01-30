@@ -296,7 +296,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typ
         // std::cerr << "success: " << success << std::endl;
         if (success) {
             score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);
-            // std::cerr << "score: " << score << std::endl << std::endl;
+            std::cerr << "score: " << score << std::endl << std::endl;
         } else
             score = -1;
         
@@ -311,7 +311,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typ
 
         // The first few estimates are so bad that the measurements used to create them aren't even inliers.
         // There is a good chance that the cluster just has a clutter of noisy measurements so terminate early.
-        if (iterations >= iteration_stopping_criteria && best_score == 0) {
+        if (iterations >= iteration_stopping_criteria && best_score < sys.params_.RANSAC_minimum_subset_) {
             break;
         }
 
