@@ -38,7 +38,7 @@ void DerivedSetData(const Mat3d data) {
  * Transforms the measurement using data_ from the previous surveillance frame to the current one.
  * @param meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(Meas<double>& meas) {
+void DerivedTransformMeasurement(Meas<double>& meas) const {
     throw std::runtime_error("TransformNULL::TransformMeasurement Not Implemented.");
 }
 
@@ -48,7 +48,7 @@ void DerivedTransformMeasurement(Meas<double>& meas) {
  * @param state The track's state to be transformed.
  * @param cov   The track's error covariance to be transformed.
  */ 
-void DerivedTransformTrack(tState& state, Eigen::Matrix<DataType,tState::dim_,tState::dim_>& cov) {
+void DerivedTransformTrack(tState& state, Eigen::Matrix<DataType,tState::dim_,tState::dim_>& cov) const {
     throw std::runtime_error("TransformNULL::TransformTrack Not Implemented.");
 }
 
