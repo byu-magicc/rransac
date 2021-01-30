@@ -23,7 +23,6 @@ typedef typename tState::DataType DataType;
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 static constexpr unsigned int meas_dim_ = tState::Group::dim_;
 
-
 /** Initializes the measurement source. This function must set the parameters.  */
 void DerivedInit(const SourceParameters& params);      
 

@@ -165,7 +165,60 @@ struct Test3 {
   
 };
 
+//---------------------------------------------------------------------------------------------------------
 
+struct Test4 {
+    public:
+    typedef ModelSENPoseTwist<SE3_se3, TransformNULL> Model_;
+    typedef typename Model_::Transformation Transformation_;
+    typedef typename Model_::Transformation::MatData TransformMatData_;
+    typedef typename Model_::State State_;
+    typedef typename State_::Algebra Algebra_;
+    typedef typename Model_::Source Source_;
+    typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
+    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
+    typedef RRANSAC<RRANSACParameters> RRANSAC_;
+
+    typedef Eigen::Matrix<double,6,6> MatR_;
+    typedef Eigen::Matrix<double,12,12> MatR2_;
+    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
+    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
+    typedef Eigen::Matrix<double,12,12> ProcessNoiseCov_;
+    std::vector<State_> states;
+    typedef Eigen::Matrix<double,6,1> VecU_;
+    TransformMatData_ transform_data;
+    static constexpr bool transform_data_ = false;
+
+
+
+
+    std::string test_name = "SE3 Pose Test";
+
+    Test4() {
+        double pos = 10;
+        double rot1 = 0.2;
+        double rot2 = -0.2;
+        double rot3 = 0;
+        double t_vel = 0.5;
+        double a_vel = 0.1;
+        Eigen::Matrix<double,6,1> pose;
+        states.resize(4);
+        pose << pos, pos, pos, rot1, rot2, rot3;
+        states[0].g_.data_ = State_::Algebra::Exp(pose);
+        states[0].u_.data_ << t_vel, t_vel, t_vel, 0, 0, 0;
+        pose << -pos, pos, -pos, rot1, -rot2, rot3;
+        states[1].g_.data_ = State_::Algebra::Exp(pose);
+        states[1].u_.data_ << -t_vel, t_vel, t_vel, a_vel, -a_vel, a_vel;
+        pose << pos, -pos, pos, -rot1, rot2, -rot3;
+        states[2].g_.data_ = State_::Algebra::Exp(pose);
+        states[2].u_.data_ << t_vel, -t_vel, t_vel, -a_vel, a_vel, -a_vel;
+        pose << -pos, -pos, -pos, -rot1, -rot2, -rot3;
+        states[3].g_.data_ = State_::Algebra::Exp(pose);
+        states[3].u_.data_ << -t_vel, -t_vel, -t_vel, 0, 0, 0;
+    }
+
+  
+};
 
 
 
@@ -230,9 +283,9 @@ void SetUp() override {
     params.RANSAC_score_stopping_criteria_ = 10;
     params.RANSAC_score_minimum_requirement_ = 6;
     params.meas_time_window_ = end_time_ - start_time_;                   // 5 seconds
-    params.cluster_time_threshold_ = 1;
-    params.cluster_velocity_threshold_ = 1;
-    params.cluster_position_threshold_ = 1;
+    params.cluster_time_threshold_ = 0.5;
+    params.cluster_velocity_threshold_ = 1.5;
+    params.cluster_position_threshold_ = 1.5;
     params.max_num_models_ = 5;
     params.similar_tracks_threshold_ = 1;
     params.good_model_threshold_ = 90;
@@ -290,7 +343,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             }
 
             if (ii !=this->start_time_) {
-                // track.state_.u_.data_ += Eigen::Matrix<double,T::Algebra_::dim_,T::Algebra_::dim_>::Identity()*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
+                track.state_.u_.data_ += Eigen::Matrix<double,T::Algebra_::dim_,T::Algebra_::dim_>::Identity()*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
             }
 
@@ -302,9 +355,9 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0));
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0));
-                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0));
+                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
+                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
+                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
@@ -347,7 +400,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
 
 Meas<double> m1_, m2_, m3_, m4_;
-double noise_ = 1e-2;
+double noise_ = 1e-1;
 T test_data_;
 std::vector<Model_> tracks_;
 RRANSAC_ rransac_;
@@ -369,7 +422,7 @@ double fov_ = 50;  // The surveillance region is a square centered at zero with 
 //--------------------------------------------------------------------------------------------------------
 
 // using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
-using MyTypes = ::testing::Types< Test3>;
+using MyTypes = ::testing::Types< Test4>;
 TYPED_TEST_SUITE(RRANSACTest, MyTypes);
 
 
@@ -378,7 +431,11 @@ TYPED_TEST(RRANSACTest, FullTest) {
 std::vector<int> track_indices = {0,1,2};
 this->Propagate(this->start_time_,this->end_time_,track_indices);
 
-
+// Get the current score of the model likelihoods
+std::vector<double> model_likelihood(this->sys_->models_.size(),0);
+for (auto& created_track: this->sys_->models_) {
+    model_likelihood[created_track.label_] = created_track.model_likelihood_;
+}
 
 for (auto& created_track: this->sys_->models_) {
     std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
@@ -420,6 +477,7 @@ track_indices = {1,2,3};
 this->Propagate(this->end_time_+this->dt_,this->end_time_*2.0,track_indices);
 
 
+
 for (auto& created_track: this->sys_->models_) {
     std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
     std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
@@ -457,9 +515,29 @@ for (auto& created_track: this->sys_->models_) {
 
 }
 
-// there should be three good models. A previous good model stopped receiving measurements and
-// should no longer be good. There should be a new good model to make a total of three
-ASSERT_EQ(this->sys_->good_models_.size(),3);
+// One of the tracks stopped receiving measurements so it's likelihood should be less while the other two should be 
+// larger. Since all of the tracks received measurements, none of them should have stayed the same. 
+int num_increase = 0;
+int num_decrease = 0;
+int num_constant = 0;
+for (auto& created_track: this->sys_->models_) {
+    if (created_track.label_ < model_likelihood.size()) {
+        if ( created_track.model_likelihood_ < model_likelihood[created_track.label_]) {
+            num_decrease++;
+        } else if (created_track.model_likelihood_ > model_likelihood[created_track.label_]) {
+            num_increase++;
+        } else {
+            num_constant++;
+        }
+    }
+    
+}
+
+ASSERT_EQ(num_increase,2);
+ASSERT_EQ(num_decrease,1);
+ASSERT_EQ(num_constant,0);
+
+// ASSERT_EQ(this->sys_->good_models_.size(),3);
 
 
 // Propagate the tracks some more in order to kill the track that hasn't been receiving measurements

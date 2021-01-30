@@ -242,7 +242,7 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
             success = false;            
         }
 
-        if (meas_iter->pose.rows() != Source_::meas_dim_) {
+        if (meas_iter->pose.rows() != State_::Group::size1_ || meas_iter->pose.cols() != State_::Group::size2_) {
             throw std::runtime_error("RANSAC::VerifyMeasurements The pose of the measurement is not the correct dimension.");
             success = false;
         }

@@ -144,7 +144,7 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::ScoreHypotheticalSta
 
     inliers.clear(); // Make sure it is empty
     int score = 0;
-    int current_time = sys.current_time_;
+    double current_time = sys.current_time_;
     double dt = 0;
     int src_index = 0;
     double d = 0;          // The distance
@@ -351,7 +351,7 @@ std::vector<std::thread> threads;
 
 for (auto& cluster_iter : sys.clusters_) {
     
-    if (cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_) {
+    if (cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_ && cluster_iter->data_.back().front().time_stamp == sys.current_time_) {
 
         threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys)));
     }
