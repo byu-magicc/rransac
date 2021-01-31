@@ -248,7 +248,7 @@ struct Test5 {
     typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     TransformMatData_ transform_data;
-    static constexpr bool transform_data_ = false;
+    static constexpr bool transform_data_ = true;
 
 
 
@@ -268,6 +268,7 @@ struct Test5 {
         double rot = 0.1;
         double t_vel = 0.5;
         double a_vel = 0.1;
+        double th = 0.2;
         Eigen::Matrix<double,3,1> pose;
         states.resize(4);
         pose << pos, pos, 0;
@@ -282,7 +283,7 @@ struct Test5 {
         pose << -pos, pos, -rot;
         states[3].g_.data_ = State_::Algebra::Exp(pose);
         states[3].u_.data_ << t_vel,0,-a_vel;
-        transform_data.setIdentity();
+        transform_data << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
         noise_mat.setIdentity();
         noise_mat(1,1) = 0;
     }
@@ -412,7 +413,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             }
 
             if (ii !=this->start_time_) {
-                track.state_.u_.data_ += test_data_.noise_mat*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
+                // track.state_.u_.data_ += test_data_.noise_mat*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
             }
 
@@ -424,9 +425,9 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
-                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
+                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0));
+                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0));
+                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0));
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
@@ -449,7 +450,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             this->m3_.time_stamp = ii;
             this->m3_.pose = tmp3.pose;
             this->m3_.twist = tmp3.twist;
-            new_measurements.push_back(this->m3_);
+            // new_measurements.push_back(this->m3_);
 
         }
 
@@ -491,7 +492,7 @@ double fov_ = 50;  // The surveillance region is a square centered at zero with 
 //--------------------------------------------------------------------------------------------------------
 
 // using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
-using MyTypes = ::testing::Types< Test1>;
+using MyTypes = ::testing::Types< Test5>;
 TYPED_TEST_SUITE(RRANSACTest, MyTypes);
 
 
@@ -506,17 +507,17 @@ for (auto& created_track: this->sys_->models_) {
     model_likelihood[created_track.label_] = created_track.model_likelihood_;
 }
 
-// for (auto& created_track: this->sys_->models_) {
-//     std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
-//     std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& created_track: this->sys_->models_) {
+    std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
+    std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
-// for (auto& sim_track: this->tracks_) {
-//     std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
-//     std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& sim_track: this->tracks_) {
+    std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
+    std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
 
 // make sure that the tracks were created
@@ -547,17 +548,17 @@ this->Propagate(this->end_time_+this->dt_,this->end_time_*2.0,track_indices);
 
 
 
-// for (auto& created_track: this->sys_->models_) {
-//     std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
-//     std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& created_track: this->sys_->models_) {
+    std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
+    std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
-// for (auto& sim_track: this->tracks_) {
-//     std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
-//     std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& sim_track: this->tracks_) {
+    std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
+    std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
 // make sure that the tracks were created
 int num_models = this->sys_->models_.size();
