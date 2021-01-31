@@ -1,5 +1,6 @@
 #ifndef RRANSAC_DATA_CONTAINERS_DATA_TREE_CLUSTER_H_
 #define RRANSAC_DATA_CONTAINERS_DATA_TREE_CLUSTER_H_
+#pragma once
 
 #include "data_containers/data_tree/data_tree_base.h"
 #include "data_containers/cluster.h"

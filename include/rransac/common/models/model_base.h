@@ -1,5 +1,6 @@
 #ifndef RRANSAC_COMMON_MODELS_BASE_H_
 #define RRANSAC_COMMON_MODELS_BASE_H_
+#pragma once
 
 
 
@@ -56,6 +57,7 @@ static constexpr unsigned int g_dim_ = State::Group::dim_;
 // static constexpr unsigned int cov_dim_ = tCovDim;
 static constexpr unsigned int cov_dim_ = tCovDim;
 typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;
+typedef Eigen::Matrix<DataType,cov_dim_,1> VecCov;
 
 
 
@@ -180,7 +182,7 @@ public:
         UpdateModelLikelihood(sources);
     }
 
-    void OPlusEQ(const Eigen::Matrix<DataType,tCovDim,1>& state_update){
+    void OPlusEQ(const VecCov& state_update){
         static_cast<tDerived*>(this)->DerivedOPlusEq(state_update);
     }
 
@@ -242,7 +244,7 @@ public:
     /**
      * Computes the OMinus operation for the state
      */ 
-    static Eigen::Matrix<DataType,tCovDim,1> OMinus(const tDerived& model1, const tDerived& model2) {
+    static VecCov OMinus(const tDerived& model1, const tDerived& model2) {
         return tDerived::DerivedOMinus(model1, model2);
     }
 

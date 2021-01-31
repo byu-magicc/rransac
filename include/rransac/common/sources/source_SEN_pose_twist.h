@@ -1,5 +1,7 @@
 #ifndef RRANSAC_COMMON_SOURCES_SOURCE_SEN_POSE_TWIST_H_
 #define RRANSAC_COMMON_SOURCES_SOURCE_SEN_POSE_TWIST_H_
+#pragma once
+
 
 #include <typeinfo>
 
@@ -21,7 +23,12 @@ public:
 typedef tState State;
 typedef typename tState::DataType DataType;
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-static constexpr unsigned int meas_dim_ = tState::Group::dim_;
+static constexpr unsigned int meas_dim_ = State::Group::dim_;
+static constexpr unsigned int meas_pose_rows_ = State::Group::size1_;
+static constexpr unsigned int meas_pose_cols_ = State::Group::size2_;
+static constexpr unsigned int meas_twist_rows_ = State::Group::dim_;
+static constexpr unsigned int meas_twist_cols_ = 1;
+
 
 /** Initializes the measurement source. This function must set the parameters.  */
 void DerivedInit(const SourceParameters& params);      

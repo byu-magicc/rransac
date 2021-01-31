@@ -1,5 +1,6 @@
 #ifndef RRANSAC_TRACK_INITIALIZATION_SEED_POLOCIES_SE2_POS_POLICY_H_
 #define RRANSAC_TRACK_INITIALIZATION_SEED_POLOCIES_SE2_POS_POLICY_H_
+#pragma once
 
 #include "system.h"
 #include "data_containers/cluster.h"

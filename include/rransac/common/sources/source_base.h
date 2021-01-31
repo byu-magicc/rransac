@@ -1,5 +1,7 @@
 #ifndef RRANSAC_COMMON_SOURCES_SOURCE_BASE_H_
 #define RRANSAC_COMMON_SOURCES_SOURCE_BASE_H_
+#pragma once
+
 
 #include <Eigen/Core>
 #include <cmath>

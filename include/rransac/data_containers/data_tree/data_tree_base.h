@@ -1,5 +1,7 @@
 #ifndef RRANSAC_DATA_CONTAINERS_DATA_TREE_BASE_H_
 #define RRANSAC_DATA_CONTAINERS_DATA_TREE_BASE_H_
+#pragma once
+
 
 #include "common/measurement/measurement_base.h"
 #include "system.h"

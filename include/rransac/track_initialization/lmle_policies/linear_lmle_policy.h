@@ -1,5 +1,6 @@
 #ifndef RRANSAC_TRACK_INITIALIZATION_LMLE_POLICIES_LINEAR_LMLE_POLICY_H_
 #define RRANSAC_TRACK_INITIALIZATION_LMLE_POLICIES_LINEAR_LMLE_POLICY_H_
+#pragma once
 
 #include "data_containers/cluster.h"
 #include "system.h"

@@ -1,5 +1,7 @@
 #ifndef RRANSAC_COMMON_SOURCES_SOURCE_RN_H_
 #define RRANSAC_COMMON_SOURCES_SOURCE_RN_H_
+#pragma once
+
 
 #include "common/sources/source_base.h"
 #include <typeinfo>
@@ -23,6 +25,10 @@ typedef tState State;
 typedef typename tState::DataType DataType;
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 static constexpr unsigned int meas_dim_ = tState::Group::dim_;
+static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_;
+static constexpr unsigned int meas_pose_cols_ = 1;
+static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;
+static constexpr unsigned int meas_twist_cols_ = 1;
 
 SourceRN()=default;
 ~SourceRN()=default;

@@ -1,5 +1,8 @@
 #ifndef RRANSAC_COMMON_MODELS_RN_H_
 #define RRANSAC_COMMON_MODELS_RN_H_
+#pragma once
+
+
 
 #include "common/models/model_base.h"
 

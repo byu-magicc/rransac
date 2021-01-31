@@ -8,9 +8,9 @@
 
 #include "system.h"
 #include "state.h"
-#include "common/models/model_RN.h"
+// #include "common/models/model_RN.h"
 #include "common/models/model_SEN_pos_vel.h"
-#include "common/models/model_SEN_pose_twist.h"
+// #include "common/models/model_SEN_pose_twist.h"
 #include "common/sources/source_RN.h"
 #include "common/sources/source_SEN_pos_vel.h"
 #include "common/sources/source_SEN_pose_twist.h"
@@ -21,6 +21,7 @@
 #include "track_initialization/lmle_policies/linear_lmle_policy.h"
 #include "track_initialization/lmle_policies/nonlinear_lmle_policy.h"
 #include "common/transformations/transformation_null.h"
+#include "common/transformations/trans_homography.h"
 #include "track_initialization/ransac.h"
 #include "common/data_association/model_policies/model_pdf_policy.h"
 #include "common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
@@ -30,96 +31,214 @@
 using namespace lie_groups;
 using namespace rransac;
 
-struct Test1 {
-    public:
-    typedef ModelRN<R2_r2, TransformNULL> Model_;
-    typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
-    typedef typename Model_::State State_;
-    typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RRANSACParameters;
-    typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef Eigen::Matrix<double,2,2> MatR_;
-    typedef Eigen::Matrix<double,4,4> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
-    static constexpr bool transform_data_ = false;
-    typedef Eigen::Matrix<double,4,4> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,2,1> VecU_;
-    std::string test_name = "R2 Test";
+// struct Test1 {
+//     public:
+//     typedef ModelRN<R2_r2, TransformNULL> Model_;
+//     typedef typename Model_::Transformation Transformation_;
+//     typedef typename Model_::Transformation::MatData TransformMatData_;
+//     typedef typename Model_::State State_;
+//     typedef typename State_::Algebra Algebra_;
+//     typedef typename Model_::Source Source_;
+//     typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
+//     typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RRANSACParameters;
+//     typedef RRANSAC<RRANSACParameters> RRANSAC_;
+//     typedef Eigen::Matrix<double,2,2> MatR_;
+//     typedef Eigen::Matrix<double,4,4> MatR2_;
+//     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
+//     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
+//     static constexpr bool transform_data_ = false;
+//     typedef Eigen::Matrix<double,4,4> ProcessNoiseCov_;
+//     std::vector<State_> states;
+//     typedef Eigen::Matrix<double,2,1> VecU_;
+//     std::string test_name = "R2 Test";
+//     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
 
-    TransformMatData_ transform_data;
 
-    Test1() {
-        double pos = 5;
-        double vel = 0.5;
-        states.resize(4);
-        states[0].g_.data_ << pos,pos;
-        states[0].u_.data_ << 0, -vel;
-        states[1].g_.data_ << pos, -pos;
-        states[1].u_.data_ << -vel,0;
-        states[2].g_.data_ << -pos, -pos;
-        states[2].u_.data_ << 0, vel;
-        states[3].g_.data_ << -pos, pos;
-        states[3].u_.data_ << vel,0;
-        transform_data.setIdentity();
-    }
+//     TransformMatData_ transform_data;
+
+//     Test1() {
+//         double pos = 5;
+//         double vel = 0.5;
+//         states.resize(4);
+//         states[0].g_.data_ << pos,pos;
+//         states[0].u_.data_ << 0, -vel;
+//         states[1].g_.data_ << pos, -pos;
+//         states[1].u_.data_ << -vel,0;
+//         states[2].g_.data_ << -pos, -pos;
+//         states[2].u_.data_ << 0, vel;
+//         states[3].g_.data_ << -pos, pos;
+//         states[3].u_.data_ << vel,0;
+//         transform_data.setIdentity();
+//         noise_mat.setIdentity();
+//     }
 
   
-};
+// };
+
+// //---------------------------------------------------------------------------------------------------------
+
+// struct Test2 {
+//     public:
+//     typedef ModelRN<R3_r3, TransformNULL> Model_;
+//     typedef typename Model_::Transformation Transformation_;
+//     typedef typename Model_::Transformation::MatData TransformMatData_;
+//     typedef typename Model_::State State_;
+//     typedef typename State_::Algebra Algebra_;
+//     typedef typename Model_::Source Source_;
+//     typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
+//     typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RRANSACParameters;
+//     typedef RRANSAC<RRANSACParameters> RRANSAC_;
+
+//     typedef Eigen::Matrix<double,3,3> MatR_;
+//     typedef Eigen::Matrix<double,6,6> MatR2_;
+//     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
+//     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
+//     static constexpr bool transform_data_ = false;
+//     typedef Eigen::Matrix<double,6,6> ProcessNoiseCov_;
+//     std::vector<State_> states;
+//     typedef Eigen::Matrix<double,3,1> VecU_;
+//     std::string test_name = "R3 Test";
+//     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+
+
+//     TransformMatData_ transform_data;
+
+//     Test2() {
+//         double pos = 5;
+//         double vel = 0.5;
+//         states.resize(4);
+//         states[0].g_.data_ << pos,pos, pos;
+//         states[0].u_.data_ << 0, -vel, 0;
+//         states[1].g_.data_ << pos, -pos, -pos;
+//         states[1].u_.data_ << -vel,0,-vel;
+//         states[2].g_.data_ << -pos, -pos, -pos;
+//         states[2].u_.data_ << 0, vel, vel;
+//         states[3].g_.data_ << -pos, pos, pos;
+//         states[3].u_.data_ << vel,0,0;
+//         transform_data.setIdentity();
+//         noise_mat.setIdentity();
+//     }
+
+  
+// };
+
+// //---------------------------------------------------------------------------------------------------------
+
+// struct Test3 {
+//     public:
+//     typedef ModelSENPoseTwist<SE2_se2, TransformNULL> Model_;
+//     typedef typename Model_::Transformation Transformation_;
+//     typedef typename Model_::Transformation::MatData TransformMatData_;
+//     typedef typename Model_::State State_;
+//     typedef typename State_::Algebra Algebra_;
+//     typedef typename Model_::Source Source_;
+//     typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
+//     typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
+//     typedef RRANSAC<RRANSACParameters> RRANSAC_;
+
+//     typedef Eigen::Matrix<double,3,3> MatR_;
+//     typedef Eigen::Matrix<double,6,6> MatR2_;
+//     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
+//     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
+//     typedef Eigen::Matrix<double,6,6> ProcessNoiseCov_;
+//     std::vector<State_> states;
+//     typedef Eigen::Matrix<double,3,1> VecU_;
+//     std::string test_name = "SE2 Pose Test";
+//     TransformMatData_ transform_data;
+//     static constexpr bool transform_data_ = false;
+//     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+
+
+//     Test3() {
+//         double pos = 5;
+//         double rot = 0.1;
+//         double t_vel = 0.5;
+//         double a_vel = 0.1;
+//         Eigen::Matrix<double,3,1> pose;
+//         states.resize(4);
+//         pose << pos, pos, 0;
+//         states[0].g_.data_ = State_::Algebra::Exp(pose);
+//         states[0].u_.data_ << t_vel, t_vel,0;
+//         pose << pos, -pos, 0;
+//         states[1].g_.data_ = State_::Algebra::Exp(pose);
+//         states[1].u_.data_ << -t_vel,-t_vel,0;
+//         pose << -pos, -pos, rot;
+//         states[2].g_.data_ = State_::Algebra::Exp(pose);
+//         states[2].u_.data_ << t_vel, 0, a_vel;
+//         pose << -pos, pos, -rot;
+//         states[3].g_.data_ = State_::Algebra::Exp(pose);
+//         states[3].u_.data_ << t_vel,0,-a_vel;
+//         transform_data.setIdentity();
+     //    noise_mat.setIdentity();
+//     }
+
+  
+// };
+
+// //---------------------------------------------------------------------------------------------------------
+
+// struct Test4 {
+//     public:
+//     typedef ModelSENPoseTwist<SE3_se3, TransformNULL> Model_;
+//     typedef typename Model_::Transformation Transformation_;
+//     typedef typename Model_::Transformation::MatData TransformMatData_;
+//     typedef typename Model_::State State_;
+//     typedef typename State_::Algebra Algebra_;
+//     typedef typename Model_::Source Source_;
+//     typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
+//     typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
+//     typedef RRANSAC<RRANSACParameters> RRANSAC_;
+
+//     typedef Eigen::Matrix<double,6,6> MatR_;
+//     typedef Eigen::Matrix<double,12,12> MatR2_;
+//     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
+//     static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
+//     typedef Eigen::Matrix<double,12,12> ProcessNoiseCov_;
+//     std::vector<State_> states;
+//     typedef Eigen::Matrix<double,6,1> VecU_;
+//     TransformMatData_ transform_data;
+//     static constexpr bool transform_data_ = false;
+//     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+
+
+
+
+//     std::string test_name = "SE3 Pose Test";
+
+//     Test4() {
+//         double pos = 10;
+//         double rot1 = 0.2;
+//         double rot2 = -0.2;
+//         double rot3 = 0;
+//         double t_vel = 0.5;
+//         double a_vel = 0.1;
+//         Eigen::Matrix<double,6,1> pose;
+//         states.resize(4);
+//         pose << pos, pos, pos, rot1, rot2, rot3;
+//         states[0].g_.data_ = State_::Algebra::Exp(pose);
+//         states[0].u_.data_ << t_vel, t_vel, t_vel, 0, 0, 0;
+//         pose << -pos, pos, -pos, rot1, -rot2, rot3;
+//         states[1].g_.data_ = State_::Algebra::Exp(pose);
+//         states[1].u_.data_ << -t_vel, t_vel, t_vel, a_vel, -a_vel, a_vel;
+//         pose << pos, -pos, pos, -rot1, rot2, -rot3;
+//         states[2].g_.data_ = State_::Algebra::Exp(pose);
+//         states[2].u_.data_ << t_vel, -t_vel, t_vel, -a_vel, a_vel, -a_vel;
+//         pose << -pos, -pos, -pos, -rot1, -rot2, -rot3;
+//         states[3].g_.data_ = State_::Algebra::Exp(pose);
+//         states[3].u_.data_ << -t_vel, -t_vel, -t_vel, 0, 0, 0;
+//         transform_data.setIdentity();
+//         noise_mat.setIdentity();
+//     }
+
+  
+// };
 
 //---------------------------------------------------------------------------------------------------------
 
-struct Test2 {
+struct Test5 {
     public:
-    typedef ModelRN<R3_r3, TransformNULL> Model_;
-    typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
-    typedef typename Model_::State State_;
-    typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RRANSACParameters;
-    typedef RRANSAC<RRANSACParameters> RRANSAC_;
 
-    typedef Eigen::Matrix<double,3,3> MatR_;
-    typedef Eigen::Matrix<double,6,6> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
-    static constexpr bool transform_data_ = false;
-    typedef Eigen::Matrix<double,6,6> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,3,1> VecU_;
-    std::string test_name = "R3 Test";
-
-    TransformMatData_ transform_data;
-
-    Test2() {
-        double pos = 5;
-        double vel = 0.5;
-        states.resize(4);
-        states[0].g_.data_ << pos,pos, pos;
-        states[0].u_.data_ << 0, -vel, 0;
-        states[1].g_.data_ << pos, -pos, -pos;
-        states[1].u_.data_ << -vel,0,-vel;
-        states[2].g_.data_ << -pos, -pos, -pos;
-        states[2].u_.data_ << 0, vel, vel;
-        states[3].g_.data_ << -pos, pos, pos;
-        states[3].u_.data_ << vel,0,0;
-        transform_data.setIdentity();
-    }
-
-  
-};
-
-//---------------------------------------------------------------------------------------------------------
-
-struct Test3 {
-    public:
-    typedef ModelSENPoseTwist<SE2_se2, TransformNULL> Model_;
+    typedef ModelSENPosVel<SE2_se2, TransformHomography> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
@@ -128,19 +247,23 @@ struct Test3 {
     typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
     typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-
-    typedef Eigen::Matrix<double,3,3> MatR_;
-    typedef Eigen::Matrix<double,6,6> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
-    typedef Eigen::Matrix<double,6,6> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,3,1> VecU_;
-    std::string test_name = "SE2 Pose Test";
     TransformMatData_ transform_data;
     static constexpr bool transform_data_ = false;
 
-    Test3() {
+
+
+    typedef Eigen::Matrix<double,2,2> MatR_;
+    typedef Eigen::Matrix<double,4,4> MatR2_;
+    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POS;
+    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POS_VEL;
+    typedef Eigen::Matrix<double,5,5> ProcessNoiseCov_;
+    std::vector<State_> states;
+    typedef Eigen::Matrix<double,3,1> VecU_;
+    std::string test_name = "SE2 Pos Test";
+    Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+    
+
+    Test5() {
         double pos = 5;
         double rot = 0.1;
         double t_vel = 0.5;
@@ -149,10 +272,10 @@ struct Test3 {
         states.resize(4);
         pose << pos, pos, 0;
         states[0].g_.data_ = State_::Algebra::Exp(pose);
-        states[0].u_.data_ << t_vel, t_vel,0;
-        pose << pos, -pos, 0;
+        states[0].u_.data_ << t_vel, 0,0;
+        pose << pos, -pos, rot*2;
         states[1].g_.data_ = State_::Algebra::Exp(pose);
-        states[1].u_.data_ << -t_vel,-t_vel,0;
+        states[1].u_.data_ << t_vel,0,0;
         pose << -pos, -pos, rot;
         states[2].g_.data_ = State_::Algebra::Exp(pose);
         states[2].u_.data_ << t_vel, 0, a_vel;
@@ -160,66 +283,12 @@ struct Test3 {
         states[3].g_.data_ = State_::Algebra::Exp(pose);
         states[3].u_.data_ << t_vel,0,-a_vel;
         transform_data.setIdentity();
+        noise_mat.setIdentity();
+        noise_mat(1,1) = 0;
     }
 
   
 };
-
-//---------------------------------------------------------------------------------------------------------
-
-struct Test4 {
-    public:
-    typedef ModelSENPoseTwist<SE3_se3, TransformNULL> Model_;
-    typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
-    typedef typename Model_::State State_;
-    typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
-    typedef RRANSAC<RRANSACParameters> RRANSAC_;
-
-    typedef Eigen::Matrix<double,6,6> MatR_;
-    typedef Eigen::Matrix<double,12,12> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
-    typedef Eigen::Matrix<double,12,12> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,6,1> VecU_;
-    TransformMatData_ transform_data;
-    static constexpr bool transform_data_ = false;
-
-
-
-
-    std::string test_name = "SE3 Pose Test";
-
-    Test4() {
-        double pos = 10;
-        double rot1 = 0.2;
-        double rot2 = -0.2;
-        double rot3 = 0;
-        double t_vel = 0.5;
-        double a_vel = 0.1;
-        Eigen::Matrix<double,6,1> pose;
-        states.resize(4);
-        pose << pos, pos, pos, rot1, rot2, rot3;
-        states[0].g_.data_ = State_::Algebra::Exp(pose);
-        states[0].u_.data_ << t_vel, t_vel, t_vel, 0, 0, 0;
-        pose << -pos, pos, -pos, rot1, -rot2, rot3;
-        states[1].g_.data_ = State_::Algebra::Exp(pose);
-        states[1].u_.data_ << -t_vel, t_vel, t_vel, a_vel, -a_vel, a_vel;
-        pose << pos, -pos, pos, -rot1, rot2, -rot3;
-        states[2].g_.data_ = State_::Algebra::Exp(pose);
-        states[2].u_.data_ << t_vel, -t_vel, t_vel, -a_vel, a_vel, -a_vel;
-        pose << -pos, -pos, -pos, -rot1, -rot2, -rot3;
-        states[3].g_.data_ = State_::Algebra::Exp(pose);
-        states[3].u_.data_ << -t_vel, -t_vel, -t_vel, 0, 0, 0;
-    }
-
-  
-};
-
 
 
 //--------------------------------------------------------------------------------------------------------
@@ -280,12 +349,12 @@ void SetUp() override {
     params.process_noise_covariance_ = T::ProcessNoiseCov_::Identity()*noise_;
     params.RANSAC_max_iters_ = 5;
     params.RANSAC_minimum_subset_ = 3;
-    params.RANSAC_score_stopping_criteria_ = 10;
-    params.RANSAC_score_minimum_requirement_ = 6;
+    params.RANSAC_score_stopping_criteria_ = 15;
+    params.RANSAC_score_minimum_requirement_ = 13;
     params.meas_time_window_ = end_time_ - start_time_;                   // 5 seconds
     params.cluster_time_threshold_ = 0.5;
-    params.cluster_velocity_threshold_ = 1.5;
-    params.cluster_position_threshold_ = 1.5;
+    params.cluster_velocity_threshold_ = 1.2;
+    params.cluster_position_threshold_ = 1.2;
     params.max_num_models_ = 5;
     params.similar_tracks_threshold_ = 1;
     params.good_model_threshold_ = 90;
@@ -343,7 +412,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             }
 
             if (ii !=this->start_time_) {
-                track.state_.u_.data_ += Eigen::Matrix<double,T::Algebra_::dim_,T::Algebra_::dim_>::Identity()*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
+                track.state_.u_.data_ += test_data_.noise_mat*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
             }
 
@@ -422,7 +491,7 @@ double fov_ = 50;  // The surveillance region is a square centered at zero with 
 //--------------------------------------------------------------------------------------------------------
 
 // using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
-using MyTypes = ::testing::Types< Test4>;
+using MyTypes = ::testing::Types< Test5>;
 TYPED_TEST_SUITE(RRANSACTest, MyTypes);
 
 

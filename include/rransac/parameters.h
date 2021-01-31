@@ -1,5 +1,6 @@
 #ifndef RRANSAC_COMMON_PARAMETERS_H_
 #define RRANSAC_COMMON_PARAMETERS_H_
+#pragma once
 
 #include <vector>
 #include <Eigen/Core>

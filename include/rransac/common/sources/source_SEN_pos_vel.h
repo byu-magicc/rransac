@@ -1,5 +1,7 @@
 #ifndef RRANSAC_COMMON_SOURCES_SOURCE_SEN_POS_VEL_H_
 #define RRANSAC_COMMON_SOURCES_SOURCE_SEN_POS_VEL_H_
+#pragma once
+
 
 #include <typeinfo>
 
@@ -25,6 +27,12 @@ typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 static constexpr unsigned int l_dim_ =  tState::Algebra::dim_a_vel_ + 1;
 static constexpr unsigned int meas_dim_ = tState::Group::dim_pos_;
 static constexpr unsigned int cov_dim_ = tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1;
+static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_pos_;
+static constexpr unsigned int meas_pose_cols_ = 1;
+static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_pos_;
+static constexpr unsigned int meas_twist_cols_ = 1;
+
+
 
 /** Initializes the measurement source. This function must set the parameters.  */
 void DerivedInit(const SourceParameters& params);      

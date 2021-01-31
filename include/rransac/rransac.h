@@ -7,6 +7,7 @@
 #include "common/models/model_manager.h"
 #include <functional>
 #include <string>
+#pragma once
 
 
 namespace rransac {
@@ -242,12 +243,12 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
             success = false;            
         }
 
-        if (meas_iter->pose.rows() != State_::Group::size1_ || meas_iter->pose.cols() != State_::Group::size2_) {
+        if (meas_iter->pose.rows() != Source_::meas_pose_rows_ || meas_iter->pose.cols() != Source_::meas_pose_cols_) {
             throw std::runtime_error("RANSAC::VerifyMeasurements The pose of the measurement is not the correct dimension.");
             success = false;
         }
 
-        if (sys_.sources_[meas_iter->source_index].params_.has_twist && meas_iter->twist.rows() != Source_::meas_dim_) {
+        if (sys_.sources_[meas_iter->source_index].params_.has_twist && meas_iter->twist.rows() != Source_::meas_pose_rows_) {
             throw std::runtime_error("RANSAC::VerifyMeasurements The twist of the measurement is not the correct dimension.");
             success = false;
         }

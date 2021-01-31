@@ -1,5 +1,6 @@
 #ifndef RRANSAC_COMMON_MODEL_MANAGER_H_
 #define RRANSAC_COMMON_MODEL_MANAGER_H_
+#pragma once
 
 
 #include <random>
@@ -287,8 +288,7 @@ for (auto& sample : samples) {
 // Scale the error covariance
 P = P/(0.5*(r_min + r_max));
 
-// Update the state
-fused_model.state_.OPlusEQ(P*P2_inv*tModel::OMinus(model2, model1));
+fused_model.OPlusEQ(P*P2_inv*tModel::OMinus(model2, model1));
 
 
 fused_model.err_cov_ = P;

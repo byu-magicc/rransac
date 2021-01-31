@@ -1,5 +1,7 @@
 #ifndef RRANSAC__COMMON__DATA_ASSOCIATION__MODEL_POLICIES__MODEL_PDF_POLICY_H_
 #define RRANSAC__COMMON__DATA_ASSOCIATION__MODEL_POLICIES__MODEL_PDF_POLICY_H_
+#pragma once
+
 
 #include <math.h>
 #include <numeric>

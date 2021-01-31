@@ -1,5 +1,6 @@
 #ifndef RRANSAC_SYSTEM_H_
 #define RRANSAC_SYSTEM_H_
+#pragma once
 
 #include <vector>
 #include <list>

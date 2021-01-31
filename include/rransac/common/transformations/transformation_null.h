@@ -1,5 +1,7 @@
 #ifndef RRANSAC_COMMON_TRANSFORM_NULL_H_
 #define RRANSAC_COMMON_TRANSFORM_NULL_H_
+#pragma once
+
 
 #include <Eigen/Core>
 #include "common/measurement/measurement_base.h"

@@ -1,5 +1,6 @@
 #ifndef RRANSAC_DATA_CONTAINERS_CLUSTER_BASE_H_
 #define RRANSAC_DATA_CONTAINERS_CLUSTER_BASE_H_
+#pragma once
 
 #include <list>
 

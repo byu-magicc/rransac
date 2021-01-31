@@ -1,5 +1,8 @@
 #ifndef RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_BASE_H_
 #define RRANSAC_COMMON_MEASUREMENT_MEASUREMENT_BASE_H_
+#pragma once
+
+
 
 #include <Eigen/Core>
 #include <string>

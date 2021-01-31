@@ -1,5 +1,6 @@
 #ifndef RRANSAC_COMMON_UTILITIES_H_
 #define RRANSAC_COMMON_UTILITIES_H_
+#pragma once
 
 
 #include <random>

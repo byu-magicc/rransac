@@ -1,5 +1,8 @@
 #ifndef RRANSAC_COMMON_MODELS_SEN_POS_VEL_H_
 #define RRANSAC_COMMON_MODELS_SEN_POS_VEL_H_
+#pragma once
+
+
 
 #include "common/models/model_base.h"
 
@@ -19,9 +22,10 @@ template <typename tScalar, template<typename> typename tStateTemplate>
 using ModelTemplate = ModelSENPosVel<tStateTemplate<tScalar>,tTransformation>;
 
 static constexpr unsigned int g_dim_ = State::Group::dim_;
-static constexpr unsigned int cov_dim_ = State::Group::dim_ + State::Algebra::dim_ - State::Algebra::dim_t_vel_ + 1;
+static constexpr int cov_dim_ = State::Group::dim_ + State::Algebra::dim_ - State::Algebra::dim_t_vel_ + 1;
 static constexpr unsigned int l_dim_ =  State::Algebra::dim_a_vel_ + 1;
 typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;
+typedef Eigen::Matrix<DataType,cov_dim_,1> VecCov;
 
 /**
  * Computes the Jacobian of the state transition function with respect to the state evaluated at the current state estimate.
@@ -44,16 +48,16 @@ static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt)
 * for the additional translationals velocities (which are zero) before being added to state.
 * @param state_update An element of the lie algebra of the state used to update the state. 
 */
-void DerivedOPlusEq(const Eigen::Matrix<DataType,cov_dim_,1>& state_update);
+void DerivedOPlusEq(const VecCov& state_update);
 
 /**
  * Returns a Random State
  */ 
 static State DerivedGetRandomState();
 
-static Eigen::Matrix<DataType,cov_dim_,1> DerivedOMinus(const ModelSENPosVel& model1, const ModelSENPosVel& model2 ) {
+static VecCov DerivedOMinus(const ModelSENPosVel& model1, const ModelSENPosVel& model2 ) {
 
-    Eigen::Matrix<DataType,cov_dim_,1> tmp;
+    VecCov tmp;
     Eigen::Matrix<DataType,tState::dim_,1> err = model1.state_.OMinus(model2.state_);
     tmp.block(0,0,tState::Group::dim_+1,1) = err.block(0,0,tState::Group::dim_+1,1);
     tmp.block(tState::Group::dim_+1,0,tState::Group::dim_rot_,1) = err.block(tState::Group::dim_+tState::Group::dim_pos_,0,tState::Group::dim_rot_,1);
@@ -98,7 +102,8 @@ typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTr
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, template <typename > typename tTransformation>
-void ModelSENPosVel<tState, tTransformation>::DerivedOPlusEq(const Eigen::Matrix<DataType,cov_dim_,1>& state_update) {
+void ModelSENPosVel<tState, tTransformation>::DerivedOPlusEq(const VecCov& state_update) {
+    
     Eigen::Matrix<DataType,g_dim_,1> twist_update;
     twist_update.setZero();
     twist_update(0,0) = state_update(g_dim_,0);          // get rho_x

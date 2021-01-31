@@ -1,5 +1,6 @@
 #ifndef RRANSAC_TRACK_INITIALIZATION_RANSAC_H_
 #define RRANSAC_TRACK_INITIALIZATION_RANSAC_H_
+#pragma once
 
 #include "system.h"
 #include "data_containers/data_tree/data_tree_cluster.h"

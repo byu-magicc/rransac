@@ -1,5 +1,7 @@
 #ifndef RRANSAC_COMMON_MODELS_SEN_POSE_TWIST_H_
 #define RRANSAC_COMMON_MODELS_SEN_POSE_TWIST_H_
+#pragma once
+
 
 #include "common/models/model_base.h"
 
