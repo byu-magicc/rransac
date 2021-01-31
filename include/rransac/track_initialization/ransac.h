@@ -297,7 +297,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typ
         // std::cerr << "success: " << success << std::endl;
         if (success) {
             score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);
-            std::cerr << "score: " << score << std::endl << std::endl;
+            // std::cerr << "score: " << score << std::endl << std::endl;
         } else
             score = -1;
         
