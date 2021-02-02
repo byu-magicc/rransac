@@ -64,14 +64,13 @@ void DerivedSetData(const Mat3d data) {
  */ 
 void DerivedTransformMeasurement(Meas<DataType>& meas) const {
 
-    if (meas.type == MeasurementTypes::RN_POS_VEL) {
+    if (meas.twist.rows() != 0) {
         Mat2d&& tmp = ConstructTranslationalVelTransform(meas.pose);
         meas.twist = tmp*meas.twist;
     }
 
     meas.pose = TransformPosition(meas.pose);
 }
-
 /** 
  * Transforms the track using the transform data. i.e. transform the estimated 
  * state and error covariance.

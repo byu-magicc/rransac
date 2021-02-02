@@ -66,7 +66,7 @@ include_directories(
 
 # add_executable(main src/main.cpp
 # src/parameters.cpp)
-# target_link_libraries(main ${OpenCV_LIBS})
+# target_link_libraries(main Ceres::ceres)
 # ${Boost_LIBRARIES})
 # src/common/sources/source_base.cpp)
 

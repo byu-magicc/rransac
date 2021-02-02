@@ -9,7 +9,10 @@
 				"-g",
 				"${file}",
 				"-o",
-				"${fileDirname}/${fileBasenameNoExtension}"
+				"${fileDirname}/${fileBasenameNoExtension}",
+				"/Zi",
+				"/MDd"
+
 			],
 			"options": {
 				"cwd": "/usr/bin"

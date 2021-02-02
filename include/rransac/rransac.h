@@ -140,6 +140,7 @@ private:
 
     System<Model_> sys_;
     Ransac_ ransac_;
+    bool transform_data_ = false;
 
         /**
      * \detail When the build type is Debug, checks will be done on the measurements to verify 
@@ -267,25 +268,63 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<Meas_>
 
     if (new_measurements.size() > 0) {
 
+
+// std::cerr << "meas 2" << std::endl;
 #ifdef DEBUG_BUILD
     bool correct = VerifyMeasurements(new_measurements);
 #endif
+// std::cerr <<"meas 3" << std::endl;
 
     double dt = new_measurements.begin()->time_stamp - sys_.current_time_;
     sys_.current_time_ = new_measurements.begin()->time_stamp; 
+    sys_.data_tree_.PruneDataTree(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
     sys_.new_meas_ = new_measurements;
+
+// std::cerr <<"meas 4" << std::endl;
+
+
     if (dt > 0)
         ModelManager_::PropagateModels(sys_,dt);
-    sys_.data_tree_.PruneDataTree(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
+
+// std::cerr <<"meas 5" << std::endl;
+
+#ifdef DEBUG_BUILD
+    if (dt < 0)
+        throw std::runtime_error("Measurements must be provided in chronological order. The current time stamp is: " + std::to_string(sys_.current_time_)+ " The measurement time stamp is: " + std::to_string(new_measurements.begin()->time_stamp));
+#endif
+
+    
+// std::cerr<< "meas 6" << std::endl;
+
+    if (transform_data_) {
+        sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
+        ModelManager_::TransformModels(sys_);
+        transform_data_ = false;
+    }
+// std::cerr <<"meas 7" << std::endl;
+
     DataAssociation_::AssociateNewMeasurements(sys_);
+// std::cerr <<"meas 8" << std::endl;
+
     ModelManager_::UpdateModels(sys_);
+// std::cerr <<"meas 9" << std::endl;
+
     sys_.data_tree_.ConstructClusters(sys_);
+// std::cerr << "meas 10" << std::endl;
+
 
     if (!sys_.time_set_)
         sys_.time_set_ = true;
 
 
+    } else {
+        if (transform_data_) {
+            sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
+            ModelManager_::TransformModels(sys_);
+            transform_data_ = false;
+        }
     }
+    // std::cerr << "meas 11" << std::endl;
 
 }
 
@@ -294,11 +333,12 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<Meas_>
 template<typename tRRANSACTemplateParameters>
 void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<Meas_>& new_measurements, const TransformationData_& transformation_data) {
 
-
+    // std::cerr << "meas 0" << std::endl;
     sys_.transformaion_.SetData(transformation_data);
-    sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
-    ModelManager_::TransformModels(sys_);
+    transform_data_ = true;
     AddMeasurements(new_measurements);
+    // std::cerr << "meas 12" << std::endl;
+
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------

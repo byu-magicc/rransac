@@ -6,6 +6,7 @@
 #include "data_containers/cluster.h"
 #include <algorithm>
 #include <math.h>
+#include "lie_algebras/so2.h"
 
 namespace rransac
 {
@@ -33,7 +34,7 @@ typedef typename State::DataType DataType;
  * @param size The size of the pointer x
  * 
  */ 
-    static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, DataType x[tModel::State::g_type_::dim_*2], const int size) {
+    static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, DataType x[tModel::cov_dim_], const int size) {
         
         if (meas_subset.size() < 3)
             throw std::runtime_error("SE2PosSeedPolicy: Minimum subset must be at least 3");
@@ -41,7 +42,7 @@ typedef typename State::DataType DataType;
         std::vector<typename Cluster<DataType>::IteratorPair> meas_subset_ordered = meas_subset;
         Eigen::Matrix<DataType,2,1> td1, td2, rho, z; // Position derivatives
         Eigen::Matrix<DataType,3,1> se2;
-        Eigen::Matrix<DataType,2,2> R;
+        Eigen::Matrix<DataType,2,2> R1, R2;
         Eigen::Matrix<DataType,3,3> G = Eigen::Matrix<DataType,3,3>::Identity();
         bool velocity_set = false;
 
@@ -78,15 +79,18 @@ typedef typename State::DataType DataType;
 
 
 
-        DataType mag = td1.norm();
-        rho << mag, 0;
-        R << td1(0)/mag, -td1(1)/mag, td1(1)/mag, td1(0)/mag;
-        G.block(0,0,2,2) = R;
+        DataType mag1, mag2;
+        mag1 = td1.norm();
+        mag2 = td2.norm();
+        rho << mag1, 0;
+        R1 << td1(0)/mag1, -td1(1)/mag1, td1(1)/mag1, td1(0)/mag1;
+        R2 << td2(0)/mag2, -td2(1)/mag2, td2(1)/mag2, td2(0)/mag2;
+        G.block(0,0,2,2) = R1;
         G.block(0,2,2,1) = meas_subset_ordered[newest_index].inner_it->pose;
         se2 = State::Algebra::Log(G);
-        z = R.transpose()*td2;
-        z.normalize();
-        DataType thd = 0;
+        // z = R.transpose()*td2;
+        // z.normalize();
+        
         DataType dt = (meas_subset_ordered[oldest_index].inner_it->time_stamp - meas_subset_ordered[newest_index].inner_it->time_stamp );
 
         // assign thd according to the largest component. If both components are similar in size, then use atan2. 
@@ -110,16 +114,20 @@ typedef typename State::DataType DataType;
 
         // std::cout << std::endl << "z: " << z << std::endl;
         // std::cout << std::endl << "dt: " << dt << std::endl;
-        thd = atan2(z(1),z(0))/dt;
+        // thd = atan2(z(1),z(0))/dt;
         // std::cout << "atan: " << thd << std::endl;
+        Eigen::Matrix<double,1,1> th_tmp = lie_groups::so2<DataType>::Log(R1.transpose()*R2);
+        DataType thd = th_tmp(0,0)/dt;
+
+        if (fabs(thd) < 1e-9)
+            thd = 0;
         
 
         x[0] = se2(0);
         x[1] = se2(1);
         x[2] = se2(2);
         x[3] = (td1.norm()+td2.norm())/2.0;
-        x[4] = 0;
-        x[5] = thd;
+        x[4] = thd;
 
 
     }

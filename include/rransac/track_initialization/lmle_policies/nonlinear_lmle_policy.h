@@ -96,6 +96,9 @@ struct CostFunctor {
         state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
     }
     
+    // std::cout << "g data: " << std::endl << state.g_.data_ << std::endl;
+    // std::cout << "u data: " << std::endl << state.u_.data_ << std::endl;
+
 
     state = ModelT::PropagateState(state,dt);
 
@@ -122,10 +125,14 @@ struct CostFunctor {
     }
 
 
+    // std::cout << "error: " << e << std::endl;
+
     for (unsigned int ii = 0; ii < e.rows(); ++ii) {
         r[ii] = e(ii);
 
     }
+
+
 
     return true;
 
@@ -178,7 +185,6 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
 
 
     ceres::Solver::Options options;
-    // options.linear_solver_type = ceres::DENSE_QR;
     options.minimizer_progress_to_stdout = true;
     options.num_threads =sys.params_.NonLinearLMLECeresThreads_;
     options.max_num_iterations = sys.params_.NonLinearLMLECeresMaxNumIters_;
