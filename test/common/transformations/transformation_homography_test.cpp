@@ -2,6 +2,7 @@
 #include "common/transformations/trans_homography.h"
 #include <chrono> 
 #include <iostream>
+#include "common/measurement/measurement_base.h"
 
 
 namespace rransac
@@ -229,6 +230,20 @@ R_proper(0,1) = - R_proper(1,0);
 R_proper(1,1) = R_proper(0,0);
 
 ASSERT_EQ(R_proper, R_transformed);
+
+// Test measurement transformation
+Meas<double> m, m_transformed;
+m.pose = Eigen::Matrix<double,2,1>::Random();
+m.twist = Eigen::Matrix<double,2,1>::Random();
+m.time_stamp = 0;
+m.type = MeasurementTypes::SEN_POS_VEL;
+
+m_transformed = m;
+trans.TransformMeasurement(m_transformed);
+ASSERT_NE(m.pose, m_transformed.pose);
+ASSERT_NE(m.twist, m_transformed.twist);
+
+
 
 /////////////////////////////////////////////////////
 // Test the covariance portion of the transform track;
