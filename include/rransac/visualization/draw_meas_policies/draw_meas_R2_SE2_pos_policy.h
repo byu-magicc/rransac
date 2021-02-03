@@ -30,7 +30,7 @@ static void DrawMeasPolicy(cv::Mat& img, const Meas<double>& meas, const System<
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tModel>    
-void DrawMeasRNSE2PosPolicy<tModel>::DrawMeasPolicy(cv::Mat& img, const Meas<double>& meas, const System<tModel>& sys,  const DrawInfo& draw_info)
+void DrawMeasR2SE2PosPolicy<tModel>::DrawMeasPolicy(cv::Mat& img, const Meas<double>& meas, const System<tModel>& sys,  const DrawInfo& draw_info)
 {
 
 // Draw the position and velocity

@@ -18,6 +18,20 @@
 #include "common/measurement/measurement_base.h"
 #include "common/sources/source_base.h"
 
+cv::Scalar ScalarHSV2BGR(const cv::Scalar& scalar) {
+    cv::Mat bgr;
+    cv::Mat hsv(1,1, CV_8UC3, scalar);
+    cvtColor(hsv, bgr, cv::COLOR_HSV2BGR);
+    return cv::Scalar(bgr.data[0], bgr.data[1], bgr.data[2]);
+}
+
+cv::Scalar ScalarBGR2HSV(const cv::Scalar& scalar) {
+    cv::Mat bgr(1,1,CV_8UC3,scalar);
+    cv::Mat hsv;
+    cv::cvtColor(bgr,hsv,cv::COLOR_BGR2HSV);
+    return cv::Scalar(hsv.data[0], hsv.data[1], hsv.data[2]);
+}
+
 int main() {
 
 typedef rransac::ModelSENPosVel<lie_groups::SE2_se2,rransac::TransformNULL> Model;
@@ -68,8 +82,12 @@ measurements.push_back(m);
 
 rransac::DrawInfo draw_info;
 draw_info.img_center = cv::Point(w/2.0, w/2.0);
-draw_info.color_pos = cv::Scalar(255,0,0);
-draw_info.color_vel = cv::Scalar(0,0,255);
+draw_info.color_pos = cv::Scalar(0,0,255);
+cv::Scalar covert = ScalarBGR2HSV(draw_info.color_pos);
+covert[1]*=0.5;
+draw_info.color_pos = ScalarHSV2BGR(covert);
+// draw_info.color_pos[3]=0.1;
+draw_info.color_vel = cv::Scalar(0,0,255,1);
 draw_info.scale_draw_pos = 2;
 draw_info.scale_draw_vel = 5;
 draw_info.line_thickness = 1;
@@ -93,7 +111,7 @@ std::cout << "state u: " << std::endl << track.state_.u_.data_ << std::endl;
 
 rransac::DrawSE2Policy<Model>::DrawTrackPolicy(img,track,sys,draw_info);
 for (auto& meas : measurements) 
-    rransac::DrawMeasRNSE2PosPolicy<Model>::DrawMeasPolicy(img,meas,sys,draw_info);
+    rransac::DrawMeasR2SE2PosPolicy<Model>::DrawMeasPolicy(img,meas,sys,draw_info);
 
 
 // cv::resize(img,img,cv::Size(1000,1000));
