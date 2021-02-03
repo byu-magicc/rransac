@@ -223,7 +223,7 @@ public:
      * Returns the innovation covariance associated with the measurement
      * @param m The measurement
      */ 
-    MatXd GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index);
+    MatXd GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index) const ;
 
     /**
      * Using the transformation data provided by the user, this function transforms the state estimate and error covariance
@@ -448,7 +448,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModelLikeliho
 
 
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
-Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index) {
+Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index) const {
 
     MatXd H = GetLinObsMatState(sources, this->state_,source_index);         // Jacobian of observation function w.r.t. state
     MatXd V = GetLinObsMatSensorNoise(sources, this->state_,source_index);   // Jacobian of observation function w.r.t. noise
@@ -463,11 +463,14 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::AddNewMeasurement( 
 
     bool meas_added = false;
 
+#ifdef DEBUG_BUILD
     // The new associated measurements should all have the same time stamp.
     if(new_assoc_meas_.size() != 0)
         if(new_assoc_meas_.front().size() != 0)
             if(meas.time_stamp != new_assoc_meas_.front().front().time_stamp)
                 throw std::runtime_error("ModelBase::AddNewMeasurement Not all new measurements have the same time stamp");
+
+#endif
 
     // See if there is already a measurement with the same source index. If it is, add it to the list
     for(auto iter = this->new_assoc_meas_.begin(); iter != this->new_assoc_meas_.end(); ++iter) {

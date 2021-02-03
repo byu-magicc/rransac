@@ -4,31 +4,82 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
+#include <Eigen/Core>
 
-#include "common/models/model_SEN_pose_twist.h"
+#include "common/models/model_SEN_pos_vel.h"
 #include "common/transformations/transformation_null.h"
 #include "state.h"
-#include "visualization/draw_track_policies/draw_SE2_policy.h"
+#include "visualization/draw_track_policies/draw_track_SE2_policy.h"
+#include "visualization/draw_meas_policies/draw_meas_R2_SE2_pos_policy.h"
 #include "lie_algebras/so2.h"
 
 #include "visualization/draw_info.h"
+#include "system.h"
+#include "common/measurement/measurement_base.h"
+#include "common/sources/source_base.h"
 
 int main() {
 
+typedef rransac::ModelSENPosVel<lie_groups::SE2_se2,rransac::TransformNULL> Model;
+rransac::System<Model> sys;
+typename Model::Source source;
+rransac::SourceParameters source_params;
+Eigen::Matrix<double,1,1> rot;
+rot << 0.45;
+Eigen::Matrix2d R = lie_groups::so2<double>::Exp(rot);
+source_params.gate_probability_ = 0.95;
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params.meas_cov_ << 0.1, 0, 0, 0.1;
+source_params.meas_cov_ = R*source_params.meas_cov_*R.transpose();
+std::cerr << "source_params.meas_cov_: " << std::endl << source_params.meas_cov_ << std::endl;
+
+source_params.type_ = rransac::MeasurementTypes::SEN_POS;
+source_params.source_index_ = 0;
+source.Init(source_params);
+sys.sources_.push_back(source);
+
+sys.params_.cluster_position_threshold_ = 5;
+sys.params_.cluster_velocity_threshold_ = 4;
+sys.params_.process_noise_covariance_ = Eigen::Matrix<double,5,5>::Identity()*0.01;
+// sys.params_.process_noise_covariance_ = rot*source_params.meas_cov_*rot.transpose();
+
 unsigned int w = 500;
 cv::Mat img = cv::Mat( w, w, CV_8UC3 , cv::Scalar(255,255,255));
+
+std::vector<rransac::Meas<double>> measurements;
+rransac::Meas<double> m;
+m.pose = Eigen::Matrix<double,2,1>::Zero();
+m.twist = m.pose;
+
+m.pose << 50,50;
+m.twist << 1,5;
+
+measurements.push_back(m);
+m.pose << -50, 50;
+m.twist << -1,5;
+measurements.push_back(m);
+m.pose << -50,-50;
+m.twist << -1,-5;
+measurements.push_back(m);
+m.pose << 50, -50;
+m.twist << 1,-5;
+measurements.push_back(m);
+
 
 rransac::DrawInfo draw_info;
 draw_info.img_center = cv::Point(w/2.0, w/2.0);
 draw_info.color_pos = cv::Scalar(255,0,0);
 draw_info.color_vel = cv::Scalar(0,0,255);
-draw_info.scale_pos = 5;
-draw_info.scale_vel = 5;
+draw_info.scale_draw_pos = 2;
+draw_info.scale_draw_vel = 5;
 draw_info.line_thickness = 1;
+draw_info.scale_drawing = 3;
 
-typedef rransac::ModelSENPoseTwist<lie_groups::SE2_se2,rransac::TransformNULL> Model;
+
 Model track;
-Eigen::Matrix<double,1,1> rot;
+track.Init(sys.params_);
+track.err_cov_*=0.01;
+
 rot << 3.14159;
 track.state_ = Model::State::Random();
 track.state_.g_.R_ = lie_groups::so2<double>::Exp(rot/4.0);
@@ -40,7 +91,10 @@ std::cout << "state g: " << std::endl << track.state_.g_.data_ << std::endl;
 std::cout << "state u: " << std::endl << track.state_.u_.data_ << std::endl;
 
 
-rransac::DrawSE2Policy<Model>::DrawTrackPolicy(img,track,draw_info);
+rransac::DrawSE2Policy<Model>::DrawTrackPolicy(img,track,sys,draw_info);
+for (auto& meas : measurements) 
+    rransac::DrawMeasRNSE2PosPolicy<Model>::DrawMeasPolicy(img,meas,sys,draw_info);
+
 
 // cv::resize(img,img,cv::Size(1000,1000));
 

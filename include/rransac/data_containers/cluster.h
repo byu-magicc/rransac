@@ -104,6 +104,7 @@ bool IsNeighboringMeasurement(const tSource& source, const Parameters& param, co
 
 std::list<std::list<Meas<DataType>>> data_; /** Contains all of the measurements. The outer container separates the measurements according to time */
 
+unsigned int cluster_label_=-1;  /** < When a cluster is elevated to a good cluster, it will receive a unique label. This is for visualization purposes only*/ 
 
 private:
 

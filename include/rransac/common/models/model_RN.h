@@ -41,7 +41,7 @@ static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt)
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt);
+static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt) const;
 
 /**
 * Update the state of the model using the provided state_update
@@ -80,7 +80,7 @@ typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::D
 //--------------------------------------------------------------------------------------------------------------------------
 
 template <typename tState, template <typename > typename tTransformation>
-typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
+typename ModelRN<tState,tTransformation>::Mat ModelRN<tState,tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt) {
     
     Mat G;
     G.block(g_dim_,0,g_dim_,g_dim_).setZero();

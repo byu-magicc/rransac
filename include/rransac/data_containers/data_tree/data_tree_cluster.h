@@ -76,6 +76,8 @@ private:
  */ 
 void MergeClusters(const typename std::list<Cluster<DataType>>::iterator iter1, const typename std::list<Cluster<DataType>>::iterator iter2);
 
+unsigned int cluster_label_ =0; /** < When a cluster is elevated to a good cluster, it will receive a unique label. This is for visualization purposes only */
+
 };
 
 
@@ -147,8 +149,13 @@ void DataTreeClusters<tDataType>::DerivedConstructClusters(tSystem& sys) {
 
     sys.clusters_.clear();
     for(auto cluster_iter = this->data_.begin(); cluster_iter != this->data_.end(); ++cluster_iter) {
-        if(cluster_iter->data_.size() >= sys.params_.cluster_min_size_requirement_)
-            sys.clusters_.push_back(cluster_iter);
+        if(cluster_iter->data_.size() >= sys.params_.cluster_min_size_requirement_) {
+            if (cluster_iter->cluster_label_ < -1) {
+                cluster_iter->cluster_label_ = cluster_label_;
+                cluster_label_++;
+            }
+            sys.clusters_.push_back(cluster_iter); }
+
     }
 
 }
