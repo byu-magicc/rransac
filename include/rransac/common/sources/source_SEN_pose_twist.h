@@ -28,6 +28,8 @@ static constexpr unsigned int meas_pose_rows_ = State::Group::size1_;
 static constexpr unsigned int meas_pose_cols_ = State::Group::size2_;
 static constexpr unsigned int meas_twist_rows_ = State::Group::dim_;
 static constexpr unsigned int meas_twist_cols_ = 1;
+typedef utilities::CompatibleWithModelSENPoseTwist ModelCompatibility;
+static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "The state is not compatible with the model");
 
 
 /** Initializes the measurement source. This function must set the parameters.  */

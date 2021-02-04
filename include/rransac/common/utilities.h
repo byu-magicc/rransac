@@ -1,13 +1,13 @@
 #ifndef RRANSAC_COMMON_UTILITIES_H_
 #define RRANSAC_COMMON_UTILITIES_H_
-#pragma once
+// #pragma once
 
 
 #include <random>
 #include <Eigen/Core>
 
 namespace rransac {
-    namespace utilities {
+namespace utilities {
 
 
 Eigen::MatrixXd GaussianRandomGenerator(const int size){
@@ -23,9 +23,18 @@ Eigen::MatrixXd GaussianRandomGenerator(const int size){
     return randn_nums;
 }
 
-    } // namespace utilities
+   
+
+
+//  Structs to determine source compatibility
+
+struct CompatibleWithModelRN{};
+struct CompatibleWithModelSENPosVel{};
+struct CompatibleWithModelSENPoseTwist{};
+
+
+
+} // namespace utilities
 } // namespace rransac
-
-
 
 #endif //RRANSAC_COMMON_UTILITIES_H_

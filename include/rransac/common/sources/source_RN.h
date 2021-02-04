@@ -4,6 +4,7 @@
 
 
 #include "common/sources/source_base.h"
+#include "common/utilities.h"
 #include <typeinfo>
 
 namespace rransac {
@@ -29,6 +30,9 @@ static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_;
 static constexpr unsigned int meas_pose_cols_ = 1;
 static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;
 static constexpr unsigned int meas_twist_cols_ = 1;
+typedef utilities::CompatibleWithModelRN ModelCompatibility;
+static_assert(lie_groups::utilities::StateIsRN_rN<tState>::value, "The state is not compatible with the model");
+
 
 SourceRN()=default;
 ~SourceRN()=default;

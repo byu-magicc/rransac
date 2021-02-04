@@ -52,12 +52,13 @@ typedef tTransformation Transformation;
 typedef tDerived Derived;
 typedef Eigen::Matrix<DataType, Eigen::Dynamic, Eigen::Dynamic> MatXd;
 
-
 static constexpr unsigned int g_dim_ = State::Group::dim_;
 // static constexpr unsigned int cov_dim_ = tCovDim;
 static constexpr unsigned int cov_dim_ = tCovDim;
 typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;
 typedef Eigen::Matrix<DataType,cov_dim_,1> VecCov;
+
+
 
 
 
@@ -86,27 +87,6 @@ public:
 
     // Default constructor
     ModelBase()=default;
-
-    // // Copy Constructor
-    // ModelBase(const ModelBase& other) : state_(other.state_), err_cov_(other.err_cov_), model_likelihood_(other.model_likelihood_), 
-    //                                 new_assoc_meas_(other.new_assoc_meas_), missed_detection_time_(other.missed_detection_time_), 
-    //                                 cs_(other.cs_), Q_(other.Q_), model_likelihood_update_info_(other.model_likelihood_update_info_),
-    //                                 F_(other.F_), G_(other.G_), label_(other.label_) {}
-
-    // // Copy assignment
-    // void operator =(const ModelBase& other) {
-    //     this->state_                        = other.state_;
-    //     this->err_cov_                      = other.err_cov_;
-    //     this->model_likelihood_             = other.model_likelihood_;
-    //     this->new_assoc_meas_               = other.new_assoc_meas_;
-    //     this->missed_detection_time_        = other.missed_detection_time_;
-    //     this->cs_                           = other.cs_;
-    //     this->Q_                            = other.Q_;
-    //     this->model_likelihood_update_info_ = other.model_likelihood_update_info_;
-    //     this->F_                            = other.F_;
-    //     this->G_                            = other.G_;
-    //     this->label_                        = other.label_;
-    // }
 
     // Default destructor
     ~ModelBase()=default;
@@ -179,9 +159,7 @@ public:
         }
         
         new_assoc_meas_.clear();
-        // std::cerr << "model likelihood " << label_ << " " << model_likelihood_ << std::endl;
         UpdateModelLikelihood(sources);
-        // std::cerr << "model likelihood " << label_ << " " << model_likelihood_ << std::endl << std::endl;
 
     }
 

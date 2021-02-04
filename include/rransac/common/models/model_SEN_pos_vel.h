@@ -9,12 +9,13 @@
 
 namespace rransac {
 
-template <typename tState, template <typename > typename tTransformation>
-class ModelSENPosVel : public ModelBase<SourceSENPosVel<tState>, tTransformation<tState>,  tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1, ModelSENPosVel<tState, tTransformation>> {
+template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
+class ModelSENPosVel : public ModelBase<tSource<tState>, tTransformation<tState>,  tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1, ModelSENPosVel<tState, tSource, tTransformation>> {
 
 public:
 
 typedef tState State;
+typedef tSource<tState> Source;
 typedef typename State::DataType DataType;
 typedef tTransformation<tState> Transformation;
 
@@ -26,6 +27,14 @@ static constexpr int cov_dim_ = State::Group::dim_ + State::Algebra::dim_ - Stat
 static constexpr unsigned int l_dim_ =  State::Algebra::dim_a_vel_ + 1;
 typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;
 typedef Eigen::Matrix<DataType,cov_dim_,1> VecCov;
+typedef utilities::CompatibleWithModelSENPosVel ModelCompatibility;
+static_assert(std::is_same<typename tSource<tState>::ModelCompatibility, ModelCompatibility>::value, "The source is not compatible with the model");
+static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "The state is not compatible with the model");
+
+
+
+
+
 
 /**
  * Computes the Jacobian of the state transition function with respect to the state evaluated at the current state estimate.
@@ -71,8 +80,8 @@ static VecCov DerivedOMinus(const ModelSENPosVel& model1, const ModelSENPosVel& 
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tState, template <typename > typename tTransformation>
-typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {  
+template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
+typename ModelSENPosVel<tState, tSource, tTransformation>::Mat  ModelSENPosVel<tState, tSource, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {  
     Mat F;
     F.block(g_dim_,0,l_dim_,g_dim_).setZero();
     F.block(g_dim_, g_dim_, l_dim_, l_dim_).setIdentity();
@@ -85,8 +94,8 @@ typename ModelSENPosVel<tState, tTransformation>::Mat  ModelSENPosVel<tState, tT
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tTransformation>
-typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
+template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
+typename ModelSENPosVel<tState, tSource, tTransformation>::Mat ModelSENPosVel<tState, tSource, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     Mat G;
     Eigen::Matrix<DataType, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
     G.block(g_dim_,0,l_dim_,g_dim_).setZero();
@@ -101,8 +110,8 @@ typename ModelSENPosVel<tState, tTransformation>::Mat ModelSENPosVel<tState, tTr
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tTransformation>
-void ModelSENPosVel<tState, tTransformation>::DerivedOPlusEq(const VecCov& state_update) {
+template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
+void ModelSENPosVel<tState, tSource, tTransformation>::DerivedOPlusEq(const VecCov& state_update) {
     
     Eigen::Matrix<DataType,g_dim_,1> twist_update;
     twist_update.setZero();
@@ -114,8 +123,8 @@ void ModelSENPosVel<tState, tTransformation>::DerivedOPlusEq(const VecCov& state
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tTransformation>
-tState ModelSENPosVel<tState, tTransformation>::DerivedGetRandomState(){
+template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
+tState ModelSENPosVel<tState, tSource, tTransformation>::DerivedGetRandomState(){
     State state = State::Random();
 
     state.g_.R_.block(0,0,state.u_.p_.rows(),1) = state.u_.p_.normalized(); 

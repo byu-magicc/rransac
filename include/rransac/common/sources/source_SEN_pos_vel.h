@@ -31,6 +31,8 @@ static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_pos_;
 static constexpr unsigned int meas_pose_cols_ = 1;
 static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_pos_;
 static constexpr unsigned int meas_twist_cols_ = 1;
+typedef utilities::CompatibleWithModelSENPosVel ModelCompatibility;
+static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "The state is not compatible with the model");
 
 
 

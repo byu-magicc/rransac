@@ -9,7 +9,7 @@
 namespace rransac {
 
 template <typename tState, template <typename > typename tTransformation>
-class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelSENPoseTwist<tState, tTransformation>> {
+class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelSENPoseTwist<tState, tSource, tTransformation>> {
 
 public:
 
@@ -25,6 +25,10 @@ static constexpr unsigned int cov_dim_ = State::Group::dim_*2;
 static constexpr unsigned int g_dim_ = State::Group::dim_;
 typedef Eigen::Matrix<DataType,2*g_dim_,2*g_dim_> Mat;
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
+typedef utilities::CompatibleWithModelSENPoseTwist ModelCompatibility;
+static_assert(std::is_same<typename tSource<tState>::ModelCompatibility, ModelCompatibility>::value, "The source is not compatible with the model");
+static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "The state is not compatible with the model");
+
 
 /**
  * Computes the Jacobian of the state transition function with respect to the state evaluated at the current state estimate.

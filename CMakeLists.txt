@@ -64,7 +64,7 @@ include_directories(
 ## Testing ##
 #############
 
-# add_executable(main src/main.cpp
+add_executable(main src/main.cpp)
 # src/parameters.cpp)
 # target_link_libraries(main ${OpenCV_LIBS})
 # ${Boost_LIBRARIES})
@@ -79,5 +79,5 @@ include_directories(
 
 # option(BUILD_SIMS "Build the simulations" OFF)
 # if(BUILD_SIMS)
-  add_subdirectory(simulations)
+  # add_subdirectory(simulations)
 # endif()
