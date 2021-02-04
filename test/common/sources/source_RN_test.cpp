@@ -10,25 +10,10 @@ TEST(Source_RN, INIT){
 // This source should only have states of type RN_rn. Make sure invalid types dont work.
 SourceParameters params;
 params.meas_cov_ = Eigen::Matrix2d::Identity();
-params.expected_num_false_meas_ = 0.1;
+params.spacial_density_of_false_meas_ = 0.1;
 params.type_ = MeasurementTypes::RN_POS;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
-
-SourceBase<lie_groups::SE2_se2, SourceRN<lie_groups::SE2_se2>> source_se2;
-ASSERT_ANY_THROW(source_se2.Init(params));
-
- 
-SourceBase<lie_groups::SE3_se3, SourceRN<lie_groups::SE3_se3>> source_se3;
-ASSERT_ANY_THROW(source_se3.Init(params));
-
- 
-SourceBase<lie_groups::SO2_so2, SourceRN<lie_groups::SO2_so2>> source_so2;
-ASSERT_ANY_THROW(source_so2.Init(params));
-
- 
-SourceBase<lie_groups::SO3_so3, SourceRN<lie_groups::SO3_so3>> source_so3;
-ASSERT_ANY_THROW(source_so3.Init(params));
 
 // This source can only handle measurement types of RN_POS and RN_POS_VEL. Make sure invalid types dont work.
 params.type_ = MeasurementTypes::SEN_POS;
@@ -67,7 +52,7 @@ TEST(Source_RN, OTHER){
 // Test the functions using R2_r2
 SourceParameters params;
 params.meas_cov_ = Eigen::Matrix2d::Identity();
-params.expected_num_false_meas_ = 0.1;
+params.spacial_density_of_false_meas_ = 0.1;
 params.type_ = MeasurementTypes::RN_POS;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
@@ -112,7 +97,7 @@ error2.block(2,0,2,1) = m3.twist - m4.twist;
 
 SourceParameters params2;
 params2.meas_cov_ = Eigen::Matrix<double,4,4>::Identity();
-params2.expected_num_false_meas_ = 0.1;
+params2.spacial_density_of_false_meas_ = 0.1;
 params2.type_ = MeasurementTypes::RN_POS_VEL;
 params2.gate_probability_ = 0.8;
 params2.probability_of_detection_ = 0.9;

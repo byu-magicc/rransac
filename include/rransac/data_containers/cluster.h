@@ -9,19 +9,31 @@
 namespace rransac
 {
 
+
+/**
+ * \class Cluster
+ * This data structure is used to contain neighboring measurements. Two measurements of the same time stamp are considered neighbors 
+ * if the distance between them is withing the threshold Parameters::cluster_position_threshold_, or if the distance in pose 
+ * normalized by the time difference between the two measurements are within the threshold Parameters::cluster_velocity_threshold_ and 
+ * distance of their time stamps is within Parameters::cluster_time_threshold_.
+ * 
+ * The data is organized is a list of lists, i.e. std::list<std::list<Meas<DataType>>. The outer list organized the measurements in chronological 
+ * order, and the inner list contains all of the measurements given to the cluster with the same time stamp.  
+ */ 
+
 template<typename tDataType = double>    
 class Cluster {
 
 public:
 
-typedef tDataType DataType;
+typedef tDataType DataType; /**< The scalar object for the data. Ex. float, double, etc. */
 
 /**
  * \struct ConstIteratorPair
  * Contains a match of iterators that cannot change the data they point to. 
  * The outer iterator pertains to the outer container for the data object, and
- * the inner container pertains to the inner container for the data object. So the outer iterator points to an 
- * element in the list and the inner iterator points to and element of tContainer.
+ * the inner container pertains to the inner container for the data object. So the outer iterator points to a
+ * list, and the inner iterator points to a measurement.
  */ 
 struct ConstIteratorPair {
     typename std::list<std::list<Meas<DataType>>>::const_iterator outer_it;
@@ -31,27 +43,37 @@ struct ConstIteratorPair {
 /**
  * \struct IteratorPair
  * Contains a match of iterators. The outer iterator pertains to the outer container for the data object, and
- * the inner container pertains to the inner container for the data object. So the outer iterator points to an 
- * element in the list and the inner iterator points to and element of tContainer.
+ * the inner container pertains to the inner container for the data object. So the outer iterator points to a
+ * list, and the inner iterator points to a measurement.
  */ 
 struct IteratorPair {
     typename std::list<std::list<Meas<DataType>>>::iterator outer_it;
     typename std::list<Meas<DataType>>::iterator inner_it;
 };
 
-Cluster(){};
+/**
+ * Default constructor.
+ */ 
+Cluster()=default;
+
+/**
+ * A cluster can be constructed with a measurement.
+ * @param[in] meas The first measurement to be added to the cluster.
+ */ 
 Cluster(const Meas<DataType>& meas) { AddMeasurement(meas); }
 
 /**
- * Adds a measurement to the data tree. It is assumed that the measurement has a valid time stamp and valid data.
+ * Adds a measurement to the cluster. It is assumed that the measurement has a valid time stamp and valid data.
  * @param[in] meas The measurement to be added.
  */
 void AddMeasurement(const Meas<DataType>& meas);
 
 /**
- * Adds measurements from a container that has an iterator object. The measurements can have different time stamps.
- * It is assumed that the measurements have a valid time stamp and valid data. This function will call AddMeas for every
+ * Adds measurements from a container that has an iterator object. For example, a list or vector of of measurements.
+ * It is assumed that the measurements have a valid time stamp and valid data. 
+ * The measurements can have different time stamps.This function will call AddMeasurement for every
  * measurement.
+ * @param[in] measurements The measurements to be added. 
  */ 
 template<typename tContainerMeas>
 void AddMeasurements(const tContainerMeas& measurements){    
@@ -61,14 +83,14 @@ void AddMeasurements(const tContainerMeas& measurements){
 
 
 /**
- * Removes a measurement from the data tree using iterators defined in iter_pair
- * @param[in] iter_pair Contains the matched iterator pair necessary to remove an element. * 
+ * Removes a measurement from the data tree using an object of type IteratorPair.
+ * @param[in] iter_pair Contains the matched iterator pair necessary to remove an element. 
  */
 void RemoveMeasurement(const IteratorPair& iter_pair);
 
 
 /**
- * Removes all of the measurements indicated by iter_pairs by calling RemoveMeas
+ * Removes multiple measurements by calling RemoveMeasurement for each measurement. 
  * @param[in] iter_pair Contains all of the matched iterator pairs that indicate which measurements to remove.
  */ 
 template<typename tContainerIteratorPair>
@@ -79,12 +101,17 @@ void RemoveMeasurements(const tContainerIteratorPair& iter_pairs){
 
 /**
  * Removes all of the measurements with a time stamp before or equal to
- * the expiration time. 
+ * the expiration time.
+ * @param[in] expiration_time The expiration time stamp.
  */ 
 void PruneCluster(const double expiration_time);
 
 /**
  * Transforms the measurements using the transform provided. 
+ * The transform provided must have a member function called
+ * TransformMeasurement.
+ * @param[in] transform An object of the transformation class
+ * @see TransformBase
  */ 
 template< typename tTransform>
 void TransformMeasurements(const tTransform& transform);
@@ -95,20 +122,27 @@ void TransformMeasurements(const tTransform& transform);
 unsigned int Size() const {return size_;};
 
 /**
- * Returns true if the measurement is a neighboring measurement to one of the more recent measurements.
- * A recent measurement is a measurements whose time stamp is within Parameters::cluster_time_threshold_ of the latest measurement
+ * Returns true if the measurement is a neighboring measurement to a measurement in the cluster.
+ * Two measurements of the same time stamp are considered neighbors 
+ * if the distance between them is withing the threshold Parameters::cluster_position_threshold_, or if the distance in pose 
+ * normalized by the time difference between the two measurements are within the threshold Parameters::cluster_velocity_threshold_ and 
+ * distance of their time stamps is within Parameters::cluster_time_threshold_.
+ * @param[in] source The measurement source that produced the measurement.
+ * @param[in] param The system parameters.
+ * @param[in] meas The measurement that is tested to see if it is a neighboring measurement.
+ * @see SourceBase
  */ 
 template<typename tSource>
 bool IsNeighboringMeasurement(const tSource& source, const Parameters& param, const Meas<DataType>& meas) const;
 
 
-std::list<std::list<Meas<DataType>>> data_; /** Contains all of the measurements. The outer container separates the measurements according to time */
+std::list<std::list<Meas<DataType>>> data_; /**< Contains all of the measurements. The outer container organizes the measurements in chronological order. */
 
-long int cluster_label_=-1;  /** < When a cluster is elevated to a good cluster, it will receive a unique label. This is for visualization purposes only*/ 
+long int cluster_label_=-1;  /**< When a cluster is elevated to a good cluster, it will receive a unique label whose numerical value is non negative. */ 
 
 private:
 
-unsigned int size_=0; /** The total number of measurements in the cluster */
+unsigned int size_=0; /**< The total number of measurements in the cluster. */
 
 };
 
@@ -139,11 +173,9 @@ else {
         
 
         if ((*iter).begin()->time_stamp == meas.time_stamp) {
-            (*iter).push_back(meas);                                  // This will need to be different for the R*tree
+            (*iter).push_back(meas);                                  
             break;
         } else if ((*iter).begin()->time_stamp < meas.time_stamp) {
-            // std::cout << "add to middle" << std::endl;
-            // std::vector<M> tmp{meas};
             this->data_.insert(iter.base(),std::list<Meas<DataType>>{meas});
             break;
         } 
@@ -192,7 +224,7 @@ void Cluster<tDataType>::TransformMeasurements(const tTransform& transform) {
 //---------------------------------------------------------------------------------------------
 template<typename tDataType> 
 template<typename tSource>
-bool Cluster<tDataType>::IsNeighboringMeasurement(const tSource& source, const Parameters& params, const Meas<tDataType>& meas) const {
+bool Cluster<tDataType>::IsNeighboringMeasurement(const tSource& source, const Parameters& params, const Meas<DataType>& meas) const {
 
     for (auto outer_iter = std::prev(data_.end()); outer_iter != data_.end(); --outer_iter) {
 

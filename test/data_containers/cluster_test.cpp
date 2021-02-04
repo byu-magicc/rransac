@@ -239,7 +239,7 @@ Cluster<double> cluster;
 
 SourceR2 source; // We need the source for calculating distances
 SourceParameters source_params;
-source_params.expected_num_false_meas_ = 0.1;
+source_params.spacial_density_of_false_meas_ = 0.1;
 source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.8;
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();

@@ -2,19 +2,20 @@
 #define RRANSAC_COMMON_SOURCES_SOURCE_RN_H_
 #pragma once
 
+#include <typeinfo>
 
 #include "common/sources/source_base.h"
 #include "common/utilities.h"
-#include <typeinfo>
+#include "utilities.h"
 
 namespace rransac {
 
 
 /**
  * \class SourceRN
- * This source is meant to be used for a target that evolves on RN and whose
- * measurements are on RN or on RN and its tangent space. Compatible with 
- * MeasurementType::RN_POS and MeasurementType::RN_VEL
+ * This source is meant to be used for a target that evolves on RN, whose
+ * measurements space is RN. The Jacobian of the observation function w.r.t. the
+ * noise is assumed identity.
  */ 
 
 template<class tState>
@@ -22,44 +23,70 @@ class SourceRN : public SourceBase<tState, SourceRN<tState>> {
 
 public:
 
-typedef tState State;
-typedef typename tState::DataType DataType;
-typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-static constexpr unsigned int meas_dim_ = tState::Group::dim_;
-static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_;
-static constexpr unsigned int meas_pose_cols_ = 1;
-static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;
-static constexpr unsigned int meas_twist_cols_ = 1;
-typedef utilities::CompatibleWithModelRN ModelCompatibility;
+typedef tState State;                                                       /**< The state of the target. @see State. */
+typedef typename tState::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
+typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
+static constexpr unsigned int meas_space_dim_ = tState::Group::dim_;        /**< The dimension of the measurement space. */
+static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_;        /**< The number of rows in the pose measurement. */
+static constexpr unsigned int meas_pose_cols_ = 1;                          /**< The number of columns in the pose measurement. */
+static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;       /**< The number of rows in the twist measurement. */
+static constexpr unsigned int meas_twist_cols_ = 1;                         /**< The number of columns in the twist measurement. */
+typedef utilities::CompatibleWithModelRN ModelCompatibility;                /**< Indicates which model this source is compatible with. */
+
+
 static_assert(lie_groups::utilities::StateIsRN_rN<tState>::value, "The state is not compatible with the model");
 
 
 SourceRN()=default;
 ~SourceRN()=default;
 
-/** Initializes the measurement source. This function must set the parameters.  */
+/** 
+ * Initializes the measurement source by initializing the Jacobians. 
+ * @param[in] params The source parameters.
+ */
 void DerivedInit(const SourceParameters& params);      
 
-/** Returns the jacobian of the observation function w.r.t. the states */
+/** 
+ * Returns the jacobian of the observation function w.r.t. the states. This is an optimized version. 
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 MatXd DerivedGetLinObsMatState(const tState& state) const {return this->H_;}   
 
-/** Returns the jacobian of the observation function w.r.t. the states. This method is not optimized. */
+/** 
+ * Returns the jacobian of the observation function w.r.t. the states. This method is not optimized. 
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 static MatXd DerivedGetLinObsMatState(const State& state, const MeasurementTypes type);
 
-/** Returns the jacobian of the observation function w.r.t. the sensor noise */
+/** 
+ * Returns the jacobian of the observation function w.r.t. the sensor noise. This is an optimized version. 
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 MatXd DerivedGetLinObsMatSensorNoise(const tState& state) const {return this->V_;}                         
 
-/** Returns the jacobian of the observation function w.r.t. the sensor noise. This method is not optimized */
+/** 
+ * Returns the jacobian of the observation function w.r.t. the sensor noise. This method is not optimized
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 static MatXd DerivedGetLinObsMatSensorNoise(const State& state, const MeasurementTypes type);
 
-/** Computes the estimated measurement given a state */
+/** 
+ * This is an optimized function that implements the observation function and returns an estimated measurement based on the state.
+ * @param[in] state A state of the target.
+ */
 Meas<DataType> DerivedGetEstMeas(const tState& state) const ;
 
-/** Computes the estimated measurement given a state and measurement type. This method is not optimized.*/
+/**
+ *  Implements the observation function and returns an estimated measurement based on the state. 
+ * @param[in] state A state of the target.
+ */
 static Meas<DataType> DerivedGetEstMeas(const State& state, const MeasurementTypes type);
 
 /**
- * Returns the error between the estimated measurement and the measurement
+ * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
+ * method computes the geodesic distance between two measurements of the same type.
+ * @param[in] m1 a measurement
+ * @param[in] m2 a measurement
  */
 static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2);
 
@@ -67,8 +94,8 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2);
 
 /**
  * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
- * @param state The state that serves as the mean in the Gaussian distribution
- * @param meas_std The measurement standard deviation
+ * @param[in] state The state that serves as the mean in the Gaussian distribution
+ * @param[in] meas_std The measurement standard deviation
  */ 
 Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std);
 
@@ -85,12 +112,6 @@ void SourceRN<tState>::DerivedInit(const SourceParameters& params) {
 
     const unsigned int sizeg = tState::Group::dim_;
     const unsigned int sizeu = tState::Algebra::dim_;
-
-    // Make sure that the state is a valid type
-    if (typeid(tState).name() != typeid(lie_groups::State<lie_groups::Rn,double,sizeg>).name())
-    {
-        throw std::runtime_error("SourceRNPos::Init State is not supported by this source type");
-    }
 
     // Construct the Jacobians
     switch (this->params_.type_)

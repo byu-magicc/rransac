@@ -30,14 +30,14 @@ double noise = 1e-3;
 source_params1.meas_cov_ = Eigen::Matrix3d::Identity()*noise;
 source_params1.type_ = MeasurementTypes::RN_POS;
 source_params1.source_index_ = 0;
-source_params1.expected_num_false_meas_ = 0.8;
+source_params1.spacial_density_of_false_meas_ = 0.8;
 source_params1.probability_of_detection_ = 0.8;
 source_params1.gate_probability_ = 0.8;
 
 source_params2.type_ = MeasurementTypes::RN_POS_VEL;
 source_params2.meas_cov_ = Eigen::Matrix<double,6,6>::Identity()*noise;
 source_params2.source_index_ = 1;
-source_params2.expected_num_false_meas_ = 0.8;
+source_params2.spacial_density_of_false_meas_ = 0.8;
 source_params2.probability_of_detection_ = 0.8;
 source_params2.gate_probability_ = 0.8;
 

@@ -419,7 +419,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModelLikeliho
     for (auto& update_info : model_likelihood_update_info_) {
         if ( update_info.in_local_surveillance_region) {
             const tSource& source = sources[update_info.source_index];
-            model_likelihood_ += std::log(1 + source.params_.probability_of_detection_*source.params_.gate_probability_*( update_info.num_assoc_meas/(source.params_.expected_num_false_meas_*update_info.volume)-1));
+            model_likelihood_ += std::log(1 + source.params_.probability_of_detection_*source.params_.gate_probability_*( update_info.num_assoc_meas/(source.params_.spacial_density_of_false_meas_*update_info.volume)-1));
         }
     }
     model_likelihood_update_info_.clear();

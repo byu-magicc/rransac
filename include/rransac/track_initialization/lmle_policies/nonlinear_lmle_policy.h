@@ -169,7 +169,7 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     GenerateSeedPolicy(meas_subset, sys, x, tModel::cov_dim_);
 
     ceres::Problem problem;
-    constexpr unsigned int meas_dim = tModel::Source::meas_dim_;
+    constexpr unsigned int meas_dim = tModel::Source::meas_space_dim_;
 
     for (auto iter = meas_subset.begin(); iter != meas_subset.end(); ++iter) {
         if (sys.sources_[iter->inner_it->source_index].params_.has_twist) {

@@ -232,13 +232,13 @@ void ModelPDFPolicy<tModel>::CalculateWeightsForModel(const System<tModel>& sys,
         }
 
         // Get the total likelihood ratio
-        total_likelihood_ratio *= (source.params_.probability_of_detection_/ source.params_.expected_num_false_meas_);
+        total_likelihood_ratio *= (source.params_.probability_of_detection_/ source.params_.spacial_density_of_false_meas_);
 
         // calculate the weights            
         double && denominator = 1.0 - source.params_.probability_of_detection_*source.params_.gate_probability_ + total_likelihood_ratio;
         for(auto inner_meas_iter = outer_meas_iter->begin(); inner_meas_iter != outer_meas_iter->end(); ++inner_meas_iter) {                
 
-            inner_meas_iter->weight = inner_meas_iter->likelihood*source.params_.probability_of_detection_/ (source.params_.expected_num_false_meas_*denominator);
+            inner_meas_iter->weight = inner_meas_iter->likelihood*source.params_.probability_of_detection_/ (source.params_.spacial_density_of_false_meas_*denominator);
 
         }
     }

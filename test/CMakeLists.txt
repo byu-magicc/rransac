@@ -34,15 +34,17 @@ include(CTest)
 # parameters_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(parameterTest gtest_main)
-# add_test(NAME AllTestsInsrn_test COMMAND parameterTest)
+# add_test(NAME AllTestsInParameterTest COMMAND parameterTest)
 
 #---------------------------------------
-# Consensus Set Test
+# Cluster 
 #---------------------------------------
-add_executable(consensus_setTest 
-data_containers/consensus_set_test.cpp)
-target_link_libraries(consensus_setTest gtest_main)
-add_test(NAME AllTestsInsrn_test COMMAND consensus_setTest)
+
+# add_executable(cluster_Test 
+# data_containers/cluster_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(cluster_Test gtest_main )
+# add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
 
 
 #---------------------------------------
@@ -52,29 +54,36 @@ add_test(NAME AllTestsInsrn_test COMMAND consensus_setTest)
 # common/sources/source_base_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(source_baseTest gtest_main )
-# add_test(NAME AllTestsInsrn_test COMMAND source_baseTest)
+# add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
 
 
 # add_executable(source_RNTest
 # common/sources/source_RN_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(source_RNTest gtest_main )
-# add_test(NAME AllTestsInsrn_test COMMAND source_RNTest)
+# add_test(NAME AllTestsInSourceRNTest COMMAND source_RNTest)
 
 
 # add_executable(source_SEN_Pos_VelTest
 # common/sources/source_SEN_pos_vel_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(source_SEN_Pos_VelTest gtest_main )
-# add_test(NAME AllTestsInsrn_test COMMAND source_SEN_Pos_VelTest)
+# add_test(NAME AllTestsInSourceSENPosVelTest COMMAND source_SEN_Pos_VelTest)
 
 
-# add_executable(source_SEN_Pose_TwistTest
-# common/sources/source_SEN_pose_twist_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
-# add_test(NAME AllTestsInsrn_test COMMAND source_SEN_Pose_TwistTest)
+add_executable(source_SEN_Pose_TwistTest
+common/sources/source_SEN_pose_twist_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
+add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
 
+#---------------------------------------
+# Consensus Set Test
+#---------------------------------------
+# add_executable(consensus_setTest 
+# data_containers/consensus_set_test.cpp)
+# target_link_libraries(consensus_setTest gtest_main)
+# add_test(NAME AllTestsInConsensusSetTest COMMAND consensus_setTest)
 
 #---------------------------------------
 # Transformations
@@ -104,14 +113,6 @@ add_test(NAME AllTestsInsrn_test COMMAND consensus_setTest)
 # ../src/parameters.cpp)
 # target_link_libraries(model_managerTest gtest_main )
 
-#---------------------------------------
-# Cluster 
-#---------------------------------------
-
-# add_executable(cluster_Test 
-# data_containers/cluster_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(cluster_Test gtest_main )
 
 #---------------------------------------
 # Data Trees

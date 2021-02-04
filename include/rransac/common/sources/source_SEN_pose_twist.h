@@ -6,13 +6,18 @@
 #include <typeinfo>
 
 #include "common/sources/source_base.h"
+#include "utilities.h"
+
+
 namespace rransac {
 
 /**
  * \class SourceSENPoseTwist
- * This souce is meant to be used for a target that evolves on SEN and whose
- * measurements are also on SEN or SEN and its tangent space. Compatible with 
- * MeasurementType::SEN_POSE and MeasurementType::SEN_POSE_TWIST
+ * This source is meant to be used for a target that evolves on SEN and whose
+ * measurements is also SEN. Compatible with 
+ * MeasurementType::SEN_POSE and MeasurementType::SEN_POSE_TWIST.
+ * It is assumed that the partial derivative of the observation function w.r.t.
+ * the measurement noise is identity.
  */ 
 
 template <class tState>
@@ -20,56 +25,74 @@ class SourceSENPoseTwist : public SourceBase<tState,SourceSENPoseTwist<tState>> 
 
 public:
 
-typedef tState State;
-typedef typename tState::DataType DataType;
-typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-static constexpr unsigned int meas_dim_ = State::Group::dim_;
-static constexpr unsigned int meas_pose_rows_ = State::Group::size1_;
-static constexpr unsigned int meas_pose_cols_ = State::Group::size2_;
-static constexpr unsigned int meas_twist_rows_ = State::Group::dim_;
-static constexpr unsigned int meas_twist_cols_ = 1;
-typedef utilities::CompatibleWithModelSENPoseTwist ModelCompatibility;
+typedef tState State;                                                               /**< The state of the target. @see State. */
+typedef typename tState::DataType DataType;                                         /**< The scalar object for the data. Ex. float, double, etc. */
+typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;                /**< The object type of the Jacobians. */
+static constexpr unsigned int meas_space_dim_ = State::Group::dim_;                 /**< The dimension of the measurement space. */
+static constexpr unsigned int meas_pose_rows_ = State::Group::size1_;               /**< The number of rows in the pose measurement. */
+static constexpr unsigned int meas_pose_cols_ = State::Group::size2_;               /**< The number of columns in the pose measurement. */
+static constexpr unsigned int meas_twist_rows_ = State::Group::dim_;                /**< The number of rows in the twist measurement. */
+static constexpr unsigned int meas_twist_cols_ = 1;                                 /**< The number of columns in the twist measurement. */
+typedef utilities::CompatibleWithModelSENPoseTwist ModelCompatibility;              /**< Indicates which model this source is compatible with. */
+
 static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "The state is not compatible with the model");
 
 
-/** Initializes the measurement source. This function must set the parameters.  */
+/** 
+ * Initializes the measurement source by initializing the Jacobians. 
+ * @param[in] params The source parameters.
+ */
 void DerivedInit(const SourceParameters& params);      
 
-/** Returns the jacobian of the observation function w.r.t. the states 
- * @param state A state of a model.
-*/
+/** 
+ * Returns the jacobian of the observation function w.r.t. the states. This is an optimized version. 
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 MatXd DerivedGetLinObsMatState(tState const& state) const {return this->H_;};  
 
-/** Returns the jacobian of the observation function w.r.t. the states. This method is not optimized. */
+/** 
+ * Returns the jacobian of the observation function w.r.t. the states. This method is not optimized. 
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 static MatXd DerivedGetLinObsMatState(const State& state, const MeasurementTypes type);
 
-/** Returns the jacobian of the observation function w.r.t. the sensor noise */
+/** 
+ * Returns the jacobian of the observation function w.r.t. the sensor noise. This is an optimized version. 
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 MatXd DerivedGetLinObsMatSensorNoise(const tState& state) const {return this->V_;}  
 
-/** Returns the jacobian of the observation function w.r.t. the sensor noise. This method is not optimized */
+/** 
+ * Returns the jacobian of the observation function w.r.t. the sensor noise. This method is not optimized
+ * @param[in] state The state of a target at which the Jacobian is be evaluated.
+ */
 static MatXd DerivedGetLinObsMatSensorNoise(const tState& state, const MeasurementTypes type);
 
-/** Computes the estimated measurement given a state */
+/** 
+ * This is an optimized function that implements the observation function and returns an estimated measurement based on the state.
+ * @param[in] state A state of the target.
+ */
 Meas<DataType> DerivedGetEstMeas(const tState& state) const ;
 
-/** Computes the estimated measurement given a state and measurement type. This method is not optimized.*/
+/**
+ *  Implements the observation function and returns an estimated measurement based on the state. 
+ * @param[in] state A state of the target.
+ */
 static Meas<DataType> DerivedGetEstMeas(const State& state, const MeasurementTypes type);
 
 /**
- * Returns the error between the estimated measurement and the measurement
+ * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
+ * method computes the geodesic distance between two measurements of the same type.
+ * @param[in] m1 a measurement
+ * @param[in] m2 a measurement
  */
 static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) ;
 
-/**
- * Maps the pose to Euclidean space. The translation is unchanged; however, the rotation is transformed using Cayley coordinates of the first kind.
- * @param m The measurement whose pose needs to be transformed
- */
-MatXd DerivedToEuclidean(const Meas<DataType>& m);
 
 /**
  * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
- * @param state The state that serves as the mean in the Gaussian distribution
- * @param meas_std The measurement standard deviation
+ * @param[in] state The state that serves as the mean in the Gaussian distribution
+ * @param[in] meas_std The measurement standard deviation
  */ 
 Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std);
 
@@ -84,23 +107,18 @@ Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd
 template <class tState>
 void SourceSENPoseTwist<tState>::DerivedInit(const SourceParameters& params) {
 
-    // Verify state
-    if (typeid(State).name() != typeid(lie_groups::SE2_se2).name() && typeid(State).name() != typeid(lie_groups::SE3_se3).name())
-    {
-        throw std::runtime_error("SourceSENPoseTwist::Init State is not supported by this source type");
-    }
 
     // Verify measurement type
     switch (this->params_.type_)
     {
     case MeasurementTypes::SEN_POSE:
-        this->V_ = Eigen::Matrix<DataType,meas_dim_,meas_dim_>::Identity();
-        this->H_ = Eigen::Matrix<DataType, meas_dim_, State::dim_>::Zero();
-        this->H_.block(0,0,meas_dim_,meas_dim_).setIdentity();
+        this->V_ = Eigen::Matrix<DataType,meas_space_dim_,meas_space_dim_>::Identity();
+        this->H_ = Eigen::Matrix<DataType, meas_space_dim_, State::dim_>::Zero();
+        this->H_.block(0,0,meas_space_dim_,meas_space_dim_).setIdentity();
         break;
     case MeasurementTypes::SEN_POSE_TWIST:
-        this->V_ = Eigen::Matrix<DataType,meas_dim_*2,meas_dim_*2>::Identity();
-        this->H_ = Eigen::Matrix<DataType,meas_dim_*2,State::dim_>::Identity();
+        this->V_ = Eigen::Matrix<DataType,meas_space_dim_*2,meas_space_dim_*2>::Identity();
+        this->H_ = Eigen::Matrix<DataType,meas_space_dim_*2,State::dim_>::Identity();
         break;
     default:
         throw std::runtime_error("SourceSENPoseTwist::Init Measurement type not supported.");
@@ -126,41 +144,13 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
     if (m1.type == MeasurementTypes::SEN_POSE && m1.type == m2.type) {
         return State::Group::OMinus(m1.pose,m2.pose);
     } else if (m1.type == MeasurementTypes::SEN_POSE_TWIST && m1.type == m2.type){
-        Eigen::Matrix<DataType, meas_dim_*2,1> error;
-        error.block(0,0,meas_dim_,1) = State::Group::OMinus(m1.pose,m2.pose);
-        error.block(meas_dim_,0,meas_dim_,1) = m1.twist - m2.twist;
+        Eigen::Matrix<DataType, meas_space_dim_*2,1> error;
+        error.block(0,0,meas_space_dim_,1) = State::Group::OMinus(m1.pose,m2.pose);
+        error.block(meas_space_dim_,0,meas_space_dim_,1) = m1.twist - m2.twist;
         return error;
     } else {
         throw std::runtime_error("SourceSENPoseTwist::OMinus Measurement type not supported.");
     }
-
-    // if (m1.type == MeasurementTypes::SEN_POSE && m1.type == m2.type) {
-    //     return State::Algebra::Log(m2.pose.inverse()*m1.pose);
-    // } else if (m1.type == MeasurementTypes::SEN_POSE_TWIST && m1.type == m2.type){
-    //     Eigen::Matrix<DataType, meas_dim_*2,1> error;
-    //     error.block(0,0,meas_dim_,1) = State::Algebra::Log(m2.pose.inverse()*m1.pose);
-    //     error.block(meas_dim_,0,meas_dim_,1) = m1.twist - m2.twist;
-    //     return error;
-    // } else {
-    //     throw std::runtime_error("SourceSENPoseTwist::OMinus Measurement type not supported.");
-    // }
-
-    // Eigen::Matrix<DataType,4,4> tmp = m2.pose.inverse()*m1.pose;
-    // return m2.pose;
-}
-
-//----------------------------------------------------------------------------------------
-template <class tState>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPoseTwist<tState>::DerivedToEuclidean(const Meas<DataType>& m)  {
-    typename State::Group g(m.pose);
-    Eigen::Matrix<DataType,  State::Group::dim_pos_,State::Group::dim_pos_> I = Eigen::Matrix<DataType,  State::Group::dim_pos_,State::Group::dim_pos_>::Identity();
-    Eigen::Matrix<DataType, State::Group::dim_pos_,State::Group::dim_pos_>&& u = 2.0*(g.R_-I)*(g.R_+I).inverse();
-    Eigen::Matrix<DataType, State::Group::dim_,1> pose_euclidean;
-    pose_euclidean.block(0,0,State::Group::dim_pos_,1) = g.t_;
-    pose_euclidean.block(State::Group::dim_pos_,0,State::Group::dim_rot_,1) = State::Group::RotAlgebra::Vee(u);
-
-
-    return pose_euclidean;
 }
 
 //----------------------------------------------------------------------------------------
@@ -218,11 +208,11 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
     switch (type)
     {
     case MeasurementTypes::SEN_POSE:
-        H = Eigen::Matrix<DataType, meas_dim_, State::dim_>::Zero();
-        H.block(0,0,meas_dim_,meas_dim_).setIdentity();
+        H = Eigen::Matrix<DataType, meas_space_dim_, State::dim_>::Zero();
+        H.block(0,0,meas_space_dim_,meas_space_dim_).setIdentity();
         break;
     case MeasurementTypes::SEN_POSE_TWIST:
-        H = Eigen::Matrix<DataType,meas_dim_*2,State::dim_>::Identity();
+        H = Eigen::Matrix<DataType,meas_space_dim_*2,State::dim_>::Identity();
         break;
     default:
         throw std::runtime_error("SourceSENPoseTwist::Init Measurement type not supported.");
@@ -246,10 +236,10 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
     switch (type)
     {
     case MeasurementTypes::SEN_POSE:
-        V = Eigen::Matrix<DataType,meas_dim_,meas_dim_>::Identity();
+        V = Eigen::Matrix<DataType,meas_space_dim_,meas_space_dim_>::Identity();
         break;
     case MeasurementTypes::SEN_POSE_TWIST:
-        V = Eigen::Matrix<DataType,meas_dim_*2,meas_dim_*2>::Identity();
+        V = Eigen::Matrix<DataType,meas_space_dim_*2,meas_space_dim_*2>::Identity();
         break;
     default:
         throw std::runtime_error("SourceSENPoseTwist::Init Measurement type not supported.");

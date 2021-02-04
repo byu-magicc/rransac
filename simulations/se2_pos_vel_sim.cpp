@@ -126,14 +126,14 @@ void SetUp() {
     source_params1.meas_cov_ = T::MatR_::Identity()*noise_;
     source_params1.RANSAC_inlier_probability_ = 0.95;
     source_params1.gate_probability_ = 0.9;
-    source_params1.expected_num_false_meas_ = 0.03125;
+    source_params1.spacial_density_of_false_meas_ = 0.03125;
 
     source_params2.type_ = T::MeasurementType2;
     source_params2.source_index_ = 1;
     source_params2.meas_cov_ = T::MatR2_::Identity()*noise_;
     source_params2.RANSAC_inlier_probability_ = 0.95;
     source_params2.gate_probability_ = 0.9;
-    source_params2.expected_num_false_meas_ = 0.03125;
+    source_params2.spacial_density_of_false_meas_ = 0.03125;
 
 
     Source_ source1, source2;

@@ -61,7 +61,7 @@ protected:
 
 typedef Meas<double> Measurement;
 
-static constexpr unsigned int meas_dim = Model::Model::Source::meas_dim_;
+static constexpr unsigned int meas_dim = Model::Model::Source::meas_space_dim_;
 static constexpr unsigned int state_dim = Model::Model::State::g_type_::dim_*2;
 static constexpr unsigned int cov_dim = Model::Model::cov_dim_;
 static constexpr unsigned int a_vel_dim = Model::Model::cov_dim_ - Model::Model::State::g_type_::dim_-1;
@@ -93,7 +93,7 @@ meas_std1 *= sqrt(meas_cov_scale);
 source_params1.meas_cov_ = meas_cov1;
 source_params1.type_ = Model::MeasType1;
 source_params1.source_index_ = 0;
-source_params1.expected_num_false_meas_ = 0.8;
+source_params1.spacial_density_of_false_meas_ = 0.8;
 source_params1.probability_of_detection_ = 0.8;
 source_params1.gate_probability_ = 0.8;
 
@@ -103,7 +103,7 @@ meas_cov2 *= meas_cov_scale;
 // source_params2.meas_cov_ = meas_cov2;
 source_params2.type_ = Model::MeasType2;
 source_params2.source_index_ = 1;
-source_params2.expected_num_false_meas_ = 0.8;
+source_params2.spacial_density_of_false_meas_ = 0.8;
 source_params2.probability_of_detection_ = 0.8;
 source_params2.gate_probability_ = 0.8;
 source_params2.meas_cov_ = meas_cov2;

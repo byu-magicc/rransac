@@ -26,7 +26,7 @@ class Dummy : public SourceBase<tState, Dummy<tState,tDims>>
 public:
 
     using State = tState;
-    static constexpr unsigned int meas_dim_ = tDims;
+    static constexpr unsigned int meas_space_dim_ = tDims;
 
     /** Initializes the measurement source. This function must set the parameters.  */
     void DerivedInit(const SourceParameters& params) {
@@ -75,7 +75,7 @@ CallbackClass<lie_groups::R2_r2> call;
 //
 
 // Empty measurement covariance 
-source_params.expected_num_false_meas_ = 0.1;
+source_params.spacial_density_of_false_meas_ = 0.1;
 source_params.type_ = MeasurementTypes::RN_POS;
 source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.9;
@@ -96,11 +96,11 @@ ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups:
 
 // Invalid expected number of false measurements
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
-source_params.expected_num_false_meas_ = -0.1;
+source_params.spacial_density_of_false_meas_ = -0.1;
 ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
-source_params.expected_num_false_meas_ = 1.1;
+source_params.spacial_density_of_false_meas_ = 1.1;
 ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
-source_params.expected_num_false_meas_ = 0.9;
+source_params.spacial_density_of_false_meas_ = 0.9;
 
 // Invalid measurement type
 source_params.type_ = MeasurementTypes::NUM_TYPES;
@@ -125,7 +125,7 @@ source_params.probability_of_detection_ = 0.9;
 
 // Valid source parameters
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
-source_params.expected_num_false_meas_ = 0.1;
+source_params.spacial_density_of_false_meas_ = 0.1;
 source_params.type_ = MeasurementTypes::RN_POS;
 source_params.gate_probability_ = 0.393469340287367;
 source_params.probability_of_detection_ = 0.9;
@@ -177,7 +177,7 @@ srand (time(NULL));
 SourceParameters source_params_;
 
 source_params_.meas_cov_ = Eigen::Matrix2d::Identity();
-source_params_.expected_num_false_meas_ = 0.1;
+source_params_.spacial_density_of_false_meas_ = 0.1;
 source_params_.type_ = MeasurementTypes::RN_POS;
 source_params_.gate_probability_ = 0.8;
 source_params_.probability_of_detection_ = 0.9;

@@ -27,7 +27,7 @@ TEST(DataTreeClusterAssociationPolicyTest, PolicyDataAssociationClusterDataTree)
     typedef Meas<double> Measurement;
 
     SourceParameters source_params;
-    source_params.expected_num_false_meas_ = 0.1;
+    source_params.spacial_density_of_false_meas_ = 0.1;
     source_params.meas_cov_ = Eigen::Matrix2d::Identity();
     source_params.gate_probability_ = 0.8;
     source_params.source_index_ = 0;

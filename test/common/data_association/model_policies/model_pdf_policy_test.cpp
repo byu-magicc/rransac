@@ -77,14 +77,14 @@ Source source1, source2, source3, source4;
 
 // source_params1.meas_cov_fixed_ = true;
 source_params1.meas_cov_ = Eigen::Matrix2d::Identity();
-source_params1.expected_num_false_meas_ = 0.1;
+source_params1.spacial_density_of_false_meas_ = 0.1;
 source_params1.type_ = MeasurementTypes::RN_POS;
 source_params1.probability_of_detection_ = 0.9;
 source_params1.gate_probability_ = 0.393469340287367;  // select it so that the gate threshold is 1
 source_params1.source_index_ = 0;
 
 source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*3;
-source_params2.expected_num_false_meas_ = 0.2;
+source_params2.spacial_density_of_false_meas_ = 0.2;
 source_params2.type_ = MeasurementTypes::RN_POS_VEL;
 source_params2.probability_of_detection_ = 0.9;
 source_params2.gate_probability_ = 0.090204010431050;  // select it so that the gate threshold is 1
@@ -401,9 +401,9 @@ CalculateLikelihood(m1, *model_iter);
 CalculateLikelihood(m2, *model_iter);
 CalculateLikelihood(m4, *model_iter);
 
-double PDG1 = source1.params_.probability_of_detection_/source1.params_.expected_num_false_meas_;
+double PDG1 = source1.params_.probability_of_detection_/source1.params_.spacial_density_of_false_meas_;
 double PDT1 = source1.params_.probability_of_detection_*source1.params_.gate_probability_;
-double PDG2 = source2.params_.probability_of_detection_/source2.params_.expected_num_false_meas_;
+double PDG2 = source2.params_.probability_of_detection_/source2.params_.spacial_density_of_false_meas_;
 double PDT2 = source2.params_.probability_of_detection_*source2.params_.gate_probability_;
 double den = (m1.likelihood + m2.likelihood)*PDG1 + 1 - PDT1;
 m1.weight = m1.likelihood*PDG1/den;

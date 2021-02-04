@@ -31,21 +31,21 @@ void SetUp() override {
 
 // Setup the sources
 source_params1.meas_cov_ = Eigen::Matrix3d::Identity();
-source_params1.expected_num_false_meas_ = 0.5;
+source_params1.spacial_density_of_false_meas_ = 0.5;
 source_params1.type_ = MeasurementTypes::RN_POS;
 source_params1.gate_probability_ = 0.75;
 source_params1.probability_of_detection_ = 0.95;
 source_params1.source_index_ = 0;
 
 source_params2.meas_cov_ = Eigen::Matrix<double,6,6>::Identity();
-source_params2.expected_num_false_meas_ = 0.2;
+source_params2.spacial_density_of_false_meas_ = 0.2;
 source_params2.type_ = MeasurementTypes::RN_POS_VEL;
 source_params2.gate_probability_ = 0.8;
 source_params2.probability_of_detection_ = 0.94;
 source_params2.source_index_ = 1;
 
 source_params3.meas_cov_ = Eigen::Matrix<double,6,6>::Identity();
-source_params3.expected_num_false_meas_ = 0.45;
+source_params3.spacial_density_of_false_meas_ = 0.45;
 source_params3.type_ = MeasurementTypes::RN_POS_VEL;
 source_params3.gate_probability_ = 0.85;
 source_params3.probability_of_detection_ = 0.65;
@@ -106,9 +106,9 @@ TEST_F(ModelBaseTest2, UpdateLikelihood_TEST) {
     ASSERT_EQ(this->model.model_likelihood_,0);
     this->model.UpdateModelLikelihood(this->sources);
 
-    double tmp1 = std::log(1+this->source1.params_.gate_probability_*this->source1.params_.probability_of_detection_*(this->update_info[0].num_assoc_meas/(source1.params_.expected_num_false_meas_*update_info[0].volume) -1));   
-    double tmp2 = std::log(1+this->source2.params_.gate_probability_*this->source2.params_.probability_of_detection_*(this->update_info[1].num_assoc_meas/(source2.params_.expected_num_false_meas_*update_info[1].volume) -1));   
-    double tmp3 = std::log(1+this->source3.params_.gate_probability_*this->source3.params_.probability_of_detection_*(this->update_info[2].num_assoc_meas/(source3.params_.expected_num_false_meas_*update_info[2].volume) -1));   
+    double tmp1 = std::log(1+this->source1.params_.gate_probability_*this->source1.params_.probability_of_detection_*(this->update_info[0].num_assoc_meas/(source1.params_.spacial_density_of_false_meas_*update_info[0].volume) -1));   
+    double tmp2 = std::log(1+this->source2.params_.gate_probability_*this->source2.params_.probability_of_detection_*(this->update_info[1].num_assoc_meas/(source2.params_.spacial_density_of_false_meas_*update_info[1].volume) -1));   
+    double tmp3 = std::log(1+this->source3.params_.gate_probability_*this->source3.params_.probability_of_detection_*(this->update_info[2].num_assoc_meas/(source3.params_.spacial_density_of_false_meas_*update_info[2].volume) -1));   
 
 
     ASSERT_DOUBLE_EQ(this->model.model_likelihood_,tmp1+tmp2+tmp3);

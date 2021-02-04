@@ -79,7 +79,7 @@ unsigned int RANSAC_minimum_subset_;    /**< The minimum number of measurements 
 
 
 // Track Parameters
-Eigen::MatrixXd process_noise_covariance_; /**< The process noise covariance of the track. */
+Eigen::MatrixXd process_noise_covariance_; /**< The process noise covariance of the track. It must be positive definite. */
 
 
 

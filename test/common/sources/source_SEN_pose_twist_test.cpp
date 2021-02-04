@@ -23,11 +23,11 @@ TYPED_TEST(SEN_POSE_TWIST_Test, INIT) {
 typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
 typedef SourceSENPoseTwist<TypeParam> Source;
-typedef Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_> MatMeas1;
-typedef Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2> MatMeas2;
+typedef Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_> MatMeas1;
+typedef Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2> MatMeas2;
 
 SourceParameters params;
-params.expected_num_false_meas_ = 0.1;
+params.spacial_density_of_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
@@ -81,8 +81,8 @@ TYPED_TEST(SEN_POSE_TWIST_Test, Funcs) {
 typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
 typedef SourceSENPoseTwist<TypeParam> Source;
-typedef Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_> MatMeas1;
-typedef Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2> MatMeas2;
+typedef Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_> MatMeas1;
+typedef Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2> MatMeas2;
 
 typedef TypeParam S;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_,1> Mat_p;
@@ -92,7 +92,7 @@ typedef Eigen::Matrix<double,TypeParam::Group::dim_*2,TypeParam::Group::dim_*2> 
 
 
 SourceParameters params;
-params.expected_num_false_meas_ = 0.1;
+params.spacial_density_of_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
@@ -153,12 +153,12 @@ ASSERT_EQ(source.GetEstMeas(state,params.type_).twist,m.twist);
 // Test OMinus
 SourceParameters params1, params2;
 
-params1.expected_num_false_meas_ = 0.1;
+params1.spacial_density_of_false_meas_ = 0.1;
 params1.meas_cov_ = MatMeas1::Identity();
 params1.gate_probability_ = 0.8;
 params1.probability_of_detection_ = 0.9;
 
-params2.expected_num_false_meas_ = 0.1;
+params2.spacial_density_of_false_meas_ = 0.1;
 params2.meas_cov_ = MatMeas2::Identity();
 params2.gate_probability_ = 0.8;
 params2.probability_of_detection_ = 0.9;

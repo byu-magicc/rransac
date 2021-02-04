@@ -28,7 +28,7 @@ typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,TypeParam::Group::dim_
 typedef SourceSENPosVel<TypeParam> Source;
 
 SourceParameters params;
-params.expected_num_false_meas_ = 0.1;
+params.spacial_density_of_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
@@ -39,9 +39,9 @@ if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name
 
 // Valid measurement types
 params.type_ = MeasurementTypes::SEN_POS;
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_>::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_>::Identity();
 ASSERT_NO_THROW(source.Init(params));
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2>::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2>::Identity();
 params.type_ = MeasurementTypes::SEN_POS_VEL;
 ASSERT_NO_THROW(source.Init(params));
 
@@ -83,7 +83,7 @@ typedef SourceSENPosVel<TypeParam> Source;
 
 
 SourceParameters params;
-params.expected_num_false_meas_ = 0.1;
+params.spacial_density_of_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
@@ -145,7 +145,7 @@ H_pos_vel.block(S::Group::dim_pos_,S::Group::dim_pos_, S::Algebra::dim_t_vel_, S
 
 // Tests
 params.type_ = MeasurementTypes::SEN_POS;
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_>::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_>::Identity();
 ASSERT_NO_THROW(source.Init(params));
 
 ASSERT_EQ(source.GetLinObsMatState(state),H_pos);
@@ -157,7 +157,7 @@ ASSERT_EQ(source.GetEstMeas(state,params.type_).pose,m.pose);
 // ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
 
 params.type_ = MeasurementTypes::SEN_POS_VEL;
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2>::Identity();
+params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2>::Identity();
 ASSERT_NO_THROW(source.Init(params));
 
 ASSERT_EQ(source.GetLinObsMatState(state),H_pos_vel);
@@ -176,19 +176,19 @@ ASSERT_EQ(source.GetEstMeas(state,params.type_).twist,m.twist);
 // Test OMinus
 SourceParameters params1, params2;
 
-params1.expected_num_false_meas_ = 0.1;
+params1.spacial_density_of_false_meas_ = 0.1;
 params1.gate_probability_ = 0.8;
 params1.probability_of_detection_ = 0.9;
 
-params2.expected_num_false_meas_ = 0.1;
+params2.spacial_density_of_false_meas_ = 0.1;
 params2.gate_probability_ = 0.8;
 params2.probability_of_detection_ = 0.9;
 
 
 params1.type_ = MeasurementTypes::SEN_POS;
-params1.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_,Source::meas_dim_>::Identity();
+params1.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_>::Identity();
 params2.type_ = MeasurementTypes::SEN_POS_VEL;
-params2.meas_cov_ = Eigen::Matrix<double,Source::meas_dim_*2,Source::meas_dim_*2>::Identity();
+params2.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2>::Identity();
 
 Source source1, source2;
 source1.Init(params1);

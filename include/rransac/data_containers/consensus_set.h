@@ -9,16 +9,19 @@ namespace rransac
 {
 /**
  * \class ConsensusSet
- * The consensus set of a model is the set of measurements associated with the model.
+ * The consensus set of a track is the set of measurements associated with the track.
  * In order to keep the consensus set becoming arbitrarily large. Expired measurements are 
- * pruned from the consensus set. The data member consensus_set is a list of vectors that contain
- * the measurements. Each vector of measurements contains measurements with the same time stamp. 
+ * pruned from the consensus set. The measurements are contains in a list of vectors. The list
+ * organized the measurements in chronological order and the vector contains measurements with the 
+ * same time stamp. 
  */ 
 
 template <class tMeasurement>
 class ConsensusSet
 {
 public:
+
+typedef tMeasurement Measurement; /**< The object type of the measurement. */
 
 /** 
  * Add a measurement to the consensus set. 
@@ -27,27 +30,30 @@ public:
 void AddMeasToConsensusSet(const tMeasurement& meas);
 
 /** 
- * Add a measurements to the consensus set. 
- * @param[in] meas The measurements to be added.
+ * Add measurements to the consensus set. 
+ * @param[in] measurements The measurements to be added.
 */
-void AddMeasurementsToConsensusSet(const std::vector<tMeasurement>& meas);
+void AddMeasurementsToConsensusSet(const std::vector<tMeasurement>& measurements);
 
 /** 
  * Add a measurements to the consensus set. The measurements have the same time stamp.
- * @param[in] meas The measurements to be added.
+ * @param[in] measurements The measurements to be added that have the same time stamp.
 */
-void AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<tMeasurement>& meas);
+void AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<tMeasurement>& measurements);
 
 /** 
- * Removes all of the measurements from the consensus_set with a time stamp that occurred before the expiration_time. 
- * The value of expiration_time is the current time in seconds minus the time window. I.e. old measurements are removed.
- * @param[in] expiration_time The current time in seconds minus the time window.
+ * Removes all of the measurements from the consensus set with a time stamp that occurred before the expiration_time. 
+ * @param[in] expiration_time The expiration time of for measurements.
  */ 
 
 void PruneConsensusSet(double expiration_time);
 
 /**
- * Transforms all of the measurements in the consensus set using the provided transformation.
+ * Transforms all of the measurements using the transform provided. 
+ * The transform provided must have a member function called
+ * TransformMeasurement.
+ * @param[in] transform An object of the transformation class
+ * @see TransformBase
  */ 
 template<typename tTransformation>
 void TransformConsensusSet(const tTransformation& T);
@@ -57,15 +63,18 @@ void TransformConsensusSet(const tTransformation& T);
  */ 
 unsigned int Size() { return consensus_set_.size();}
 
-/*
-* Merges two consensus sets together. This is used when two models are merged together.
+/**
+* Merges two consensus sets together by adding all of the measurements from one
+* consensus set to the other preserving the chronological order of the measurements.
+* @param cs1 One of the two consensus sets to be merged.
+* @param cs2 The other consensus set to be merged.
 */
 static ConsensusSet MergeConsensusSets(const ConsensusSet& cs1, const ConsensusSet& cs2);
 
 
-std::list<std::vector<tMeasurement>> consensus_set_; /** < Contains the measurements associated with the model that have not expired. Each vector of measurements 
-                                                contains measurements with the same time stamp. This allows us to efficiently remove expired measurements
-                                                by simply removing an entire vector. */
+std::list<std::vector<tMeasurement>> consensus_set_; /**< Contains the measurements associated with the model that have not expired. The list organizes the measurements in chronological order
+                                                           and the vector contains measurements with the same time stamp. This allows us to efficiently remove expired measurements by simply removing 
+                                                           entire vectors. */
 
 };
 
@@ -92,14 +101,10 @@ void ConsensusSet<tMeasurement>::AddMeasToConsensusSet(const tMeasurement& meas)
         // Search from the end to the beginning to find where to place it
         for (auto iter = consensus_set_.rbegin(); iter != consensus_set_.rend(); ++iter) {
             
-            // std::cerr << (*iter).front().time_stamp << std::endl;
-
             if ((*iter).front().time_stamp == meas.time_stamp) {
                 (*iter).push_back(meas);
                 break;
             } else if ((*iter).front().time_stamp < meas.time_stamp) {
-                // std::cout << "add to middle" << std::endl;
-                // std::vector<M> tmp{meas};
                 consensus_set_.insert(iter.base(),std::vector<tMeasurement>{meas});
                 break;
             } 
@@ -140,14 +145,10 @@ void ConsensusSet<tMeasurement>::AddMeasurementsToConsensusSetSameTimeStamp(cons
         // Search from the end to the beginning to find where to place it
         for (auto iter = consensus_set_.rbegin(); iter != consensus_set_.rend(); ++iter) {
             
-            // std::cerr << (*iter).front().time_stamp << std::endl;
-
             if ((*iter).front().time_stamp == meas[0].time_stamp) {
                 iter->insert(iter->end(), meas.begin(), meas.end());
                 break;
             } else if ((*iter).front().time_stamp < meas[0].time_stamp) {
-                // std::cout << "add to middle" << std::endl;
-                // std::vector<M> tmp{meas};
                 consensus_set_.insert(iter.base(),meas);
                 break;
             } 

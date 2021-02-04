@@ -23,39 +23,47 @@ namespace rransac
 
 
 /** \class SourceParameters
- * This struct contains the parameters needed by a measurement source.
+ * This struct contains the parameters needed by a measurement source. Some of the parameters are defined by the user, while others are calculated by RRANSAC.
  */ 
 struct SourceParameters {
 
-    unsigned int source_index_;       /**< When a new source is added, it is added to the vector System::sources_. This is used to verify that the measurement corresponds to the proper source. */
-    MeasurementTypes type_;          /** < The measurement type @see MeasurementTypes */
+    unsigned int source_index_;       /**< This is a unique identifiable index for a measurement source. The first source added to RRANSAC must have a source index value of 0, and 
+                                           the second a value of 1, and so on. The source index is used to verify that a measurement corresponds to a proper source. This parameter must be set by the user. */
+    MeasurementTypes type_;           /**< The measurement type. This parameter must be set by the user. @see MeasurementTypes */
                                       
-    Eigen::MatrixXd meas_cov_;       /** < The fixed measurement covariance.*/
+    Eigen::MatrixXd meas_cov_;        /**< The measurement covariance. It must be positive definite. This parameter must be set by the user. */
 
-    float expected_num_false_meas_;  /** < The expected number of false measurements. We assume that the expected number of false 
-                                        measurements from a source per sensor scan can be modeled using a Poisson distribution. */    
+    float spacial_density_of_false_meas_;  /**< We assume that measurement sources produce false measurements uniformly across their surveillance region. The number
+                                                 of false measurements per sensor scan is modeled using a Poison distribution with expected value \f$ \lambda \f$. The spacial density
+                                                 of false measurements is the expected value of the Poison distribution divided by the volume of the surveillance region. See Tracking and 
+                                                 Data Fusion by Bar-Shalom 2011 for more detail. This parameter must be set by the user. */    
 
-    float probability_of_detection_; /**< The probability that the phenomenon of interest is detected by a source during
-                                      a single scan. This value must be between 0 and 1.*/
+    float probability_of_detection_; /**< The probability that the target of interest is detected by the source during
+                                          a sensor scan. This value must be between 0 and 1. This parameter must be set by the user. */
 
     float gate_probability_;         /**< The probability that a true measurement will be inside the validation region of a track. This value must
-                                          be between 0 and 1. */
+                                          be between 0 and 1. This parameter must be set by the user. See Tracking and Data Fusion by Bar-Shalom 2011 for more detail on the validation region. */
 
-    double RANSAC_inlier_probability_; /**< The probability that a measurement is an inlier according to a chi squared distribution. */
+    double RANSAC_inlier_probability_; /**< During track initialization, a hypothetical state is scored according to the number of measurement inliers. A measurement is an inlier if
+                                            it is a certain distance from the hypothetical state. The threshold on the distance is determined by this parameter. Thus, it is 
+                                            the probability that a measurement is an inlier according to a chi squared distribution. See Tracking and Data Fusion by Bar-Shalom 2011 for 
+                                            more detail. This parameter must be set by the user. */
 
     
     
 
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
-    bool has_twist;                      /**< Indicates if the measurement has velocity data in addition to position */
-    double gate_threshold_;              /**< The gate threshold of the validation region */
-    double RANSAC_inlier_threshold_;      /**< the inlier threshold used in RANSAC to see if a measurement is an inlier to a hypothetical state estimate */
-    double gate_threshold_sqrt_;         /**< The square root of the gate threshold */    
-    double vol_unit_hypershpere_;        /**< The Volume of the unit hypershpere */
+    bool has_twist;                      /**< Indicates if the measurement has twist data in addition to pose. This is calculated from SourceParameters::type_. */
+    double gate_threshold_;              /**< The gate threshold of the validation region. See Tracking and Data Fusion by Bar-Shalom 2011 for more detail on the validation region. 
+                                              This is calculated from SourceParameters::gate_probability_. */
+    double RANSAC_inlier_threshold_;      /**< The inlier threshold used in RANSAC to see if a measurement is an inlier to a hypothetical state estimate. This is calculated from 
+                                               SourceParameters::RANSAC_inlier_probability_. */
+    double gate_threshold_sqrt_;         /**< The square root of the gate threshold. */    
+    double vol_unit_hypershpere_;        /**< The volume of the unit hypershpere in the measurement space. This is determined by the dimension of the measurement source. */
 
     // Sets some parameters to default
     SourceParameters() {
-        expected_num_false_meas_ = 0.1;
+        spacial_density_of_false_meas_ = 0.1;
         probability_of_detection_ = 0.9;
         gate_probability_ = 0.8;
         RANSAC_inlier_probability_ = 0.8;
@@ -66,17 +74,30 @@ struct SourceParameters {
 /** \class SourceBase 
  * A source is an algorithm that takes data from a sensor and extracts measurements from it. Due to the nature of
  * the source, there is measurement noise and false measurements. The measurement noise is assumed to be sampled from
- * a white-noise, zero-mean, Gaussian distribution. If the measurement covariance is fixed, then it should be added to 
- * the source; otherwise, it is supplied with each measurement. We assume that the false measurements are uniformly
+ * a white-noise, zero-mean, Gaussian distribution. We assume that the false measurements are uniformly
  * distributed in the local surveillance region, and that the spatial density of false measurements can 
  * be modeled using a Poisson distribution. 
  * 
- * Since there can be many different sources, we allow users to create their own source type using polymorphism. The 
- * base source must contain all of the necessary member functions and the child classes provide the implementation for
- * specific sources. 
+ * The observation model for a specific source is 
+ * \f[
+ * y = h(x,v)
+ * \f]
+ * with \f$ y \f$ denoting the measurement, \f$ h \f$ the observation function, \f$ x \f$ the state of the target, and \f$ v \f$ the measurement noise. 
+ * 
+ * The linearization of the observation model about a state \f$ x_0 \f$ is
+ * 
+ * \f[
+ * y = h(x_0,0) + H\delta x + Vv
+ * \f]
+ * with \f$ H \f$ being the partial derivative of \f$ h \f$ w.r.t. the state evaluated at \f$ x_0 \f$, \f$ V \f$ being the partial derivative of \f$ h \f$ w.r.t.
+ * the noise evaluated at \f$ x_0 \f$, and \f$ \delta x \f$ being the geodesic distance between \f$ x \f$ and \f$ x_0 \f$.
+ * 
+ * A source must implement the observation fuction, calculate the Jacobians \f$ H \f$ and \f$ V \f$. Also, it must be able to compute the distance between two measurements. 
+ * 
+ * Since there can be many different sources, we allow users to create their own source type using the design methology curiously recurring template pattern. The 
+ * base source acts as the API for all of the sources, and each child source must implement certain methods. 
  * 
  * When a measurement is received, the measurement indicates which source it came from using the source ID tag @see Meas.
- * We also need to know the dimension of the measurement.
  * 
  */ 
 
@@ -86,14 +107,17 @@ class SourceBase
 
 public:
 
-    typedef tState State;
-    typedef typename tState::DataType DataType;
-    typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-    static constexpr unsigned int meas_dim_ = tDerived::meas_dim_;               /**< The Dimension of the measurement */
-    std::function<bool(const State&)> state_in_surveillance_region_callback_;
+    typedef tState State;                                                       /**< The state of the target. @see State. */
+    typedef typename tState::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
+    typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
+    static constexpr unsigned int meas_space_dim_ = tDerived::meas_space_dim_;  /**< The Dimension of the measurement space. */
+   
+    std::function<bool(const State&)> state_in_surveillance_region_callback_;   /**< A pointer to the function which determines if a target's state is inside the source's surveillance region. */
+    SourceParameters params_;                                                   /**< The source parameters @see SourceParameters. */
 
-    SourceParameters params_;  /** < The source parameters @see SourceParameters */
-
+    /**
+     * Copy Constructor.
+     */ 
     SourceBase(const SourceBase& other) : SourceBase() {
         params_ = other.params_;
         H_ = other.H_;
@@ -101,48 +125,76 @@ public:
         state_in_surveillance_region_callback_ = other.state_in_surveillance_region_callback_;
     }
 
-    /** Initializes the measurement source. This function must set the parameters.  */
+    /** 
+     * Initializes the measurement source by setting the parameters using SetParameters, calculating the non user specified parameters,
+     * setting up the callback function, and initializing the Jacobians.
+     * @param[in] params The source parameters.
+     * @param[in] state_in_surveillance_region_callback The callback function used to determine if a track's state is inside the source's surveillance region. 
+    */
     void Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback); 
 
-    /** Initializes the measurement source. This function must set the parameters.  */
+    /** 
+     * Initializes the measurement source by setting the parameters using SetParameters, calculating the non user specified parameters,
+     * and initializing the Jacobians. By calling this constructor, it is assumed that a track is always inside the surveillance region.
+     * This is a good assumption when all of the sources have the same surveillance region.
+     * @param[in] params The source parameters.
+     */ 
     void Init(const SourceParameters& params);     
 
 
-    /** Returns the jacobian of the observation function w.r.t. the states */
+    /** 
+     * This is an optimized function that returns the jacobian of the observation function w.r.t. the states. 
+     * @param[in] state A state of the target.
+    */
     MatXd GetLinObsMatState(const State& state) const {
         return static_cast<const tDerived*>(this)->DerivedGetLinObsMatState(state);
     }    
 
-    /** Returns the jacobian of the observation function w.r.t. the states */
+    /** 
+     * Returns the jacobian of the observation function w.r.t. the states. 
+     * @param[in] state A state of the target.
+    */
     static MatXd GetLinObsMatState(const State& state, const MeasurementTypes type) {
-       
         return tDerived::DerivedGetLinObsMatState(state, type);
     }                            
 
-    /** Returns the jacobian of the observation function w.r.t. the sensor noise */
+    /** 
+     * This is an optimized function that returns the jacobian of the observation function w.r.t. the sensor noise.
+     * @param[in] state A state of the target.
+     */
     MatXd GetLinObsMatSensorNoise(const State& state) const {
         return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
     }       
 
-    /** Returns the jacobian of the observation function w.r.t. the sensor noise */
+    /** 
+     * Returns the jacobian of the observation function w.r.t. the sensor noise.
+     * @param[in] state A state of the target.
+     */
     static MatXd GetLinObsMatSensorNoise(const State& state, const MeasurementTypes type)  {
         return tDerived::DerivedGetLinObsMatSensorNoise(state, type);
     }                      
 
-    /** Computes the estimated measurement given a state */
+    /** 
+     * This is an optimized function that implements the observation function and returns an estimated measurement based on the state.
+     * @param[in] state A state of the target.
+     */
     Meas<DataType> GetEstMeas(const State& state) const {
         return static_cast<const tDerived*>(this)->DerivedGetEstMeas(state);
     } 
 
-    /** Computes the estimated measurement given a state */
+    /**
+     *  Implements the observation function and returns an estimated measurement based on the state. 
+     * @param[in] state A state of the target.
+     */
     static Meas<DataType> GetEstMeas(const State& state, const MeasurementTypes type)  {
         return tDerived::DerivedGetEstMeas(state,type);
     } 
 
     /**
-     * Performs the OMinus operation between two measurement (m1 ominus m2)
-     * @param m1 a measurement
-     * @param m2 a measurement
+     * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
+     * method computes the geodesic distance between two measurements of the same type.
+     * @param[in] m1 a measurement
+     * @param[in] m2 a measurement
      */
     static MatXd OMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
         return tDerived::DerivedOMinus(m1, m2);
@@ -150,22 +202,24 @@ public:
 
 
    /**
-     * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
-     * @param state The state that serves as the mean in the Gaussian distribution
-     * @param meas_std The measurement covariance
+     * Generates a random measurement from a Gaussian distribution with mean defined by the state and standard deviation defined by meas_std. This
+     * method is used primarily in simulations and tests.
+     * @param[in] state    The state that serves as the mean of the Gaussian distribution.
+     * @param[in] meas_std The measurement standard deviation.
      */ 
     Meas<DataType> GenerateRandomMeasurement(const State& state, const MatXd& meas_std){
         return static_cast<tDerived*>(this)->DerivedGenerateRandomMeasurement(state,meas_std);
     }
 
    /**
-     * Generates a vector of random numbers from a Gaussian distribution of zero mean and 1 standard deviation
-     * @param randn_nums The Gaussian random numbers to be generated
+     * Generates a vector of random numbers from a Gaussian distribution of zero mean and unit standard deviation
+     * @param[in] randn_nums The Gaussian random numbers to be generated
      */ 
     MatXd GaussianRandomGenerator(const int size);
 
     /**
      * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
+     * @param[in] state A state of the target.
      */
     bool StateInsideSurveillanceRegion(const State& state) const {
         return state_in_surveillance_region_callback_(state);
@@ -173,6 +227,7 @@ public:
 
     /**
      * The Default callback function used with StateInsideSurveillanceRegion. It always returns true.  
+     * @param[in] state A state of the target.
      */
     static bool StateInsideSurveillanceRegionDefaultCallback(const State& state) {
         return true;
@@ -181,29 +236,29 @@ public:
     /**
      * Calculates the temporal distance between two measurements.
      * @param[in] meas1 A measurement.
-     * @param[in] meas2 A different measurement.
-     * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
+     * @param[in] meas2 A measurement.
+     * @param[in] params The system parameters.
      * \return Returns temporal distance between two measurements
      */
    
     static DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
 
     /**
-     * Calculates the geodesic distance between two measurements depending on the type of measurement.
+     * Calculates the geodesic distance between the pose of two measurements that have the same measurement space.
      * @param[in] meas1 A measurement.
-     * @param[in] meas2 A different measurement.
-     * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
-     * \return Returns spatial distance between two measurements
+     * @param[in] meas2 A measurement.
+     * @param[in] params The system parameters.
+     * \return Returns geodesic distance between pose of two measurements
      */
     
     DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
     /**
-     * Finds the geodesic distance between two measurements of different time stamps and normalizes by the temproal distance.
+     * Finds the geodesic distance between the pose of two measurements of different time stamps normalized by the temporal distance. The measurements must have the same measurement space.
      * @param[in] meas1 A measurement.
-     * @param[in] meas2 A different measurement.
-     * @param[in] params Contains all of the user defined parameters. A user can define a weight when calculating the distances.
-     * \return Returns spatial distance between two measurements
+     * @param[in] meas2 A measurement.
+     * @param[in] params The system parameters.
+     * \return Returns geodesic distance between two measurements
      */
     DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {
         if (meas1.time_stamp == meas2.time_stamp) {
@@ -215,29 +270,35 @@ public:
 
     /**
      * Verify that the parameters are valid. If they are, the parameters are set. 
+     * @param[in] params Source parameters.
      * \return returns true if the parameters were set; otherwise, false.
      */
     bool SetParameters(const SourceParameters& params); 
 
 // protected:
-    MatXd H_;
-    MatXd V_;
+    MatXd H_; /**< The Jacobian of the observation function w.r.t. the state. */
+    MatXd V_; /**< The Jacobian of the observation function w.r.t. the measurement noise. */
     
 
 // private:
      SourceBase();
     ~SourceBase();
-    friend tDerived;
+    friend tDerived; /**< The object that inherits this base class. */
 
 private:
 
     /**
-     * Ensure that the source parameters meet the specified criteria. If a parameter doesn't, and error will be thrown.
+     * Ensure that the source parameters meet the specified criteria. If a parameter doesn't, a runtime error will be thrown.
      * @param params The source parameters needed to initialize the source. 
      * \return Returns true if the parameters were successfully set. 
      */ 
     bool VerifySourceParameters(const SourceParameters& params);
 
+    /**
+     * This array of function pointers, holds pointers to the different methods of calculating the spatial distance
+     * between two measurements. The index is determined by the measurement type. If two measurements are of different measurement
+     * spaces, then their spatial distance cannot be calculated and a runtime error is thrown.
+     */ 
     typedef double (*GSDFuncPTR)(const Meas<DataType>&, const Meas<DataType>&, const Parameters&);
 
     GSDFuncPTR **gsd_ptr_;
@@ -270,16 +331,16 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
     
     if(this->params_.type_ == MeasurementTypes::RN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST) {
         this->params_.has_twist = true;
-        boost::math::chi_squared dist(meas_dim_*2);
+        boost::math::chi_squared dist(meas_space_dim_*2);
         this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
         this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
-        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim_))/boost::math::tgamma(static_cast<double>(meas_dim_) +1.0);
+        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_))/boost::math::tgamma(static_cast<double>(meas_space_dim_) +1.0);
     } else {
         this->params_.has_twist = false;
-        boost::math::chi_squared dist(meas_dim_);
+        boost::math::chi_squared dist(meas_space_dim_);
         this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
         this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
-        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_dim_)/2.0)/boost::math::tgamma(static_cast<double>(meas_dim_)/2.0 +1.0);
+        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_)/2.0)/boost::math::tgamma(static_cast<double>(meas_space_dim_)/2.0 +1.0);
     }
     
     this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
@@ -337,8 +398,6 @@ SourceBase<tState,tDerived>::SourceBase() {
 template<typename tState, typename tDerived>
 SourceBase<tState,tDerived>::~SourceBase() {
 
-    // std::cerr << "Destructing" << std::endl;
-
     for (int i = 0; i < MeasurementTypes::NUM_TYPES; i++) {
         delete [] gsd_ptr_[i];
     }
@@ -358,7 +417,7 @@ bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
         mult = 2;
 
 
-    if (params.meas_cov_.rows() != tDerived::meas_dim_*mult ) { // Make sure that it is not empty
+    if (params.meas_cov_.rows() != tDerived::meas_space_dim_*mult ) { // Make sure that it is not empty
         throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not the right dimension");
         success = false;
     } 
@@ -380,7 +439,7 @@ bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
 
 
     // Expected number of false measurements
-    if (params.expected_num_false_meas_ < 0 || params.expected_num_false_meas_ > 1) {
+    if (params.spacial_density_of_false_meas_ < 0 || params.spacial_density_of_false_meas_ > 1) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: The expected number of false measurements must be between 0 and 1. ");
         success = false;
 

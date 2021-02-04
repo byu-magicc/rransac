@@ -28,32 +28,29 @@ enum MeasurementTypes {
     SEN_POS,                  // The target space is SEN and the position is measured. The position is in the surveillance region frame
     SEN_POS_VEL,              // The target space is SEN and the position and velocity is measured. The position and velocity are measured in the surveillance region frame
     NUM_TYPES
-    // SO3_ATT
 };
 
 
 /** \struct Meas
  * This struct contains information regarding a measurement. The user uses this object to supply R-RANSAC with measurements.
- * The user is responsible to provide Meas::data, Meas::time_stamp and Meas::source_id. If the measurement covariance is not provided
- * to the Source object, the user must also provide Meas::meas_cov. The other member variables are set by R-RANSAC.
+ * The user is responsible to provide Meas::pose, Meas::twist (iff applicable), Meas::time_stamp, Meas::source_index, and Meas::type. 
 */
 template<typename tDataType=double>
 struct Meas
 {
-    typedef Eigen::Matrix<tDataType,Eigen::Dynamic, Eigen::Dynamic> MatX;
+    typedef tDataType DataType;                                            /**< The scalar object for the data. Ex. float, double, etc. */
+    typedef Eigen::Matrix<tDataType,Eigen::Dynamic, Eigen::Dynamic> MatX;  /**< The object type for the pose and twist of the measurement. */
     
     double time_stamp;          /**< The time the measurement was taken. */
     unsigned int source_index;  /**< When a new source is added, it is added to the vector System::sources_. The source indexes the vector to grab the corresponding source. So make sure it's the right index. */
-    MeasurementTypes type;      /** < The measurement type @see MeasurementTypes */
-    MatX pose;       /**< The part of the measurement corresponding to the pose of the target. (position, attitude, or both). */
-    MatX twist;      /**< The part of the measurement corresponding to the derivative of the pose. (velocity, angular rates, or both). */
+    MeasurementTypes type;      /**< The measurement type. @see MeasurementTypes */
+    MatX pose;                  /**< The part of the measurement corresponding to the pose of the target. (position, attitude, or both). */
+    MatX twist;                 /**< The part of the measurement corresponding to the derivative of the pose. (velocity, angular rates, or both). */
   
     // These member variables are reserved
-    double likelihood;          /**< The likelihood that the measurement came from the phenomenon it was associated with. This value is set during the data
+    double likelihood;          /**< The likelihood that the measurement came from the track it was associated with. This value is set during the data
                                       association process.*/
-    double weight;              /**< The weight of the measurement when updating the model is was associated with. This value is set during the data association
-                                     process. */
-    double vol;
+    double weight;              /**< The weight assigned to the measurement when updating the track. This value is set during the data association process. */
 };
 
 
