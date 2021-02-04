@@ -365,10 +365,10 @@ void SetUp() override {
     params.cluster_time_threshold_ = 0.5;
     params.cluster_velocity_threshold_ = 1.2;
     params.cluster_position_threshold_ = 1.2;
-    params.max_num_models_ = 5;
-    params.similar_tracks_threshold_ = 1;
-    params.good_model_threshold_ = 90;
-    // params.NonLinearInnovCovId_ = true;
+    params.track_max_num_tracks_ = 5;
+    params.track_similar_tracks_threshold_ = 1;
+    params.track_good_model_threshold_ = 90;
+    // params.nonlinear_innov_cov_id_ = true;
 
     rransac_.SetSystemParameters(params);
 
@@ -551,7 +551,7 @@ for (auto index : track_indices) {
         if (this->tracks_[index].state_.OMinus(created_track.state_).norm() < 2) {
             found = true;
             ASSERT_LT(created_track.err_cov_.norm(), 1); // error covariance should have gotten smaller
-            ASSERT_GT(created_track.model_likelihood_, this->sys_->params_.good_model_threshold_);
+            ASSERT_GT(created_track.model_likelihood_, this->sys_->params_.track_good_model_threshold_);
         }
 
     }
@@ -598,7 +598,7 @@ for (auto index : track_indices) {
         if (this->tracks_[index].state_.OMinus(created_track.state_).norm() < 2) {
             found = true;
             ASSERT_LT(created_track.err_cov_.norm(), 1); // error covariance should have gotten smaller
-            ASSERT_GT(created_track.model_likelihood_, this->sys_->params_.good_model_threshold_);
+            ASSERT_GT(created_track.model_likelihood_, this->sys_->params_.track_good_model_threshold_);
         }
 
     }

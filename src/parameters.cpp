@@ -21,14 +21,14 @@ Parameters::Parameters()
     RANSAC_score_minimum_requirement_ = 5;
     RANSAC_minimum_subset_ = 3;
     
-    good_model_threshold_ = 100;
-    max_missed_detection_time_ = 5;
-    similar_tracks_threshold_ = 1;
-    max_num_models_ = 10;
+    track_good_model_threshold_ = 100;
+    track_max_missed_detection_time_ = 5;
+    track_similar_tracks_threshold_ = 1;
+    track_max_num_tracks_ = 10;
     
-    NonLinearInnovCovId_ = false;
-    NonLinearLMLECeresThreads_= 1;
-    NonLinearLMLECeresMaxNumIters_ = 50;
+    nonlinear_innov_cov_id_ = false;
+    nonlinear_LMLE_Ceres_threads_= 1;
+    nonlinear_LMLE_Ceres_max_num_iters_ = 50;
 }
 
 //------------------------------------------------------------------------------------
@@ -47,35 +47,35 @@ bool Parameters::SetParameters(const Parameters &new_params) {
 
     bool successfull = true;
     transform_consensus_set_ = new_params.transform_consensus_set_;
-    NonLinearInnovCovId_ = new_params.NonLinearInnovCovId_;
+    nonlinear_innov_cov_id_ = new_params.nonlinear_innov_cov_id_;
 
-    if (new_params.max_num_models_ <= 0 ) {
-        throw std::runtime_error("Parameters::SetParameters The provided value of max_num_models_ has not been initialized");
+    if (new_params.track_max_num_tracks_ <= 0 ) {
+        throw std::runtime_error("Parameters::SetParameters The provided value of track_max_num_tracks_ has not been initialized");
         successfull = false;
     } else {
-        max_num_models_ = new_params.max_num_models_;
+        track_max_num_tracks_ = new_params.track_max_num_tracks_;
     }
 
 
-    if (new_params.similar_tracks_threshold_ <= 0 ) {
-        throw std::runtime_error("Parameters::SetParameters The provided value of similar_tracks_threshold_ has not been initialized");
+    if (new_params.track_similar_tracks_threshold_ <= 0 ) {
+        throw std::runtime_error("Parameters::SetParameters The provided value of track_similar_tracks_threshold_ has not been initialized");
         successfull = false;
     } else {
-        similar_tracks_threshold_ = new_params.similar_tracks_threshold_;
+        track_similar_tracks_threshold_ = new_params.track_similar_tracks_threshold_;
     }
 
-    if (new_params.max_missed_detection_time_ <= 0 ) {
-        throw std::runtime_error("Parameters::SetParameters The provided value of max_missed_detection_time_ has not been initialized");
+    if (new_params.track_max_missed_detection_time_ <= 0 ) {
+        throw std::runtime_error("Parameters::SetParameters The provided value of track_max_missed_detection_time_ has not been initialized");
         successfull = false;
     } else {
-        max_missed_detection_time_ = new_params.max_missed_detection_time_;
+        track_max_missed_detection_time_ = new_params.track_max_missed_detection_time_;
     }
 
-    if (new_params.good_model_threshold_ <= 0 ) {
-        throw std::runtime_error("Parameters::SetParameters The provided value of good_model_threshold_ has not been initialized");
+    if (new_params.track_good_model_threshold_ <= 0 ) {
+        throw std::runtime_error("Parameters::SetParameters The provided value of track_good_model_threshold_ has not been initialized");
         successfull = false;
     } else {
-        good_model_threshold_ = new_params.good_model_threshold_;
+        track_good_model_threshold_ = new_params.track_good_model_threshold_;
     }
     
     if (new_params.process_noise_covariance_.rows() <= 0 ) {
@@ -85,18 +85,18 @@ bool Parameters::SetParameters(const Parameters &new_params) {
         process_noise_covariance_ = new_params.process_noise_covariance_;
     }
 
-    if (new_params.NonLinearLMLECeresMaxNumIters_ <= 0 ) {
-        throw std::runtime_error("Parameters::SetParameters The provided value of NonLinearLMLECeresMaxNumIters_ is less than or equal to 0. It must be greater than 0.");
+    if (new_params.nonlinear_LMLE_Ceres_max_num_iters_ <= 0 ) {
+        throw std::runtime_error("Parameters::SetParameters The provided value of nonlinear_LMLE_Ceres_max_num_iters_ is less than or equal to 0. It must be greater than 0.");
         successfull = false;
     } else {
-        NonLinearLMLECeresMaxNumIters_ = new_params.NonLinearLMLECeresMaxNumIters_;
+        nonlinear_LMLE_Ceres_max_num_iters_ = new_params.nonlinear_LMLE_Ceres_max_num_iters_;
     }
 
-    if (new_params.NonLinearLMLECeresThreads_ <= 0 ) {
-        throw std::runtime_error("Parameters::SetParameters The provided value of NonLinearLMLECeresThreads_ is less than or equal to 0. It must be greater than 0.");
+    if (new_params.nonlinear_LMLE_Ceres_threads_ <= 0 ) {
+        throw std::runtime_error("Parameters::SetParameters The provided value of nonlinear_LMLE_Ceres_threads_ is less than or equal to 0. It must be greater than 0.");
         successfull = false;
     } else {
-        NonLinearLMLECeresThreads_ = new_params.NonLinearLMLECeresThreads_;
+        nonlinear_LMLE_Ceres_threads_ = new_params.nonlinear_LMLE_Ceres_threads_;
     }
 
     if (new_params.cluster_min_size_requirement_ <= 0 ) {

@@ -27,14 +27,14 @@ ASSERT_GT(P.RANSAC_score_stopping_criteria_, 0.0);
 ASSERT_GT(P.RANSAC_score_minimum_requirement_, 0.0);
 ASSERT_GT(P.RANSAC_minimum_subset_, 0.0);
 
-ASSERT_GT(P.good_model_threshold_, 0.0);
-ASSERT_GT(P.max_missed_detection_time_, 0.0);
-ASSERT_GT(P.similar_tracks_threshold_, 0.0);
-ASSERT_GT(P.max_num_models_, 0.0);
+ASSERT_GT(P.track_good_model_threshold_, 0.0);
+ASSERT_GT(P.track_max_missed_detection_time_, 0.0);
+ASSERT_GT(P.track_similar_tracks_threshold_, 0.0);
+ASSERT_GT(P.track_max_num_tracks_, 0.0);
 
-ASSERT_FALSE(P.NonLinearInnovCovId_);
-ASSERT_GT(P.NonLinearLMLECeresThreads_, 0.0);
-ASSERT_GT(P.NonLinearLMLECeresMaxNumIters_, 0.0);
+ASSERT_FALSE(P.nonlinear_innov_cov_id_);
+ASSERT_GT(P.nonlinear_LMLE_Ceres_threads_, 0.0);
+ASSERT_GT(P.nonlinear_LMLE_Ceres_max_num_iters_, 0.0);
 
 
 
@@ -59,13 +59,13 @@ P1.RANSAC_max_iters_+=add;
 P1.RANSAC_score_stopping_criteria_+=add;
 P1.RANSAC_score_minimum_requirement_+=add;
 P1.RANSAC_minimum_subset_+=add;
-P1.good_model_threshold_+=add;
-P1.max_missed_detection_time_+=add;
-P1.similar_tracks_threshold_+=add;
-P1.max_num_models_+=add;
-P1.NonLinearInnovCovId_ = true;
-P1.NonLinearLMLECeresThreads_+=add;
-P1.NonLinearLMLECeresMaxNumIters_+=add;
+P1.track_good_model_threshold_+=add;
+P1.track_max_missed_detection_time_+=add;
+P1.track_similar_tracks_threshold_+=add;
+P1.track_max_num_tracks_+=add;
+P1.nonlinear_innov_cov_id_ = true;
+P1.nonlinear_LMLE_Ceres_threads_+=add;
+P1.nonlinear_LMLE_Ceres_max_num_iters_+=add;
 P1.process_noise_covariance_ = Eigen::Matrix2d::Random();
 
 P.SetParameters(P1);
@@ -79,13 +79,13 @@ ASSERT_EQ(P.RANSAC_max_iters_, P1.RANSAC_max_iters_);
 ASSERT_EQ(P.RANSAC_score_stopping_criteria_, P1.RANSAC_score_stopping_criteria_);
 ASSERT_EQ(P.RANSAC_score_minimum_requirement_, P1.RANSAC_score_minimum_requirement_);
 ASSERT_EQ(P.RANSAC_minimum_subset_, P1.RANSAC_minimum_subset_);
-ASSERT_EQ(P.good_model_threshold_, P1.good_model_threshold_);
-ASSERT_EQ(P.max_missed_detection_time_, P1.max_missed_detection_time_);
-ASSERT_EQ(P.similar_tracks_threshold_, P1.similar_tracks_threshold_);
-ASSERT_EQ(P.max_num_models_, P1.max_num_models_);
-ASSERT_EQ(P.NonLinearInnovCovId_, P1.NonLinearInnovCovId_);
-ASSERT_EQ(P.NonLinearLMLECeresThreads_, P1.NonLinearLMLECeresThreads_);
-ASSERT_EQ(P.NonLinearLMLECeresMaxNumIters_, P1.NonLinearLMLECeresMaxNumIters_);
+ASSERT_EQ(P.track_good_model_threshold_, P1.track_good_model_threshold_);
+ASSERT_EQ(P.track_max_missed_detection_time_, P1.track_max_missed_detection_time_);
+ASSERT_EQ(P.track_similar_tracks_threshold_, P1.track_similar_tracks_threshold_);
+ASSERT_EQ(P.track_max_num_tracks_, P1.track_max_num_tracks_);
+ASSERT_EQ(P.nonlinear_innov_cov_id_, P1.nonlinear_innov_cov_id_);
+ASSERT_EQ(P.nonlinear_LMLE_Ceres_threads_, P1.nonlinear_LMLE_Ceres_threads_);
+ASSERT_EQ(P.nonlinear_LMLE_Ceres_max_num_iters_, P1.nonlinear_LMLE_Ceres_max_num_iters_);
 
 
 
@@ -110,17 +110,17 @@ P1.RANSAC_score_minimum_requirement_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
 P1.RANSAC_minimum_subset_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
-P1.good_model_threshold_ = -(rand() % 10 + 1);
+P1.track_good_model_threshold_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
-P1.max_missed_detection_time_ = -(rand() % 10 + 1);
+P1.track_max_missed_detection_time_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
-P1.similar_tracks_threshold_ = -(rand() % 10 + 1);
+P1.track_similar_tracks_threshold_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
-P1.max_num_models_ = -(rand() % 10 + 1);
+P1.track_max_num_tracks_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
-P1.NonLinearLMLECeresThreads_ = -(rand() % 10 + 1);
+P1.nonlinear_LMLE_Ceres_threads_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
-P1.NonLinearLMLECeresMaxNumIters_ = -(rand() % 10 + 1);
+P1.nonlinear_LMLE_Ceres_max_num_iters_ = -(rand() % 10 + 1);
 ASSERT_ANY_THROW(P.SetParameters(P1));
 
 
@@ -145,13 +145,13 @@ P1.RANSAC_max_iters_+=add;
 P1.RANSAC_score_stopping_criteria_+=add;
 P1.RANSAC_score_minimum_requirement_+=add;
 P1.RANSAC_minimum_subset_+=add;
-P1.good_model_threshold_+=add;
-P1.max_missed_detection_time_+=add;
-P1.similar_tracks_threshold_+=add;
-P1.max_num_models_+=add;
-P1.NonLinearInnovCovId_ = true;
-P1.NonLinearLMLECeresThreads_+=add;
-P1.NonLinearLMLECeresMaxNumIters_+=add;
+P1.track_good_model_threshold_+=add;
+P1.track_max_missed_detection_time_+=add;
+P1.track_similar_tracks_threshold_+=add;
+P1.track_max_num_tracks_+=add;
+P1.nonlinear_innov_cov_id_ = true;
+P1.nonlinear_LMLE_Ceres_threads_+=add;
+P1.nonlinear_LMLE_Ceres_max_num_iters_+=add;
 P1.process_noise_covariance_ = Eigen::Matrix2d::Random();
 
 Parameters P(P1);
@@ -166,13 +166,13 @@ ASSERT_EQ(P.RANSAC_max_iters_, P1.RANSAC_max_iters_);
 ASSERT_EQ(P.RANSAC_score_stopping_criteria_, P1.RANSAC_score_stopping_criteria_);
 ASSERT_EQ(P.RANSAC_score_minimum_requirement_, P1.RANSAC_score_minimum_requirement_);
 ASSERT_EQ(P.RANSAC_minimum_subset_, P1.RANSAC_minimum_subset_);
-ASSERT_EQ(P.good_model_threshold_, P1.good_model_threshold_);
-ASSERT_EQ(P.max_missed_detection_time_, P1.max_missed_detection_time_);
-ASSERT_EQ(P.similar_tracks_threshold_, P1.similar_tracks_threshold_);
-ASSERT_EQ(P.max_num_models_, P1.max_num_models_);
-ASSERT_EQ(P.NonLinearInnovCovId_, P1.NonLinearInnovCovId_);
-ASSERT_EQ(P.NonLinearLMLECeresThreads_, P1.NonLinearLMLECeresThreads_);
-ASSERT_EQ(P.NonLinearLMLECeresMaxNumIters_, P1.NonLinearLMLECeresMaxNumIters_);
+ASSERT_EQ(P.track_good_model_threshold_, P1.track_good_model_threshold_);
+ASSERT_EQ(P.track_max_missed_detection_time_, P1.track_max_missed_detection_time_);
+ASSERT_EQ(P.track_similar_tracks_threshold_, P1.track_similar_tracks_threshold_);
+ASSERT_EQ(P.track_max_num_tracks_, P1.track_max_num_tracks_);
+ASSERT_EQ(P.nonlinear_innov_cov_id_, P1.nonlinear_innov_cov_id_);
+ASSERT_EQ(P.nonlinear_LMLE_Ceres_threads_, P1.nonlinear_LMLE_Ceres_threads_);
+ASSERT_EQ(P.nonlinear_LMLE_Ceres_max_num_iters_, P1.nonlinear_LMLE_Ceres_max_num_iters_);
 
 
 

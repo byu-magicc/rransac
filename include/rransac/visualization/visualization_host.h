@@ -197,14 +197,14 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawSyst
     // Draw tracks
 
     for (auto model_iterator = sys->models_.begin(); model_iterator!= sys->models_.end(); ++ model_iterator) {
-        if (model_iterator->model_likelihood_ >=sys->params_.good_model_threshold_)
+        if (model_iterator->model_likelihood_ >=sys->params_.track_good_model_threshold_)
             color = estimated_good_track_color_;
         else 
             color = estimated_poor_track_color_;
 
-        faded_color = ScalarFadeColor(color, sys->current_time_-model_iterator->missed_detection_time_, sys->current_time_, sys->params_.max_missed_detection_time_);
+        faded_color = ScalarFadeColor(color, sys->current_time_-model_iterator->missed_detection_time_, sys->current_time_, sys->params_.track_max_missed_detection_time_);
         draw_info_.color_pos = faded_color;
-        draw_info_.color_vel = ScalarFadeColor(velocity_color_, sys->current_time_-model_iterator->missed_detection_time_, sys->current_time_, sys->params_.max_missed_detection_time_);
+        draw_info_.color_vel = ScalarFadeColor(velocity_color_, sys->current_time_-model_iterator->missed_detection_time_, sys->current_time_, sys->params_.track_max_missed_detection_time_);
         DrawTrack(img_, *model_iterator,sys, draw_info_);
     }
 

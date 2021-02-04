@@ -64,7 +64,7 @@ include_directories(
 ## Testing ##
 #############
 
-add_executable(main src/main.cpp)
+# add_executable(main src/main.cpp)
 # src/parameters.cpp)
 # target_link_libraries(main ${OpenCV_LIBS})
 # ${Boost_LIBRARIES})
@@ -73,7 +73,7 @@ add_executable(main src/main.cpp)
 
 # option(BUILD_TESTS "Build the Params GTests" OFF)
 # if(BUILD_TESTS)
-  # add_subdirectory(test)
+  add_subdirectory(test)
 # endif()
 
 

@@ -122,7 +122,7 @@ void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
 
     // Remove the models that have not received a measurement for a while
     for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
-        if(it->missed_detection_time_ > sys.params_.max_missed_detection_time_) {
+        if(it->missed_detection_time_ > sys.params_.track_max_missed_detection_time_) {
             auto it_copy = it;
             --it;                       // We are going to remove it so we need to back up to the previous
             sys.models_.erase(it_copy);
@@ -130,7 +130,7 @@ void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
     }
 
     // Remove the worst ones until there are only the desired number of models or less
-    while (sys.models_.size() > sys.params_.max_num_models_) {
+    while (sys.models_.size() > sys.params_.track_max_num_tracks_) {
 
         auto iter_to_remove = sys.models_.begin(); // The iterator will point to the model to be removed
 
@@ -202,7 +202,7 @@ void ModelManager<tModel>::RankModels(System<tModel>& sys) {
     for (auto iter = sys.models_.begin(); iter != sys.models_.end(); ++iter) {
 
         // See if the model is a good model
-        if (iter->model_likelihood_ >= sys.params_.good_model_threshold_) { 
+        if (iter->model_likelihood_ >= sys.params_.track_good_model_threshold_) { 
 
             // See if it needs a label
             if (iter->label_ == -1) {
@@ -231,7 +231,7 @@ bool ModelManager<tModel>::SimilarModels(const System<tModel>& sys, const tModel
     typename tModel::Mat T = model1.err_cov_ + model2.err_cov_;
     double d = err.transpose()*T.inverse()*err;
 
-    if(sys.params_.similar_tracks_threshold_ > d) {
+    if(sys.params_.track_similar_tracks_threshold_ > d) {
         similar = true;
     } 
     return similar;

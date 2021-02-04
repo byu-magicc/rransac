@@ -30,10 +30,10 @@ include(CTest)
 # Parameter Test
 #---------------------------------------
 
-add_executable(parameterTest 
-parameters_test.cpp
-../src/parameters.cpp)
-target_link_libraries(parameterTest gtest_main)
+# add_executable(parameterTest 
+# parameters_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(parameterTest gtest_main)
 # add_test(NAME AllTestsInsrn_test COMMAND parameterTest)
 
 #---------------------------------------
@@ -42,37 +42,37 @@ target_link_libraries(parameterTest gtest_main)
 add_executable(consensus_setTest 
 data_containers/consensus_set_test.cpp)
 target_link_libraries(consensus_setTest gtest_main)
-# add_test(NAME AllTestsInsrn_test COMMAND consensus_setTest)
+add_test(NAME AllTestsInsrn_test COMMAND consensus_setTest)
 
 
 #---------------------------------------
 # Source tests
 #---------------------------------------
-add_executable(source_baseTest
-common/sources/source_base_test.cpp
-../src/parameters.cpp)
-target_link_libraries(source_baseTest gtest_main )
+# add_executable(source_baseTest
+# common/sources/source_base_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_baseTest gtest_main )
 # add_test(NAME AllTestsInsrn_test COMMAND source_baseTest)
 
 
-add_executable(source_RNTest
-common/sources/source_RN_test.cpp
-../src/parameters.cpp)
-target_link_libraries(source_RNTest gtest_main )
+# add_executable(source_RNTest
+# common/sources/source_RN_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_RNTest gtest_main )
 # add_test(NAME AllTestsInsrn_test COMMAND source_RNTest)
 
 
-add_executable(source_SEN_Pos_VelTest
-common/sources/source_SEN_pos_vel_test.cpp
-../src/parameters.cpp)
-target_link_libraries(source_SEN_Pos_VelTest gtest_main )
+# add_executable(source_SEN_Pos_VelTest
+# common/sources/source_SEN_pos_vel_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_SEN_Pos_VelTest gtest_main )
 # add_test(NAME AllTestsInsrn_test COMMAND source_SEN_Pos_VelTest)
 
 
-add_executable(source_SEN_Pose_TwistTest
-common/sources/source_SEN_pose_twist_test.cpp
-../src/parameters.cpp)
-target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
+# add_executable(source_SEN_Pose_TwistTest
+# common/sources/source_SEN_pose_twist_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # add_test(NAME AllTestsInsrn_test COMMAND source_SEN_Pose_TwistTest)
 
 
@@ -80,10 +80,10 @@ target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # Transformations
 #---------------------------------------
 
-add_executable(trans_homographyTest
-common/transformations/transformation_homography_test.cpp
-../src/parameters.cpp)
-target_link_libraries(trans_homographyTest gtest_main )
+# add_executable(trans_homographyTest
+# common/transformations/transformation_homography_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(trans_homographyTest gtest_main )
 
 #---------------------------------------
 # Model

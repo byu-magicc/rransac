@@ -49,7 +49,7 @@ Model model;
 model.state_.g_.data_ << 1,1,1;
 model.state_.u_.data_ << 2,3,4;
 
-sys.params_.max_num_models_ = 2;
+sys.params_.track_max_num_tracks_ = 2;
 double dt = 0.1;
 
 
@@ -89,14 +89,14 @@ model.cs_.AddMeasurementsToConsensusSet(meas);
 model.err_cov_.setIdentity();
 model.label_ = -1;
 
-sys.params_.max_num_models_ = 10;
-sys.params_.good_model_threshold_ = 5;
-sys.params_.similar_tracks_threshold_ = 2;
-sys.params_.max_missed_detection_time_ = 30;
+sys.params_.track_max_num_tracks_ = 10;
+sys.params_.track_good_model_threshold_ = 5;
+sys.params_.track_similar_tracks_threshold_ = 2;
+sys.params_.track_max_missed_detection_time_ = 30;
  
 // setup the models
 
-for(int ii = 0; ii < sys.params_.max_num_models_+4; ++ii) {
+for(int ii = 0; ii < sys.params_.track_max_num_tracks_+4; ++ii) {
     
     model.state_.g_.data_ << ii, 3*(ii+1), ii+2;
     model.state_.u_.data_ << 0.5*ii, ii, 2*ii;
@@ -197,7 +197,7 @@ ASSERT_EQ(iter->model_likelihood_, merge2.model_likelihood_);
 
 
 // Verify that models were pruned correctly and labels were assigned properly
-ASSERT_EQ(sys.models_.size(), sys.params_.max_num_models_);
+ASSERT_EQ(sys.models_.size(), sys.params_.track_max_num_tracks_);
 iter = sys.models_.begin();
 
 ASSERT_EQ(iter->model_likelihood_, 1);
@@ -266,7 +266,7 @@ source.Init(source_params);
 
 sys.sources_.push_back(source);
 
-sys.params_.max_num_models_ = 2;
+sys.params_.track_max_num_tracks_ = 2;
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
 
 Measurement m;
@@ -336,7 +336,7 @@ source.Init(source_params);
 
 sys.sources_.push_back(source);
 
-sys.params_.max_num_models_ = 2;
+sys.params_.track_max_num_tracks_ = 2;
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity();
 sys.transformaion_ = trans;
 

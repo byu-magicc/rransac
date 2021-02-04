@@ -299,7 +299,7 @@ params.meas_time_window_ = 5;                   // 5 seconds
 params.cluster_time_threshold_ = 2;
 params.cluster_velocity_threshold_ = 1;
 params.cluster_position_threshold_ = 0.5;
-params.max_num_models_ = 5;
+params.track_max_num_tracks_ = 5;
 
 System<Model> sys;
 sys.sources_.push_back(source1);

@@ -46,7 +46,7 @@ m2.type = MeasurementTypes::SEN_POSE_TWIST;
 // Setup system
 Parameters params;
 params.process_noise_covariance_ = Eigen::Matrix<double,12,12>::Identity()*noise;
-// params.NonLinearInnovCovId_ = true;
+// params.nonlinear_innov_cov_id_ = true;
 System<Model> sys;
 sys.params_ = params;
 sys.sources_.push_back(source1);
@@ -153,8 +153,8 @@ source2.Init(source_params2);
 
 Parameters params;
 params.process_noise_covariance_ = Eigen::Matrix<double,5,5>::Identity()*noise;
-params.NonLinearInnovCovId_ = false;
-params.NonLinearLMLECeresMaxNumIters_ = 10;
+params.nonlinear_innov_cov_id_ = false;
+params.nonlinear_LMLE_Ceres_max_num_iters_ = 10;
 sys.params_ = params;
 sys.sources_.push_back(source1);
 sys.sources_.push_back(source2);

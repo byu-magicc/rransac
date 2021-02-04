@@ -158,11 +158,11 @@ void SetUp() {
     params.cluster_velocity_threshold_ = 1.2;
     params.cluster_position_threshold_ = 1.2;
     params.cluster_min_size_requirement_ = 5;
-    params.max_num_models_ = 5;
-    params.similar_tracks_threshold_ = 1;
-    params.good_model_threshold_ = 100;
-    params.max_missed_detection_time_ = 2;
-    // params.NonLinearInnovCovId_ = true;
+    params.track_max_num_tracks_ = 5;
+    params.track_similar_tracks_threshold_ = 1;
+    params.track_good_model_threshold_ = 100;
+    params.track_max_missed_detection_time_ = 2;
+    // params.nonlinear_innov_cov_id_ = true;
 
     rransac_.SetSystemParameters(params);
 

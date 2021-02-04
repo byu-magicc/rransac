@@ -108,7 +108,7 @@ struct CostFunctor {
     
     Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceT::OMinus(tmp, SourceT::GetEstMeas(state,m_.type));
 
-    if (!sys_.params_.NonLinearInnovCovId_) {
+    if (!sys_.params_.nonlinear_innov_cov_id_) {
         // Construct innovation covariance
         MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
         MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
@@ -186,8 +186,8 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
 
     ceres::Solver::Options options;
     options.minimizer_progress_to_stdout = true;
-    options.num_threads =sys.params_.NonLinearLMLECeresThreads_;
-    options.max_num_iterations = sys.params_.NonLinearLMLECeresMaxNumIters_;
+    options.num_threads =sys.params_.nonlinear_LMLE_Ceres_threads_;
+    options.max_num_iterations = sys.params_.nonlinear_LMLE_Ceres_max_num_iters_;
     options.logging_type = ceres::SILENT;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
