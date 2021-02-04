@@ -150,7 +150,7 @@ void DataTreeClusters<tDataType>::DerivedConstructClusters(tSystem& sys) {
     sys.clusters_.clear();
     for(auto cluster_iter = this->data_.begin(); cluster_iter != this->data_.end(); ++cluster_iter) {
         if(cluster_iter->data_.size() >= sys.params_.cluster_min_size_requirement_) {
-            if (cluster_iter->cluster_label_ < -1) {
+            if (cluster_iter->cluster_label_ < 0) {
                 cluster_iter->cluster_label_ = cluster_label_;
                 cluster_label_++;
             }

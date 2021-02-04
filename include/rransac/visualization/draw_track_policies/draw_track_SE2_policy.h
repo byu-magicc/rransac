@@ -20,7 +20,7 @@ class DrawSE2Policy {
 
 public:
 
-static void DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>& sys, const DrawInfo& draw_info);
+static void DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>* sys, const DrawInfo& draw_info);
 
 
 };
@@ -29,7 +29,7 @@ static void DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tMod
 //                                        Definitions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename tModel>
-void DrawSE2Policy<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>& sys, const DrawInfo& draw_info) {
+void DrawSE2Policy<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>* sys, const DrawInfo& draw_info) {
 
     // The negations on some values are need in order to transform the tracking frame to the frame for drawing the image.
     
@@ -74,7 +74,7 @@ void DrawSE2Policy<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, c
     // Draw translational and angular velocity
     Eigen::Matrix<double,2,1> vel;
     vel = model.state_.u_.p_;
-    vel = model.state_.g_.R_*vel*draw_info.scale_draw_vel;
+    vel = model.state_.g_.R_*vel*draw_info.scale_draw_vel*draw_info.scale_drawing;
     cv::Point vel_point;
     vel_point.x = vel(0);
     vel_point.y = -vel(1);
@@ -92,10 +92,10 @@ void DrawSE2Policy<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, c
 
     // Draw validation region for position only
     if (draw_info.draw_validation_region) {
-        for (auto& source : sys.sources_) {
+        for (auto& source : sys->sources_) {
             if (source.params_.type_ == MeasurementTypes::SEN_POS) {
                 unsigned int source_index = source.params_.source_index_;
-                Eigen::MatrixXd S = model.GetInnovationCovariance(sys.sources_,source_index);
+                Eigen::MatrixXd S = model.GetInnovationCovariance(sys->sources_,source_index);
                 Eigen::EigenSolver<Eigen::Matrix2d> eigen_solver;
                 eigen_solver.compute(S);
                 Eigen::Vector2cd eigen_values = eigen_solver.eigenvalues();

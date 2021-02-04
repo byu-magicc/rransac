@@ -179,7 +179,10 @@ public:
         }
         
         new_assoc_meas_.clear();
+        // std::cerr << "model likelihood " << label_ << " " << model_likelihood_ << std::endl;
         UpdateModelLikelihood(sources);
+        // std::cerr << "model likelihood " << label_ << " " << model_likelihood_ << std::endl << std::endl;
+
     }
 
     void OPlusEQ(const VecCov& state_update){

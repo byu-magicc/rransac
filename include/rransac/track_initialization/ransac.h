@@ -362,6 +362,8 @@ for (auto& th: threads) {
     th.join();
 }
 
+// Delete the pointers and wait for new ones to be given.
+sys.clusters_.empty();
 
 }
 
