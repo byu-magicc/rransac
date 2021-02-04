@@ -24,6 +24,15 @@ VisualizationHost(const std::vector<int>& img_dimensions, const double drawing_s
 
 VisualizationHost(const std::vector<int>& img_dimensions, const double drawing_scale, const std::string file_path);
 
+VisualizationHost(const std::vector<int>& img_dimensions, const double drawing_scale, const std::string file_name, const double fps);
+
+~VisualizationHost() {
+
+    if (record_video_)
+        video_writer_.release();        
+
+}
+
 void DrawSystem(const System<tModel>* sys);
 
 void DrawSystemAndTrueTracks(const System<tModel>* sys, const std::vector<tModel>& tracks);
@@ -48,6 +57,9 @@ bool reset_img_;
 unsigned int img_num_;
 std::string window_name_;
 std::string file_path_;
+cv::VideoWriter video_writer_;
+bool record_video_ = false;
+double fps_;
 
 
 static void DrawMeas(cv::Mat& img, const Meas<double>& meas, const System<tModel>* sys,  const DrawInfo& draw_info) {
@@ -105,25 +117,15 @@ VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Visualization
     measurement_color_ = cv::Scalar(255,0,127);
     reset_img_ = true;
 
-    draw_info_.img_center = cv::Point2d(img_dimensions_[0]/2,img_dimensions_[1]/2);
+    draw_info_.img_center = cv::Point2d(img_dimensions_[1]/2,img_dimensions_[0]/2);
     draw_info_.scale_drawing = drawing_scale;
     draw_info_.draw_validation_region = true;
+    draw_info_.scale_draw_pos = 2;
+    draw_info_.scale_draw_vel = 2;
     img_num_ = 0;
     window_name_ = "RRANSAC Visualization";
     cv::namedWindow(window_name_, cv::WINDOW_AUTOSIZE);
     
-
-
-
-// cv::Scalar color_pos;
-// cv::Scalar color_vel;
-// double scale_draw_pos=1;   /** < When the object being drawn is a filled object, this value will scale the volume of the drawn object */
-// double scale_draw_vel=1;   /** < This scales the size of the velocity vectors that are being drawn */
-// double scale_drawing=1;    /** < Scales the position of objects being drawn by this value. It causes the image to expand or contract */
-// cv::Point img_center;
-// int line_thickness = 1;
-// bool draw_validation_region = false;
-
 
     
 }
@@ -137,6 +139,23 @@ VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Visualization
     cv::setMouseCallback(window_name_,SaveImgCallbackFunction,NULL);
 
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template<typename tModel, template<typename > typename tDrawMeasurementPolicy, template<typename> typename tDrawTrackPolicy>
+VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::VisualizationHost(const std::vector<int>& img_dimensions, const double drawing_scale, const std::string file_name, const double fps) : VisualizationHost(img_dimensions, drawing_scale) {
+
+    video_writer_.open(file_name,cv::VideoWriter::fourcc('m','p','4','v'),fps,cv::Size(img_dimensions[1],img_dimensions[0]));
+
+    fps_ = fps;
+    file_path_ = file_name;
+
+    if (!video_writer_.isOpened())
+        throw std::runtime_error("Could not open the output video for write. Filename:  " + file_name);
+
+    record_video_ = true;
+
+} 
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -178,7 +197,7 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawSyst
     // Draw tracks
 
     for (auto model_iterator = sys->models_.begin(); model_iterator!= sys->models_.end(); ++ model_iterator) {
-        if (model_iterator->label_ >=0)
+        if (model_iterator->model_likelihood_ >=sys->params_.good_model_threshold_)
             color = estimated_good_track_color_;
         else 
             color = estimated_poor_track_color_;
@@ -189,8 +208,18 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawSyst
         DrawTrack(img_, *model_iterator,sys, draw_info_);
     }
 
-    cv::imshow(window_name_, img_);
-    cv::waitKey(0);
+
+    if (record_video_) {
+        video_writer_.write(img_);
+        cv::imshow(window_name_, img_);
+        cv::waitKey(1);
+    } else {
+        cv::imshow(window_name_, img_);
+        cv::waitKey(0);
+    }
+
+    
+    
     reset_img_ = true;
 
 }

@@ -42,8 +42,8 @@ struct Scenario1 {
     typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,SE2PosSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     TransformMatData_ transform_data;
-    // static constexpr bool transform_data_ = true;
-    static constexpr bool transform_data_ = false;
+    static constexpr bool transform_data_ = true;
+    // static constexpr bool transform_data_ = false;
 
 
 
@@ -59,11 +59,11 @@ struct Scenario1 {
     
 
     Scenario1() {
-        double pos = 10;
+        double pos = 15;
         double rot = 0.1;
-        double t_vel = 1;
-        double a_vel = 0.1;
-        double th = 0.2;
+        double t_vel = 2;
+        double a_vel = 0.3;
+        double th = 0.01;
         State_ state;
         Eigen::Matrix<double,3,1> pose;
         for (int ii = 0; ii < 4; ++ii)
@@ -110,7 +110,9 @@ static constexpr bool transform_data_ = T::transform_data_;
 
 
 RRANSACSimulation(const std::vector<int>& img_dimensions, const double drawing_scale ) : viz_(img_dimensions, drawing_scale) {}
-RRANSACSimulation(const std::vector<int>& img_dimensions, const double drawing_scale, std::string file_path ) : viz_(img_dimensions, drawing_scale, file_path) {}
+RRANSACSimulation(const std::vector<int>& img_dimensions, const double drawing_scale, const std::string file_path ) : viz_(img_dimensions, drawing_scale, file_path) {}
+RRANSACSimulation(const std::vector<int>& img_dimensions, const double drawing_scale, const std::string file_name, const double fps ) : viz_(img_dimensions, drawing_scale, file_name, fps) {}
+
 
 void SetUp() {
 
@@ -124,30 +126,24 @@ void SetUp() {
     source_params1.meas_cov_ = T::MatR_::Identity()*noise_;
     source_params1.RANSAC_inlier_probability_ = 0.95;
     source_params1.gate_probability_ = 0.9;
+    source_params1.expected_num_false_meas_ = 0.03125;
 
     source_params2.type_ = T::MeasurementType2;
     source_params2.source_index_ = 1;
     source_params2.meas_cov_ = T::MatR2_::Identity()*noise_;
     source_params2.RANSAC_inlier_probability_ = 0.95;
     source_params2.gate_probability_ = 0.9;
+    source_params2.expected_num_false_meas_ = 0.03125;
 
-    source_params3.type_ = T::MeasurementType2;
-    source_params3.source_index_ = 2;
-    source_params3.meas_cov_ = T::MatR2_::Identity()*noise_;
-    source_params3.RANSAC_inlier_probability_ = 0.95;
-    source_params3.gate_probability_ = 0.9;
 
-    Source_ source1, source2, source3;
+    Source_ source1, source2;
     source1.Init(source_params1);
     source2.Init(source_params2);
-    source3.Init(source_params3);
     sources_.push_back(source1);
     sources_.push_back(source2);
-    sources_.push_back(source3);
 
     rransac_.AddSource(source_params1);
     rransac_.AddSource(source_params2);
-    rransac_.AddSource(source_params3);
 
     // Setup system
     Parameters params;
@@ -179,12 +175,7 @@ void SetUp() {
     m2_.source_index = 1;
     m2_.type = source_params2.type_;
 
-    // This measurement is noise
-    m3_.source_index = 2;
-    m3_.type = source_params3.type_;
 
-    m4_.source_index = 0;
-    m4_.type =source_params1.type_ ;
 
     // Setup tracks
     tracks_.resize(4);
@@ -201,7 +192,7 @@ void SetUp() {
 void Propagate(double start_time, double end_time, std::vector<int>& track_indices) {
 
 
-    Meas<double> tmp1, tmp2, tmp3, tmp4;
+    Meas<double> tmp1, tmp2;
     std::list<Meas<double>> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
 
@@ -243,40 +234,45 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
                 tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_)*0.5);
                 tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_)*0.5);
-                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_)*0.5);
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
                 this->m2_.time_stamp = ii;
                 this->m2_.pose = tmp2.pose;
                 this->m2_.twist = tmp2.twist;
-                this->m4_.time_stamp = ii;
-                this->m4_.pose = tmp4.pose;
 
                 new_measurements.push_back(this->m1_);
                 new_measurements.push_back(this->m2_);
-                new_measurements.push_back(this->m4_);
             }
 
-            // std::cerr << "tmp3 " << std::endl;
 
         }
 
         State_ rand_state;
         for (int jj =0; jj < this->num_false_meas_; ++jj) {
+
             rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
             rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*this->fov_;
             rand_state.u_.data_ = T::VecU_::Random();
-            tmp3 = this->sources_[this->m3_.source_index].GenerateRandomMeasurement(rand_state,T::MatR2_::Identity()*sqrt(this->noise_));
-            this->m3_.time_stamp = ii;
-            this->m3_.pose = tmp3.pose;
-            this->m3_.twist = tmp3.twist;
-            new_measurements.push_back(this->m3_);
+            tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(rand_state,T::MatR_ ::Identity()*sqrt(this->noise_));
+
+
+            rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
+            rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*this->fov_;
+            rand_state.u_.data_ = T::VecU_::Random();
+            tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(rand_state,T::MatR2_::Identity()*sqrt(this->noise_));
+
+
+            this->m1_.time_stamp = ii;
+            this->m1_.pose = tmp1.pose;
+            this->m2_.time_stamp = ii;
+            this->m2_.pose = tmp2.pose;
+            this->m2_.twist = tmp2.twist;
+            new_measurements.push_back(this->m1_);
+            new_measurements.push_back(this->m2_);
         }
 
-        // std::cerr << "here0 " << std::endl;
 
-        // viz_.DrawSystem(sys_);
 
         if (T::transform_data_) {
             this->rransac_.AddMeasurements(new_measurements,test_data_.transform_data);
@@ -311,7 +307,7 @@ const System<Model_>* sys_;
 std::vector<Source_> sources_;
 Transformation_ transformation_;
 
-unsigned int num_false_meas_ = 100;
+unsigned int num_false_meas_ = 200;
 
 // Simulation Parameters
 double dt_ = 0.1;
@@ -330,18 +326,21 @@ VisualizationHost<Model_, DrawMeasR2SE2PosPolicy, DrawSE2Policy> viz_;
 
 int main(int argc, char *argv[]) {
 
-    int dim = 1000;
-    double scale = 10;
-    std::vector<int> img_dimensions = {dim,dim};
+    int dim1 = 1000;
+    int dim2 = 1000;
+    double scale = 12;
+    std::vector<int> img_dimensions = {1080,1920};
 
     if (argc > 1) {
-        dim = std::atof(argv[1]);
-        scale = std::atof(argv[2]);
-        img_dimensions[0] = dim;
-        img_dimensions[1] = dim;
+        dim1 = std::atof(argv[1]);
+        dim2 = std::atof(argv[2]);
+        scale = std::atof(argv[3]);
+        img_dimensions[0] = dim1;
+        img_dimensions[1] = dim2;
     }
 
-    RRANSACSimulation<Scenario1> sim(img_dimensions, scale);
+    RRANSACSimulation<Scenario1> sim(img_dimensions, scale, "/home/mark/Videos/sim1.mp4", 10);
+
     sim.SetUp();
 
     // std::vector<int> track_indices = {0,1,2,3};
