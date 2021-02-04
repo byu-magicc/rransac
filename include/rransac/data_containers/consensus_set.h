@@ -2,8 +2,9 @@
 #define RRANSAC_DATA_STRUCTURES_CONSENSUS_SET_H_
 #pragma once
 
-#include "rransac/common/measurement/measurement_base.h"
 #include <list>
+
+#include "rransac/common/measurement/measurement_base.h"
 
 namespace rransac
 {

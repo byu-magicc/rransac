@@ -10,12 +10,13 @@
 
 namespace rransac
 {
-/** \class Transformation
- * When the global frame changes, the measurements and models need to be transformed into the current global frame.
- * This struct provides the necessary data in order to transform the measurements and models. It is provided by the
- * user and used by R-RANSAC.
+
+
+/** \class TransformBase
+ * When the target tracking frame changes, the measurements and tracks need to be transformed from the previous tracking frame to the current
+ * tracking frame. This class uses the curiously recurring template pattern design methodology to specify the API for the derived classes. It
+ * it responsible for setting the transformation data and transforming measurements and tracks. 
  * 
- * The transformation being applied is dependent on the data type, state type, and derived/child class
 */
 
 template <class tData, class tState, class tMatCov, class tDerived>
@@ -23,17 +24,15 @@ class TransformBase {
 
 public:
 
-typedef tData Data;
-typedef tState State;
-typedef tMatCov MatCov;
-typedef tDerived Derived;
-typedef typename tState::DataType DataType;
+typedef tData Data;                             /**< The object type of the data needed to transform the measurements and tracks. */
+typedef tState State;                           /**< The state of the target. @see State. */
+typedef tMatCov MatCov;                         /**< The object type of the tracks error covariance. */
+typedef tDerived Derived;                       /**< The child class that implements the specific member functions. */
+typedef typename tState::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
 
 
 /**
- * The init function must set the flag transform_null_. If it is set to true, then you are using the
- * null transformation or (transformation_null) class; otherwise, you are using a transformation class
- * that transforms measurements and objects.
+ * Used to initialize the transformation object.
  */ 
 void Init() {
     static_cast<tDerived*>(this)->DerivedInit();
@@ -42,9 +41,9 @@ void Init() {
 /** 
  * Sets the transformation data member variable. This function will also call the derived classes set data in case
  * other stuff needs to be done. 
- * @param data The data required to transform the measurements, states, and error covariance
+ * @param[in] data The data required to transform the measurements, states, and error covariance
  */ 
-void SetData(const tData& data) {
+void SetData(const Data& data) {
     static_cast<tDerived*>(this)->DerivedSetData(data);
 }
 
@@ -57,8 +56,8 @@ tData GetData() {
 }
 
 /** 
- * Transforms the measurement using data_ from the previous surveillance frame to the current one.
- * @param meas The measurement to be transformed.
+ * Transforms the measurement from the previous tracking frame to the current one.
+ * @param[in] meas The measurement to be transformed.
  */ 
 void TransformMeasurement(Meas<DataType>& meas) const {
     static_cast<const tDerived*>(this)->DerivedTransformMeasurement(meas);
@@ -67,16 +66,13 @@ void TransformMeasurement(Meas<DataType>& meas) const {
 /** 
  * Transforms the track using the transform data. i.e. transform the estimated 
  * state and error covariance.
- * @param state The track's state to be transformed.
- * @param cov   The track's error covariance to be transformed.
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
  */ 
-void TransformTrack(tState& state, tMatCov& cov) const {
-// void TransformTrack(State& state, Eigen::MatrixXd& cov) {
+void TransformTrack(State& state, MatCov& cov) const {
     static_cast<const tDerived*>(this)->DerivedTransformTrack(state,cov);
 }
 
-
-bool transform_null_ = true;
 
 private:
 TransformBase()=default;
@@ -87,6 +83,8 @@ friend Derived;
 Data data_;
 
 };
+
+
 
 } // namespace rransac
 

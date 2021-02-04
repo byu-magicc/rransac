@@ -15,39 +15,38 @@ constexpr int TransformHomographyCovDim(int state_dim) {
 } 
 
 /** \class TransHomography
- * Transforms the measurements, states and error covariance using the homography. The homography is Eigen::Matrix3d
- * the state is R2 or SE2 and the measurement is of type MeasurementType::RN_POS, MeasurementType::RN_POS_VEL, MeasurementType::RN_POS.
- * or MeasurementType::SEN_POS_VEL and is of TWO dimensions. When the state is SE2, it is assumed that tracking is done in the virtual image frame; 
- * otherwise it won't work. 
+ * This transformation is used when target tracking is done on an image plane and the measurement source is a camera. 
+ * It transforms the measurements and tracks using the homography and is compatible with SourceSENPosVel and ModelSENPosVel when the
+ * target's configuration manifold is SE2 and the measurement space is R2, and it is also compatible with SourceRN and ModelRN when
+ * the target's configuration manifold is R2 and the measurement space is R2. 
 */
 
 template<class tState>
 class TransformHomography : public TransformBase<Eigen::Matrix<typename tState::DataType,3,3>, tState, Eigen::Matrix<typename tState::DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, TransformHomography<tState>> {
 
 public:
-typedef typename tState::DataType DataType;
-typedef Eigen::Matrix<DataType,2,1> Vec2d;
-typedef Eigen::Matrix<DataType,2,2> Mat2d;
-typedef Eigen::Matrix<DataType,3,3> Mat3d;
+typedef typename tState::DataType DataType; /**< The scalar object for the data. Ex. float, double, etc. */
+typedef Eigen::Matrix<DataType,2,1> Vec2d;  /**< The object type of the measurement. */
+typedef Eigen::Matrix<DataType,2,2> Mat2d;  
+typedef Eigen::Matrix<DataType,3,3> Mat3d;  /**< The data type of the homography. */
 typedef Eigen::Matrix<DataType,4,4> Mat4d;
-typedef Eigen::Matrix<DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov;
-typedef Eigen::Matrix<DataType,3,3> MatData;
+typedef Eigen::Matrix<DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov; /**< The object type of the track's error covariance. */
 
 
 // Components of the Homograpy H = [H1, h2; h3_T^T, h4] where T stands for transpose.
-Eigen::Matrix2d H1_;
-Eigen::Matrix<DataType,2,1> h2_;
-Eigen::Matrix<DataType,1,2> h3_T_;
-Eigen::Matrix<DataType,1,1> h4_;
+Eigen::Matrix<DataType,2,2> H1_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
+Eigen::Matrix<DataType,2,1> h2_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
+Eigen::Matrix<DataType,1,2> h3_T_;             /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
+Eigen::Matrix<DataType,1,1> h4_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
+ 
 
-
-void DerivedInit() {
-    this->transform_null_ = false;
-}
+/**
+ * Used to initialize the object, but it doesn't need to initialize anyting.
+ */ 
+void DerivedInit() {};
 
 /** 
- * The parent class sets the transformation data member variable. This derived class has the 
- * opportunity to perform other calculations using the data. 
+ * Sets the data and the block components of the homography.
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
 void DerivedSetData(const Mat3d data) {
@@ -59,8 +58,8 @@ void DerivedSetData(const Mat3d data) {
 }
 
 /** 
- * Transforms the measurement using data_ from the previous surveillance frame to the current one.
- * @param meas The measurement to be transformed.
+ * Transforms the measurement from the previous tracking frame to the current one.
+ * @param[in] meas The measurement to be transformed.
  */ 
 void DerivedTransformMeasurement(Meas<DataType>& meas) const {
 
@@ -71,20 +70,19 @@ void DerivedTransformMeasurement(Meas<DataType>& meas) const {
 
     meas.pose = TransformPosition(meas.pose);
 }
+
 /** 
- * Transforms the track using the transform data. i.e. transform the estimated 
- * state and error covariance.
- * @param state The track's state to be transformed.
- * @param cov   The track's error covariance to be transformed.
+ * Transforms the track provided that the state is SE2_se2 or R2_r2.
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
  */ 
 void DerivedTransformTrack(tState& state, MatCov& cov) const {
-// void TransformTrack(S& state, Eigen::MatrixXd& cov) {
-    throw std::runtime_error("TransformHomography: The state is not supported.");
+    throw std::runtime_error("TransformHomography::DerivedTransformTrack The state is not supported.");
 }
 
 /**
  * Transforms the position of the pixel from the previous frame to the current frame
- * @param pos The pixel location
+ * @param[in] pos The pixel location
  */ 
 Vec2d TransformPosition(const Vec2d& pos) const{
     DataType tmp = (h3_T_*pos + h4_)(0,0);
@@ -94,7 +92,7 @@ Vec2d TransformPosition(const Vec2d& pos) const{
 /**
  * Construct the linear transformation required to transform the pixel translational velocity and error covariance using 
  * the current pixel position
- * @param pos The pixel location
+ * @param[in] pos The pixel location
  */ 
 Mat2d ConstructTranslationalVelTransform(const Vec2d& pos) const {
     DataType&& tmp = (h3_T_*pos + h4_)(0,0);
@@ -103,8 +101,8 @@ Mat2d ConstructTranslationalVelTransform(const Vec2d& pos) const {
 
 /**
  * The covariance transform for R2_r2 is a 4x4 matrix. This function constructs the lower left block of the transform.
- * @param pos The pixel location
- * @param vel The pixel velocity
+ * @param[in] pos The pixel location
+ * @param[in] vel The pixel velocity
  */ 
 Mat2d ConstructCovTrans12(const Vec2d& pos, const Vec2d& vel) const {
     DataType&& tmp = (h3_T_*pos + h4_)(0,0);
@@ -136,6 +134,11 @@ Mat2d TransformRotation(const Vec2d& vel_transformed) const {
 ////////////////////////   R2_r2                                    /////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+/** 
+ * Transforms the track provided that the state is R2_r2.
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
+ */ 
 template<>
 void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<typename lie_groups::R2_r2::DataType,4,4>& cov) const {
 
@@ -160,7 +163,11 @@ void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R
 /////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   SE2-se2                                  /////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
-
+/** 
+ * Transforms the track provided that the state is SE2_se2.
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
+ */ 
 template<>
 void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups::SE2_se2& state, Eigen::Matrix<typename lie_groups::SE2_se2::DataType,5,5>& cov) const {
         

@@ -4,6 +4,7 @@
 
 
 #include <Eigen/Core>
+
 #include "common/measurement/measurement_base.h"
 #include "common/transformations/transformation_base.h"
 
@@ -11,6 +12,7 @@ namespace rransac
 {
 /** \class TransformNULL
  * This transform class is used when the measurements and the track do not need to be transformed. 
+ * None of it's member functions does anything so it should be optimized out. @see TransformBase
 */
 
 template<class tState>
@@ -18,41 +20,31 @@ class TransformNULL : public TransformBase<Eigen::Matrix<typename tState::DataTy
 
 public:
 
-typedef typename tState::DataType DataType;
+typedef typename tState::DataType DataType;  /**< The scalar object for the data. Ex. float, double, etc. */
 typedef Eigen::Matrix<DataType,3,3> Mat3d;
 typedef Mat3d MatData;
 
 
-void DerivedInit() {
-    this->transform_null_ = true;
-}
+void DerivedInit() {}
 
 /** 
- * The parent class sets the transformation data member variable. This derived class has the 
- * opportunity to perform other calculations using the data. 
+ * Doesn't set the data. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void DerivedSetData(const Mat3d data) {
-    throw std::runtime_error("TransformNULL::SetData Not Implemented.");
-}
+void DerivedSetData(const Mat3d data) {}
 
 /** 
- * Transforms the measurement using data_ from the previous surveillance frame to the current one.
+ * Doesn't transform the measurements.
  * @param meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(Meas<double>& meas) const {
-    throw std::runtime_error("TransformNULL::TransformMeasurement Not Implemented.");
-}
+void DerivedTransformMeasurement(Meas<double>& meas) const {}
 
 /** 
- * Transforms the track using the transform data. i.e. transform the estimated 
- * state and error covariance.
- * @param state The track's state to be transformed.
- * @param cov   The track's error covariance to be transformed.
+ * Doesn't transform the track.
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
  */ 
-void DerivedTransformTrack(tState& state, Eigen::Matrix<DataType,tState::dim_,tState::dim_>& cov) const {
-    throw std::runtime_error("TransformNULL::TransformTrack Not Implemented.");
-}
+void DerivedTransformTrack(tState& state, Eigen::Matrix<DataType,tState::dim_,tState::dim_>& cov) const {}
 
 
 
