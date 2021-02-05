@@ -5,30 +5,42 @@
 
 
 #include "common/models/model_base.h"
-
+#include "common/sources/source_SEN_pos_vel.h"
+#include "state.h"
+#include "utilities.h"
 
 namespace rransac {
 
-template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
+/**
+ * \class ModelSENPosVel
+ * This model is designed to be used for target's whose configuration manifold is SEN and whose measurement space 
+ * is RN. It is assumed that the sources used with this model can only observe the position and translational velocity of the target and that the orientation and
+ * angular velocity is not measured. The model is only observable under the assumption that the velocity of the target is oriented with the heading of the target and 
+ * that the translation velocity in the body frame is positive. These assumptions enforce that the translational velocities perpindicular to the heading are zero. Because
+ * of this, the dimension of the error covariance is less than the dimension of the state. So, in order to properly model the target, we had to make adjustments. 
+ */ 
+template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource=SourceSENPosVel>
 class ModelSENPosVel : public ModelBase<tSource<tState>, tTransformation<tState>,  tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1, ModelSENPosVel<tState, tSource, tTransformation>> {
 
 public:
 
-typedef tState State;
-typedef tSource<tState> Source;
-typedef typename State::DataType DataType;
-typedef tTransformation<tState> Transformation;
+typedef tState State;                                                       /**< The state of the target. @see State. */
+typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
+typedef tSource<tState> Source;                                             /**< The object type of the source. @see SourceBase. */
+typedef tTransformation<tState> Transformation;                             /**< The object type of the measurement and track transformation. */
 
 template <typename tScalar, template<typename> typename tStateTemplate>
-using ModelTemplate = ModelSENPosVel<tStateTemplate<tScalar>,tTransformation>;
+using ModelTemplate = ModelSENPosVel<tStateTemplate<tScalar>,tTransformation,tSource>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
+                                                                                     nonlinear log maximum likelihood estimation problem by Ceres. */
 
-static constexpr unsigned int g_dim_ = State::Group::dim_;
-static constexpr int cov_dim_ = State::Group::dim_ + State::Algebra::dim_ - State::Algebra::dim_t_vel_ + 1;
-static constexpr unsigned int l_dim_ =  State::Algebra::dim_a_vel_ + 1;
-typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;
-typedef Eigen::Matrix<DataType,cov_dim_,1> VecCov;
-typedef utilities::CompatibleWithModelSENPosVel ModelCompatibility;
-static_assert(std::is_same<typename tSource<tState>::ModelCompatibility, ModelCompatibility>::value, "The source is not compatible with the model");
+static constexpr int cov_dim_ = State::Group::dim_ + State::Algebra::dim_ - State::Algebra::dim_t_vel_ + 1;   /**< The dimension of the error covariance. */
+static constexpr unsigned int g_dim_ = State::Group::dim_;                                                    /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */                                          
+static constexpr unsigned int l_dim_ =  State::Algebra::dim_a_vel_ + 1;                                       /**< The dimension of the angular velocity plus 1. */
+typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;                                                        /**< The object type of the error covariance, Jacobians, and others. */
+typedef Eigen::Matrix<DataType,cov_dim_,1> VecCov;                                                            /**< The object type for the OMinus operation. */
+
+
+static_assert(std::is_same<typename tSource<tState>::ModelCompatibility, utilities::CompatibleWithModelSENPosVel>::value, "The source is not compatible with the model");
 static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "The state is not compatible with the model");
 
 
@@ -53,9 +65,8 @@ static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt)
 static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt);
 
 /**
-* Update the state of the model using the provided state_update. The state_update provided is augmented to account
-* for the additional translationals velocities (which are zero) before being added to state.
-* @param state_update An element of the lie algebra of the state used to update the state. 
+* Update the state of the model using the provided state_update
+* @param[in] state_update An element of the lie algebra of the state used to update the state. 
 */
 void DerivedOPlusEq(const VecCov& state_update);
 
@@ -64,6 +75,13 @@ void DerivedOPlusEq(const VecCov& state_update);
  */ 
 static State DerivedGetRandomState();
 
+/**
+ * Computes the OMinus operation for the state. In other words, it computes the geodesic distance between the two track's state estimate.
+ * This OMinus operation can be different than the operation defined by the state. 
+ * @param[in] track1 A track of this type.
+ * @param[in] track2 A track of this type.
+ * @return Returns the geodesic distance between the track's state estimate.
+ */ 
 static VecCov DerivedOMinus(const ModelSENPosVel& model1, const ModelSENPosVel& model2 ) {
 
     VecCov tmp;
@@ -80,8 +98,8 @@ static VecCov DerivedOMinus(const ModelSENPosVel& model1, const ModelSENPosVel& 
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
-typename ModelSENPosVel<tState, tSource, tTransformation>::Mat  ModelSENPosVel<tState, tSource, tTransformation>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {  
+template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
+typename ModelSENPosVel<tState,tTransformation,tSource>::Mat  ModelSENPosVel<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {  
     Mat F;
     F.block(g_dim_,0,l_dim_,g_dim_).setZero();
     F.block(g_dim_, g_dim_, l_dim_, l_dim_).setIdentity();
@@ -94,8 +112,8 @@ typename ModelSENPosVel<tState, tSource, tTransformation>::Mat  ModelSENPosVel<t
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
-typename ModelSENPosVel<tState, tSource, tTransformation>::Mat ModelSENPosVel<tState, tSource, tTransformation>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
+template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
+typename ModelSENPosVel<tState,tTransformation,tSource>::Mat ModelSENPosVel<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     Mat G;
     Eigen::Matrix<DataType, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
     G.block(g_dim_,0,l_dim_,g_dim_).setZero();
@@ -110,8 +128,8 @@ typename ModelSENPosVel<tState, tSource, tTransformation>::Mat ModelSENPosVel<tS
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
-void ModelSENPosVel<tState, tSource, tTransformation>::DerivedOPlusEq(const VecCov& state_update) {
+template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
+void ModelSENPosVel<tState,tTransformation,tSource>::DerivedOPlusEq(const VecCov& state_update) {
     
     Eigen::Matrix<DataType,g_dim_,1> twist_update;
     twist_update.setZero();
@@ -123,8 +141,8 @@ void ModelSENPosVel<tState, tSource, tTransformation>::DerivedOPlusEq(const VecC
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tSource, template <typename > typename tTransformation>
-tState ModelSENPosVel<tState, tSource, tTransformation>::DerivedGetRandomState(){
+template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
+tState ModelSENPosVel<tState,tTransformation,tSource>::DerivedGetRandomState(){
     State state = State::Random();
 
     state.g_.R_.block(0,0,state.u_.p_.rows(),1) = state.u_.p_.normalized(); 

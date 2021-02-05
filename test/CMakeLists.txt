@@ -98,10 +98,10 @@ include(CTest)
 # Model
 #---------------------------------------
 
-# add_executable(model_baseTest
-# common/models/model_base_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(model_baseTest gtest_main )
+add_executable(model_baseTest
+common/models/model_base_test.cpp
+../src/parameters.cpp)
+target_link_libraries(model_baseTest gtest_main )
 
 # add_executable(model_baseTest2
 # common/models/model_base_test2.cpp

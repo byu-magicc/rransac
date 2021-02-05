@@ -47,9 +47,9 @@ typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS
 typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
 // using MyTypes = ::testing::Types<ModelHelper3, ModelHelper5 >;
-// using MyTypes = ::testing::Types< ModelHelper1>;
+using MyTypes = ::testing::Types< ModelHelper1>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
