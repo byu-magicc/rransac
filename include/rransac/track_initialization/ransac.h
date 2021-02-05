@@ -2,10 +2,7 @@
 #define RRANSAC_TRACK_INITIALIZATION_RANSAC_H_
 #pragma once
 
-#include "system.h"
-#include "data_containers/data_tree/data_tree_cluster.h"
-#include "common/models/model_base.h"
-#include "data_containers/cluster.h"
+
 #include <stdlib.h>
 #include <time.h>
 #include <algorithm> 
@@ -13,6 +10,13 @@
 #include <random>
 #include <mutex>
 #include <thread>
+
+#include "system.h"
+#include "data_containers/data_tree/data_tree_cluster.h"
+#include "common/models/model_base.h"
+#include "data_containers/cluster.h"
+#include "common/models/model_manager.h"
+
 
 namespace rransac {
 
@@ -333,7 +337,7 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typ
         }
         {
         std::lock_guard<std::mutex> lockGuard(m);
-        sys.models_.push_back(new_track);
+        ModelManager<Model>::AddModel(sys,new_track);
         }
     }
 

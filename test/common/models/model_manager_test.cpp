@@ -20,7 +20,7 @@ using namespace lie_groups;
 TEST(ModelManagerTest, AddModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL> Model;
+typedef ModelRN<State, TransformNULL,SourceRN> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
@@ -40,7 +40,7 @@ ASSERT_EQ(sys.models_.size(), 1);
 TEST(ModelManagerTest, PropagateModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL> Model;
+typedef ModelRN<State, TransformNULL,SourceRN> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
@@ -72,7 +72,7 @@ ASSERT_LE( (sys.models_.back().state_.g_.data_ - model.state_.g_.data_ -model.st
 TEST(ModelManagerTest, ManageModels) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL> Model;
+typedef ModelRN<State, TransformNULL,SourceRN> Model;
 typedef Meas<double> Measurement;
 
 System<Model> sys;
@@ -248,7 +248,7 @@ ASSERT_EQ(sys.good_models_[5]->model_likelihood_, 12);
 TEST(ModelManagerTest, UpdateModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL> Model;
+typedef ModelRN<State, TransformNULL,SourceRN> Model;
 typedef Meas<double> Measurement;
 
 System<Model> sys;
@@ -309,7 +309,7 @@ ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
 TEST(ModelManagerTest, TransformModelTest ) {
 
 typedef lie_groups::R2_r2 State;
-typedef ModelRN<State, TransformHomography> Model;
+typedef ModelRN<State, TransformHomography,SourceRN> Model;
 typedef Meas<double> Measurement;
 
 TransformHomography<State> trans;
@@ -338,6 +338,7 @@ sys.sources_.push_back(source);
 
 sys.params_.track_max_num_tracks_ = 2;
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity();
+sys.params_.transform_consensus_set_ = true;
 sys.transformaion_ = trans;
 
 Measurement m;

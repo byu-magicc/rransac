@@ -103,15 +103,15 @@ include(CTest)
 # ../src/parameters.cpp)
 # target_link_libraries(model_baseTest gtest_main )
 
-add_executable(model_baseTest2
-common/models/model_base_test2.cpp
-../src/parameters.cpp)
-target_link_libraries(model_baseTest2 gtest_main )
-
-# add_executable(model_managerTest 
-# common/models/model_manager_test.cpp
+# add_executable(model_baseTest2
+# common/models/model_base_test2.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(model_managerTest gtest_main )
+# target_link_libraries(model_baseTest2 gtest_main )
+
+add_executable(model_managerTest 
+common/models/model_manager_test.cpp
+../src/parameters.cpp)
+target_link_libraries(model_managerTest gtest_main )
 
 
 #---------------------------------------

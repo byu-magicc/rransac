@@ -11,32 +11,49 @@
 
 namespace rransac
 {
-    
+
+
+/**
+ * \class ModelManager
+ * This class is responsible for managing all of the tracks. It is designed to 
+ * facilitate adding new tracks, propagating and updating all the tracks, transforming the tracks
+ * and managing the tracks. Track management consits of pruning the track's consensus sets,
+ * merging similar tracks, pruning tracks, and ranking the tracks. 
+ * 
+ */ 
 template <typename tModel>
 class ModelManager {
 
 public:
 
-typedef tModel Model;
+typedef tModel Model; /**< The object type of the track. */
 
 /**
 * Add a new model. If the number of models is greater than the max number of models, then
 * the function PruneModels is called.
+* @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
+* @param[in] model The model to be added.
 */
 static void AddModel(System<tModel>& sys, const tModel& model);
 
 /**
-* Propagates every model
+* Propagates every track by calling ModelBase::PropagateModel method on each 
+* track.
+* @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
+* @param[in] dt The amount of time the track needs to be propagated. 
 */
 static void PropagateModels(System<tModel>& sys, const double dt);
 
 /**
-* Updates every model
+* Updates every track by calling ModelBase::UpdateModel method on each track.
+* @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
 */
 static void UpdateModels(System<tModel>& sys);
 
 /**
- * Transforms all of the tracks and their consensus sets
+ * Transforms all of the tracks and their consensus sets from the previous tracking frame to the current tracking frame. 
+ * The consensus sets are only transformed if the flag Parameters::transform_consensus_set_ is set to true.
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
  */ 
 static void TransformModels(System<tModel>& sys){
     for (auto iter = sys.models_.begin(); iter!=sys.models_.end(); ++iter) {
@@ -48,7 +65,10 @@ static void TransformModels(System<tModel>& sys){
 
 
 /**
- * Prune the consensus set, merge models, ranks models, and prunes models. This should b called after update models is called.
+ * This function manages the tracks by pruning their consensus sets, merging similar tracks, pruning tracks, and ranking tracks.
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
+ * @param[in] expiration_time The expiration time of the measurements in the consensus sets. All measurements with a time stamp before the expiration 
+ * time are removed.
  */
 static void ManageModels(System<tModel>& sys, const double expiration_time) {
     PruneConsensusSets(sys, expiration_time);
@@ -63,35 +83,54 @@ static void ManageModels(System<tModel>& sys, const double expiration_time) {
 private:
 
 /**
-* Prunes the consensus set for each model.
+* Prunes the consensus set for each track by calling the method ConsensusSet::PruneConsensusSet on each consensus set.
+* @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
+* @param[in] expiration_time The expiration time of the measurements in the consensus sets. All measurements with a time stamp before the expiration 
+* time are removed.
 */
 static void PruneConsensusSets(System<tModel>& sys, const double expiration_time);
 
 
-
 /**
-* Looks for similar models and merges them.
+* Looks for similar models and merges them. This method is similar to the track 2 track fusion method discussed in 
+* Tracking and Data Fusion by Bar-Shalom 2011.
+* @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
 */
 static void MergeModels(System<tModel>& sys);
 
 /**
- * Promotes models to good models, demotes good models to poor models, and prunes models
+ * Ranks the models according to their model likelihood. If the model likelihood is above the threshold Parameters::track_good_model_threshold_, then
+ * it is considered a good model; otherwise, a poor model. Good models are added to System::good_models_. If there are more tracks than Parameters::track_max_num_tracks_, the tracks with
+ * the lowest model likelihood are removed until there are only Parameters::track_max_num_tracks_ number of tracks. 
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
  */
 static void RankModels(System<tModel>& sys); 
 
 /**
-* Removes the models with the lowest model likelihood.
+* If there are more tracks than Parameters::track_max_num_tracks_, the tracks with
+* the lowest model likelihood are removed until there are only Parameters::track_max_num_tracks_ number of tracks.
+* @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks.  
 */
 static void PruneModels(System<tModel>& sys);
 
 /**
-* Tests to see if two models are similar
-* @return Returns true if the models are similar
+* Tests to see if two tracks are similar by weighing the geodesic distance between the track's states by their error covariances.
+* @param[in] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
+* @param[in] model1 One of the two tracks that will be compared.
+* @param[in] model2 One of the two tracks that will be compared.
+* @return Returns true if the tracks are similar
 */
 static bool SimilarModels(const System<tModel>& sys, const tModel& model1, const tModel& model2);
 
 /**
- *  Fuse two models together using the sampled covariance intersection method
+ * Fuse two tracks together using the sampled covariance intersection method. The method is described in "A no-loss covariance intersection algorithm
+ * for track-to-track fusion" by Xin Tian 2010. The method also merges the the two consensus sets together. If one or both of the tracks are good tracks, the lowest 
+ * label is kept because it corresponds to the first track that was promoted to a good track. We do not properly fuse the model likelihoods together. To properly fuse them 
+ * would require keeping a history of their ModelBase::model_likelihood_update_info_, which could require a lot of data storage depending on how long the tracks have existed.
+ * So we simplified the prosecces by assigning the largetest model likelihood to the fused track.
+ * @param[in] model1 One of the two tracks that will be fused together.
+ * @param[in] model2 One of the two tracks that will be fused together.
+ * @return The fused track.
  */ 
 static tModel FuseModels(const tModel& model1, const tModel& model2);
 

@@ -2,26 +2,27 @@
 #define RRANSAC_DATA_CONTAINERS_DATA_TREE_BASE_H_
 #pragma once
 
+#include <list>
 
 #include "common/measurement/measurement_base.h"
 #include "system.h"
-#include <list>
+
 
 namespace rransac
 {
     
 /**
  * \class DataTreeBase
- * This container holds all of the measurements that are not associated with a model or cluster. The data object is
- * std::list<tContainer> where tContainer is another container with an iterator object defined. 
+ * This container holds all of the measurements that are not associated with a track or cluster. The data object is
+ * std::list<tContainer> where tContainer is another container such ast std::list or std::vector with an iterator object defined. 
  * 
  */
 
 template <typename tData, template<typename> typename tDerived, typename tDataType=double>
 class DataTreeBase {
 
-typedef tData Data;
-typedef tDerived<tDataType> Derived;
+typedef tData Data;                    /**< The object type of the data. */
+typedef tDerived<tDataType> Derived;   /**< The derived class. */
 typedef tDataType DataType;
    
 public:
