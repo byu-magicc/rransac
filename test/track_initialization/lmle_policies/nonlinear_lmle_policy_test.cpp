@@ -13,8 +13,8 @@
 #include "common/sources/source_base.h"
 #include "data_containers/cluster.h"
 #include "track_initialization/lmle_policies/nonlinear_lmle_policy.h"
-#include "track_initialization/seed_policies/null_policy.h"
-#include "track_initialization/seed_policies/SE2_pos_policy.h"
+#include "track_initialization/seed_policies/null_seed_policy.h"
+#include "track_initialization/seed_policies/SE2_pos_seed_policy.h"
 
 using namespace rransac;
 using namespace lie_groups;

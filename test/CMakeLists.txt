@@ -141,16 +141,16 @@ include(CTest)
 # Track Initialization
 #---------------------------------------
 
-add_executable(linear_lmle_policyTest 
-track_initialization/lmle_policies/linear_lmle_policy_test.cpp
-../src/parameters.cpp)
-target_link_libraries(linear_lmle_policyTest gtest_main )
+# add_executable(linear_lmle_policyTest 
+# track_initialization/lmle_policies/linear_lmle_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(linear_lmle_policyTest gtest_main )
 
-add_executable(nonlinear_lmle_policyTest 
-track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
-../src/parameters.cpp)
-target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
-)
+# add_executable(nonlinear_lmle_policyTest 
+# track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
+# )
 
 # add_executable(SE2_pos_policyTest 
 # track_initialization/seed_policies/SE2_pos_policy_test.cpp
@@ -164,10 +164,10 @@ target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
 # target_link_libraries(ransacTest gtest_main )
 
 
-# add_executable(ransacTest2 
-# track_initialization/ransac_test2.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
+add_executable(ransacTest2 
+track_initialization/ransac_test2.cpp
+../src/parameters.cpp)
+target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 
 
 #---------------------------------------

@@ -16,8 +16,8 @@
 #include "common/sources/source_SEN_pose_twist.h"
 #include "common/measurement/measurement_base.h"
 #include "parameters.h"
-#include "track_initialization/seed_policies/null_policy.h"
-#include "track_initialization/seed_policies/SE2_pos_policy.h"
+#include "track_initialization/seed_policies/null_seed_policy.h"
+#include "track_initialization/seed_policies/SE2_pos_seed_policy.h"
 #include "track_initialization/lmle_policies/linear_lmle_policy.h"
 #include "track_initialization/lmle_policies/nonlinear_lmle_policy.h"
 #include "common/transformations/transformation_null.h"
@@ -43,9 +43,16 @@ struct Test1 {
     typedef Eigen::Matrix<double,2,1> VecU;
     std::string test_name = "R2 Test";
 
+    static State GenerateRandomState(const double fov) {
+        State rand_state;
+        rand_state.g_.data_ = State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
+        rand_state.u_.data_ = VecU::Random()*2;
+        return rand_state;
+    }
+
     Test1() {
         double pos = 5;
-        double vel = 0.1;
+        double vel = 0.5;
         states.resize(4);
         states[0].g_.data_ << pos,pos;
         states[0].u_.data_ << 0, -vel;
@@ -78,9 +85,16 @@ struct Test2 {
     typedef Eigen::Matrix<double,3,1> VecU;
     std::string test_name = "R3 Test";
 
+    static State GenerateRandomState(const double fov) {
+        State rand_state;
+        rand_state.g_.data_ = State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
+        rand_state.u_.data_ = VecU::Random();
+        return rand_state;
+    }
+
     Test2() {
         double pos = 5;
-        double vel = 0.1;
+        double vel = 0.5;
         states.resize(4);
         states[0].g_.data_ << pos,pos, pos;
         states[0].u_.data_ << 0, -vel, 0;
@@ -112,6 +126,15 @@ struct Test3 {
     std::vector<State> states;
     typedef Eigen::Matrix<double,3,1> VecU;
     std::string test_name = "SE2 Pose Test";
+
+    static State GenerateRandomState(const double fov) {
+
+        State rand_state;
+        rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
+        rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
+        rand_state.u_.data_ = VecU::Random();
+        return rand_state;
+    }
 
     Test3() {
         double pos = 5;
@@ -154,6 +177,15 @@ struct Test4 {
     std::vector<State> states;
     typedef Eigen::Matrix<double,6,1> VecU;
     std::string test_name = "SE3 Pose Test";
+
+    static State GenerateRandomState(const double fov) {
+
+        State rand_state;
+        rand_state.g_.R_ = so3<double>::Exp(Eigen::Matrix<double,3,1>::Random()*3);
+        rand_state.g_.t_ = Eigen::Matrix<double,3,1>::Random()*fov;
+        rand_state.u_.data_ = VecU::Random()*2;
+        return rand_state;
+    }
 
     Test4() {
         double pos = 10;
@@ -198,6 +230,15 @@ struct Test5 {
     std::vector<State> states;
     typedef Eigen::Matrix<double,3,1> VecU;
     std::string test_name = "SE2 Pos Test";
+
+    static State GenerateRandomState(const double fov) {
+
+        State rand_state;
+        rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
+        rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
+        rand_state.u_.data_ = VecU::Random()*2;
+        return rand_state;
+    }
 
     Test5() {
         double pos = 5;
@@ -362,9 +403,7 @@ for (double ii =start_time; ii < end_time; ii += dt) {
             track.PropagateModel(dt);
         }
 
-        State rand_state;
-        rand_state.g_.data_ = T::State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
-        rand_state.u_.data_ = T::VecU::Random();
+        State rand_state = T::GenerateRandomState(fov);
 
         tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,T::MatR::Identity()*sqrt(noise)*0);
         tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,T::MatR2::Identity()*sqrt(noise)*0);
@@ -381,6 +420,7 @@ for (double ii =start_time; ii < end_time; ii += dt) {
         m3.twist = tmp3.twist;
         m4.time_stamp = ii;
         m4.pose = tmp4.pose;
+        sys.current_time_ = ii;
 
         sys.data_tree_.AddMeasurement(sys, m1);
         sys.data_tree_.AddMeasurement(sys, m2);

@@ -10,7 +10,7 @@
 #include "common/transformations/transformation_null.h"
 #include "data_containers/cluster.h"
 #include "track_initialization/lmle_policies/linear_lmle_policy.h"
-#include "track_initialization/seed_policies/null_policy.h"
+#include "track_initialization/seed_policies/null_seed_policy.h"
 
 using namespace rransac;
 using namespace lie_groups;

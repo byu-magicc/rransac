@@ -9,7 +9,7 @@
 #include "common/models/model_SEN_pos_vel.h"
 #include "common/sources/source_SEN_pos_vel.h"
 #include "common/transformations/transformation_null.h"
-#include "track_initialization/seed_policies/SE2_pos_policy.h"
+#include "track_initialization/seed_policies/SE2_pos_seed_policy.h"
 #include "data_containers/cluster.h"
 
 using namespace rransac;
@@ -27,7 +27,7 @@ SE2PosSeedPolicy<Model> seed;
 System<Model> sys;
 
 
-double noise = 1e-3;
+double noise = 1e-4;
 SourceParameters source_params1, source_params2;
 source_params1.source_index_ = 0;
 source_params1.type_ = MeasurementTypes::SEN_POS;
@@ -56,8 +56,13 @@ m2.type = MeasurementTypes::SEN_POS_VEL;
 Model track;
 track.state_ = State::Random();
 track.state_.g_.t_*=10;
-track.state_.u_.data_(1) = 0;
 track.state_.u_.data_(0) = fabs(track.state_.u_.data_(0));
+while (fabs(track.state_.u_.data_(0) ) < 0.5) {
+    track.state_.u_.data_(0)*=2;
+}
+
+track.state_.u_.data_(1) = 0;
+
 
 double start_time = 0;
 double end_time = 1;
@@ -113,19 +118,21 @@ std::random_shuffle(meas_subset1.begin(), meas_subset1.end());
 std::random_shuffle(meas_subset2.begin(), meas_subset2.end());
 
 
-double x[] = {0,0,0,0,0,0};
+double x[] = {0,0,0,0,0};
 Eigen::Matrix<double,6,1> x_vec;
 State est_track1, est_track2;
 
 // std::cout << " track g: " << std::endl << track.state_.g_.data_ << std::endl;
 // std::cout << " track u: " << std::endl << track.state_.u_.data_ << std::endl;
 
-seed.GenerateSeed(meas_subset1, sys, x, 6);
+seed.GenerateSeedPolicy(meas_subset1, sys, x, 6);
 
 
-for(int ii = 0; ii < 6; ++ii) {
+for(int ii = 0; ii < 4; ++ii) {
     x_vec(ii) = x[ii];
 }
+x_vec(4) = 0;
+x_vec(5) = x[4];
 
 est_track1.g_.data_ = State::Algebra::Exp(x_vec.block(0,0,3,1));
 est_track1.u_.data_ = x_vec.block(3,0,3,1);
@@ -135,11 +142,13 @@ est_track1.u_.data_ = x_vec.block(3,0,3,1);
 
 
 
-seed.GenerateSeed(meas_subset2, sys, x, 6);
+seed.GenerateSeedPolicy(meas_subset2, sys, x, 6);
 
-for(int ii = 0; ii < 6; ++ii) {
+for(int ii = 0; ii < 4; ++ii) {
     x_vec(ii) = x[ii];
 }
+x_vec(4) = 0;
+x_vec(5) = x[4];
 
 est_track2.g_.data_ = State::Algebra::Exp(x_vec.block(0,0,3,1));
 est_track2.u_.data_ = x_vec.block(3,0,3,1);
@@ -149,13 +158,36 @@ est_track2.u_.data_ = x_vec.block(3,0,3,1);
 
 
 
-EXPECT_LT( (track.state_.g_.data_-est_track1.g_.data_).norm(), 1    ) << "This test can fail depending on the random samples. So run it again";
-EXPECT_LT( (track.state_.u_.data_-est_track1.u_.data_).norm(), 2    ) << "This test can fail depending on the random samples. So run it again";
-EXPECT_LT( (track.state_.g_.data_-est_track2.g_.data_).norm(), 0.5  ) << "This test can fail depending on the random samples. So run it again";
-EXPECT_LT( (track.state_.u_.data_-est_track2.u_.data_).norm(), 0.5  ) << "This test can fail depending on the random samples. So run it again";
+EXPECT_LT( (track.state_.g_.data_-est_track1.g_.data_).norm(), 1    ) << "This test can fail on rare occasions depending on the random samples. I ran it 100+ times in a row without it failing so it is very rare. So run it again";
+EXPECT_LT( (track.state_.u_.data_-est_track1.u_.data_).norm(), 2    ) << "This test can fail on rare occasions depending on the random samples. I ran it 100+ times in a row without it failing so it is very rare. So run it again";
+EXPECT_LT( (track.state_.g_.data_-est_track2.g_.data_).norm(), 0.5  ) << "This test can fail on rare occasions depending on the random samples. I ran it 100+ times in a row without it failing so it is very rare. So run it again";
+EXPECT_LT( (track.state_.u_.data_-est_track2.u_.data_).norm(), 0.5  ) << "This test can fail on rare occasions depending on the random samples. I ran it 100+ times in a row without it failing so it is very rare. So run it again";
 
 
 
 
 
 }
+
+
+
+        // std::cerr << "newest meas: " << std::endl;
+        // std::cerr << "time stamp: " << meas_subset_ordered[newest_index].inner_it->time_stamp << std::endl;
+        // std::cerr << "pose: " << std::endl;
+        // std::cerr << meas_subset_ordered[newest_index].inner_it->pose << std::endl;
+        // std::cerr << "twist: " << std::endl;
+        // std::cerr << meas_subset_ordered[newest_index].inner_it->twist << std::endl;
+
+        // std::cerr << "middle meas: " << std::endl;
+        // std::cerr << "time stamp: " << meas_subset_ordered[middle_index].inner_it->time_stamp << std::endl;
+        // std::cerr << "pose: " << std::endl;
+        // std::cerr << meas_subset_ordered[middle_index].inner_it->pose << std::endl;
+        // std::cerr << "twist: " << std::endl;
+        // std::cerr << meas_subset_ordered[middle_index].inner_it->twist << std::endl;
+
+        // std::cerr << "oldest meas: " << std::endl;
+        // std::cerr << "time stamp: " << meas_subset_ordered[oldest_index].inner_it->time_stamp << std::endl;
+        // std::cerr << "pose: " << std::endl;
+        // std::cerr << meas_subset_ordered[oldest_index].inner_it->pose << std::endl;
+        // std::cerr << "twist: " << std::endl;
+        // std::cerr << meas_subset_ordered[oldest_index].inner_it->twist << std::endl;

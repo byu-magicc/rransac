@@ -24,6 +24,9 @@ namespace rransac
 
 /** \class SourceParameters
  * This struct contains the parameters needed by a measurement source. Some of the parameters are defined by the user, while others are calculated by RRANSAC.
+ * The parameters that the user must specify are SourceParameters::source_index_, SourceParameters::type_, SourceParameters::meas_cov_, SourceParameters::spacial_density_of_false_meas_,
+ * SourceParameters::probability_of_detection_, SourceParameters::gate_probability_, and SourceParameters::RANSAC_inlier_probability_. Some of the parameters have specified conditions on them, 
+ * make sure that you set them correctly. 
  */ 
 struct SourceParameters {
 

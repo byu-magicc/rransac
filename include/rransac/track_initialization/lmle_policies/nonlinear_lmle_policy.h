@@ -2,13 +2,13 @@
 #define RRANSAC_TRACK_INITIALIZATION_LMLE_POLICIES_NONLINEAR_LMLE_POLICY_H_
 #pragma once
 
+#include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/Dense>
+#include "ceres/ceres.h"
 
 #include "data_containers/cluster.h"
 #include "system.h"
 #include "common/measurement/measurement_base.h"
-#include <unsupported/Eigen/MatrixFunctions>
-#include <Eigen/Dense>
-#include "ceres/ceres.h"
 #include "state.h"
 #include "lie_groups/SE3.h"
 
@@ -18,8 +18,10 @@ namespace rransac
 
 
 /** \class NonLinearLMLEPolicy
- * This policy is used for Nonlinear Time Invariant Models. Using a set of measurements, by which the 
- * model is at least locally observable, it produces a current state estimate. The templates for the class
+ * This policy uses Ceres to perform nonlinear optimization on a log maximum likelihood estimation problem.
+ * The optimization problem seeks to minimize the log maximum likelihood of a subset of measurements conditioned
+ * on the current state estimate by optimizing over the current state estimate. Since the optimization problem is nonlinear,
+ * only a local solution is guaranteed provided that it exists. The templates for the class
  * are tModel and tSeed. tModel is the model type and tSeed is a policy to seed
  * the LMLE optimization. 
  */ 
@@ -37,11 +39,12 @@ typedef tModel Model;                           /**< The object type of the mode
 
 /**
  * Generates a hypothetical state estimate at the current time step using the provided measurements in meas_subset. The nonlinear optimization
- * problem is solved using Ceres. Ceres uses a object type Jet for the automatic differentiation. It is because of this that the data type (DataType)
- * must be a template parameter.
+ * problem is solved using Ceres. The parameters of the nonlinear optimization problem is the current state estimate in local coordinates. That is, let \f$ x \f$ denote
+ * the parameters of the nonlinear optimization problem, then the current state estimate is \f$ \text{Log}\left(x\right)\f$. The optimization problem seeks to minimize the 
+ * log maximum likelihood of the measurements in the provided subset conditioned on the current state estimate by optimizing over the current state estimate in local coordinates.
  * @param[in] meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state.
- * @param[in] curr_time The current time.
- * @param[in] sources The vector of sources used. 
+ * @param[in] sys The object that contains the R-RANASAC data. This includes the current time and other information.
+ * @param[in,out] success A flag to indicate if the optimization converged to a solution. If and only if the optimization converged will success have a value of true.
  * @return The hypothetical state estimate of the track.
  */ 
 static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
@@ -49,43 +52,69 @@ static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename 
 private:
 
 /**
- * Nonlinear optimization algorithms are only guaranteed to converge to local minimums or local solution. 
- * 
+ * Nonlinear optimization algorithms are only guaranteed to converge to local minimums or a local solution. They can also take a while to converge. The nonlinear optimization problem
+ * can be seeded with certain initial conditions in order to speed up convergence and to converge on a desireable local minimum. This function calls the GenerateSeedPolicy member function
+ * from the policy class specified by tSeed in order to seed the initial conditions of the optimization problem.
+ * @param[in] meas_subset A subset of measurements used to calculate the seed.
+ * @param[in] sys The object that contains the R-RANASAC data.
+ * @param[in] x The initial conditions of the optimization problem. The initial conditions will change according to the seed policy. 
+ * @param[in] size The number parameters the optimization solver is optimizing over which is the size of the input x.
  */ 
 static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
     NonLinearLMLEPolicy::GenerateSeedPolicy(meas_subset, sys, x, size);
 }
 
-// Cost functor used in the nonlinear LMLE
 
 
+/**
+ * Ceres builds the optimization problem using residual blocks composed of cost functors. These residual blocks calculate
+ * a portion of the error in the total optimization problem. In this specific case. This functor is given one of the measurements
+ * from the measurement subset used to generate the estimated state. It takes the current state estimate and propagets it in time 
+ * to the same time as the measurement and computes the error between the measurement and state normalized by the innovation covariance. 
+ * The error is only normalized by the innovation covariance if the parameter Parameters::nonlinear_innov_cov_id_ is set to false.
+ */ 
 struct CostFunctor {
 
+    /**
+     * Sets the measurement used to compute the error, the time interval between the current time and the
+     * time stamp of the measurement, and the source index of the measurement. 
+     * @param m The measurement to be used to compute the error.
+     * @param sys The object that contains the R-RANSAC data. This includes the current time. 
+     */ 
     CostFunctor(Meas<DataType> m, const System<tModel>& sys) : m_(m), sys_(sys) {
         dt_ = m.time_stamp - sys_.current_time_;
         src_index_ = m_.source_index;
     }
 
     /**
-     * The components of x is the Lie algebra of the state
+     * Computes the error between the measurement and the current state estimate normalized by the innovation covariance. 
+     * Since the current state estimate is represented in local coordinates, it maps it back onto the manfold, propagates
+     * the state estimate to the same time as the time stamp on the measurement, computes the estimated measurement from 
+     * the propagated state estimate, and then uses the estimated measurement and the measurement to compute the error 
+     * normalized by the innovation covariance. This error is the residual of the operator. 
+     * The error is only normalized by the innovation covariance if the parameter Parameters::nonlinear_innov_cov_id_ is set to false.
      * 
+     * This function is templated because Ceres uses a data type called Jet in order to calculate the derivative using
+     * automatic differentiation. Because of this, many of the other classes in R-RANSAC have the template parameter DataType
+     * so that they are compatible with Ceres. 
      */ 
     template <typename T>
     bool operator() (const T* const x,  T* r)  const {
 
     
-
-    // Convert array to Eigen vector
-    Eigen::Map<const Eigen::Matrix<T,tModel::cov_dim_,1>> x_vector(x);
-
-    // Convert to state, propagate state to the time step of the measurement and get the error
-    // between the estimated measurement and the measurement
-    // typename tModel::State state;
+    // Since Ceres uses the data type Jet, we must create the model, state, and source
+    // using the data type Jet in order for the automatic differentiation to work properly.
     typedef typename tModel::template ModelTemplate<T, State::template StateTemplate> ModelT;
     typedef typename ModelT::State StateT;
     typedef typename ModelT::Source SourceT;
     typedef Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 
+    // Convert array to Eigen vector
+    Eigen::Map<const Eigen::Matrix<T,tModel::cov_dim_,1>> x_vector(x);
+
+
+
+    // Convert the measurement and time interval to type Jet.
     Meas<T> tmp;
     tmp.type = m_.type;
     tmp.pose = m_.pose.template cast<T>();
@@ -93,6 +122,8 @@ struct CostFunctor {
     T dt = static_cast<T>(dt_);
 
 
+    // The parameter x is the local coordinate representation of the state. We must map it back to
+    // the manifold. 
     StateT state;
     state.g_.data_ =  StateT::Algebra::Exp(x_vector.block(0,0, tModel::g_dim_,1));
     if (tModel::cov_dim_ != tModel::g_dim_*2) {
@@ -104,18 +135,14 @@ struct CostFunctor {
         state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
     }
     
-    // std::cout << "g data: " << std::endl << state.g_.data_ << std::endl;
-    // std::cout << "u data: " << std::endl << state.u_.data_ << std::endl;
 
-
+    // Propagate the state from the current time stamp to the time stamp of the measurement. 
     state = ModelT::PropagateState(state,dt);
 
-    // std::cout << "u data: " << std::endl << state.u_.data_ << std::endl;
-    // std::cout << "x vec: " << std::endl << x_vector << std::endl;
-
-    
+    // Compute the error    
     Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceT::OMinus(tmp, SourceT::GetEstMeas(state,m_.type));
 
+    // Compute the inverse innovation covariance and normalize the error. 
     if (!sys_.params_.nonlinear_innov_cov_id_) {
         // Construct innovation covariance
         MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
@@ -133,8 +160,7 @@ struct CostFunctor {
     }
 
 
-    // std::cout << "error: " << e << std::endl;
-
+    // Extract the residual from the error. 
     for (unsigned int ii = 0; ii < e.rows(); ++ii) {
         r[ii] = e(ii);
 
@@ -147,10 +173,10 @@ struct CostFunctor {
     }
 
     private:
-    int src_index_;
-    Meas<DataType> m_;                    /** < Measurement */
-    double dt_;                 /** < Time interval between the current time and the measurement time */
-    const System<tModel>& sys_; /** < A reference to the object containing all of R-RANSAC data */
+    int src_index_;             /**< The source index of the measurement. */
+    Meas<DataType> m_;          /**< Measurement */
+    double dt_;                 /**< Time interval between the current time and the measurement time. */
+    const System<tModel>& sys_; /**< A reference to the object containing all of R-RANSAC data. */
 
 
 
@@ -172,6 +198,8 @@ template<typename tModel, template<typename > typename tSeed>
 typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success) {
 
     success = false;
+
+    constexpr unsigned int meas_dim = tModel::Source::meas_space_dim_;
 
     double x[tModel::cov_dim_];
 
@@ -214,8 +242,7 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     // Convert array to Eigen vector
     x_vector = Eigen::Map<Eigen::Matrix<double,tModel::cov_dim_,1>>(x);
 
-    // Convert to state, propagate state to the time step of the measurement and get the error
-    // between the estimated measurement and the measurement
+    // Map the local coordinate representation of the state back to the manifold.
     state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::State::g_type_::dim_,1));
     if (tModel::cov_dim_ != tModel::g_dim_*2) {
         state.u_.data_.setZero();

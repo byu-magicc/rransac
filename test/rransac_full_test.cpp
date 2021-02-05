@@ -55,6 +55,12 @@ struct Test1 {
     std::string test_name = "R2 Test";
     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
 
+    static State GenerateRandomState(const double fov) {
+        State rand_state;
+        rand_state.g_.data_ = State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
+        rand_state.u_.data_ = VecU::Random()*2;
+        return rand_state;
+    }
 
     TransformMatData_ transform_data;
 
@@ -105,6 +111,13 @@ struct Test2 {
 
     TransformMatData_ transform_data;
 
+    static State GenerateRandomState(const double fov) {
+        State rand_state;
+        rand_state.g_.data_ = State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
+        rand_state.u_.data_ = VecU::Random();
+        return rand_state;
+    }
+
     Test2() {
         double pos = 5;
         double vel = 0.5;
@@ -149,6 +162,15 @@ struct Test3 {
     TransformMatData_ transform_data;
     static constexpr bool transform_data_ = false;
     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+
+    static State GenerateRandomState(const double fov) {
+
+        State rand_state;
+        rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
+        rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
+        rand_state.u_.data_ = VecU::Random();
+        return rand_state;
+    }
 
 
     Test3() {
@@ -202,10 +224,17 @@ struct Test4 {
     static constexpr bool transform_data_ = false;
     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
 
-
-
-
     std::string test_name = "SE3 Pose Test";
+
+
+    static State GenerateRandomState(const double fov) {
+
+        State rand_state;
+        rand_state.g_.R_ = so3<double>::Exp(Eigen::Matrix<double,3,1>::Random()*3);
+        rand_state.g_.t_ = Eigen::Matrix<double,3,1>::Random()*fov;
+        rand_state.u_.data_ = VecU::Random()*2;
+        return rand_state;
+    }
 
     Test4() {
         double pos = 10;
@@ -265,6 +294,15 @@ struct Test5 {
     std::string test_name = "SE2 Pos Test";
     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
     
+
+    static State GenerateRandomState(const double fov) {
+
+        State rand_state;
+        rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
+        rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
+        rand_state.u_.data_ = VecU::Random()*2;
+        return rand_state;
+    }
 
     Test5() {
         double pos = 5;
@@ -462,9 +500,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "tmp3 " << std::endl;
 
-            State_ rand_state;
-            rand_state.g_.data_ = T::Algebra_::Exp(Eigen::Matrix<double,State_::Group::dim_,1>::Random()*this->fov_);
-            rand_state.u_.data_ = T::VecU_::Random();
+            State_ rand_state = T::GenerateRandomState(this->fov_);
             tmp3 = this->sources_[this->m3_.source_index].GenerateRandomMeasurement(rand_state,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
             this->m3_.time_stamp = ii;
             this->m3_.pose = tmp3.pose;

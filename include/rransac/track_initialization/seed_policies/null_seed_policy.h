@@ -30,7 +30,7 @@ typedef typename State::DataType DataType;
  * @param size The size of the pointer x
  * 
  */ 
-    static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
+    static void GenerateSeedPolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
         for (int ii = 0; ii < size; ++ii) {
             x[ii]=0;
         }

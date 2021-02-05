@@ -31,10 +31,12 @@ typedef tModel Model;                           /**< The object type of the mode
 
 
 /**
- * Generates a hypothetical state at the current time step using the provided measurements in meas_subset and the linear least squares method.
+ * Generates a hypothetical state estimate at the current time step using the provided measurements in meas_subset. The nonlinear optimization
+ * problem is solved using Ceres. Ceres uses a object type Jet for the automatic differentiation. It is because of this that the data type (DataType)
+ * must be a template parameter.
  * @param[in] meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state.
- * @param[in] curr_time The current time.
- * @param[in] sources The vector of sources used. 
+ * @param[in] sys The object that contains the R-RANASAC data. This includes the current time and other information.
+ * @param[in,out] success A flag to indicate if the optimization converged to a solution. If and only if the optimization converged will success have a value of true.
  * @return The hypothetical state estimate of the track.
  */ 
 static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
