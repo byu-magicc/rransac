@@ -8,12 +8,18 @@
 namespace rransac
 {
 
+/**
+ * \class DataTreeClusters
+ * This data tree organizes the measurements in clusters. A cluster is a group of neighboring measurements. For more information on a cluster, see the class Cluster. 
+ * Since track initialization works on clusters to improve speed performance, one technique to organize the measurements is in clusters. Since the measurements are already 
+ * in clusters, we do not have to construct clusters which saves times. 
+ */ 
 template<typename tDataType = double>
 class DataTreeClusters : public DataTreeBase<std::list<Cluster<tDataType>>, DataTreeClusters, tDataType> {
 
 public:
 
-typedef tDataType DataType;
+typedef tDataType DataType;  /**< The scalar object for the data. Ex. float, double, etc. */
 
 /**
  * \struct MeasurementLocationInfo
@@ -22,28 +28,31 @@ typedef tDataType DataType;
  */ 
 struct MeasurementLocationInfo {
 
-    typename std::list<Cluster<DataType>>::iterator cluster_iter;
-    typename Cluster<DataType>::IteratorPair iter_pair;
+    typename std::list<Cluster<DataType>>::iterator cluster_iter;  /**< An iterator to the cluster a measurement is in. */
+    typename Cluster<DataType>::IteratorPair iter_pair;            /**< The information needed to locate the measurement in the cluster specified by MeasurementLocationInfo::cluster_iter. */
 
 };
 
 /**
- * Adds a measurement to the data tree. It is assumed that the measurement has a valid time stamp, type and valid data.
+ * Adds a measurement to the data tree. It is assumed that the measurement has a valid time stamp, type and data. A measurement is added by first
+ * checking to see if it is a neighbor to an existing cluster, if it is not, a new cluster will be formed with the measurement. 
+ * @param[in] sys The object that contains all of the data of RRANSAC. Thus it contains all of the measurements and data tree. 
  * @param[in] meas The measurement to be added.
  */
 template <typename tSystem>
 void DerivedAddMeasurement(const tSystem& sys, const Meas<DataType>& meas);
 
 /**
- * Removes a measurement from the data tree using meas_info. If a cluster is empty after removing a measurement, the cluster is removed.
- * @param[in] meas_info Contains the information necessary to remove a measurement 
+ * Removes a measurement from the data tree using meas_info. If the measurement to be removed is the only measurement in the cluster, the cluster will
+ * also be removed. 
+ * @param[in] meas_info Contains the information necessary to remove a measurement. 
  */
 void DerivedRemoveMeasurement(const MeasurementLocationInfo& meas_info); 
 
 /**
  * The data tree has a list of clusters. This function finds every cluster that meets the minimum subset requirements as defined by
- * Parameters::RANSAC_minimum_subset_ and gives a reference to System::clusters_ to later be used by RANSAC
- * @param[in,out] sys The complete system information
+ * Parameters::RANSAC_minimum_subset_ and gives a reference to System::clusters_ to later be used by the track initializer.
+ * @param[in,out] sys The complete system information.
  * @return returns true if a cluster is found.
  */
 template <typename tSystem>
@@ -51,15 +60,17 @@ void DerivedConstructClusters(tSystem& sys);
 
 /**
  * Removes all of the measurements with a time stamp before or equal to
- * the expiration time. 
- * @param[in] sys The complete system information
- * @param[in] expiration_time measurements before or equal to this time will be removed from the data set
+ * the expiration time. After removing the measurements, if a cluster is empty, the cluster is also removed. 
+ * @param[in] sys The complete system information.
+ * @param[in] expiration_time measurements before or equal to this time will be removed from the data set.
  */ 
 template <typename tSystem>
 void DerivedPruneDataTree(const tSystem sys, const double expiration_time);
 
 /**
  * Transforms the measurements using the transform provided. 
+ * @param[in] transform The transformation object provided by the user. The object should already have the data it needs to transform the model.
+ * @see TransformBase
  */ 
 template< typename tTransform>
 void DerivedTransformMeasurements(const tTransform& transform) {
@@ -76,7 +87,8 @@ private:
  */ 
 void MergeClusters(const typename std::list<Cluster<DataType>>::iterator iter1, const typename std::list<Cluster<DataType>>::iterator iter2);
 
-unsigned int cluster_label_ =0; /** < When a cluster is elevated to a good cluster, it will receive a unique label. This is for visualization purposes only */
+unsigned int cluster_label_ =0; /**< When a cluster is elevated to a good cluster, it will receive a unique label. A good cluster is a cluster that 
+                                     meets the minimum subset requirement as specified by Parameters::RANSAC_minimum_subset_. This label is for visualization purposes only */
 
 };
 

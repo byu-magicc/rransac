@@ -29,23 +29,31 @@ class NonLinearLMLEPolicy : public tSeed<tModel> {
 
 public:
 
-typedef typename tModel::State State;
-typedef typename State::DataType DataType;
-typedef typename tModel::Source Source;
-typedef tModel Model;
+typedef typename tModel::State State;           /**< The state of the target. @see State. */
+typedef typename tModel::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
+typedef typename tModel::Source Source;         /**< The object type of the source. @see SourceBase. */
+typedef tModel Model;                           /**< The object type of the model. */
+
 
 /**
- * Generates a hypothetical state at the current time step using the provided measurements in meas_subset.
- * @param meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state
- * @param curr_time The current time
- * @param sources The vector of sources used. 
+ * Generates a hypothetical state estimate at the current time step using the provided measurements in meas_subset. The nonlinear optimization
+ * problem is solved using Ceres. Ceres uses a object type Jet for the automatic differentiation. It is because of this that the data type (DataType)
+ * must be a template parameter.
+ * @param[in] meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state.
+ * @param[in] curr_time The current time.
+ * @param[in] sources The vector of sources used. 
+ * @return The hypothetical state estimate of the track.
  */ 
 static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
 
 private:
 
-static void GenerateSeedPolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
-    NonLinearLMLEPolicy::GenerateSeed(meas_subset, sys, x, size);
+/**
+ * Nonlinear optimization algorithms are only guaranteed to converge to local minimums or local solution. 
+ * 
+ */ 
+static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
+    NonLinearLMLEPolicy::GenerateSeedPolicy(meas_subset, sys, x, size);
 }
 
 // Cost functor used in the nonlinear LMLE
@@ -166,11 +174,12 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     success = false;
 
     double x[tModel::cov_dim_];
-    GenerateSeedPolicy(meas_subset, sys, x, tModel::cov_dim_);
 
+    // Construct the seed for the nonlinear optimization problem
+    GenerateSeed(meas_subset, sys, x, tModel::cov_dim_);
+
+    // Use Ceres to build the optimization problem
     ceres::Problem problem;
-    constexpr unsigned int meas_dim = tModel::Source::meas_space_dim_;
-
     for (auto iter = meas_subset.begin(); iter != meas_subset.end(); ++iter) {
         if (sys.sources_[iter->inner_it->source_index].params_.has_twist) {
             ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,meas_dim*2,tModel::cov_dim_>(new CostFunctor(*iter->inner_it, sys));

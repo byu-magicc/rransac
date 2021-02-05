@@ -212,11 +212,9 @@ void Cluster<tDataType>::PruneCluster(const double expiration_time) {
 template<typename tDataType> 
 template< typename tTransform>
 void Cluster<tDataType>::TransformMeasurements(const tTransform& transform) {
-    if (!transform.transform_null_) {
-        for (auto outer_iter = data_.begin(); outer_iter != data_.end(); ++outer_iter) {
-            for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter) {
-                transform.TransformMeasurement(*inner_iter);
-            }
+    for (auto outer_iter = data_.begin(); outer_iter != data_.end(); ++outer_iter) {
+        for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter) {
+            transform.TransformMeasurement(*inner_iter);
         }
     }
 }

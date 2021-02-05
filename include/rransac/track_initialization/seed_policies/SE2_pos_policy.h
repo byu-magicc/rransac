@@ -34,7 +34,7 @@ typedef typename State::DataType DataType;
  * @param size The size of the pointer x
  * 
  */ 
-    static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, DataType x[tModel::cov_dim_], const int size) {
+    static void GenerateSeedPolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, DataType x[tModel::cov_dim_], const int size) {
         
         if (meas_subset.size() < 3)
             throw std::runtime_error("SE2PosSeedPolicy: Minimum subset must be at least 3");
@@ -56,19 +56,12 @@ typedef typename State::DataType DataType;
         else if (middle_index >= newest_index)
             middle_index = newest_index -1;
         
-        for(auto subset_iter = meas_subset_ordered.begin(); subset_iter != meas_subset_ordered.end(); ++subset_iter) {
-            // std::cout << "time: " << subset_iter->inner_it->time_stamp << std::endl;
-        }
 
 
         if(meas_subset_ordered[newest_index].inner_it->type == MeasurementTypes::SEN_POS_VEL) {
             td1 = meas_subset_ordered[newest_index].inner_it->twist;
         } else {
             td1 = (meas_subset_ordered[newest_index].inner_it->pose - meas_subset_ordered[middle_index].inner_it->pose)/(meas_subset_ordered[newest_index].inner_it->time_stamp - meas_subset_ordered[middle_index].inner_it->time_stamp);
-
-            // std::cout << "pose1: " << std::endl << meas_subset_ordered[newest_index].inner_it->pose << std::endl;
-            // std::cout << "pose2: " << std::endl << meas_subset_ordered[next_newest_index].inner_it->pose << std::endl;
-        
         }
 
         if(meas_subset_ordered[oldest_index].inner_it->type == MeasurementTypes::SEN_POS_VEL) {
@@ -88,34 +81,9 @@ typedef typename State::DataType DataType;
         G.block(0,0,2,2) = R1;
         G.block(0,2,2,1) = meas_subset_ordered[newest_index].inner_it->pose;
         se2 = State::Algebra::Log(G);
-        // z = R.transpose()*td2;
-        // z.normalize();
         
         DataType dt = (meas_subset_ordered[oldest_index].inner_it->time_stamp - meas_subset_ordered[newest_index].inner_it->time_stamp );
 
-        // assign thd according to the largest component. If both components are similar in size, then use atan2. 
-        // This is because the smaller component is more subjected to noise and can drastically throw off the estimation. 
-        // if ( fabs(z(1)/z.norm()) > 0.9) {
-
-        //     thd = asin(z(1))/dt;
-        //     std::cout << "asin: " << thd << std::endl;
-
-        // } else if ( fabs(z(0)/z.norm()) > 0.9  ) {
-
-        //     thd = acos(z(0))/dt*sgn(z(1));
-        //     std::cout << "acos: " << thd << std::endl;
-
-
-        // } else {
-        //     thd = atan2(z(1),z(0))/dt;
-        //     std::cout << "atan: " << thd << std::endl;
-
-        // }
-
-        // std::cout << std::endl << "z: " << z << std::endl;
-        // std::cout << std::endl << "dt: " << dt << std::endl;
-        // thd = atan2(z(1),z(0))/dt;
-        // std::cout << "atan: " << thd << std::endl;
         Eigen::Matrix<double,1,1> th_tmp = lie_groups::so2<DataType>::Log(R1.transpose()*R2);
         DataType thd = th_tmp(0,0)/dt;
 

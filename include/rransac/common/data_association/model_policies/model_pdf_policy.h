@@ -15,11 +15,11 @@ namespace rransac
 {
     
 /**
- * \class
- * This policy associates measurements to models using the probabilistic data association (PDA) method. 
- * If a measurement is associated to a model, it is removed from System<Model>::new_meas_ and added to Model<State>::new_assoc_meas_. 
- * It must also update the model member variable Model<State>::model_likelihood_update_info_ with the proper information.
- * The policy must expose the function static void PolicyDataAssociationModel(System<Model>& sys) which is called by the host class.
+ * \class ModelPDFPolicy
+ * This policy associates measurements to tracks using the probabilistic data association (PDA) method. 
+ * If a measurement is associated to a track, it is removed from System::new_meas_ and added to Model::new_assoc_meas_ using the method ModelBase::AddNewMeasurement. 
+ * It must also update the model member variable Model::model_likelihood_update_info_ with the proper information.
+ * The policy must expose the function static void PolicyDataAssociationModel which is called by the host class. TODO::clean up this class. The current version was for optimization purposes, but it's ugly. So clean it up.
  */ 
 
 template<typename tModel>
@@ -27,8 +27,12 @@ class ModelPDFPolicy {
 
 public:
 
-typedef typename tModel::DataType DataType;
+typedef typename tModel::DataType DataType;   /**< The scalar object for the data. Ex. float, double, etc. */
 
+/**
+ * Implements the probabilistic data association method. * 
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
+ */ 
 static void  PolicyDataAssociationModel(System<tModel>& sys);
 
 
@@ -37,6 +41,7 @@ static void  PolicyDataAssociationModel(System<tModel>& sys);
  * In chronological order, the inliers are added as new measurements to the model. Once added, the weights
  * and model update info is calculated for all the inliers of the same time step. Then the model is updated.
  * This process is repeated for every time step until all inliers are added. NOTE: This method is not compatible for measurements with non fixed measurement covariance.
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
  * @param model The model that is being filtered.
  */ 
 static void CalculateMeasurmentAndLikelihoodDataPolicy(const System<tModel>& sys, tModel& model);
@@ -45,31 +50,67 @@ private:
 
 /**
  * Used with the filtering process to calculate the measurement likelihood, validation volume, and model likelihood update info
- * 
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
+ * @param model The model that is being filtered.
  */ 
 static void FilteringCalculateMeasStatistics(const System<tModel>& sys, tModel& model);
 
+/**
+ * Tries to associate the new measurements to tracks. A measurement is associated to a track is it is 
+ * inside the validation region of the track. All of the associated measurements are given weights according
+ * to the PDA algorithm to be later used in updating the track's state estimate. 
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
+ * @param[in,out] source_produced_meas Not every source will produce measurements at every sensor scan. This parameter 
+ *                              indicates which sources produced measurements during the current sensor scan.
+ */ 
 static void AssociateMeasurements(System<tModel>& sys, std::vector<bool>& source_produced_meas);
 
+/**
+ * During the track initialization process, measurement inliers are added to the track's ModelBase::new_assoc_meas_ member variable.
+ * This method calculates the weights for those measurements. 
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
+ * @param[in] model The track whose new associated measurements are being weighed.
+ */ 
 static void CalculateWeightsForModel(const System<tModel>& sys, tModel& model);
 
 /**
- * Calls the function CalculateWeightsForModel for every model;
+ * Calls the function CalculateWeightsForModel for every track;
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
  */ 
 static void CalculateWeights(System<tModel>& sys);
 
-
+/**
+ * Computes the geodesic distance between the measurement and the state of a track normalized by the innovation covariance.
+ * @param[in] sources All of the measurement sources.
+ * @param[in] meas The measurement whose distance from a track is being calculated.
+ * @param[in] model The track whose distance from a measurement is being calculated.
+ * @param[in] innovation_covariance The innovation covariance associated with the probability the measurement originated from the track. 
+ * @return The geodesic distance between the measurement and the state of the track normalized by the innovation covariance. 
+ */ 
 static double GetDistance(const std::vector<typename tModel::Source>& sources, const Meas<DataType>& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance);
 
+/**
+ * Calculates the information needed to update the track's model likelihood. 
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
+ * @param[in,out] source_produced_meas Not every source will produce measurements at every sensor scan. This parameter 
+ *                              indicates which sources produced measurements during the current sensor scan.
+ */ 
 static void CalculateModelUpdateInfo(System<tModel>& sys, std::vector<bool>& source_produced_meas);
 
+/**
+ * Calculates the volume of the validation region. The volume of the validation region depends on the track and source.
+ * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the models. 
+ * @param[in] det_inn_cov_sqrt The square root of the innovation covariance's determinant. 
+ * @param[in] source_index The index of the source. 
+ */ 
 static double GetVolume(const System<tModel>& sys, const double det_inn_cov_sqrt, const double source_index);
 
 /**
- * Calculates a measurement likelihood
- * @param distance The normalized distance the measurement is from the model
- * @param dimensions The dimensions of the measurement
- * @param det_inn_cov_sqrt The square root of the determinant of the innovation
+ * Calculates the likelihood the measurement originated from a track.
+ * @param[in] distance The normalized distance the measurement is from the model.
+ * @param[in] dimensions The dimensions of the measurement.
+ * @param[in] det_inn_cov_sqrt The square root of the determinant of the innovation covariance corresponding to a measurement source and track.
+ * @return The likelihood the measurement originated from a track
  */ 
 static double GetLikelihood(const double distance, const double dimensions, const double det_inn_cov_sqrt);
 

@@ -2,10 +2,12 @@
 #define RRANSAC_TRACK_INITIALIZATION_LMLE_POLICIES_LINEAR_LMLE_POLICY_H_
 #pragma once
 
+#include <Eigen/Dense>
+
 #include "data_containers/cluster.h"
 #include "system.h"
 #include "common/measurement/measurement_base.h"
-#include <Eigen/Dense>
+
 
 namespace rransac
 {
@@ -22,16 +24,18 @@ class LinearLMLEPolicy {
 
 public:
 
-typedef typename tModel::State State;
-typedef typename tModel::Source Source;
-typedef tModel Model;
-typedef typename tModel::DataType DataType;
+typedef typename tModel::State State;           /**< The state of the target. @see State. */
+typedef typename tModel::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
+typedef typename tModel::Source Source;         /**< The object type of the source. @see SourceBase. */
+typedef tModel Model;                           /**< The object type of the model. */
+
 
 /**
- * Generates a hypothetical state at the current time step using the provided measurements in meas_subset.
- * @param meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state
- * @param curr_time The current time
- * @param sources The vector of sources used. 
+ * Generates a hypothetical state at the current time step using the provided measurements in meas_subset and the linear least squares method.
+ * @param[in] meas_subset The container of iterators to measurements that will be used to estimate the hypothetical state.
+ * @param[in] curr_time The current time.
+ * @param[in] sources The vector of sources used. 
+ * @return The hypothetical state estimate of the track.
  */ 
 static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
 
@@ -80,7 +84,7 @@ typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStat
         HG = H*G;
         
 
-        // Build innovation covariance depending on if the measurement covariance is fixed or not. 
+        // Builds the inverse innovation covariance 
         S_inv = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
         
         

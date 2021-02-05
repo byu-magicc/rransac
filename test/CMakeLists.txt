@@ -108,10 +108,10 @@ include(CTest)
 # ../src/parameters.cpp)
 # target_link_libraries(model_baseTest2 gtest_main )
 
-add_executable(model_managerTest 
-common/models/model_manager_test.cpp
-../src/parameters.cpp)
-target_link_libraries(model_managerTest gtest_main )
+# add_executable(model_managerTest 
+# common/models/model_manager_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(model_managerTest gtest_main )
 
 
 #---------------------------------------
@@ -141,16 +141,16 @@ target_link_libraries(model_managerTest gtest_main )
 # Track Initialization
 #---------------------------------------
 
-# add_executable(linear_lmle_policyTest 
-# track_initialization/lmle_policies/linear_lmle_policy_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(linear_lmle_policyTest gtest_main )
+add_executable(linear_lmle_policyTest 
+track_initialization/lmle_policies/linear_lmle_policy_test.cpp
+../src/parameters.cpp)
+target_link_libraries(linear_lmle_policyTest gtest_main )
 
-# add_executable(nonlinear_lmle_policyTest 
-# track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
-# )
+add_executable(nonlinear_lmle_policyTest 
+track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
+../src/parameters.cpp)
+target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
+)
 
 # add_executable(SE2_pos_policyTest 
 # track_initialization/seed_policies/SE2_pos_policy_test.cpp

@@ -8,9 +8,9 @@ namespace rransac
 {
 
 /**
- * \class
+ * \class DataTreeClusterAssociationPolicy
  * This policy assumes that the data tree is of type DataTreeClusters. The remaining new measurements are added
- * the the data tree and then all of the new measurements are removed from System<tModel>::new_meas_
+ * the the data tree and then all of the new measurements are removed from System::new_meas_
  * 
  */ 
 
@@ -19,6 +19,10 @@ class DataTreeClusterAssociationPolicy {
 
 public:
 
+    /**
+     * The remaining new measurements are added the the data tree and then all of the new measurements are removed from System::new_meas_.
+     * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes clusters and the data tree. 
+     */ 
     static void  PolicyDataAssociationClusterDataTree(System<tModel>& sys) {
         for(auto iter = sys.new_meas_.begin(); iter != sys.new_meas_.end(); ++iter) {
                 sys.data_tree_.AddMeasurement(sys, *iter);            
@@ -26,8 +30,6 @@ public:
         
         sys.new_meas_.clear();
     }
-
-
 
 };
 

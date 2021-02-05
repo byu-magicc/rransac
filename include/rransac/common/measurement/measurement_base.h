@@ -51,6 +51,7 @@ struct Meas
     double likelihood;          /**< The likelihood that the measurement came from the track it was associated with. This value is set during the data
                                       association process.*/
     double weight;              /**< The weight assigned to the measurement when updating the track. This value is set during the data association process. */
+    double vol;                 /**< The volume of the validation region. TODO:: remove the dependency of this member variable by modifying ModelPDFPolicy. */
 };
 
 
