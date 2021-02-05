@@ -23,12 +23,12 @@ namespace rransac
 
 using namespace lie_groups;
 
-typedef ModelRN<R2_r2, TransformNULL> Model1;
-typedef ModelRN<R3_r3, TransformNULL> Model2;
-typedef ModelSENPosVel<SE2_se2, TransformNULL> Model3;
-typedef ModelSENPoseTwist<SE2_se2, TransformNULL> Model4;
-typedef ModelSENPosVel<SE3_se3, TransformNULL> Model5;
-typedef ModelSENPoseTwist<SE3_se3, TransformNULL> Model6;
+typedef ModelRN<R2_r2, TransformNULL, SourceRN> Model1;
+typedef ModelRN<R3_r3, TransformNULL, SourceRN> Model2;
+typedef ModelSENPosVel<SE2_se2, TransformNULL, SourceSENPosVel> Model3;
+typedef ModelSENPoseTwist<SE2_se2, TransformNULL, SourceSENPoseTwist> Model4;
+typedef ModelSENPosVel<SE3_se3, TransformNULL, SourceSENPosVel> Model5;
+typedef ModelSENPoseTwist<SE3_se3, TransformNULL, SourceSENPoseTwist> Model6;
 
 
 
@@ -47,9 +47,9 @@ typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS
 typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
 // using MyTypes = ::testing::Types<ModelHelper3, ModelHelper5 >;
-using MyTypes = ::testing::Types< ModelHelper1>;
+// using MyTypes = ::testing::Types< ModelHelper1>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 

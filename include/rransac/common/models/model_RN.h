@@ -19,7 +19,7 @@
 namespace rransac {
 
 template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource = SourceRN>
-class ModelRN : public ModelBase<tSource<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelRN<tState, tSource, tTransformation>> {
+class ModelRN : public ModelBase<tSource<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelRN<tState, tTransformation,tSource>> {
 
 public:
 

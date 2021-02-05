@@ -20,7 +20,7 @@ namespace rransac {
  * of this, the dimension of the error covariance is less than the dimension of the state. So, in order to properly model the target, we had to make adjustments. 
  */ 
 template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource=SourceSENPosVel>
-class ModelSENPosVel : public ModelBase<tSource<tState>, tTransformation<tState>,  tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1, ModelSENPosVel<tState, tSource, tTransformation>> {
+class ModelSENPosVel : public ModelBase<tSource<tState>, tTransformation<tState>,  tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1, ModelSENPosVel<tState, tTransformation,tSource>> {
 
 public:
 

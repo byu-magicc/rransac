@@ -36,12 +36,13 @@ static void PropagateModels(System<tModel>& sys, const double dt);
 static void UpdateModels(System<tModel>& sys);
 
 /**
- * Transforms all of the models
+ * Transforms all of the tracks and their consensus sets
  */ 
 static void TransformModels(System<tModel>& sys){
     for (auto iter = sys.models_.begin(); iter!=sys.models_.end(); ++iter) {
         iter->TransformModel(sys.transformaion_);
-        iter->TransformConsensusSet(sys.transformaion_);
+        if (sys.params_.transform_consensus_set_)
+            iter->TransformConsensusSet(sys.transformaion_);
     }
 }
 

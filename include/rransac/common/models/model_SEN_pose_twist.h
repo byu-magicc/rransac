@@ -15,7 +15,7 @@ namespace rransac {
  * This model is designed to be used for target's whose configuration manifold is SEN and the measurement space is also SEN. See ModelBase for more detail.
  */ 
 template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource = SourceSENPoseTwist>
-class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelSENPoseTwist<tState, tSource, tTransformation>> {
+class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelSENPoseTwist<tState, tTransformation,tSource>> {
 
 public:
 
