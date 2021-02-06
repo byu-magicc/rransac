@@ -1,5 +1,5 @@
-#ifndef RRANSAC_VISUALIZATION_DRAW_TRACK_POLICIES_DRAW_SE2_POLICY_H_
-#define RRANSAC_VISUALIZATION_DRAW_TRACK_POLICIES_DRAW_SE2_POLICY_H_
+#ifndef RRANSAC_VISUALIZATION_DRAW_TRACK_POLICIES_DRAW_POLICY_SE2_H_
+#define RRANSAC_VISUALIZATION_DRAW_TRACK_POLICIES_DRAW_POLICY_SE2_H_
 
 
 #include <opencv2/core.hpp>
@@ -15,8 +15,9 @@
 
 namespace rransac {
 
-template <typename tModel>
-class DrawSE2Policy {
+
+template<typename tModel>
+class DrawTrackPolicySE2 {
 
 public:
 
@@ -29,7 +30,7 @@ static void DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tMod
 //                                        Definitions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename tModel>
-void DrawSE2Policy<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>* sys, const DrawInfo& draw_info) {
+void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>* sys, const DrawInfo& draw_info) {
 
     // The negations on some values are need in order to transform the tracking frame to the frame for drawing the image.
     
@@ -133,4 +134,4 @@ void DrawSE2Policy<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, c
 
 } // namespace rransac
 
-#endif //RRANSAC_VISUALIZATION_DRAW_TRACK_POLICIES_DRAW_SE2_POLICY_H_
+#endif //RRANSAC_VISUALIZATION_DRAW_TRACK_POLICIES_DRAW_POLICY_SE2_H_
