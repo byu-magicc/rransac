@@ -29,7 +29,7 @@ using namespace rransac;
 
 struct Test1 {
     public:
-    typedef ModelRN<R2_r2, TransformNULL> Model;
+    typedef ModelRN<R2_r2, TransformNULL,SourceRN> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
@@ -71,7 +71,7 @@ struct Test1 {
 
 struct Test2 {
     public:
-    typedef ModelRN<R3_r3, TransformNULL> Model;
+    typedef ModelRN<R3_r3, TransformNULL,SourceRN> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
@@ -113,7 +113,7 @@ struct Test2 {
 
 struct Test3 {
     public:
-    typedef ModelSENPoseTwist<SE2_se2, TransformNULL> Model;
+    typedef ModelSENPoseTwist<SE2_se2, TransformNULL,SourceSENPoseTwist> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
@@ -164,7 +164,7 @@ struct Test3 {
 
 struct Test4 {
     public:
-    typedef ModelSENPoseTwist<SE3_se3, TransformNULL> Model;
+    typedef ModelSENPoseTwist<SE3_se3, TransformNULL,SourceSENPoseTwist> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
@@ -217,7 +217,7 @@ struct Test4 {
 
 struct Test5 {
     public:
-    typedef ModelSENPosVel<SE2_se2, TransformNULL> Model;
+    typedef ModelSENPosVel<SE2_se2, TransformNULL,SourceSENPosVel> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;

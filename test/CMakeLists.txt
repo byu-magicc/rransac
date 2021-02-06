@@ -164,10 +164,10 @@ include(CTest)
 # target_link_libraries(ransacTest gtest_main )
 
 
-add_executable(ransacTest2 
-track_initialization/ransac_test2.cpp
-../src/parameters.cpp)
-target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
+# add_executable(ransacTest2 
+# track_initialization/ransac_test2.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 
 
 #---------------------------------------
@@ -179,10 +179,10 @@ target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 # ../src/parameters.cpp)
 # target_link_libraries(rransacTest gtest_main)
 
-# add_executable(rransacFullTest
-# rransac_full_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
+add_executable(rransacFullTest
+rransac_full_test.cpp
+../src/parameters.cpp)
+target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
 
 
 

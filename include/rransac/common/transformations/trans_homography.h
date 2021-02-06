@@ -31,7 +31,7 @@ typedef Eigen::Matrix<DataType,2,2> Mat2d;
 typedef Eigen::Matrix<DataType,3,3> Mat3d;  /**< The data type of the homography. */
 typedef Eigen::Matrix<DataType,4,4> Mat4d;
 typedef Eigen::Matrix<DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov; /**< The object type of the track's error covariance. */
-
+typedef Mat3d MatData;
 
 // Components of the Homograpy H = [H1, h2; h3_T^T, h4] where T stands for transpose.
 Eigen::Matrix<DataType,2,2> H1_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  

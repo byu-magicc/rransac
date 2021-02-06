@@ -56,6 +56,7 @@ struct SourceParameters {
     
 
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
+    // TODO:: I should have the user specify if it has twist or not. Add it as a template parameter to optimize things. 
     bool has_twist;                      /**< Indicates if the measurement has twist data in addition to pose. This is calculated from SourceParameters::type_. */
     double gate_threshold_;              /**< The gate threshold of the validation region. See Tracking and Data Fusion by Bar-Shalom 2011 for more detail on the validation region. 
                                               This is calculated from SourceParameters::gate_probability_. */
@@ -331,24 +332,6 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
 
     bool success = SetParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown. Otherwise, the parameters are set.
     this->state_in_surveillance_region_callback_ = StateInsideSurveillanceRegionDefaultCallback;
-    
-    if(this->params_.type_ == MeasurementTypes::RN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST) {
-        this->params_.has_twist = true;
-        boost::math::chi_squared dist(meas_space_dim_*2);
-        this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
-        this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
-        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_))/boost::math::tgamma(static_cast<double>(meas_space_dim_) +1.0);
-    } else {
-        this->params_.has_twist = false;
-        boost::math::chi_squared dist(meas_space_dim_);
-        this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
-        this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
-        this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_)/2.0)/boost::math::tgamma(static_cast<double>(meas_space_dim_)/2.0 +1.0);
-    }
-    
-    this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
-    
-
     static_cast<tDerived*>(this)->DerivedInit(params_);
 }   
 
@@ -499,8 +482,24 @@ bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
 template<typename tState, typename tDerived>
 bool SourceBase<tState,tDerived>::SetParameters(const SourceParameters& params) {
     bool success = VerifySourceParameters(params);
-    if (success) 
+    if (success) {
         this->params_ = params;
+        if(this->params_.type_ == MeasurementTypes::RN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST) {
+            this->params_.has_twist = true;
+            boost::math::chi_squared dist(meas_space_dim_*2);
+            this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+            this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
+            this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_))/boost::math::tgamma(static_cast<double>(meas_space_dim_) +1.0);
+        } else {
+            this->params_.has_twist = false;
+            boost::math::chi_squared dist(meas_space_dim_);
+            this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+            this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
+            this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_)/2.0)/boost::math::tgamma(static_cast<double>(meas_space_dim_)/2.0 +1.0);
+        }
+    
+        this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
+    }
     return success;
 }
 

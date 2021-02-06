@@ -16,8 +16,8 @@
 #include "common/sources/source_SEN_pose_twist.h"
 #include "common/measurement/measurement_base.h"
 #include "parameters.h"
-#include "track_initialization/seed_policies/null_policy.h"
-#include "track_initialization/seed_policies/SE2_pos_policy.h"
+#include "track_initialization/seed_policies/null_seed_policy.h"
+#include "track_initialization/seed_policies/SE2_pos_seed_policy.h"
 #include "track_initialization/lmle_policies/linear_lmle_policy.h"
 #include "track_initialization/lmle_policies/nonlinear_lmle_policy.h"
 #include "common/transformations/transformation_null.h"
@@ -35,14 +35,14 @@ using namespace rransac;
 
 struct Test1 {
     public:
-    typedef ModelRN<R2_r2, TransformNULL> Model_;
+    typedef ModelRN<R2_r2, TransformNULL,SourceRN> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
     typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     typedef Eigen::Matrix<double,2,2> MatR_;
     typedef Eigen::Matrix<double,4,4> MatR2_;
@@ -55,10 +55,10 @@ struct Test1 {
     std::string test_name = "R2 Test";
     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
 
-    static State GenerateRandomState(const double fov) {
-        State rand_state;
-        rand_state.g_.data_ = State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
-        rand_state.u_.data_ = VecU::Random()*2;
+    static State_ GenerateRandomState(const double fov) {
+        State_ rand_state;
+        rand_state.g_.data_ = State_::Algebra::Exp(Eigen::Matrix<double,State_::Group::dim_,1>::Random()*fov);
+        rand_state.u_.data_ = VecU_::Random()*2;
         return rand_state;
     }
 
@@ -87,14 +87,14 @@ struct Test1 {
 
 struct Test2 {
     public:
-    typedef ModelRN<R3_r3, TransformNULL> Model_;
+    typedef ModelRN<R3_r3, TransformNULL,SourceRN> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
     typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,LinearLMLEPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
 
     typedef Eigen::Matrix<double,3,3> MatR_;
@@ -111,10 +111,10 @@ struct Test2 {
 
     TransformMatData_ transform_data;
 
-    static State GenerateRandomState(const double fov) {
-        State rand_state;
-        rand_state.g_.data_ = State::Algebra::Exp(Eigen::Matrix<double,State::Group::dim_,1>::Random()*fov);
-        rand_state.u_.data_ = VecU::Random();
+    static State_ GenerateRandomState(const double fov) {
+        State_ rand_state;
+        rand_state.g_.data_ = State_::Algebra::Exp(Eigen::Matrix<double,State_::Group::dim_,1>::Random()*fov);
+        rand_state.u_.data_ = VecU_::Random();
         return rand_state;
     }
 
@@ -141,14 +141,14 @@ struct Test2 {
 
 struct Test3 {
     public:
-    typedef ModelSENPoseTwist<SE2_se2, TransformNULL> Model_;
+    typedef ModelSENPoseTwist<SE2_se2, TransformNULL,SourceSENPoseTwist> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
     typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
 
     typedef Eigen::Matrix<double,3,3> MatR_;
@@ -163,12 +163,12 @@ struct Test3 {
     static constexpr bool transform_data_ = false;
     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
 
-    static State GenerateRandomState(const double fov) {
+    static State_ GenerateRandomState(const double fov) {
 
-        State rand_state;
+        State_ rand_state;
         rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
         rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
-        rand_state.u_.data_ = VecU::Random();
+        rand_state.u_.data_ = VecU_::Random();
         return rand_state;
     }
 
@@ -203,14 +203,14 @@ struct Test3 {
 
 struct Test4 {
     public:
-    typedef ModelSENPoseTwist<SE3_se3, TransformNULL> Model_;
+    typedef ModelSENPoseTwist<SE3_se3, TransformNULL,SourceSENPoseTwist> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
     typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,NULLSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
 
     typedef Eigen::Matrix<double,6,6> MatR_;
@@ -227,12 +227,12 @@ struct Test4 {
     std::string test_name = "SE3 Pose Test";
 
 
-    static State GenerateRandomState(const double fov) {
+    static State_ GenerateRandomState(const double fov) {
 
-        State rand_state;
+        State_ rand_state;
         rand_state.g_.R_ = so3<double>::Exp(Eigen::Matrix<double,3,1>::Random()*3);
         rand_state.g_.t_ = Eigen::Matrix<double,3,1>::Random()*fov;
-        rand_state.u_.data_ = VecU::Random()*2;
+        rand_state.u_.data_ = VecU_::Random()*2;
         return rand_state;
     }
 
@@ -269,14 +269,14 @@ struct Test4 {
 struct Test5 {
     public:
 
-    typedef ModelSENPosVel<SE2_se2, TransformHomography> Model_;
+    typedef ModelSENPosVel<SE2_se2, TransformHomography,SourceSENPosVel> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
     typedef Ransac<Model_, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<Model_,ModelPDFPolicy,DataTreeClusterAssociationPolicy,SE2PosSeedPolicy,NonLinearLMLEPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     TransformMatData_ transform_data;
     static constexpr bool transform_data_ = true;
@@ -295,12 +295,12 @@ struct Test5 {
     Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
     
 
-    static State GenerateRandomState(const double fov) {
+    static State_ GenerateRandomState(const double fov) {
 
-        State rand_state;
+        State_ rand_state;
         rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
         rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
-        rand_state.u_.data_ = VecU::Random()*2;
+        rand_state.u_.data_ = VecU_::Random()*2;
         return rand_state;
     }
 
@@ -460,7 +460,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "propagate " << std::endl;
             if (ii !=this->start_time_) {
-                track.state_.u_.data_ += test_data_.noise_mat*sqrt(this->noise_)*utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
+                track.state_.u_.data_ += test_data_.noise_mat*sqrt(this->noise_)*rransac::utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
             }
 
@@ -550,7 +550,8 @@ double fov_ = 50;  // The surveillance region is a square centered at zero with 
 //--------------------------------------------------------------------------------------------------------
 
 // using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
-using MyTypes = ::testing::Types< Test5>;
+using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4>;
+// using MyTypes = ::testing::Types< Test5>;
 TYPED_TEST_SUITE(RRANSACTest, MyTypes);
 
 
