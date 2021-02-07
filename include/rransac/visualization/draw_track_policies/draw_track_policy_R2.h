@@ -33,7 +33,7 @@ template <typename tModel>
 void DrawTrackPolicyR2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>* sys, const DrawInfo& draw_info) {
 
     // The negations on some values are need in order to transform the tracking frame to the frame for drawing the image.
-    int radius = 5;
+    int radius = 2.5;
     Eigen::Matrix<double,2,1> pos = model.state_.g_.data_*draw_info.scale_drawing;
     Eigen::Matrix<double,2,1> vel = model.state_.u_.data_*draw_info.scale_drawing*draw_info.scale_draw_vel;
 
@@ -47,41 +47,37 @@ void DrawTrackPolicyR2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mode
 
     
 
-    // // Draw validation region for position only
-    // if (draw_info.draw_validation_region) {
-    //     for (auto& source : sys->sources_) {
-    //         if (source.params_.type_ == MeasurementTypes::RN_POS) {
-    //             unsigned int source_index = source.params_.source_index_;
-    //             Eigen::MatrixXd S = model.GetInnovationCovariance(sys->sources_,source_index);
-    //             Eigen::EigenSolver<Eigen::Matrix2d> eigen_solver;
-    //             eigen_solver.compute(S);
-    //             Eigen::Vector2cd eigen_values = eigen_solver.eigenvalues();
-    //             Eigen::Matrix2cd eigen_vectors = eigen_solver.eigenvectors();
-    //             double th = 0;
-    //             // Make sure that the x component is positive
-    //             if (std::real(eigen_vectors(0,0)) < 0) {
-    //                 eigen_vectors.block(0,0,2,1)*=-1;
-    //             }
-    //             if (std::real(eigen_vectors(0,1)) < 0) {
-    //                 eigen_vectors.block(0,1,2,1)*=-1;
-    //             }
+    // Draw validation region for the first source
+    if (draw_info.draw_validation_region) {
+        auto& source = sys->sources_.front();
+        unsigned int source_index = source.params_.source_index_;
+        Eigen::MatrixXd S = model.GetInnovationCovariance(sys->sources_,source_index);
+        Eigen::Matrix2d S_pos = S.block(0,0,2,2);
+        Eigen::EigenSolver<Eigen::Matrix2d> eigen_solver;
+        eigen_solver.compute(S_pos);
+        Eigen::Vector2cd eigen_values = eigen_solver.eigenvalues();
+        Eigen::Matrix2cd eigen_vectors = eigen_solver.eigenvectors();
+        double th = 0;
+        // Make sure that the x component is positive
+        if (std::real(eigen_vectors(0,0)) < 0) {
+            eigen_vectors.block(0,0,2,1)*=-1;
+        }
+        if (std::real(eigen_vectors(0,1)) < 0) {
+            eigen_vectors.block(0,1,2,1)*=-1;
+        }
 
 
-    //             double scale = std::sqrt(source.params_.gate_threshold_)*draw_info.scale_drawing;
-    //             if (std::real(eigen_vectors(0,0)*eigen_vectors(1,0)) < 0) {
-    //                 th = std::real(eigen_vectors(0,0))*180/M_PI;
-    //                 cv::Size size(std::sqrt(std::norm(eigen_values(0)))*scale,std::sqrt(std::norm(eigen_values(1)))*scale);
-    //                 cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
-    //             } else {
-    //                 th = std::real(eigen_vectors(0,1))*180/M_PI;
-    //                 cv::Size size(std::sqrt(std::norm(eigen_values(1)))*scale,std::sqrt(std::norm(eigen_values(0)))*scale);
-    //                 cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
-    //             }
-    //             break;
-    //         }
-
-    //     }
-    // }
+        double scale = std::sqrt(source.params_.gate_threshold_)*draw_info.scale_drawing;
+        if (std::real(eigen_vectors(0,0)*eigen_vectors(1,0)) < 0) {
+            th = std::real(eigen_vectors(0,0))*180/M_PI;
+            cv::Size size(std::sqrt(std::norm(eigen_values(0)))*scale,std::sqrt(std::norm(eigen_values(1)))*scale);
+            cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
+        } else {
+            th = std::real(eigen_vectors(0,1))*180/M_PI;
+            cv::Size size(std::sqrt(std::norm(eigen_values(1)))*scale,std::sqrt(std::norm(eigen_values(0)))*scale);
+            cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
+        }
+    }
 
 
 

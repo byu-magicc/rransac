@@ -20,10 +20,10 @@ int main() {
 
     typedef rransac::ModelRN<lie_groups::R2_r2,rransac::TransformNULL,rransac::SourceRN> Model;
     rransac::ModelRN<lie_groups::R2_r2,rransac::TransformNULL,rransac::SourceRN> model;
-    cv::Mat img( 100,100, CV_8UC3 , cv::Scalar(255,255,255));
-    model.state_.g_.data_ << 5,5;
+    cv::Mat img( 500,500, CV_8UC3 , cv::Scalar(255,255,255));
+    model.state_.g_.data_ << 50,50;
     model.state_.u_.data_ << -1,2;
-    model.err_cov_ << 2,0,0,1;
+    model.err_cov_.setIdentity();
     
     rransac::SourceParameters source_params;
     source_params.source_index_ = 0;
@@ -41,9 +41,10 @@ int main() {
     draw_info.color_vel = cv::Scalar(0,255,0);
     draw_info.draw_validation_region = true;
     draw_info.scale_draw_pos = 1;
-    draw_info.scale_draw_vel = 1;
-    draw_info.scale_drawing = 2;
-    draw_info.line_thickness = 1;
+    draw_info.scale_draw_vel = 2;
+    draw_info.scale_drawing = 3;
+    draw_info.line_thickness = 2;
+    draw_info.img_center = cv::Point(250,250);
 
     rransac::DrawTrackPolicyR2<Model>::DrawTrackPolicy(img, model, &sys, draw_info);
 
