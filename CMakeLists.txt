@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(rransac VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 14)
-# set(CMAKE_BUILD_TYPE RELEASE)
+set(CMAKE_BUILD_TYPE RELEASE)
 # set(CMAKE_BUILD_TYPE DEBUG)
 
 IF(CMAKE_COMPILER_IS_GNUCC)
@@ -15,11 +15,7 @@ find_package(Boost REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(OpenCV 4 REQUIRED )
 
-IF(CMAKE_BUILD_TYPE MATCHES Debug)
-message(STATUS "Build type is Debug")
-message(STATUS ${CMAKE_BUILD_TYPE})
-add_compile_definitions(DEBUG_BUILD)
-ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+
 
 
 

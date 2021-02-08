@@ -48,7 +48,7 @@ float meas_time_window_; /**< The duration of time in seconds from the current t
                               into the past during which measurements should be considered. All
                               measurements outside of the time window will be discarded. For example: a value of 
                               5 means that all the measurement window is from the current time stamp to 
-                              curent time stamp -5. */
+                              curent time stamp -5 seconds. */
 
 
 bool transform_consensus_set_; /**< A flag that indicates if the measurements in the consensus set should
@@ -91,7 +91,7 @@ double track_max_missed_detection_time_; /**< A track that has not received an a
                                                is assumed to be outside the surveillance region of any sensor and will be discarded. */
 double track_similar_tracks_threshold_;  /**< The threshold used to determine if two tracks are similar enough to be considered the same. If they are, then they will 
                                                be merged. */
-int track_max_num_tracks_;               /**< The maximum number of tracks that RRANSAC will store */
+int track_max_num_tracks_;               /**< The maximum number of tracks that RRANSAC will store. */
 
 // Nonlinear LMLE 
 bool nonlinear_innov_cov_id_;                      /**< When set to true, the innovation covariance will not be calculated in the nonlinear track initialization process.
