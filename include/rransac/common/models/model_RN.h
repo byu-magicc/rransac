@@ -3,11 +3,12 @@
 #pragma once
 
 
+#include "lie_groups/state.h"
+#include "rransac/common/models/model_base.h"
+#include "rransac/common/sources/source_RN.h"
+#include "rransac/utilities.h"
 
-#include "common/models/model_base.h"
-#include "common/sources/source_RN.h"
-#include "state.h"
-#include "utilities.h"
+
 
 
 

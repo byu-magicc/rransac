@@ -11,11 +11,10 @@
 #include <boost/math/special_functions/gamma.hpp>
 #include <functional>
 
-
-#include "parameters.h"
-#include "common/measurement/measurement_base.h"
-#include "state.h"
-#include "common/utilities.h"
+#include "lie_groups/state.h"
+#include "rransac/parameters.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/common/utilities.h"
 
 
 namespace rransac

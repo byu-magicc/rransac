@@ -4,8 +4,10 @@
 
 
 #include <Eigen/Core>
-#include "common/measurement/measurement_base.h"
-#include "state.h"
+
+#include "lie_groups/state.h"
+#include "rransac/common/measurement/measurement_base.h"
+
 
 
 namespace rransac

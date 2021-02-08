@@ -4,7 +4,7 @@
 
 #include <list>
 
-#include "common/measurement/measurement_base.h"
+#include "rransac/common/measurement/measurement_base.h"
 
 namespace rransac
 {

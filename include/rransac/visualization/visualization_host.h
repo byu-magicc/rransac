@@ -1,8 +1,7 @@
 #ifndef RRANSAC_VISUALIZATION_VISUALIZATION_HOST_INFO_H_
 #define RRANSAC_VISUALIZATION_VISUALIZATION_HOST_INFO_H_
 
-#include "system.h"
-#include "draw_info.h"
+
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -11,6 +10,11 @@
 #include <time.h>       /* time */
 #include <random>
 #include <string>
+
+#include "rransac/system.h"
+#include "rransac/visualization/draw_info.h"
+
+
 
 namespace rransac
 {

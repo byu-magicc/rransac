@@ -2,8 +2,8 @@
 #define RRANSAC_DATA_CONTAINERS_DATA_TREE_CLUSTER_H_
 #pragma once
 
-#include "data_containers/data_tree/data_tree_base.h"
-#include "data_containers/cluster.h"
+#include "rransac/data_containers/data_tree/data_tree_base.h"
+#include "rransac/data_containers/cluster.h"
 
 namespace rransac
 {

@@ -7,11 +7,11 @@
 #include <opencv2/imgproc.hpp>
 #include <vector>
 #include <Eigen/Core>
-#include "visualization/draw_info.h"
 #include <cmath>
-#include "system.h"
 
-#include "common/measurement/measurement_base.h"
+#include "rransac/system.h"
+#include "rransac/visualization/draw_info.h"
+#include "rransac/common/measurement/measurement_base.h"
 
 namespace rransac
 {

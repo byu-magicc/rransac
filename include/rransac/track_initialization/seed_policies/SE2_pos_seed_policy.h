@@ -5,9 +5,9 @@
 #include <algorithm>
 #include <math.h>
 
-#include "system.h"
-#include "data_containers/cluster.h"
-#include "lie_algebras/so2.h"
+#include "rransac/system.h"
+#include "rransac/data_containers/cluster.h"
+#include "lie_groups/lie_algebras/so2.h"
 
 namespace rransac
 {

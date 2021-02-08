@@ -11,11 +11,11 @@
 #include <mutex>
 #include <thread>
 
-#include "system.h"
-#include "data_containers/data_tree/data_tree_cluster.h"
-#include "common/models/model_base.h"
-#include "data_containers/cluster.h"
-#include "common/models/model_manager.h"
+#include "rransac/system.h"
+#include "rransac/data_containers/data_tree/data_tree_cluster.h"
+#include "rransac/common/models/model_base.h"
+#include "rransac/data_containers/cluster.h"
+#include "rransac/common/models/model_manager.h"
 
 
 namespace rransac {

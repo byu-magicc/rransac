@@ -6,11 +6,11 @@
 #include <Eigen/Dense>
 #include "ceres/ceres.h"
 
-#include "data_containers/cluster.h"
-#include "system.h"
-#include "common/measurement/measurement_base.h"
-#include "state.h"
-#include "lie_groups/SE3.h"
+#include "rransac/data_containers/cluster.h"
+#include "rransac/system.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "lie_groups/state.h"
+#include "lie_groups/lie_groups/SE3.h"
 
 
 namespace rransac

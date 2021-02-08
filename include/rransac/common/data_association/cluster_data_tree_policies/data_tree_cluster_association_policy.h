@@ -2,7 +2,7 @@
 #define RRANSAC__COMMON__DATA_ASSOCIATION__DATA_CLUSTER_DATA_TREE_POLICIES__DATA_TREE_CLUSTER_ASSOCIATION_POLICY_H_
 #pragma once
 
-#include "system.h"
+#include "rransac/system.h"
 
 namespace rransac
 {

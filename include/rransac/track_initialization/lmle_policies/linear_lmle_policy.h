@@ -4,9 +4,9 @@
 
 #include <Eigen/Dense>
 
-#include "data_containers/cluster.h"
-#include "system.h"
-#include "common/measurement/measurement_base.h"
+#include "rransac/data_containers/cluster.h"
+#include "rransac/system.h"
+#include "rransac/common/measurement/measurement_base.h"
 
 
 namespace rransac

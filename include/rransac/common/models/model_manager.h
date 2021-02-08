@@ -6,8 +6,8 @@
 #include <random>
 #include <unsupported/Eigen/MatrixFunctions>
 
-#include "system.h"
-#include "common/utilities.h"
+#include "rransac/system.h"
+#include "rransac/common/utilities.h"
 
 namespace rransac
 {

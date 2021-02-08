@@ -10,8 +10,8 @@
 #include <Eigen/Eigenvalues>
 #include <cmath>
 
-#include "visualization/draw_info.h"
-#include "system.h"
+#include "rransac/visualization/draw_info.h"
+#include "rransac/system.h"
 
 namespace rransac {
 

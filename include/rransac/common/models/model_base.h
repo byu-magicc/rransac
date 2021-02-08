@@ -7,14 +7,14 @@
 #include <Eigen/Dense>
 #include <vector>
 
-#include "state.h"
-#include "common/measurement/measurement_base.h"
-#include "data_containers/consensus_set.h"
-#include "parameters.h"
-#include "common/sources/source_base.h"
-#include "common/sources/source_RN.h"
-#include "common/sources/source_SEN_pos_vel.h"
-#include "common/sources/source_SEN_pose_twist.h"
+#include "lie_groups/state.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/data_containers/consensus_set.h"
+#include "rransac/parameters.h"
+#include "rransac/common/sources/source_base.h"
+#include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_SEN_pos_vel.h"
+#include "rransac/common/sources/source_SEN_pose_twist.h"
 
 namespace rransac {
 

@@ -1,0 +1,13 @@
+# - Config file for the rransac package
+# It defines the following variables
+#  RRANSAC_INCLUDE_DIRS - include directories for rransac
+#  RRANSAC_LIBS		    - libraries to link against
+#  RRANSAC_VERSION		- the library version
+ 
+# Compute paths
+get_filename_component(RRANSAC_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include("${RRANSAC_CMAKE_DIR}/rransac.cmake")
+
+set(RRANSAC_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+set(RRANSAC_VERSION "@RRANSAC_VERSION@")
+set(RRANSAC_LIBS "@PROJECT_NAME@")

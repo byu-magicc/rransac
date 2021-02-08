@@ -44,6 +44,9 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 # ## Install ##
 # ########################
 
+# Used to help create a package configuration file
+# include(CMakePackageConfigHelpers)
+
 set(lie_groups_header_path "${PROJECT_SOURCE_DIR}/lie_groups/liegroups/include")
 
 set(lie_group_header_files 
@@ -105,17 +108,25 @@ ${rransac_header_files})
 set(sources 
 src/parameters.cpp)
 
-add_library(${PROJECT_NAME}_lib ${sources} ${headers})
 
-set(include_dest "include/${PROJECT_NAME}-${PROJECT_VERSION}")
-set(main_lib_dest "lib/${PROJECT_NAME}-${PROJECT_VERSION}")
+set(INSTALL_INCLUDE_DIR "include/${PROJECT_NAME}-${PROJECT_VERSION}" CACHE PATH "Installation directory for header files.")
+set(INSTALL_LIB_DIR "lib/${PROJECT_NAME}-${PROJECT_VERSION}" CACHE PATH "Installation directory for libraries. ")
+set(INSTALL_BIN_DIR "bin/${PROJECT_NAME}-${PROJECT_VERSION}" CACHE PATH "Installation directory for executable files.") 
+set(INSTALL_CMAKE_DIR "lib/cmake/${PROJECT_NAME}-${PROJECT_VERSION}" CACHE PATH "Installation directory for cmake files.")
 
-install(TARGETS ${PROJECT_NAME}_lib EXPORT ${PROJECT_NAME}_lib DESTINATION ${main_lib_dest})
-install(FILES ${headers} DESTINATION ${include_dest})
 
-install(EXPORT ${PROJECT_NAME}_lib DESTINATION ${main_lib_dest})
+# Make relative paths absolute (needed later on)
+foreach(p LIB BIN INCLUDE CMAKE)
+  set(var INSTALL_${p}_DIR)
+  if(NOT IS_ABSOLUTE "${${var}}")
+    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+  endif()
+endforeach()
 
-target_include_directories(${PROJECT_NAME}_lib PUBLIC
+
+add_library(${PROJECT_NAME} SHARED ${sources} )
+
+target_include_directories(${PROJECT_NAME} PUBLIC
 $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
 $<INSTALL_INTERFACE:${EIGEN3_INCLUDE_DIR}> 
 $<BUILD_INTERFACE:${Boost_INCLUDE_DIRS}>
@@ -124,12 +135,64 @@ $<BUILD_INTERFACE:${OpenCV_INCLUDE_DIRS}>
 $<INSTALL_INTERFACE:${OpenCV_INCLUDE_DIRS}> 
 $<BUILD_INTERFACE:${rransac_header_path}>
 $<BUILD_INTERFACE:${lie_groups_header_path}>
-$<INSTALL_INTERFACE:${include_dest}> 
-$<INSTALL_INTERFACE:${main_lib_dest}> 
+$<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> 
+$<INSTALL_INTERFACE:${INSTALL_LIB_DIR}> 
 )
 
-get_filename_component(SELF_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-include(${SELF_DIR}/rransac_lib.cmake)
+
+message(INFO " ${INSTALL_LIB_DIR}")
+
+install(TARGETS ${PROJECT_NAME}
+EXPORT ${PROJECT_NAME}
+LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+RUNTIME DESTINATION "${INSTALL_BIN_DIR}")
+
+install(EXPORT ${PROJECT_NAME} DESTINATION ${INSTALL_CMAKE_DIR})
+# install(EXPORT ${PROJECT_NAME})
+
+
+# install(FILES ${headers} DESTINATION ${INSTALL_INCLUDE_DIR})
+install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
+install(DIRECTORY lie_groups/liegroups/include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+configure_file(
+    "${CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
+##################################
+#   CMake Package Installation   #
+##################################
+
+
+# configure_package_config_file(
+#   ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+# "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+# INTALL_DESTINATION ${main_lib_dest}
+# )
+
+# Create the rransac-config.cmake and rransac-config-version.cmake files
+file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
+# ... for the build tree
+set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include")
+configure_file("${CMAKE_MODULE_PATH}/rransac-config.cmake.in" "${PROJECT_BINARY_DIR}/rransac-config.cmake" @ONLY)
+# ... for the install tree
+set(CONF_INCLUDE_DIRS "\${RRANSAC_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+configure_file("${CMAKE_MODULE_PATH}/rransac-config.cmake.in" "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/rransac-config.cmake" @ONLY)
+# ... for both
+configure_file("${CMAKE_MODULE_PATH}/rransac-config-version.cmake.in" "${PROJECT_BINARY_DIR}/rransac-config-version.cmake" @ONLY)
+
+# Install the rransac-config.cmake and rransac-config-version.cmake
+install(FILES
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/rransac-config.cmake"
+  "${PROJECT_BINARY_DIR}/rransac-config-version.cmake"
+  DESTINATION "${INSTALL_CMAKE_DIR}")
+
 
 #############
 ## Testing ##

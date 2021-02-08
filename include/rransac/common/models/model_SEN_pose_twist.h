@@ -2,11 +2,10 @@
 #define RRANSAC_COMMON_MODELS_SEN_POSE_TWIST_H_
 #pragma once
 
-
-#include "common/models/model_base.h"
-#include "common/sources/source_SEN_pose_twist.h"
-#include "state.h"
-#include "utilities.h"
+#include "lie_groups/state.h"
+#include "rransac/common/models/model_base.h"
+#include "rransac/common/sources/source_SEN_pose_twist.h"
+#include "rransac/utilities.h"
 
 namespace rransac {
 

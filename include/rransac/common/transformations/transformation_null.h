@@ -5,8 +5,8 @@
 
 #include <Eigen/Core>
 
-#include "common/measurement/measurement_base.h"
-#include "common/transformations/transformation_base.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/common/transformations/transformation_base.h"
 
 namespace rransac
 {

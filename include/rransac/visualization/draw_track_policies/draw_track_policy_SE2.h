@@ -8,10 +8,11 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
-#include "visualization/draw_info.h"
-#include "lie_algebras/so2.h"
 #include <cmath>
-#include "system.h"
+
+#include "lie_groups/lie_algebras/so2.h"
+#include "rransac/visualization/draw_info.h"
+#include "rransac/system.h"
 
 namespace rransac {
 
