@@ -26,6 +26,12 @@ include(CTest)
 # Define Tests
 ########################################
 
+include_directories(../include
+					../liegroups/include
+					${EIGEN3_INCLUDE_DIR}
+					${Boost_INCLUDE_DIRS}
+					${OpenCV_INCLUDE_DIRS})
+
 #---------------------------------------
 # Parameter Test
 #---------------------------------------
@@ -179,10 +185,10 @@ include(CTest)
 # ../src/parameters.cpp)
 # target_link_libraries(rransacTest gtest_main)
 
-add_executable(rransacFullTest
-rransac_full_test.cpp
-../src/parameters.cpp)
-target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
+# add_executable(rransacFullTest
+# rransac_full_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
 
 
 

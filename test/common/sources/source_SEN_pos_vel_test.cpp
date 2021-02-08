@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "common/sources/source_SEN_pos_vel.h"
+#include "rransac/common/sources/source_SEN_pos_vel.h"
 
 
 namespace rransac

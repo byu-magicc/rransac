@@ -1,14 +1,16 @@
 #include <string>
 #include <gtest/gtest.h>
-#include "rransac.h"
-#include "common/models/model_RN.h"
-#include "state.h"
-#include "common/transformations/transformation_null.h"
-#include "common/transformations/trans_homography.h"
-#include "common/data_association/model_policies/model_pdf_policy.h"
-#include "common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
-#include "track_initialization/seed_policies/null_seed_policy.h"
-#include "track_initialization/lmle_policies/linear_lmle_policy.h"
+
+#include "lie_groups/state.h"
+
+#include "rransac/rransac.h"
+#include "rransac/common/models/model_RN.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/transformations/trans_homography.h"
+#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
+#include "rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
+#include "rransac/track_initialization/seed_policies/null_seed_policy.h"
+#include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
 
 
 

@@ -4,8 +4,8 @@
 
 #include <list>
 
-#include "common/measurement/measurement_base.h"
-#include "system.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/system.h"
 
 
 namespace rransac

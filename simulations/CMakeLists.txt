@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 
-
+include_directories(../include
+					../liegroups/include
+					${EIGEN3_INCLUDE_DIR}
+					${Boost_INCLUDE_DIRS}
+					${OpenCV_INCLUDE_DIRS})
 
 add_executable(sim_se2_pos_vel
 se2_pos_vel_sim.cpp

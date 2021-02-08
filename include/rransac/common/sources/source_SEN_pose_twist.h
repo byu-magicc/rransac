@@ -6,7 +6,8 @@
 #include <typeinfo>
 
 #include "rransac/common/sources/source_base.h"
-#include "rransac/utilities.h"
+#include "rransac/common/utilities.h"
+#include "lie_groups/utilities.h"
 
 
 namespace rransac {

@@ -1,8 +1,9 @@
 #include <string>
 #include <gtest/gtest.h>
-#include "parameters.h"
 #include <time.h>       /* time */
 #include <stdlib.h>     /* srand, rand */
+
+#include "rransac/parameters.h"
 
 namespace rransac {
 

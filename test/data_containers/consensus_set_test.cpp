@@ -1,13 +1,15 @@
 #include <gtest/gtest.h>
-#include "Eigen/Core"
+#include <Eigen/Core>
 #include <vector>
-#include "common/measurement/measurement_base.h"
-#include "data_containers/consensus_set.h"
 #include <stdlib.h>
 #include <time.h> 
 #include <chrono>
-#include "common/transformations/transformation_base.h"
-#include "state.h"
+
+#include "lie_groups/state.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/data_containers/consensus_set.h"
+#include "rransac/common/transformations/transformation_base.h"
+
 
 namespace rransac {
 

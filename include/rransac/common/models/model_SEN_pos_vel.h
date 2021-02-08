@@ -4,9 +4,10 @@
 
 
 #include "lie_groups/state.h"
+#include "lie_groups/utilities.h"
 #include "rransac/common/models/model_base.h"
 #include "rransac/common/sources/source_SEN_pos_vel.h"
-#include "rransac/utilities.h"
+#include "rransac/common/utilities.h"
 
 namespace rransac {
 

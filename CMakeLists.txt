@@ -23,16 +23,7 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 
 
-# message(STATUS "${EIGEN3_INCLUDE_DIR}")
-# message(STATUS "here")
 
-# include_directories(
-#     ${EIGEN3_INCLUDE_DIR}
-#     ${Boost_INCLUDE_DIRS}
-#     ${OpenCV_INCLUDE_DIRS}
-#     include/rransac
-#     lie_groups/liegroups/include
-#     )
 
 
 
@@ -44,66 +35,10 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 # ## Install ##
 # ########################
 
-# Used to help create a package configuration file
-# include(CMakePackageConfigHelpers)
 
-set(lie_groups_header_path "${PROJECT_SOURCE_DIR}/lie_groups/liegroups/include")
-
-set(lie_group_header_files 
-${lie_groups_header_path}/lie_algebras/algebra_base.h
-${lie_groups_header_path}/lie_algebras/rn.h 
-${lie_groups_header_path}/lie_algebras/se2.h 
-${lie_groups_header_path}/lie_algebras/se3.h 
-${lie_groups_header_path}/lie_algebras/so2.h 
-${lie_groups_header_path}/lie_algebras/so3.h 
-${lie_groups_header_path}/lie_groups/group_base.h 
-${lie_groups_header_path}/lie_groups/Rn.h 
-${lie_groups_header_path}/lie_groups/SE2.h 
-${lie_groups_header_path}/lie_groups/SE3.h 
-${lie_groups_header_path}/lie_groups/SO2.h 
-${lie_groups_header_path}/lie_groups/SO3.h 
-${lie_groups_header_path}/state.h 
-${lie_groups_header_path}/utilities.h
-)
-
+set(lie_groups_header_path "${PROJECT_SOURCE_DIR}/include")
 
 set(rransac_header_path "${PROJECT_SOURCE_DIR}/include")
-
-set(rransac_header_files 
-${rransac_header_path}/rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h
-${rransac_header_path}/rransac/common/data_association/model_policies/model_pdf_policy.h
-${rransac_header_path}/rransac/common/data_association/data_association_host.h 
-${rransac_header_path}/rransac/common/measurement/measurement_base.h 
-${rransac_header_path}/rransac/common/models/model_base.h 
-${rransac_header_path}/rransac/common/models/model_RN.h 
-${rransac_header_path}/rransac/common/models/model_SEN_pos_vel.h 
-${rransac_header_path}/rransac/common/models/model_SEN_pose_twist.h 
-${rransac_header_path}/rransac/common/models/model_manager.h 
-${rransac_header_path}/rransac/common/sources/source_base.h 
-${rransac_header_path}/rransac/common/sources/source_RN.h 
-${rransac_header_path}/rransac/common/sources/source_SEN_pos_vel.h 
-${rransac_header_path}/rransac/common/sources/source_SEN_pose_twist.h 
-${rransac_header_path}/rransac/common/transformations/transformation_base.h
-${rransac_header_path}/rransac/common/transformations/trans_homography.h 
-${rransac_header_path}/rransac/common/transformations/transformation_null.h 
-${rransac_header_path}/rransac/common/utilities.h 
-${rransac_header_path}/rransac/data_containers/data_tree/data_tree_base.h 
-${rransac_header_path}/rransac/data_containers/data_tree/data_tree_cluster.h 
-${rransac_header_path}/rransac/data_containers/cluster.h 
-${rransac_header_path}/rransac/data_containers/consensus_set.h 
-${rransac_header_path}/rransac/track_initialization/lmle_policies/linear_lmle_policy.h 
-${rransac_header_path}/rransac/track_initialization/lmle_policies/nonlinear_lmle_policy.h 
-${rransac_header_path}/rransac/track_initialization/seed_policies/null_seed_policy.h 
-${rransac_header_path}/rransac/track_initialization/seed_policies/SE2_pos_seed_policy.h 
-${rransac_header_path}/rransac/track_initialization/ransac.h 
-${rransac_header_path}/rransac/parameters.h 
-${rransac_header_path}/rransac/rransac.h 
-${rransac_header_path}/rransac/system.h 
-)
-
-set(headers 
-${lie_group_header_files}
-${rransac_header_files})
 
 set(sources 
 src/parameters.cpp)
@@ -140,41 +75,33 @@ $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}>
 )
 
 
-message(INFO " ${INSTALL_LIB_DIR}")
-
 install(TARGETS ${PROJECT_NAME}
 EXPORT ${PROJECT_NAME}
 LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
 RUNTIME DESTINATION "${INSTALL_BIN_DIR}")
 
 install(EXPORT ${PROJECT_NAME} DESTINATION ${INSTALL_CMAKE_DIR})
-# install(EXPORT ${PROJECT_NAME})
 
 
-# install(FILES ${headers} DESTINATION ${INSTALL_INCLUDE_DIR})
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
-install(DIRECTORY lie_groups/liegroups/include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
+install(DIRECTORY liegroups/include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+# uninstall target
 configure_file(
-    "${CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-    IMMEDIATE @ONLY)
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+  IMMEDIATE @ONLY)
 
 add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+  COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
+
 
 ##################################
 #   CMake Package Installation   #
 ##################################
-
-
-# configure_package_config_file(
-#   ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
-# "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-# INTALL_DESTINATION ${main_lib_dest}
-# )
 
 # Create the rransac-config.cmake and rransac-config-version.cmake files
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")

@@ -3,18 +3,16 @@
 #include <math.h> 
 
 
-#include "state.h"
-#include "system.h"
-#include "common/transformations/transformation_null.h"
-#include "common/models/model_SEN_pose_twist.h"
-#include "common/models/model_SEN_pos_vel.h"
-// #include "common/models/model_SEN_pos_vel.h"
-// #include "common/sources/source_SEN_pose_twist.h"
-#include "common/sources/source_base.h"
-#include "data_containers/cluster.h"
-#include "track_initialization/lmle_policies/nonlinear_lmle_policy.h"
-#include "track_initialization/seed_policies/null_seed_policy.h"
-#include "track_initialization/seed_policies/SE2_pos_seed_policy.h"
+#include "lie_groups/state.h"
+#include "rransac/system.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/models/model_SEN_pose_twist.h"
+#include "rransac/common/models/model_SEN_pos_vel.h"
+#include "rransac/common/sources/source_base.h"
+#include "rransac/data_containers/cluster.h"
+#include "rransac/track_initialization/lmle_policies/nonlinear_lmle_policy.h"
+#include "rransac/track_initialization/seed_policies/null_seed_policy.h"
+#include "rransac/track_initialization/seed_policies/SE2_pos_seed_policy.h"
 
 using namespace rransac;
 using namespace lie_groups;

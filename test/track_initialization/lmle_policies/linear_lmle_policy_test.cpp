@@ -2,15 +2,15 @@
 #include <Eigen/Dense>
 #include <math.h> 
 
-#include "system.h"
-#include "common/sources/source_base.h"
-#include "common/sources/source_RN.h"
-#include "common/models/model_base.h"
-#include "common/models/model_RN.h"
-#include "common/transformations/transformation_null.h"
-#include "data_containers/cluster.h"
-#include "track_initialization/lmle_policies/linear_lmle_policy.h"
-#include "track_initialization/seed_policies/null_seed_policy.h"
+#include "rransac/system.h"
+#include "rransac/common/sources/source_base.h"
+#include "rransac/common/sources/source_RN.h"
+#include "rransac/common/models/model_base.h"
+#include "rransac/common/models/model_RN.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/data_containers/cluster.h"
+#include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
+#include "rransac/track_initialization/seed_policies/null_seed_policy.h"
 
 using namespace rransac;
 using namespace lie_groups;

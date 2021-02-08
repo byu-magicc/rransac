@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <math.h>
 
-#include "common/measurement/measurement_base.h"
-#include "common/parameters.h"
-#include "data_structures/node.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/common/parameters.h"
+#include "rransac/data_structures/node.h"
 
 namespace rransac 
 {

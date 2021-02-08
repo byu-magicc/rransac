@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-
-#include "data_containers/cluster.h"
-#include "common/transformations/trans_homography.h"
-#include "state.h"
 #include <math.h>
-#include "parameters.h"
 #include <Eigen/Core>
 #include <iostream>
-#include "common/sources/source_RN.h"
+
+#include "lie_groups/state.h"
+#include "rransac/data_containers/cluster.h"
+#include "rransac/common/transformations/trans_homography.h"
+#include "rransac/parameters.h"
+#include "rransac/common/sources/source_RN.h"
 
 using namespace rransac;
 using namespace lie_groups;

@@ -4,13 +4,13 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "state.h"
-#include "system.h"
-#include "common/models/model_SEN_pos_vel.h"
-#include "common/sources/source_SEN_pos_vel.h"
-#include "common/transformations/transformation_null.h"
-#include "track_initialization/seed_policies/SE2_pos_seed_policy.h"
-#include "data_containers/cluster.h"
+#include "lie_groups/state.h"
+#include "rransac/system.h"
+#include "rransac/common/models/model_SEN_pos_vel.h"
+#include "rransac/common/sources/source_SEN_pos_vel.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/track_initialization/seed_policies/SE2_pos_seed_policy.h"
+#include "rransac/data_containers/cluster.h"
 
 using namespace rransac;
 using namespace lie_groups;

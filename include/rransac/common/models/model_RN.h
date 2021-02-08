@@ -4,9 +4,11 @@
 
 
 #include "lie_groups/state.h"
+#include "lie_groups/utilities.h"
 #include "rransac/common/models/model_base.h"
 #include "rransac/common/sources/source_RN.h"
-#include "rransac/utilities.h"
+#include "rransac/common/utilities.h"
+
 
 
 

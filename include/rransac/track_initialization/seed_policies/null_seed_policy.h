@@ -2,8 +2,8 @@
 #define RRANSAC_TRACK_INITIALIZATION_SEED_POLOCIES_NULL_POLICY_H_
 #pragma once
 
-#include "system.h"
-#include "data_containers/cluster.h"
+#include "rransac/system.h"
+#include "rransac/data_containers/cluster.h"
 
 namespace rransac
 {

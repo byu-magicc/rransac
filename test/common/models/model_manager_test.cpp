@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <Eigen/Core>
 
-#include "system.h"
-#include "common/models/model_manager.h"
-#include "common/transformations/transformation_null.h"
-#include "common/transformations/trans_homography.h"
-#include "common/models/model_RN.h"
-#include "common/sources/source_RN.h"
+#include "rransac/system.h"
+#include "rransac/common/models/model_manager.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/transformations/trans_homography.h"
+#include "rransac/common/models/model_RN.h"
+#include "rransac/common/sources/source_RN.h"
 
 namespace rransac
 {

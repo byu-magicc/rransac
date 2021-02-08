@@ -1,1 +1,4 @@
 
+[submodule "liegroups"]
+	path = liegroups
+	url = git@magiccvs.byu.edu:mark_petersen/liegroups.git

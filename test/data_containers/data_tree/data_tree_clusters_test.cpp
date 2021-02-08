@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 // #include "data_containers/data_tree/data_tree_cluster.h"
-#include "system.h"
-#include "common/sources/source_RN.h"
-#include "common/models/model_RN.h"
-#include "common/transformations/trans_homography.h"
+#include "rransac/system.h"
+#include "rransac/common/sources/source_RN.h"
+#include "rransac/common/models/model_RN.h"
+#include "rransac/common/transformations/trans_homography.h"
 
 using namespace lie_groups;
 using namespace rransac;

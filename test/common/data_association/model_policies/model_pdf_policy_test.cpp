@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "system.h"
-#include "common/models/model_RN.h"
-#include "common/sources/source_RN.h"
-#include "common/transformations/transformation_null.h"
-#include "common/data_association/data_association_host.h"
-#include "common/data_association/model_policies/model_pdf_policy.h"
+#include "rransac/system.h"
+#include "rransac/common/models/model_RN.h"
+#include "rransac/common/sources/source_RN.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/data_association/data_association_host.h"
+#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
 
 
 using namespace rransac;

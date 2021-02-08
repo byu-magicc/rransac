@@ -3,15 +3,16 @@
 #include <time.h>
 #include <Eigen/Dense>
 
-#include "system.h"
-#include "state.h"
-#include "data_containers/cluster.h"
-#include "track_initialization/ransac.h"
-#include "common/models/model_RN.h"
-#include "common/transformations/transformation_null.h"
-#include "common/sources/source_RN.h"
-#include "common/data_association/model_policies/model_pdf_policy.h"
-#include "track_initialization/lmle_policies/linear_lmle_policy.h"
+#include "lie_groups/state.h"
+
+#include "rransac/system.h"
+#include "rransac/data_containers/cluster.h"
+#include "rransac/track_initialization/ransac.h"
+#include "rransac/common/models/model_RN.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/sources/source_RN.h"
+#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
+#include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
 
 using namespace rransac;
 using namespace lie_groups;
