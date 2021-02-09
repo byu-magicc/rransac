@@ -1,59 +1,50 @@
 
-#include "common/models/model_RN.h"
-#include "common/sources/source_base.h"
-#include "common/sources/source_RN.h"
-#include "common/sources/source_SEN_pose_twist.h"
-#include "state.h"
-#include "common/transformations/transformation_null.h"
-#include "common/measurement/measurement_base.h"
-#include "system.h"
-#include "common/transformations/transformation_null.h"
+#include <rransac/rransac.h>
+#include <lie_groups/state.h>
+#include <rransac/common/transformations/trans_homography.h>
+#include <rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h>
+#include <rransac/common/data_association/model_policies/model_pdf_policy.h>
+#include <rransac/common/measurement/measurement_base.h>
+#include <rransac/common/sources/source_base.h>
 
-#include "visualization/draw_info.h"
-#include "visualization/draw_track_policies/draw_track_policy_R2.h"
+#if TRACKING_SE2
+  #include <rransac/common/sources/source_SEN_pos_vel.h>
+  #include <rransac/common/models/model_SEN_pos_vel.h>
+  #include <rransac/track_initialization/seed_policies/SE2_pos_seed_policy.h>
+  #include <rransac/track_initialization/lmle_policies/nonlinear_lmle_policy.h> 
+#else // R2
+  #include <rransac/common/sources/source_RN.h>
+  #include <rransac/common/models/model_RN.h>
+  #include <rransac/track_initialization/seed_policies/null_seed_policy.h>
+  #include <rransac/track_initialization/lmle_policies/linear_lmle_policy.h>
+#endif
 
 
+#if TRACKING_SE2
+  typedef rransac::RRANSACTemplateParameters<lie_groups::SE2_se2, rransac::SourceSENPosVel,rransac::TransformHomography, rransac::ModelSENPosVel,rransac::SE2PosSeedPolicy,rransac::NonLinearLMLEPolicy,rransac::ModelPDFPolicy,rransac::DataTreeClusterAssociationPolicy> RRTemplateParams;
 
+#else
+  typedef rransac::RRANSACTemplateParameters<lie_groups::R2_r2, rransac::SourceRN,rransac::TransformHomography, rransac::ModelRN,rransac::NULLSeedPolicy,rransac::LinearLMLEPolicy,rransac::ModelPDFPolicy,rransac::DataTreeClusterAssociationPolicy> RRTemplateParams;
+#endif
 
+typedef typename RRTemplateParams::Model RR_Model;
+typedef typename RRTemplateParams::State RR_State;
+typedef typename rransac::System<RR_Model> RR_System;
+typedef typename rransac::RRANSAC<RRTemplateParams> RR_RRANSAC;
+
+#include "blah.h"
 
 int main() {
 
-    typedef rransac::ModelRN<lie_groups::R2_r2,rransac::TransformNULL,rransac::SourceRN> Model;
-    rransac::ModelRN<lie_groups::R2_r2,rransac::TransformNULL,rransac::SourceRN> model;
-    cv::Mat img( 500,500, CV_8UC3 , cv::Scalar(255,255,255));
-    model.state_.g_.data_ << 50,50;
-    model.state_.u_.data_ << -1,2;
-    model.err_cov_.setIdentity();
-    
-    rransac::SourceParameters source_params;
-    source_params.source_index_ = 0;
-    source_params.type_ = rransac::MeasurementTypes::RN_POS_VEL;
-    source_params.meas_cov_ = Eigen::Matrix4d::Identity()*2;
-    
-    rransac::SourceRN<lie_groups::R2_r2> source;
-    source.Init(source_params);
-    rransac::System<Model> sys;
-    sys.sources_.push_back(source);
-
-    rransac::DrawInfo draw_info;
-
-    draw_info.color_pos = cv::Scalar(255,0,0);
-    draw_info.color_vel = cv::Scalar(0,255,0);
-    draw_info.draw_validation_region = true;
-    draw_info.scale_draw_pos = 1;
-    draw_info.scale_draw_vel = 2;
-    draw_info.scale_drawing = 3;
-    draw_info.line_thickness = 2;
-    draw_info.img_center = cv::Point(250,250);
-
-    rransac::DrawTrackPolicyR2<Model>::DrawTrackPolicy(img, model, &sys, draw_info);
-
-    cv::imshow("blah", img);
-    cv::waitKey(0);
+    RR_RRANSAC rransac_; /**< RRANSAC is a multiple target tracking algorithm. */
+    rransac::Parameters rransac_params_;              /**< The parameters needed for RRANSAC. */
+    const RR_System* rransac_sys_; /**< A constant pointer to all of the data of RRANSAC. */
 
 
+    rransac_params_.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity();
+    rransac_.SetSystemParameters(rransac_params_);
 
+    Blah();
 
-
-    return 0;
+ return 0;   
 }

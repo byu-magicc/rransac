@@ -140,7 +140,7 @@ Mat2d TransformRotation(const Vec2d& vel_transformed) const {
  * @param[in] cov   The track's error covariance to be transformed.
  */ 
 template<>
-void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<typename lie_groups::R2_r2::DataType,4,4>& cov) const {
+inline void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R2_r2& state, Eigen::Matrix<typename lie_groups::R2_r2::DataType,4,4>& cov) const {
 
 
     Mat2d&& G = ConstructTranslationalVelTransform(state.g_.data_);
@@ -169,7 +169,7 @@ void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_groups::R
  * @param[in] cov   The track's error covariance to be transformed.
  */ 
 template<>
-void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups::SE2_se2& state, Eigen::Matrix<typename lie_groups::SE2_se2::DataType,5,5>& cov) const {
+inline void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups::SE2_se2& state, Eigen::Matrix<typename lie_groups::SE2_se2::DataType,5,5>& cov) const {
         
     // Constraining the Homomgraphy to SE2 greatly simplifies the transformation.
 
@@ -195,6 +195,6 @@ void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_groups:
 
 }
 
-}
+} // namespace rransac
 
 #endif // RRANSAC_COMMON_TRANS_HOMOGRAPHY_R2_H_

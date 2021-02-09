@@ -1,6 +1,6 @@
 #ifndef RRANSAC_COMMON_UTILITIES_H_
 #define RRANSAC_COMMON_UTILITIES_H_
-// #pragma once
+#pragma once
 
 
 #include <random>
@@ -10,7 +10,7 @@ namespace rransac {
 namespace utilities {
 
 
-Eigen::MatrixXd GaussianRandomGenerator(const int size){
+inline Eigen::MatrixXd GaussianRandomGenerator(const int size){
 
     std::default_random_engine gen(std::random_device{}());
 
