@@ -53,7 +53,7 @@ void SetData(const Data& data) {
 /** 
  * Returns the transformation data member variable.
  */ 
-tData GetData() {
+tData GetData() const {
     return data_;
 }
 
