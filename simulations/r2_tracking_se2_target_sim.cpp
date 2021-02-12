@@ -126,9 +126,9 @@ typedef typename T::Transformation_ Transformation_;
 static constexpr bool transform_data_ = T::transform_data_;
 
 
-RRANSACSimulation(const std::vector<int>& img_dimensions, const double drawing_scale ) : viz_(img_dimensions, drawing_scale) {}
-RRANSACSimulation(const std::vector<int>& img_dimensions, const double drawing_scale, const std::string file_path ) : viz_(img_dimensions, drawing_scale, file_path) {}
-RRANSACSimulation(const std::vector<int>& img_dimensions, const double drawing_scale, const std::string file_name, const double fps ) : viz_(img_dimensions, drawing_scale, file_name, fps) {}
+RRANSACSimulation(const std::vector<int>& img_dimensions, const DrawInfo& draw_info ) : viz_(img_dimensions, draw_info) {}
+RRANSACSimulation(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_path ) : viz_(img_dimensions, draw_info, file_path) {}
+RRANSACSimulation(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_name, const double fps ) : viz_(img_dimensions, draw_info, file_name, fps) {}
 
 
 void SetUp() {
@@ -230,7 +230,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "propagate " << std::endl;
             if (ii !=this->start_time_) {
-                // track.state_.u_.data_ += test_data_.target_noise_mat*sqrt(this->noise_)*rransac::utilities::GaussianRandomGenerator(T::TargetAlgebra_::dim_)*this->dt_;
+                track.state_.u_.data_ += test_data_.target_noise_mat*sqrt(this->noise_)*rransac::utilities::GaussianRandomGenerator(T::TargetAlgebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
             }
 
@@ -254,8 +254,8 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR_ ::Identity()*sqrt(this->noise_)*0.5);
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR2_::Identity()*sqrt(this->noise_)*0.5);
+                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR_ ::Identity()*sqrt(this->noise_));
+                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR2_::Identity()*sqrt(this->noise_));
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
@@ -311,7 +311,13 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             tmp_track_.state_.u_.data_ = this->tracks_[track_index].state_.g_.R_*this->tracks_[track_index].state_.u_.p_;
             tracks_to_draw.push_back(tmp_track_);
         }
-        viz_.DrawSystemAndTrueTracks(sys_,tracks_to_draw);
+
+        viz_.DrawClusters(sys_,true);
+        viz_.DrawTrueTracks(tracks_to_draw,sys_,false);
+        viz_.DrawUnAssociatedMeasurements(sys_,false);
+        viz_.DrawEstimatedTracks(sys_,false);
+        viz_.DrawNewMeasurements(new_measurements,sys_,false);
+        viz_.RecordImage();
 
 
     }
@@ -321,7 +327,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
 
 Meas<double> m1_, m2_, m3_, m4_;
-double noise_ = 1e-1;
+double noise_ = 0.5;
 T test_data_;
 std::vector<TargetModel_> tracks_;
 RRANSAC_ rransac_;
@@ -362,7 +368,14 @@ int main(int argc, char *argv[]) {
         img_dimensions[1] = dim2;
     }
 
-    RRANSACSimulation<Scenario1> sim(img_dimensions, scale, "/home/mark/Videos/sim1.mp4", 10);
+    DrawInfo draw_info;
+    draw_info.scale_drawing = scale;
+    draw_info.draw_validation_region = true;
+    draw_info.draw_measurment_velocity_position_threshold = false;
+    draw_info.draw_cluster_velocity_position_threshold = true;
+    draw_info.draw_poor_tracks = true;
+
+    RRANSACSimulation<Scenario1> sim(img_dimensions, draw_info, "/home/mark/Videos/sim1.mp4", 10);
 
     sim.SetUp();
 

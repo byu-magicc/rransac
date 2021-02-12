@@ -48,13 +48,15 @@ if (meas.twist.rows() >0) {
 cv::circle(img,pos,radius*draw_info.scale_draw_pos,draw_info.color_pos,-1, cv::LINE_AA);
 cv::arrowedLine(img, pos,vel+pos,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
 
-// Draw the position neighborhood
 
-cv::circle(img,pos,sys->params_.cluster_position_threshold_*draw_info.scale_drawing,draw_info.color_pos,draw_info.line_thickness, cv::LINE_AA);
+if (draw_info.draw_threshold) {
+    // Draw the position neighborhood
 
-// Draw the velocity neighborhood
-cv::circle(img,pos,sys->params_.cluster_velocity_threshold_*sys->params_.cluster_time_threshold_*draw_info.scale_drawing,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
+    cv::circle(img,pos,sys->params_.cluster_position_threshold_*draw_info.scale_drawing,draw_info.color_pos,draw_info.line_thickness, cv::LINE_AA);
 
+    // Draw the velocity neighborhood
+    cv::circle(img,pos,sys->params_.cluster_velocity_threshold_*sys->params_.cluster_time_threshold_*draw_info.scale_drawing,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
+}
 
 }
 
