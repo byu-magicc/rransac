@@ -139,7 +139,7 @@ install(FILES
 
 # option(BUILD_SIMS "Build the simulations" OFF)
 # if(BUILD_SIMS)
-  # add_subdirectory(simulations)
+  add_subdirectory(simulations)
 # endif()
 
 

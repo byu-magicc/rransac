@@ -70,6 +70,7 @@
         "core": "cpp",
         "matrixfunctions": "cpp",
         "*.cuh": "cpp",
-        "dense": "cpp"
+        "dense": "cpp",
+        "codecvt": "cpp"
     }
 }

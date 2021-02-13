@@ -240,9 +240,6 @@ void ModelPDFPolicy<tModel>::AssociateMeasurements(System<tModel>& sys, std::vec
 
             // In validation region
             if (distance <= sys.sources_[meas_iter->source_index].params_.gate_threshold_) {
-                std::cout << std::endl; 
-                std::cout << "distance: " << distance << std::endl;
-                std::cout << "gate threshold: " << sys.sources_[meas_iter->source_index].params_.gate_threshold_ << std::endl;
                 meas_associated = true;
                 meas_iter->likelihood = GetLikelihood(distance, innovation_covariance.rows(), det_inn_cov_sqrt); 
                 meas_iter->vol = GetVolume(sys, det_inn_cov_sqrt, meas_iter->source_index);
@@ -366,6 +363,7 @@ void ModelPDFPolicy<tModel>::CalculateModelUpdateInfo(System<tModel>& sys, std::
 template<typename tModel>
 double ModelPDFPolicy<tModel>::GetDistance(const std::vector<typename tModel::Source>& sources, const Meas<DataType>& meas, const tModel& model, const Eigen::MatrixXd& innovation_covariance) {
     Eigen::MatrixXd err = sources[meas.source_index].OMinus(meas, sources[meas.source_index].GetEstMeas(model.state_));
+
     return (err.transpose()*innovation_covariance.inverse()*err)(0,0);
 }
 
