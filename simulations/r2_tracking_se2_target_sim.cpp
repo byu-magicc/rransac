@@ -358,7 +358,7 @@ int main(int argc, char *argv[]) {
     int dim1 = 1000;
     int dim2 = 1000;
     double scale = 12;
-    std::vector<int> img_dimensions = {1080,1920};
+    std::vector<int> img_dimensions = {1920,1080};
 
     if (argc > 1) {
         dim1 = std::atof(argv[1]);

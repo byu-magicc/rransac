@@ -24,16 +24,69 @@ class VisualizationHost : tDrawMeasurementPolicy<tModel>, tDrawTrackPolicy<tMode
 
 public:
 
-VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info);
+/**
+ * This constructor requires the user to call one the setup function before drawing any measurements. Otherwise, bad things
+ * can happen.
+ */ 
+VisualizationHost() = default;
 
-VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_path);
+/**
+ * Calls the setup function Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info)
+ */ 
+VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info){Setup(img_dimensions,draw_info);}
 
-VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_name, const double fps);
+/**
+ * Calls the setup function Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_path)
+ */ 
+VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_path)
+{Setup(img_dimensions,draw_info,file_path);}
+
+/**
+ * Calls the setup function Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_name, const double fps)
+ */ 
+VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_name, const double fps){
+   Setup(img_dimensions,draw_info,file_name,fps);}
+
+
+/**
+ * Sets up the visualization. The visualization is shown on an image, and the thread spins until the user
+ * has the image as the current window and presses a key.
+ * @param draw_info The specifications for the visualizations. 
+ * @param img_dimensions The dimensions of the image used in visualization. The first element is the width and the second is the height.
+ */ 
+void Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info);
+
+/**
+ * Sets up the visualization. The visualization is shown on an image, and the thread spins until the user
+ * has the image as the current window and presses a key. If the user clicks on the image, then the current image will be saved to
+ * the provided file path. 
+ * @param draw_info The specifications for the visualizations. 
+ * @param img_dimensions The dimensions of the image used in visualization. The first element is the width and the second is the height.
+ * @param file_path The path to the directory where the images should be saved. If the file path doesn't exist, an error will be thrown. 
+ * The class will give the image a name with a numerical counter on it. 
+ */ 
+void Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_path);
+
+/**
+ * Sets up the visualization. The visualization is shown on an image, and the thread spins until the user
+ * has the image as the current window and presses a key. The images will be saved as a video. An error will be thrown
+ * if the file name is not valid (i.e. the directory protion of the file  name does not exist). 
+ * @param draw_info The specifications for the visualizations. 
+ * @param img_dimensions The dimensions of the image used in visualization. The first element is the width and the second is the height.
+ * @param file_name The absolute file path and name of the video.
+ * @param fps The frames per second for the video recording. 
+ */ 
+void Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_name, const double fps);
+
+
 
 ~VisualizationHost() {
 
-    if (record_video_)
-        video_writer_.release();        
+    if (record_video_) {
+        video_writer_.release(); 
+        std::cerr << "video released " << std::endl;
+    }
+               
 
 }
 
@@ -155,12 +208,12 @@ void SaveImgCallbackFunction(int event, int x, int y, int flags, void* userdata 
 //                                        Definitions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename tModel, template<typename > typename tDrawMeasurementPolicy, template<typename> typename tDrawTrackPolicy>
-VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info) :img_dimensions_(img_dimensions), draw_info_(draw_info) { 
+void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info) { 
     srand(time(NULL));
     dist_ = std::uniform_real_distribution<double>(0.0,1.0);
-
-
-    draw_info_.img_center = cv::Point2d(img_dimensions_[1]/2,img_dimensions_[0]/2);
+    img_dimensions_ = img_dimensions;
+    draw_info_ = draw_info;
+    draw_info_.img_center = cv::Point2d(img_dimensions_[0]/2,img_dimensions_[1]/2);
     draw_info_original_ = draw_info_;
     img_num_ = 0;
     window_name_ = "RRANSAC Visualization";
@@ -175,8 +228,10 @@ VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Visualization
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel, template<typename > typename tDrawMeasurementPolicy, template<typename> typename tDrawTrackPolicy>
-VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_path) : VisualizationHost(img_dimensions, draw_info) {
+void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_path) {
 
+
+    Setup(img_dimensions,draw_info);
     file_path_ = file_path;
     cv::setMouseCallback(window_name_,SaveImgCallbackFunction,NULL);
 
@@ -185,9 +240,10 @@ VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Visualization
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel, template<typename > typename tDrawMeasurementPolicy, template<typename> typename tDrawTrackPolicy>
-VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::VisualizationHost(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_name, const double fps) : VisualizationHost(img_dimensions, draw_info) {
+void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, const std::string file_name, const double fps){
 
-    video_writer_.open(file_name,cv::VideoWriter::fourcc('m','p','4','v'),fps,cv::Size(img_dimensions[1],img_dimensions[0]));
+    Setup(img_dimensions,draw_info);
+    video_writer_.open(file_name,cv::VideoWriter::fourcc('m','p','4','v'),fps,cv::Size(img_dimensions[0],img_dimensions[1]));
 
     fps_ = fps;
     file_path_ = file_name;
@@ -346,7 +402,7 @@ cv::Scalar VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Ge
 
 template<typename tModel, template<typename > typename tDrawMeasurementPolicy, template<typename> typename tDrawTrackPolicy>
 void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::ClearImage() {
-    img_ = cv::Mat( img_dimensions_[0], img_dimensions_[1], CV_8UC3 , cv::Scalar(255,255,255));
+    img_ = cv::Mat( img_dimensions_[1], img_dimensions_[0], CV_8UC3 , cv::Scalar(255,255,255));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

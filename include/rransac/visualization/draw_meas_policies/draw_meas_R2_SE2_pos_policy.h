@@ -34,7 +34,7 @@ void DrawMeasR2SE2PosPolicy<tModel>::DrawMeasPolicy(cv::Mat& img, const Meas<dou
 {
 
 // Draw the position and velocity
-double radius = 1;
+double radius = 0.5;
 cv::Point vel;
 cv::Point pos(meas.pose(0)*draw_info.scale_drawing,-meas.pose(1)*draw_info.scale_drawing);
 pos += draw_info.img_center;
@@ -45,7 +45,7 @@ if (meas.twist.rows() >0) {
     vel = cv::Point(tmp(0),-tmp(1));
 }
 
-cv::circle(img,pos,radius*draw_info.scale_draw_pos,draw_info.color_pos,-1, cv::LINE_AA);
+cv::circle(img,pos,radius*draw_info.scale_draw_pos*draw_info.scale_drawing,draw_info.color_pos,-1, cv::LINE_AA);
 cv::arrowedLine(img, pos,vel+pos,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
 
 

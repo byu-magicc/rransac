@@ -240,6 +240,9 @@ void ModelPDFPolicy<tModel>::AssociateMeasurements(System<tModel>& sys, std::vec
 
             // In validation region
             if (distance <= sys.sources_[meas_iter->source_index].params_.gate_threshold_) {
+                std::cout << std::endl; 
+                std::cout << "distance: " << distance << std::endl;
+                std::cout << "gate threshold: " << sys.sources_[meas_iter->source_index].params_.gate_threshold_ << std::endl;
                 meas_associated = true;
                 meas_iter->likelihood = GetLikelihood(distance, innovation_covariance.rows(), det_inn_cov_sqrt); 
                 meas_iter->vol = GetVolume(sys, det_inn_cov_sqrt, meas_iter->source_index);
