@@ -8,6 +8,7 @@
 
 #include "rransac/system.h"
 #include "rransac/common/utilities.h"
+#include "rransac/parameters.h"
 
 namespace rransac
 {
@@ -49,6 +50,17 @@ static void PropagateModels(System<tModel>& sys, const double dt);
 * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
 */
 static void UpdateModels(System<tModel>& sys);
+
+
+/**
+* Updates the parameters of every track. 
+* @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks and the system parameters 
+*/
+static void SetModelParameters(System<tModel>& sys){ 
+    for (auto iter = sys.models_.begin(); iter!=sys.models_.end(); ++iter) {
+        iter->SetParameters(sys.params_);
+    }
+}
 
 /**
  * Transforms all of the tracks and their consensus sets from the previous tracking frame to the current tracking frame. 

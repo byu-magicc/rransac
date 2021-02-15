@@ -116,6 +116,10 @@ public:
     Mat G_;                            /**< The Jacobian of the state transition function w.r.t. the noise  */
     Mat Q_;                            /**< Process noise covariance */
 
+#if RRANSAC_VIZ_HOOKS
+    std::vector<Eigen::MatrixXd> S_validation_; /**< The innovation covariance used to compute the last validation region. */
+#endif
+
     // Default constructor
     ModelBase()=default;
 

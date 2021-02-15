@@ -169,8 +169,11 @@ Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::Ransac() {
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
 std::vector<typename Cluster<typename tModel::DataType>::IteratorPair > Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateMinimumSubset(const unsigned int num_meas,  Cluster<DataType>& cluster) {
    
-    if (num_meas > cluster.data_.size() || num_meas < 0)
+    if (num_meas > cluster.data_.size() || num_meas < 0) {
+        std::cerr << "num_meas: " << num_meas << std::endl;
+        std::cerr << "cluster size: " << cluster.data_.size() << std::endl;
         throw std::runtime_error("RANSAC: GenerateMinimumSubset: num_meas must be less than the number of different time steps of measurements in cluster and greater than zero.");
+    }
 
     std::vector<typename Cluster<DataType>::IteratorPair> meas_index(num_meas);
 
@@ -397,7 +400,7 @@ std::vector<std::thread> threads;
 
 for (auto& cluster_iter : sys.clusters_) {
     
-    if (cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_ && cluster_iter->data_.back().front().time_stamp == sys.current_time_) {
+    if (cluster_iter->data_.size() > sys.params_.RANSAC_minimum_subset_ && cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_ && cluster_iter->data_.back().front().time_stamp == sys.current_time_) {
 
         threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys)));
     }

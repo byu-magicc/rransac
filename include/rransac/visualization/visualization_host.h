@@ -213,6 +213,13 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Setup(co
     dist_ = std::uniform_real_distribution<double>(0.0,1.0);
     img_dimensions_ = img_dimensions;
     draw_info_ = draw_info;
+
+    if(draw_info_.flip_image_x_axis) {
+        draw_info_.flip_y = -1;
+    } else {
+        draw_info_.flip_y = 1;
+    }
+
     draw_info_.img_center = cv::Point2d(img_dimensions_[0]/2,img_dimensions_[1]/2);
     draw_info_original_ = draw_info_;
     img_num_ = 0;

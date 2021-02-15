@@ -25,13 +25,16 @@ bool draw_cluster_velocity_position_threshold=false;              /** < Draw a c
                                                                         and the position threshold will be a randomly generated color. */
 bool draw_measurment_velocity_position_threshold=false;           /** < Draw a circle around each measurement not in a cluster to indicate the velocity and position threshold. The velocity threshold will be the color of color_vel 
                                                                         and the position threshold will be the color of. */
+bool flip_image_x_axis=false;                                     /** < If true, the visualization will be flipped across the x axis. This is useful since the positive y direction on an image is going down while most models
+                                                                        have the positive y direction going up. */
 
 bool draw_poor_tracks = false;                                    /**< Draw the poor tracks in addition to the good tracks. */
 
 // Not user defined
 cv::Point img_center;                                             /** < The center of the image. */
 cv::Scalar color_pos;                                             /** < The color of the object representing pose that is about to be drawn. */
-bool draw_threshold;
+bool draw_threshold;                                              /** < Contains the value of either draw_cluster_velocity_position_threshold or draw_measurment_velocity_position_threshold, depending on what is being drawn. */
+double flip_y;                                                    /** < Used to flip the image across the x axis. If the image is to be flipped, this variable gets a value of -1; otherwise, 1.*/
 
 };
 

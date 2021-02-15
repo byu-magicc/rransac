@@ -151,13 +151,23 @@ public:
     bool AddSource(const SourceParameters& source_params, std::function<bool(const State&)> state_in_surveillance_region_callback);
 
     /**
-     * Sets all of the system parameters that are not source parameters
+     * Sets all of the system parameters that are not source parameters. If the process noise covariance changes, then the model manager is used to
+     * update the tracks process noise covariance. 
      * \param[in] new_params The new parameters.
      * \return If the parameters were successfully set (i.e. met all of the prescibed requirements), it returns true. Otherwise false.
      */
     bool SetSystemParameters(const Parameters &new_params) { 
+        bool update_track_params = false;
+        if (new_params.process_noise_covariance_ != sys_.params_.process_noise_covariance_) {
+            update_track_params = true;
+        }
         system_parameters_set_ = sys_.params_.SetParameters(new_params);
-        return  system_parameters_set_; }
+
+        if (update_track_params)
+            tModelManager::SetModelParameters(sys_);
+
+        return  system_parameters_set_; 
+        }
 
     /**
      * Changes some of the parameters of the source. 
@@ -343,28 +353,32 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
 
     if (new_measurements.size() > 0) {
 
+        double dt = new_measurements.begin()->time_stamp - sys_.current_time_;
 
 #ifdef DEBUG_BUILD
-    bool correct = VerifyMeasurements(new_measurements);
-#endif
+        bool correct = VerifyMeasurements(new_measurements);
+        if (dt < 0)
+            throw std::runtime_error("Measurements must be provided in chronological order. The current time stamp is: " + std::to_string(sys_.current_time_)+ " The measurement time stamp is: " + std::to_string(new_measurements.begin()->time_stamp));
 
-    double dt = new_measurements.begin()->time_stamp - sys_.current_time_;
-    sys_.current_time_ = new_measurements.begin()->time_stamp; 
-    sys_.data_tree_.PruneDataTree(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
-    sys_.new_meas_ = new_measurements;
-
-
-
-    if (dt > 0)
-        tModelManager::PropagateModels(sys_,dt);
-
-
-#ifdef DEBUG_BUILD
-    if (dt < 0)
-        throw std::runtime_error("Measurements must be provided in chronological order. The current time stamp is: " + std::to_string(sys_.current_time_)+ " The measurement time stamp is: " + std::to_string(new_measurements.begin()->time_stamp));
 #endif
 
     
+        sys_.current_time_ = new_measurements.begin()->time_stamp; 
+        sys_.data_tree_.PruneDataTree(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
+        sys_.new_meas_ = new_measurements;
+
+        if (dt > 0)
+            tModelManager::PropagateModels(sys_,dt);
+
+// Calculate the innovation covariances used to compute the validation region. This is only for visualization purposes. 
+#if RRANSAC_VIZ_HOOKS
+        for (auto& track: sys_.models_) {
+            track.S_validation_.clear();
+            for (auto& source : sys_.sources_)
+                track.S_validation_.push_back(track.GetInnovationCovariance(sys_.sources_, source.params_.source_index_));
+        }
+#endif
+
 
     if (transform_data_) {
         sys_.data_tree_.TransformMeasurements(sys_.transformaion_);

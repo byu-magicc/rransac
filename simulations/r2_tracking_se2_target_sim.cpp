@@ -374,6 +374,7 @@ int main(int argc, char *argv[]) {
     draw_info.draw_measurment_velocity_position_threshold = false;
     draw_info.draw_cluster_velocity_position_threshold = true;
     draw_info.draw_poor_tracks = true;
+    draw_info.flip_image_x_axis = true;
 
     RRANSACSimulation<Scenario1> sim(img_dimensions, draw_info, "/home/mark/Videos/sim1.mp4", 10);
 

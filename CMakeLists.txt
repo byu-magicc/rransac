@@ -19,7 +19,13 @@ find_package(OpenCV 4 REQUIRED )
 
 
 
-
+##########################
+# Build Options
+option(RRANSAC_VIZ_HOOKS "Add hooks for visualization. This will cause it to run slower." OFF)
+if(RRANSAC_VIZ_HOOKS)
+  add_definitions(-DRRANSAC_VIZ_HOOKS)
+  message(INFO, "RRANSAC Visualization Hooks Enabled.")
+endif()
 
 
 
@@ -139,7 +145,7 @@ install(FILES
 
 # option(BUILD_SIMS "Build the simulations" OFF)
 # if(BUILD_SIMS)
-  add_subdirectory(simulations)
+  # add_subdirectory(simulations)
 # endif()
 
 

@@ -37,57 +37,76 @@ void DrawTrackPolicyR2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mode
     Eigen::Matrix<double,2,1> pos = model.state_.g_.data_*draw_info.scale_drawing;
     Eigen::Matrix<double,2,1> vel = model.state_.u_.data_*draw_info.scale_drawing*draw_info.scale_draw_vel;
 
-    cv::Point p(pos(0),-pos(1));
+    cv::Point p(pos(0),draw_info.flip_y*pos(1));
     p += draw_info.img_center;
-    cv::Point v(vel(0),-vel(1));
 
-    cv::circle(img,p,radius*draw_info.scale_draw_pos*draw_info.scale_drawing,draw_info.color_pos,-1,cv::LINE_AA);
+    if (p.x <= img.cols && p.x >= 0 && p.y <= img.rows && p.y>=0){ 
 
-    cv::arrowedLine(img,p,p+v,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
+        cv::Point v(vel(0),draw_info.flip_y*vel(1));
+
+        cv::circle(img,p,radius*draw_info.scale_draw_pos*draw_info.scale_drawing,draw_info.color_pos,-1,cv::LINE_AA);
+
+        cv::arrowedLine(img,p,p+v,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
 
     
 
-    // Draw validation region for the first source
-    if (draw_info.draw_validation_region) {
+        // Draw validation region for the first source
+        if (draw_info.draw_validation_region) {
 
-        unsigned int source_index = -1;
-        for (auto& source : sys->sources_) {
-            if (source.params_.type_ == MeasurementTypes::SEN_POS) {
-                source_index = source.params_.source_index_;
-                break;
+            unsigned int source_index = -1;
+            for (auto& source : sys->sources_) {
+                if (source.params_.type_ == MeasurementTypes::SEN_POS) {
+                    source_index = source.params_.source_index_;
+                    break;
+                }
+            }
+            if (source_index < 0);
+                source_index =0;
+
+            auto& source = sys->sources_[source_index];
+#if RRANSAC_VIZ_HOOKS
+            Eigen::MatrixXd S;
+            if (source_index > model.S_validation_.size()) {
+                std::cerr << "DrawTrackPolicySE2::DrawTrackPolicy source index is larger than the than the model's member variable size S_validation_" << std::endl;
+                std::cerr << "source index: " << source_index << std::endl;
+                std::cerr << "Size of S_validation_: " << model.S_validation_.size() << std::endl;
+                S = model.S_validation_[source_index];
+            }
+            else {
+                S = model.GetInnovationCovariance(sys->sources_,source_index);
+            }
+            
+#else
+            Eigen::MatrixXd S = model.GetInnovationCovariance(sys->sources_,source_index);
+#endif
+            Eigen::Matrix2d S_pos = S.block(0,0,2,2)*source.params_.gate_threshold_;
+            Eigen::EigenSolver<Eigen::Matrix2d> eigen_solver;
+            eigen_solver.compute(S_pos);
+            Eigen::Vector2cd eigen_values = eigen_solver.eigenvalues();
+            Eigen::Matrix2cd eigen_vectors = eigen_solver.eigenvectors();
+            double th = 0;
+            // Make sure that the x component is positive
+            if (std::real(eigen_vectors(0,0)) < 0) {
+                eigen_vectors.block(0,0,2,1)*=-1;
+            }
+            if (std::real(eigen_vectors(0,1)) < 0) {
+                eigen_vectors.block(0,1,2,1)*=-1;
+            }
+
+            double scale = static_cast<double>(draw_info.scale_drawing);
+            if (std::real(eigen_vectors(0,0)*eigen_vectors(1,0)) < 0) {
+                th = std::real(eigen_vectors(0,0))*180/M_PI;
+                cv::Size size(scale*std::sqrt(std::fabs(eigen_values(0).real())),scale*std::sqrt(std::fabs(eigen_values(1).real())));
+                std::cerr << "size: " << size << std::endl;
+                cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
+            } else {
+                th = std::real(eigen_vectors(0,1))*180/M_PI;
+                cv::Size size(scale*std::sqrt(std::fabs(eigen_values(1).real())),scale*std::sqrt(std::fabs(eigen_values(0).real())));
+                std::cerr << "size: " << size << std::endl;
+                cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
             }
         }
-        if (source_index < 0);
-            source_index =0;
-
-        auto& source = sys->sources_[source_index];
-        Eigen::MatrixXd S = model.GetInnovationCovariance(sys->sources_,source_index);
-        Eigen::Matrix2d S_pos = S.block(0,0,2,2)*source.params_.gate_threshold_;
-        Eigen::EigenSolver<Eigen::Matrix2d> eigen_solver;
-        eigen_solver.compute(S_pos);
-        Eigen::Vector2cd eigen_values = eigen_solver.eigenvalues();
-        Eigen::Matrix2cd eigen_vectors = eigen_solver.eigenvectors();
-        double th = 0;
-        // Make sure that the x component is positive
-        if (std::real(eigen_vectors(0,0)) < 0) {
-            eigen_vectors.block(0,0,2,1)*=-1;
-        }
-        if (std::real(eigen_vectors(0,1)) < 0) {
-            eigen_vectors.block(0,1,2,1)*=-1;
-        }
-
-        double scale = static_cast<double>(draw_info.scale_drawing);
-        if (std::real(eigen_vectors(0,0)*eigen_vectors(1,0)) < 0) {
-            th = std::real(eigen_vectors(0,0))*180/M_PI;
-            cv::Size size(scale*std::sqrt(std::norm(eigen_values(0))),scale*std::sqrt(std::norm(eigen_values(1))));
-            cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
-        } else {
-            th = std::real(eigen_vectors(0,1))*180/M_PI;
-            cv::Size size(scale*std::sqrt(std::norm(eigen_values(1))),scale*std::sqrt(std::norm(eigen_values(0))));
-            cv::ellipse(img,p,size,th, 0,360,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
-        }
     }
-
 
 
 }

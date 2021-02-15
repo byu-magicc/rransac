@@ -36,13 +36,13 @@ void DrawMeasR2SE2PosPolicy<tModel>::DrawMeasPolicy(cv::Mat& img, const Meas<dou
 // Draw the position and velocity
 double radius = 0.5;
 cv::Point vel;
-cv::Point pos(meas.pose(0)*draw_info.scale_drawing,-meas.pose(1)*draw_info.scale_drawing);
+cv::Point pos(meas.pose(0)*draw_info.scale_drawing,draw_info.flip_y*meas.pose(1)*draw_info.scale_drawing);
 pos += draw_info.img_center;
 
 if (meas.twist.rows() >0) {
     Eigen::Matrix<double,2,1> tmp = meas.twist;
     tmp *= draw_info.scale_drawing*draw_info.scale_draw_vel;
-    vel = cv::Point(tmp(0),-tmp(1));
+    vel = cv::Point(tmp(0),draw_info.flip_y*tmp(1));
 }
 
 cv::circle(img,pos,radius*draw_info.scale_draw_pos*draw_info.scale_drawing,draw_info.color_pos,-1, cv::LINE_AA);
