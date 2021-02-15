@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(rransac VERSION 1.0)
+project(rransac VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_BUILD_TYPE RELEASE)
@@ -61,11 +61,14 @@ foreach(p LIB BIN INCLUDE CMAKE)
 endforeach()
 
 
-add_library(${PROJECT_NAME} SHARED ${sources} )
+add_library(${PROJECT_NAME} SHARED ${sources})
+target_link_libraries(${PROJECT_NAME} INTERFACE Ceres::ceres )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
 $<INSTALL_INTERFACE:${EIGEN3_INCLUDE_DIR}> 
+# $<BUILD_INTERFACE:Ceres::ceres>
+# $<INSTALL_INTERFACE:Ceres::ceres> 
 $<BUILD_INTERFACE:${Boost_INCLUDE_DIRS}>
 $<INSTALL_INTERFACE:${Boost_INCLUDE_DIRS}> 
 $<BUILD_INTERFACE:${OpenCV_INCLUDE_DIRS}>
@@ -75,6 +78,8 @@ $<BUILD_INTERFACE:${lie_groups_header_path}>
 $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> 
 $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}> 
 )
+
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_14)
 
 
 install(TARGETS ${PROJECT_NAME}
