@@ -33,7 +33,7 @@ template <typename tModel>
 void DrawTrackPolicyR2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>* sys, const DrawInfo& draw_info) {
 
     // The negations on some values are need in order to transform the tracking frame to the frame for drawing the image.
-    int radius = 2.5;
+    int radius = 2;
     Eigen::Matrix<double,2,1> pos = model.state_.g_.data_*draw_info.scale_drawing;
     Eigen::Matrix<double,2,1> vel = model.state_.u_.data_*draw_info.scale_drawing*draw_info.scale_draw_vel;
 

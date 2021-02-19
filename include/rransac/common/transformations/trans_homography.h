@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 #include "rransac/common/measurement/measurement_base.h"
 #include "rransac/common/transformations/transformation_base.h"
+#include "lie_groups/state.h"
 
 namespace rransac
 {
@@ -176,8 +177,15 @@ inline void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_
     // Transform the position
     state.g_.t_= TransformPosition(state.g_.t_);
 
+    // The Homography can have noise, so we must project the rotation portion homography 
+    // onto SO2. Since checking if H1_ is a rotation is almost as expensive as just projecting
+    // it, we will simply project it every time. 
+    Eigen::Matrix2d H1;
+    Eigen::Matrix<double,1,1> W = lie_groups::so2<double>::Log(H1_);       
+    H1 = lie_groups::so2<double>::Exp(W);  
+
     // Transform the rotation
-    state.g_.R_ = H1_*state.g_.R_;
+    state.g_.R_ = H1*state.g_.R_;
 
     // Transform the velocity
     state.u_.p_ = state.u_.p_/h4_(0);

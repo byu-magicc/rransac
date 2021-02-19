@@ -95,10 +95,10 @@ include_directories(../include
 # Transformations
 #---------------------------------------
 
-# add_executable(trans_homographyTest
-# common/transformations/transformation_homography_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(trans_homographyTest gtest_main )
+add_executable(trans_homographyTest
+common/transformations/transformation_homography_test.cpp
+../src/parameters.cpp)
+target_link_libraries(trans_homographyTest gtest_main )
 
 #---------------------------------------
 # Model
@@ -185,10 +185,10 @@ include_directories(../include
 # ../src/parameters.cpp)
 # target_link_libraries(rransacTest gtest_main)
 
-add_executable(rransacFullTest
-rransac_full_test.cpp
-../src/parameters.cpp)
-target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
+# add_executable(rransacFullTest
+# rransac_full_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(rransacFullTest gtest_main Ceres::ceres)
 
 
 

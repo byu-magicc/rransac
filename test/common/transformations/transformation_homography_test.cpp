@@ -337,6 +337,21 @@ MatCov cov_undone = cov_transform_numerical_extracted.inverse()* cov_transformed
 ASSERT_LE( (cov_extracted - cov_transformed_analytical).norm(), 1e-7 );
 ASSERT_LE( (cov_undone - cov_original_extracted).norm(), 1e-7 );
 
+// Test the reprojection of the homography rotation 
+// R_bad is a rotation that left SO2 and R good is the projection of R_bad back onto SO_2
+// these matrices were generated from matlab
+Eigen::Matrix2d R_bad, R_good, R_track;
+R_bad << -0.112231140832595,	-0.990882177336245, 0.992832207585224,	-0.114921220083900;
+R_good << -0.112326005303583,	-0.993671408732554, 0.993671408732554,	-0.112326005303583;
+H.block(0,0,2,2) = R_bad;
+trans.SetData(H);
+
+R_track = R_good*state_t1.g_.R_;
+trans.TransformTrack(state_t1, cov);
+
+ASSERT_DOUBLE_EQ( (state_t1.g_.R_.transpose()*state_t1.g_.R_ - Eigen::Matrix2d::Identity() ).norm(),0  );
+ASSERT_LT( (R_track -state_t1.g_.R_ ).norm(),1e-12  );
+
 }
 
 } // namespace rransac

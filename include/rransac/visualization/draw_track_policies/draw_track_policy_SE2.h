@@ -39,32 +39,28 @@ void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mod
     cv::Size radius(2*draw_info.scale_draw_pos,2*draw_info.scale_draw_pos);
     cv::Point points[1][num_points];
     Eigen::Matrix<double,3,1> pt;
-    double body_length = 5;
+    double body_length = 1.5*draw_info.scale_drawing*draw_info.scale_draw_pos;
 
     // Draw body
     pt << body_length*2, 0, 0;
-    pt*= draw_info.scale_draw_pos;
     pt(2) = draw_info.scale_drawing;
     pt = model.state_.g_.data_*pt;
     pt(1) = draw_info.flip_y*pt(1);
     points[0][0] = cv::Point(pt(0),pt(1))+draw_info.img_center;
     
     pt << -body_length, -body_length, 0;
-    pt*= draw_info.scale_draw_pos;
     pt(2) = draw_info.scale_drawing;
     pt = model.state_.g_.data_*pt;
     pt(1) = draw_info.flip_y*pt(1);
     points[0][1] = cv::Point(pt(0),pt(1))+draw_info.img_center;
 
     pt << 0, 0, 0;
-    pt*= draw_info.scale_draw_pos;
     pt(2) = draw_info.scale_drawing;
     pt = model.state_.g_.data_*pt;
     pt(1) = draw_info.flip_y*pt(1);
     points[0][2] = cv::Point(pt(0),pt(1))+draw_info.img_center;
 
     pt << -body_length, body_length, 0;
-    pt*= draw_info.scale_draw_pos;
     pt(2) = draw_info.scale_drawing;
     pt = model.state_.g_.data_*pt;
     pt(1) = draw_info.flip_y*pt(1);

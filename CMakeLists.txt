@@ -62,7 +62,6 @@ endforeach()
 
 
 add_library(${PROJECT_NAME} SHARED ${sources})
-target_link_libraries(${PROJECT_NAME} INTERFACE Ceres::ceres )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
@@ -80,6 +79,11 @@ $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}>
 )
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_14)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+                      VERSION ${PROJECT_VERSION}
+                      SOVERSION ${PROJECT_VERSION_MAJOR})
+
 
 
 install(TARGETS ${PROJECT_NAME}
