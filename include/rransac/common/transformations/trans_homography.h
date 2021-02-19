@@ -39,7 +39,9 @@ Eigen::Matrix<DataType,2,2> H1_;               /**< The homography is represente
 Eigen::Matrix<DataType,2,1> h2_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
 Eigen::Matrix<DataType,1,2> h3_T_;             /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
 Eigen::Matrix<DataType,1,1> h4_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
- 
+Eigen::Matrix<DataType,2,2> H1p_;              /**< In the case the homography is being used to transform a track on SE2, the matrix H1_ represents 
+                                                    a rotation about the z axis. This matrix could be noisy and  not on the manifold SO2. IN that case,
+                                                    we must project it back onto SO2. This projection is the matrix H1p_. */
 
 /**
  * Used to initialize the object, but it doesn't need to initialize anyting.
@@ -164,6 +166,29 @@ inline void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_gr
 /////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   SE2-se2                                  /////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
+
+/** 
+ * Sets the data and the block components of the homography. The matrix H1p_ is the projection
+ * of the matrix H1_ onto SO2 which represents the rotation about the z axis. 
+ * @param data The data required to transform the measurements, states, and error covariance
+ */ 
+template<>
+inline void TransformHomography<lie_groups::SE2_se2>::DerivedSetData(const Mat3d data) {
+    this->data_ = data;
+    H1_ = data.block(0,0,2,2);
+    h2_ = data.block(0,2,2,1);
+    h3_T_ = data.block(2,0,1,2);
+    h4_ = data.block(2,2,1,1);
+
+    if ( fabs((H1_.transpose()*H1_).trace() -2.0) == 0) {
+        H1p_ = H1_;
+    } else {
+        Eigen::JacobiSVD<Eigen::Matrix<DataType,2,2>> svd(H1_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        H1p_ = svd.matrixU()*(svd.matrixV().transpose());
+    }
+}
+
+
 /** 
  * Transforms the track provided that the state is SE2_se2.
  * @param[in] state The track's state to be transformed.
@@ -177,15 +202,8 @@ inline void TransformHomography<lie_groups::SE2_se2>::DerivedTransformTrack(lie_
     // Transform the position
     state.g_.t_= TransformPosition(state.g_.t_);
 
-    // The Homography can have noise, so we must project the rotation portion homography 
-    // onto SO2. Since checking if H1_ is a rotation is almost as expensive as just projecting
-    // it, we will simply project it every time. 
-    Eigen::Matrix2d H1;
-    Eigen::Matrix<double,1,1> W = lie_groups::so2<double>::Log(H1_);       
-    H1 = lie_groups::so2<double>::Exp(W);  
-
     // Transform the rotation
-    state.g_.R_ = H1*state.g_.R_;
+    state.g_.R_ = H1p_*state.g_.R_;
 
     // Transform the velocity
     state.u_.p_ = state.u_.p_/h4_(0);

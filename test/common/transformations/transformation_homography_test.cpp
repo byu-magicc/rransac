@@ -342,14 +342,14 @@ ASSERT_LE( (cov_undone - cov_original_extracted).norm(), 1e-7 );
 // these matrices were generated from matlab
 Eigen::Matrix2d R_bad, R_good, R_track;
 R_bad << -0.112231140832595,	-0.990882177336245, 0.992832207585224,	-0.114921220083900;
-R_good << -0.112326005303583,	-0.993671408732554, 0.993671408732554,	-0.112326005303583;
+R_good << -0.113765174035777,	-0.993507667396991, 0.993507667396991,	-0.113765174035778;
 H.block(0,0,2,2) = R_bad;
 trans.SetData(H);
 
 R_track = R_good*state_t1.g_.R_;
 trans.TransformTrack(state_t1, cov);
 
-ASSERT_DOUBLE_EQ( (state_t1.g_.R_.transpose()*state_t1.g_.R_ - Eigen::Matrix2d::Identity() ).norm(),0  );
+ASSERT_LT( (state_t1.g_.R_.transpose()*state_t1.g_.R_ - Eigen::Matrix2d::Identity() ).norm(),1e-12  );
 ASSERT_LT( (R_track -state_t1.g_.R_ ).norm(),1e-12  );
 
 }
