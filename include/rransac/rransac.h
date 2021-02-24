@@ -158,7 +158,7 @@ public:
      */
     bool SetSystemParameters(const Parameters &new_params) { 
         bool update_track_params = false;
-        if (new_params.process_noise_covariance_ != sys_.params_.process_noise_covariance_) {
+        if (system_parameters_set_ && new_params.process_noise_covariance_ != sys_.params_.process_noise_covariance_) {
             update_track_params = true;
         }
         system_parameters_set_ = sys_.params_.SetParameters(new_params);

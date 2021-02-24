@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(rransac VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_BUILD_TYPE RELEASE)
+# set(CMAKE_BUILD_TYPE RELEASE)
 # set(CMAKE_BUILD_TYPE DEBUG)
 
 IF(CMAKE_COMPILER_IS_GNUCC)
@@ -154,7 +154,7 @@ install(FILES
 
 # option(BUILD_SIMS "Build the simulations" OFF)
 # if(BUILD_SIMS)
-  # add_subdirectory(simulations)
+  add_subdirectory(simulations)
 # endif()
 
 
