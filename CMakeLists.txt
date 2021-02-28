@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(rransac VERSION 1.0.0)
+project(rransac VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 # set(CMAKE_BUILD_TYPE RELEASE)
@@ -29,6 +29,11 @@ endif()
 
 
 
+# The [=[ ]=] allows me to write shell script or other things without using quotes. 
+set(welcome_message [=[ 
+#!/bin/bash
+
+echo "Thanks for installing rransac"]=])
 
 
 
@@ -62,6 +67,9 @@ endforeach()
 
 
 add_library(${PROJECT_NAME} SHARED ${sources})
+
+# target_link_libraries( ${PROJECT_NAME} 
+  # PRIVATE Ceres::ceres)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
@@ -154,7 +162,7 @@ install(FILES
 
 # option(BUILD_SIMS "Build the simulations" OFF)
 # if(BUILD_SIMS)
-  add_subdirectory(simulations)
+  # add_subdirectory(simulations)
 # endif()
 
 
