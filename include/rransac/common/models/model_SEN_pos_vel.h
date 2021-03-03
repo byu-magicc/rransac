@@ -115,13 +115,13 @@ typename ModelSENPosVel<tState,tTransformation,tSource>::Mat  ModelSENPosVel<tSt
 template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
 typename ModelSENPosVel<tState,tTransformation,tSource>::Mat ModelSENPosVel<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     Mat G;
-    Eigen::Matrix<DataType, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt; 
+    Eigen::Matrix<DataType, g_dim_,g_dim_> tmp = (state.u_*dt).Jr(); 
     G.block(g_dim_,0,l_dim_,g_dim_).setZero();
     G.block(0,0,g_dim_, g_dim_) = tmp;
-    G.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1)*dt/2.0;
-    G.block(0,g_dim_+1, g_dim_, State::Algebra::dim_a_vel_) = tmp.block(0, State::Algebra::dim_t_vel_, g_dim_, State::Algebra::dim_a_vel_)*dt/2.0; // Jacobian w.r.t. angular velocities
+    G.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1);
+    G.block(0,g_dim_+1, g_dim_, State::Algebra::dim_a_vel_) = tmp.block(0, State::Algebra::dim_t_vel_, g_dim_, State::Algebra::dim_a_vel_); // Jacobian w.r.t. angular velocities
 
-    G.block(g_dim_,g_dim_,l_dim_,l_dim_)= Eigen::Matrix<DataType,l_dim_,l_dim_>::Identity()*dt;
+    G.block(g_dim_,g_dim_,l_dim_,l_dim_)= Eigen::Matrix<DataType,l_dim_,l_dim_>::Identity();
     return G;
 
 }

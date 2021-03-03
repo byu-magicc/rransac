@@ -336,7 +336,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(cons
 
 
     // Transform covariance
-    err_cov_ = F_*err_cov_*F_.transpose() + G_*Q_*G_.transpose();
+    err_cov_ = F_*err_cov_*F_.transpose() + G_*Q_*dt*G_.transpose();
 
     // Propagate state
     state_.g_.OPlusEq(state_.u_.data_*dt);
@@ -395,7 +395,8 @@ err_cov_ = error_cov_inverse.inverse();
 #endif
 
 // Update the state
-update = err_cov_ * state_update_sum;
+update = state_update_sum;
+
 
 return update;
 
@@ -407,7 +408,6 @@ template <typename tSource, typename tTransformation, int tCovDim,  typename tDe
 void ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetStateUpdateAndCovariance(const std::vector<tSource>& sources, const std::vector<Meas<DataType>>& meas, Eigen::Matrix<DataType,cov_dim_,1>& state_update, Mat& cov_update) {
 
 state_update.setZero();
-cov_update = err_cov_;
 
 
 Eigen::MatrixXd H = GetLinObsMatState(sources, state_,meas.front().source_index);              // Jacobian of observation function w.r.t. state
@@ -440,9 +440,10 @@ covSum -= nu*nu.transpose();
 
 
 // construct covariance
-cov_update +=  K*(covSum*K.transpose() -(1-B0)*H*err_cov_); 
+cov_update = err_cov_+ K*(covSum*K.transpose() -(1-B0)*H*err_cov_); 
 
-state_update = H.transpose()*S_inverse*nu;
+state_update = K*nu;
+
 
 
 }

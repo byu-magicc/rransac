@@ -44,7 +44,7 @@ void DrawTrackPolicyR2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mode
 
         cv::Point v(vel(0),draw_info.flip_y*vel(1));
 
-        cv::circle(img,p,radius*draw_info.scale_draw_pos*draw_info.scale_drawing,draw_info.color_pos,-1,cv::LINE_AA);
+        cv::circle(img,p,radius*draw_info.scale_draw_pos,draw_info.color_pos,-1,cv::LINE_AA);
 
         cv::arrowedLine(img,p,p+v,draw_info.color_vel,draw_info.line_thickness, cv::LINE_AA);
 

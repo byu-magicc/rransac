@@ -39,7 +39,7 @@ void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mod
     cv::Size radius(2*draw_info.scale_draw_pos,2*draw_info.scale_draw_pos);
     cv::Point points[1][num_points];
     Eigen::Matrix<double,3,1> pt;
-    double body_length = 1.5*draw_info.scale_drawing*draw_info.scale_draw_pos;
+    double body_length = 1.5*draw_info.scale_draw_pos;
 
     // Draw body
     pt << body_length*2, 0, 0;

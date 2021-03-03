@@ -116,9 +116,10 @@ const System<Model_>* sys_;
 std::vector<Source_> sources_;
 Meas<double> m_;
 Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat_;
-double noise_;
+double process_noise_;
+double meas_noise_;
 VisualizationHost<Model_, DrawMeasR2SE2PosPolicy, DrawTrackPolicySE2> viz_;
-
+std::default_random_engine gen_;
 
 CameraSimSE2(const CameraData& camera_data, double dt, double end_time, int num_tracks);
 
