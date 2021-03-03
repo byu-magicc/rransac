@@ -95,11 +95,11 @@ typename ModelSENPoseTwist<tState,tTransformation,tSource>::Mat ModelSENPoseTwis
 template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
 typename ModelSENPoseTwist<tState,tTransformation,tSource>::Mat ModelSENPoseTwist<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     Mat G;
-    Eigen::Matrix<DataType, g_dim_, g_dim_> tmp = (state.u_*dt).Jr()*dt;
+    Eigen::Matrix<DataType, g_dim_, g_dim_> tmp = (state.u_*dt).Jr();
     G.block(g_dim_,0,g_dim_,g_dim_).setZero();
     G.block(0,0,g_dim_, g_dim_) = tmp;
-    G.block(0,g_dim_,g_dim_,g_dim_) = tmp*dt/2.0;
-    G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<DataType,g_dim_,g_dim_>::Identity()*dt;
+    G.block(0,g_dim_,g_dim_,g_dim_) = tmp/2.0;
+    G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<DataType,g_dim_,g_dim_>::Identity();
     return G;
 
 }
