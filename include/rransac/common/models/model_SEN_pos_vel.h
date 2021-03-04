@@ -107,10 +107,7 @@ typename ModelSENPosVel<tState,tTransformation,tSource>::Mat  ModelSENPosVel<tSt
     F.block(0,0,g_dim_,g_dim_) = typename State::Group(State::Algebra::Exp(-state.u_.data_*dt)).Adjoint();
     F.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1); // Jacobian w.r.t. rho x
     F.block(0,g_dim_+1, g_dim_, State::Algebra::dim_a_vel_) = tmp.block(0, State::Algebra::dim_t_vel_, g_dim_, State::Algebra::dim_a_vel_); // Jacobian w.r.t. angular velocities
-   
-    std::cout << "F: " << F << std::endl;
-    std::cout << "tmp: " << tmp << std::endl;
-   
+      
     return F;
 }
 

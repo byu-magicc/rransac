@@ -424,7 +424,7 @@ bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
 
 
     // Expected number of false measurements
-    if (params.spacial_density_of_false_meas_ <= 0 || params.spacial_density_of_false_meas_ > 1) {
+    if (params.spacial_density_of_false_meas_ <= 0 ) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: The spacial_density_of_false_meas_ of false measurements must be greater than 0 . ");
         success = false;
 

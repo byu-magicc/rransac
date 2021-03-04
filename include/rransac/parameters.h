@@ -80,6 +80,8 @@ unsigned int RANSAC_minimum_subset_;    /**< The minimum number of measurements 
 
 // Track Parameters
 Eigen::MatrixXd process_noise_covariance_; /**< The process noise covariance of the track. It must be positive definite. */
+Eigen::MatrixXd initial_error_covariance_; /**< The error covariance of a new track is initialized to this value. */
+bool set_initial_error_covariance_to_id_;  /**< If true, the initial error covariance will be set to identity. */
 
 
 

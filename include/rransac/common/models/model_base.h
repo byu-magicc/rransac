@@ -314,7 +314,18 @@ Eigen::Matrix<DataType,tCovDim,1> PerformCentralizedMeasurementFusion(const std:
 
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
 void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(const Parameters& params) {
-    err_cov_.setIdentity();
+
+    if (params.set_initial_error_covariance_to_id_) {
+        err_cov_.setIdentity();
+    } else {
+        if (err_cov_.rows() != params.initial_error_covariance_.rows()) {
+            throw std::runtime_error("ModelBase::Init The initial error covariance is not the right dimension. Its dimension is " + std::to_string(params.initial_error_covariance_.rows()) + ". It should be " + std::to_string(err_cov_.rows()));
+
+        } else {
+            err_cov_ = params.initial_error_covariance_;
+        }
+    }
+    
     F_.setIdentity();
     G_.setIdentity();
     SetParameters(params);
@@ -439,7 +450,7 @@ for (Meas<DataType> m : meas) {
 covSum -= nu*nu.transpose();
 
 
-// construct covariance
+// construct covariance. It has been verified
 cov_update = err_cov_+ K*(covSum*K.transpose() -(1-B0)*H*err_cov_); 
 
 state_update = K*nu;

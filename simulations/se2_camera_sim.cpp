@@ -38,8 +38,8 @@ CameraSimSE2::CameraSimSE2(const CameraData& camera_data, double dt, double end_
     source_params1.type_ = MeasurementType;
     source_params1.source_index_ = 0;
     source_params1.meas_cov_ =camera_data_.R;
-    source_params1.RANSAC_inlier_probability_ = 0.95;
-    source_params1.gate_probability_ = 0.95;
+    source_params1.RANSAC_inlier_probability_ = 0.8;
+    source_params1.gate_probability_ = 0.8;
     source_params1.spacial_density_of_false_meas_ = camera_data_.lambda;
 
     Source_ source1;
@@ -54,16 +54,18 @@ CameraSimSE2::CameraSimSE2(const CameraData& camera_data, double dt, double end_
     params.RANSAC_max_iters_ = 5;
     params.RANSAC_minimum_subset_ = 3;
     params.RANSAC_score_stopping_criteria_ = 10;
-    params.RANSAC_score_minimum_requirement_ = 5;
+    params.RANSAC_score_minimum_requirement_ = 7;
     params.meas_time_window_ = 2;                   
-    params.cluster_time_threshold_ = 1;
-    params.cluster_velocity_threshold_ = 0.05;
-    params.cluster_position_threshold_ = 0.02;
-    params.cluster_min_size_requirement_ = 5;
+    params.cluster_time_threshold_ = 0.5;
+    params.cluster_velocity_threshold_ = 0.02;
+    params.cluster_position_threshold_ = 0.01;
+    params.cluster_min_size_requirement_ = 10;
     params.track_max_num_tracks_ = num_tracks+5;
     params.track_similar_tracks_threshold_ = 0.1;
     params.track_good_model_threshold_ = 100;
-    params.track_max_missed_detection_time_ = 1;
+    params.track_max_missed_detection_time_ = 0.5;
+    params.set_initial_error_covariance_to_id_ = false;
+    params.initial_error_covariance_ = Eigen::Matrix<double,5,5>::Identity()*1e-1;
 
     rransac_.SetSystemParameters(params);
 
@@ -96,15 +98,15 @@ typename CameraSimSE2::State_ CameraSimSE2::GenerateRandomState() {
     std::uniform_real_distribution<double> dist_y(camera_data_.miny,camera_data_.maxy);
     std::uniform_real_distribution<double> dist_th(-M_PI, M_PI);
     std::uniform_real_distribution<double> dist_w(-0.4,0.4);
-    std::uniform_real_distribution<double> dist_v(-1/camera_data_.altitude,1/camera_data_.altitude);
+    std::uniform_real_distribution<double> dist_v(-0.5/camera_data_.altitude,0.5/camera_data_.altitude);
 
     Eigen::Matrix<double,3,1> pose;
     pose << 0,0,dist_th(gen_);
     x.g_.data_ = State_::Algebra::Exp(pose);
     x.g_.t_ << dist_x(gen_), dist_y(gen_);
     x.u_.data_ << dist_v(gen_),0,dist_w(gen_);
-    std::cout << "t: " << std::endl << x.g_.t_ << std::endl;
-    std::cout << "u: " << std::endl << x.u_.p_ << std::endl;
+    // std::cout << "t: " << std::endl << x.g_.t_ << std::endl;
+    // std::cout << "u: " << std::endl << x.u_.p_ << std::endl;
     
     return x;
 
@@ -140,7 +142,7 @@ void CameraSimSE2::Propagate(double start_time, double end_time) {
 
             // std::cerr << "propagate " << std::endl;
             if (ii !=this->start_time_) {
-                // track.state_.u_.data_ += noise_mat_*sqrt(this->process_noise_)*rransac::utilities::GaussianRandomGenerator(Algebra_::dim_)*this->dt_;
+                track.state_.u_.data_ += noise_mat_*sqrt(this->process_noise_*0.1)*rransac::utilities::GaussianRandomGenerator(Algebra_::dim_)*this->dt_;
                 track.PropagateModel(this->dt_);
             }
 
@@ -208,9 +210,9 @@ void CameraSimSE2::Propagate(double start_time, double end_time) {
         //     tracks_to_draw.push_back(this->tracks_[track_index]);
         // }
 
-        viz_.DrawClusters(sys_,true);
-        viz_.DrawTrueTracks(tracks_,sys_,false);
-        viz_.DrawUnAssociatedMeasurements(sys_,false);
+        // viz_.DrawClusters(sys_,true);
+        viz_.DrawTrueTracks(tracks_,sys_,true);
+        // viz_.DrawUnAssociatedMeasurements(sys_,false);
         viz_.DrawEstimatedTracks(sys_,false);
         viz_.DrawNewMeasurements(new_measurements,sys_,false);
         viz_.RecordImage();
@@ -223,17 +225,17 @@ void CameraSimSE2::Propagate(double start_time, double end_time) {
 int main() {
 
 double noise = 1e-6;
-// Eigen::Matrix<double,4,4> R = Eigen::Matrix<double,4,4>::Identity()*noise;
-Eigen::Matrix<double,2,2> R = Eigen::Matrix<double,2,2>::Identity()*noise;
+Eigen::Matrix<double,4,4> R = Eigen::Matrix<double,4,4>::Identity()*noise;
+// Eigen::Matrix<double,2,2> R = Eigen::Matrix<double,2,2>::Identity()*noise;
 // R << noise, 0, 0, noise;
 int width = 1920;
 int height = 1080;
 double fov = 70;
 double altitude = 30;
-int num_false_meas = 0;
+int num_false_meas = 100;
 double dt = 0.1;
 double end_time = 10;
-int num_tracks = 5;
+int num_tracks = 10;
 
 CameraData cam_data( width,  height,  fov,  altitude, R,  num_false_meas);
 

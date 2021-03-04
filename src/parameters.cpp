@@ -29,6 +29,8 @@ Parameters::Parameters()
     nonlinear_innov_cov_id_ = false;
     nonlinear_LMLE_Ceres_threads_= 1;
     nonlinear_LMLE_Ceres_max_num_iters_ = 50;
+
+    set_initial_error_covariance_to_id_ = true;
 }
 
 //------------------------------------------------------------------------------------
@@ -48,6 +50,7 @@ bool Parameters::SetParameters(const Parameters &new_params) {
     bool successfull = true;
     transform_consensus_set_ = new_params.transform_consensus_set_;
     nonlinear_innov_cov_id_ = new_params.nonlinear_innov_cov_id_;
+    set_initial_error_covariance_to_id_ = new_params.set_initial_error_covariance_to_id_;
 
     if (new_params.track_max_num_tracks_ <= 0 ) {
         throw std::runtime_error("Parameters::SetParameters The provided value of track_max_num_tracks_ has not been initialized");
@@ -83,6 +86,32 @@ bool Parameters::SetParameters(const Parameters &new_params) {
         successfull = false;
     } else {
         process_noise_covariance_ = new_params.process_noise_covariance_;
+    }
+
+    
+    if (!new_params.set_initial_error_covariance_to_id_) {
+        if (new_params.initial_error_covariance_.rows() <= 0 ) {
+            throw std::runtime_error("Parameters::SetParameters The provided value of initial_error_covariance_ has not been initialized");
+            successfull = false;
+        } else if(new_params.initial_error_covariance_.rows() != new_params.initial_error_covariance_.cols()) {
+            throw std::runtime_error("Parameters::SetParameters The provided value of initial_error_covariance_ is not a square matrix");
+            successfull = false;
+        } else if( (new_params.initial_error_covariance_ - new_params.initial_error_covariance_.transpose() ).norm() > 1e-9   ) {
+            throw std::runtime_error("Parameters::SetParameters The provided value of initial_error_covariance_ is not symmetric");
+            successfull = false;
+        } else {
+            
+            Eigen::VectorXcd eigenvalues = new_params.initial_error_covariance_.eigenvalues();
+            for (int ii=0; ii < eigenvalues.rows(); ++ii) {
+                if ( std::real(eigenvalues(ii)) <= 0) {
+                    throw std::runtime_error("Parameters::SetParameters The provided value of initial_error_covariance_ is not positive definite");
+                    successfull = false;
+                }
+            }
+
+            if (successfull)
+                initial_error_covariance_ = new_params.initial_error_covariance_;
+        }
     }
 
     if (new_params.nonlinear_LMLE_Ceres_max_num_iters_ <= 0 ) {
