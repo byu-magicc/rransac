@@ -57,6 +57,7 @@ public:
     DataTreeClusters<DataType> data_tree_;                               /** < Contains measurements that are not in a consensus set */
     std::vector<typename std::list<Cluster<DataType>>::iterator> clusters_;       /** < Iterators to clusters. RANSAC tries to form measurements from each clusters */
     unsigned int source_index_counter_ =0;
+    long int accumulative_number_of_tracks_ =0;                /** < The total number of tracks created by R-RANSAC. Each time a track is initialized, this value is increased by 1. */
     
     System() {
         transformaion_.Init();

@@ -211,11 +211,11 @@ void CameraSimSE2::Propagate(double start_time, double end_time) {
         // }
 
         // viz_.DrawClusters(sys_,true);
-        viz_.DrawTrueTracks(tracks_,sys_,true);
+        // viz_.DrawTrueTracks(tracks_,sys_,true);
         // viz_.DrawUnAssociatedMeasurements(sys_,false);
-        viz_.DrawEstimatedTracks(sys_,false);
-        viz_.DrawNewMeasurements(new_measurements,sys_,false);
-        viz_.RecordImage();
+        // viz_.DrawEstimatedTracks(sys_,false);
+        // viz_.DrawNewMeasurements(new_measurements,sys_,false);
+        // viz_.RecordImage();
 
     }
 }

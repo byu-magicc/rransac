@@ -158,6 +158,7 @@ template <typename tModel>
 void ModelManager<tModel>::AddModel(System<tModel>& sys, const tModel& model) {
 
     sys.models_.push_back(model);
+    sys.accumulative_number_of_tracks_++;
 
 }
 
