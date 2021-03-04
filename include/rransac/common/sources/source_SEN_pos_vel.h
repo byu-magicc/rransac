@@ -245,6 +245,8 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
     const unsigned int sizeu = tState::Algebra::dim_;
 
     // Construct the Jacobians
+    // H = [R   0   0 0
+    //      0 -[1]p R 0]
     MatXd H;
     switch (type)
     {

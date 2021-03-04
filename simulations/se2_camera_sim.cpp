@@ -29,7 +29,7 @@ CameraSimSE2::CameraSimSE2(const CameraData& camera_data, double dt, double end_
     end_time_ = end_time;
 
     sys_ = rransac_.GetSystemInformation();
-    process_noise_ = 1e-4;
+    process_noise_ = 1e-5;
     meas_noise_ = camera_data_.R(0,0);
     transformation_.Init();
 
@@ -95,8 +95,8 @@ typename CameraSimSE2::State_ CameraSimSE2::GenerateRandomState() {
     std::uniform_real_distribution<double> dist_x(camera_data_.minx,camera_data_.maxx);
     std::uniform_real_distribution<double> dist_y(camera_data_.miny,camera_data_.maxy);
     std::uniform_real_distribution<double> dist_th(-M_PI, M_PI);
-    std::uniform_real_distribution<double> dist_w(-0.2,0.2);
-    std::uniform_real_distribution<double> dist_v(-0.5/camera_data_.altitude,0.5/camera_data_.altitude);
+    std::uniform_real_distribution<double> dist_w(-0.4,0.4);
+    std::uniform_real_distribution<double> dist_v(-1/camera_data_.altitude,1/camera_data_.altitude);
 
     Eigen::Matrix<double,3,1> pose;
     pose << 0,0,dist_th(gen_);
@@ -165,6 +165,7 @@ void CameraSimSE2::Propagate(double start_time, double end_time) {
 
                 this->m_.time_stamp = ii;
                 this->m_.pose = tmp1.pose;
+                this->m_.twist = tmp1.twist;
 
                 // std::cout << "err: " << std::endl << m_.pose - track.state_.g_.t_ << std::endl;
 
@@ -182,6 +183,7 @@ void CameraSimSE2::Propagate(double start_time, double end_time) {
 
             this->m_.time_stamp = ii;
             this->m_.pose = tmp1.pose;
+            this->m_.twist = tmp1.twist;
             new_measurements.push_back(this->m_);
         }
 
@@ -221,8 +223,9 @@ void CameraSimSE2::Propagate(double start_time, double end_time) {
 int main() {
 
 double noise = 1e-6;
-Eigen::Matrix2d R;
-R << noise, 0, 0, noise;
+// Eigen::Matrix<double,4,4> R = Eigen::Matrix<double,4,4>::Identity()*noise;
+Eigen::Matrix<double,2,2> R = Eigen::Matrix<double,2,2>::Identity()*noise;
+// R << noise, 0, 0, noise;
 int width = 1920;
 int height = 1080;
 double fov = 70;

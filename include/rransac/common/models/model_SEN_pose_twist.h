@@ -85,7 +85,7 @@ typename ModelSENPoseTwist<tState,tTransformation,tSource>::Mat ModelSENPoseTwis
     Mat F;
     F.block(g_dim_,0,g_dim_,g_dim_).setZero();
     F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity();
-    F.block(0,0,g_dim_, g_dim_) = typename State::Group(State::Algebra::Exp(state.u_.data_*dt)).Adjoint();
+    F.block(0,0,g_dim_, g_dim_) = typename State::Group(State::Algebra::Exp(-state.u_.data_*dt)).Adjoint();
     F.block(0,g_dim_,g_dim_,g_dim_) = (state.u_*dt).Jr()*dt;
     return F;
 }

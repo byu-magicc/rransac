@@ -104,9 +104,13 @@ typename ModelSENPosVel<tState,tTransformation,tSource>::Mat  ModelSENPosVel<tSt
     F.block(g_dim_,0,l_dim_,g_dim_).setZero();
     F.block(g_dim_, g_dim_, l_dim_, l_dim_).setIdentity();
     Eigen::Matrix<DataType, g_dim_,g_dim_> tmp = (state.u_*dt).Jr()*dt;  
-    F.block(0,0,g_dim_,g_dim_) = typename State::Group(State::Algebra::Exp(state.u_.data_*dt)).Adjoint();
+    F.block(0,0,g_dim_,g_dim_) = typename State::Group(State::Algebra::Exp(-state.u_.data_*dt)).Adjoint();
     F.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1); // Jacobian w.r.t. rho x
     F.block(0,g_dim_+1, g_dim_, State::Algebra::dim_a_vel_) = tmp.block(0, State::Algebra::dim_t_vel_, g_dim_, State::Algebra::dim_a_vel_); // Jacobian w.r.t. angular velocities
+   
+    std::cout << "F: " << F << std::endl;
+    std::cout << "tmp: " << tmp << std::endl;
+   
     return F;
 }
 
@@ -120,7 +124,6 @@ typename ModelSENPosVel<tState,tTransformation,tSource>::Mat ModelSENPosVel<tSta
     G.block(0,0,g_dim_, g_dim_) = tmp;
     G.block(0,g_dim_, g_dim_, 1) = tmp.block(0,0,g_dim_,1)*0.5;
     G.block(0,g_dim_+1, g_dim_, State::Algebra::dim_a_vel_) = tmp.block(0, State::Algebra::dim_t_vel_, g_dim_, State::Algebra::dim_a_vel_)*0.5; // Jacobian w.r.t. angular velocities
-
     G.block(g_dim_,g_dim_,l_dim_,l_dim_)= Eigen::Matrix<DataType,l_dim_,l_dim_>::Identity();
     return G;
 

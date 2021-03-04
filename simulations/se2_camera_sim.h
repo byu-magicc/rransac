@@ -42,14 +42,16 @@ int width;                      // number of pixels along the x axis
 int height;                     // number of pixels along the z axis
 double fov;                     // degrees
 double altitude;                // height above ground
-Eigen::Matrix2d R;              // measurement covariance matrix
+// Eigen::Matrix<double,4,4> R;              // measurement covariance matrix
+Eigen::Matrix<double,2,2> R;              // measurement covariance matrix
 Eigen::Matrix3d K;              // camera matrix
 double minx, maxx, miny, maxy;  // Surveillance region boundaries
 double volume;
 int num_false_meas;
 double lambda;
 
-CameraData(int width, int height, double fov, double altitude, const Eigen::Matrix2d& R, int num_false_meas) : width(width), height(height), fov(fov), altitude(altitude), R(R), num_false_meas(num_false_meas) {
+CameraData(int width, int height, double fov, double altitude, const Eigen::Matrix<double,2,2>& R, int num_false_meas) : width(width), height(height), fov(fov), altitude(altitude), R(R), num_false_meas(num_false_meas) {
+// CameraData(int width, int height, double fov, double altitude, const Eigen::Matrix<double,4,4>& R, int num_false_meas) : width(width), height(height), fov(fov), altitude(altitude), R(R), num_false_meas(num_false_meas) {
 
 double f = width/(2.0*tan(fov*M_PI/180.0/2.0));
 K << f, 0, width/2.0, 0, f ,height/2.0, 0,0,1;
@@ -94,8 +96,10 @@ typedef typename Model_::Source Source_;
 typedef Ransac<Model_, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
 typedef RRANSACTemplateParameters<SE2_se2,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
 typedef RRANSAC<RRANSACParameters> RRANSAC_;
+// typedef Eigen::Matrix<double,4,4> MatR_;
 typedef Eigen::Matrix<double,2,2> MatR_;
 static constexpr MeasurementTypes MeasurementType= MeasurementTypes::SEN_POS;
+// static constexpr MeasurementTypes MeasurementType= MeasurementTypes::SEN_POS_VEL;
 typedef Eigen::Matrix<double,5,5> ProcessNoiseCov_;
 typedef Eigen::Matrix<double,3,1> VecU_;
 
