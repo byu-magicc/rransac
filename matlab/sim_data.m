@@ -16,26 +16,30 @@ for i = 1:14
 end
 alpha = 0.5;
 fig = figure(1),clf;
+size = 30;
 colormap(gray)
-subplot(2,1,1);
+subplot(1,2,1);
 plot(r2_data(5,:),r2_data(1,:),'*', 'color', [0,0,0] );
 hold on
 plot(se2_data(5,:),se2_data(1,:), 'color', [0,0,0]+alpha);
 xlabel('time (s)');
 ylabel('NVT');
-legend('R2','SE2');
+legend('LTI-CV','SE2');
+set(gca,'FontSize',size);
 
-subplot(2,1,2);
+subplot(1,2,2);
 plot(r2_data(5,:),r2_data(3,:),'*', 'color', [0,0,0]);
 hold on
 plot(se2_data(5,:),se2_data(3,:), 'color', [0,0,0]+alpha);
 xlabel('time (s)');
 ylabel('NMT');
-legend('R2','SE2');
+legend('LTI-CV','SE2');
+set(gca,'FontSize',size);
 
 set(fig,'Units','Inches');
 pos = get(fig,'Position');
 set(fig,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
 print(fig,'results','-dpdf','-r0')
+
 
 
