@@ -5,6 +5,9 @@
 #include "rransac/system.h"
 #include "rransac/common/measurement/measurement_base.h"
 #include <numeric>
+#include <algorithm>
+#include <iostream>
+#include <fstream>
 
 namespace rransac {
 
@@ -59,10 +62,12 @@ std::vector<double> acc_average_euclidean_err_;  /**< On each iteration, if a ta
 
 
 double tpd_;  /**< Track probability of detection for one monte carlo simulation. The percentage of times a target was detected. */
+double taee_; /**< The total average euclidean error. */
+double tant_; /**< The total average number of tracks. */
 
 // Other variables
 bool first_run_ = true;
-long int num_monte_carl_runs = 0;
+double num_monte_carl_runs_ = 0;
 
 
 /**
@@ -85,18 +90,18 @@ void Next();
 void CalculatePerformanceMeasures(const System<tModel>* sys, const std::vector<tModel>& targets, int source_index );
 
 /**
- * Some performance measures cannot be calculated until after a single monte carlo simulation. Call
- * this function to calculate the. 
+ * Averages the accumulatve measures by the number of monte carlo simulations, and 
+ * computes some other performance measures.
  * 
  */ 
-void CalculateTotalPerformanceMeasures() {
+void CalculateTotalPerformanceMeasures();
 
-    double sum1 = std::accumulate(num_targets_.begin(), num_targets_.end(),0.0);
-    double sum2 = std::accumulate(nmt_.begin(), nmt_.end(),0.0);
-
-    tpd_ = (sum1-sum2)/sum1;
-
-}
+/**
+ * Writes the accumulative performance measures and tpd_, taee_, and tant_ to a file that can be read in matlab.
+ * The file name is absolute_file_path/output.csv
+ * @param absolute_file_path The absolute file path where the data will be saved. 
+ */ 
+void WriteData(const std::string absolute_file_path);
 
 private:
 
@@ -137,6 +142,7 @@ void Stats<tModel>::Reset() {
     num_good_tracks_.clear();
     num_targets_.clear();
     num_tracks_.clear();
+    total_num_tracks_.clear();
     average_euclidean_err_.clear();
 
     acc_nvt_.clear();
@@ -148,7 +154,11 @@ void Stats<tModel>::Reset() {
     acc_num_good_tracks_.clear();
     acc_num_targets_.clear();
     acc_num_tracks_.clear();
+    acc_total_num_tracks_.clear();
     acc_average_euclidean_err_.clear();
+
+    first_run_ = true;
+    num_monte_carl_runs_ = 0;
 
 
 }
@@ -158,7 +168,6 @@ void Stats<tModel>::Reset() {
 template<typename tModel>
 void Stats<tModel>::Next() {
 
-    num_monte_carl_runs++;
 
     if(first_run_) {
 
@@ -171,7 +180,10 @@ void Stats<tModel>::Next() {
         acc_num_good_tracks_=num_good_tracks_;
         acc_num_targets_=num_targets_;
         acc_num_tracks_=num_tracks_;
+        acc_total_num_tracks_ = total_num_tracks_;
         acc_average_euclidean_err_=average_euclidean_err_;
+        first_run_ = false;
+        
 
 
     } else {
@@ -180,11 +192,12 @@ void Stats<tModel>::Next() {
         AddVectorElementWise(acc_nft_, nft_);
         AddVectorElementWise(acc_nmt_, nmt_);
         AddVectorElementWise(acc_nst_, nst_);
-        AddVectorElementWise(acc_cm_time_, cm_time_  );
+        // AddVectorElementWise(acc_cm_time_, cm_time_  );
         AddVectorElementWise(acc_moc_, moc_);
         AddVectorElementWise(acc_num_good_tracks_, num_good_tracks_ );
         AddVectorElementWise(acc_num_targets_, num_targets_ );
         AddVectorElementWise(acc_num_tracks_, num_tracks_ );
+        AddVectorElementWise(acc_total_num_tracks_, total_num_tracks_ );
         AddVectorElementWise(acc_average_euclidean_err_, average_euclidean_err_ );
 
     }
@@ -200,6 +213,37 @@ void Stats<tModel>::Next() {
     num_tracks_.clear();
     average_euclidean_err_.clear();
 
+    
+
+
+}
+
+//--------------------------------------------------------------------------------------------------------
+
+template<typename tModel>
+void Stats<tModel>::CalculateTotalPerformanceMeasures() {
+
+
+    auto avg = [this](double& a){return a/num_monte_carl_runs_;};
+
+    std::transform(acc_nvt_.begin(), acc_nvt_.end(), acc_nvt_.begin(), avg );
+    std::transform(acc_nft_.begin(), acc_nft_.end(), acc_nft_.begin(), avg );
+    std::transform(acc_nmt_.begin(), acc_nmt_.end(), acc_nmt_.begin(), avg );
+    std::transform(acc_nst_.begin(), acc_nst_.end(), acc_nst_.begin(), avg );
+    std::transform(acc_moc_.begin(), acc_moc_.end(), acc_moc_.begin(), avg );
+    std::transform(acc_num_good_tracks_.begin(), acc_num_good_tracks_.end(), acc_num_good_tracks_.begin(), avg );
+    std::transform(acc_num_targets_.begin(), acc_num_targets_.end(), acc_num_targets_.begin(), avg );
+    std::transform(acc_num_tracks_.begin(), acc_num_tracks_.end(), acc_num_tracks_.begin(), avg );
+    std::transform(acc_total_num_tracks_.begin(), acc_total_num_tracks_.end(), acc_total_num_tracks_.begin(), avg );
+    std::transform(acc_average_euclidean_err_.begin(), acc_average_euclidean_err_.end(), acc_average_euclidean_err_.begin(), avg );
+
+    double sum1 = std::accumulate(acc_num_targets_.begin(), acc_num_targets_.end(),0.0);
+    double sum2 = std::accumulate(acc_nmt_.begin(), acc_nmt_.end(),0.0);
+    double sum3 = std::accumulate(acc_average_euclidean_err_.begin(), acc_average_euclidean_err_.end(),0.0);
+
+    tpd_ = (sum1-sum2)/sum1;
+    taee_ = sum3 / acc_average_euclidean_err_.size();
+    tant_ = acc_total_num_tracks_.back();
 
 }
 
@@ -208,6 +252,11 @@ void Stats<tModel>::Next() {
 template<typename tModel>
 void Stats<tModel>::CalculatePerformanceMeasures(const System<tModel>* sys, const std::vector<tModel>& targets, int source_index ) {
     
+    // This is the first iteration in the monte carlo run. 
+    if (nvt_.size() ==0) {
+        num_monte_carl_runs_++;
+    }
+
     cm_time_.push_back(sys->current_time_);
     Eigen::MatrixXd C = ComputeAssociationMatrix(sys,targets,source_index);
     Eigen::MatrixXd errs(targets.size(),1);
@@ -238,7 +287,7 @@ void Stats<tModel>::CalculatePerformanceMeasures(const System<tModel>* sys, cons
         for (int jj=0; jj < sys->good_models_.size(); ++jj) {
             if(C(ii,jj)==1) {
                 meas = sys->sources_[source_index].GetEstMeas(targets[ii].state_);
-                err = sys->sources_[source_index].OMinus(meas, sys->sources_[source_index].GetEstMeas(sys->good_models_[jj].state_));
+                err = sys->sources_[source_index].OMinus(meas, sys->sources_[source_index].GetEstMeas(sys->good_models_[jj]->state_));
                 errs(ii) = err.norm();
             }       
         }
@@ -294,8 +343,8 @@ Eigen::MatrixXd Stats<tModel>::ComputeAssociationMatrix(const System<tModel>* sy
         meas = sys->sources_[source_index].GetEstMeas(targets[ii].state_);
         for (int jj=0; jj < sys->good_models_.size(); ++jj) {
             S = sys->good_models_[jj]->GetInnovationCovariance(sys->sources_, source_index);
-            err = sys->sources_[source_index].OMinus(meas, sys->sources_[source_index].GetEstMeas(sys->good_models_[jj].state_));
-            distance = (err.transpose()*innovation_covariance.inverse()*err)(0,0);
+            err = sys->sources_[source_index].OMinus(meas, sys->sources_[source_index].GetEstMeas(sys->good_models_[jj]->state_));
+            distance = (err.transpose()*S.inverse()*err)(0,0);
             if (distance <= sys->sources_[source_index].params_.gate_threshold_) {
                 Cd(ii,jj) = distance;
                 C(ii,jj) = 1;
@@ -349,6 +398,52 @@ void Stats<tModel>::AddVectorElementWise(std::vector<T>& v1, const std::vector<T
 
 }
 
+//-------------------------------------------------------------------------------------------------------
+template<typename tModel>
+void Stats<tModel>::WriteData(const std::string absolute_file_path) {
+    std::string file_name = absolute_file_path + "/output.csv";
+    std::ofstream file;
+    file.open(file_name);
+
+    auto write = [](const std::vector<double> data, const std::string name, std::ofstream& file){
+        file << name << ",";
+        for (long int ii = 0; ii < data.size() -1; ++ii) {
+            file << data[ii] << ",";
+        }
+        file << data.back() << "\n";
+    };
+    
+    if (file.is_open()) {
+
+        write(acc_nvt_, "Number Valid Tracks", file);
+        write(acc_nft_, "Number False Tracks", file);
+        write(acc_nmt_, "Number Missed Targets", file);
+        write(acc_nst_, "Number Spurious Tracks", file);
+        write(acc_cm_time_, "Time", file);
+        write(acc_moc_, "Measure of Completeness", file);
+        write(acc_num_good_tracks_, "Number of Good Tracks", file);
+        write(acc_num_targets_, "Number of Targets", file);
+        write(acc_num_tracks_, "Number Tracks", file);
+        write(acc_total_num_tracks_, "Total Number Tracks", file);
+        write(acc_average_euclidean_err_, "Average Euclidean Error", file);
+        file << "Track Probability of Detection " << "," << tpd_ << std::endl;
+        file << "Total Average Euclidean Error " << "," << taee_ << std::endl;
+        file << "Total Average number of Tracks " << "," << tant_ << std::endl;
+
+
+
+
+        file.close();
+
+
+    } else {
+        std::cout << "Stats::WriteData: Could not open file" << std::endl;
+    }
+
+}
+
 } // namespace
 
 #endif //RRANSAC_STATISTICAL_INFORMATION_H_
+
+    

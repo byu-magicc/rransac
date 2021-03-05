@@ -13,11 +13,14 @@
 #include "rransac/system.h"
 #include "rransac/common/models/model_SEN_pos_vel.h"
 #include "rransac/common/sources/source_SEN_pos_vel.h"
+#include "rransac/common/models/model_RN.h"
+#include "rransac/common/sources/source_RN.h"
 #include "rransac/common/measurement/measurement_base.h"
 #include "rransac/parameters.h"
-#include "rransac/track_initialization/seed_policies/SE2_pos_seed_policy.h"
-#include "rransac/track_initialization/lmle_policies/nonlinear_lmle_policy.h"
+#include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
+#include "rransac/track_initialization/seed_policies/null_seed_policy.h"
 #include "rransac/common/transformations/trans_homography.h"
+#include "rransac/common/transformations/transformation_null.h"
 #include "rransac/track_initialization/ransac.h"
 #include "rransac/common/data_association/model_policies/model_pdf_policy.h"
 #include "rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
@@ -25,7 +28,7 @@
 #include "rransac/common/utilities.h"
 #include "rransac/visualization/visualization_host.h"
 #include "rransac/visualization/draw_meas_policies/draw_meas_R2_SE2_pos_policy.h"
-#include "rransac/visualization/draw_track_policies/draw_track_policy_SE2.h"
+#include "rransac/visualization/draw_track_policies/draw_track_policy_R2.h"
 #include "rransac/statistical_information/stats.h"
 
 
@@ -90,27 +93,29 @@ class CameraSimR2 {
 
 public:
 
-typedef ModelSENPosVel<SE2_se2, TransformHomography,SourceSENPosVel> Model_;
-typedef typename Model_::Transformation Transformation_;
-typedef typename Model_::Transformation::MatData TransformMatData_;
-typedef typename Model_::State State_;
-typedef typename State_::Algebra Algebra_;
-typedef typename Model_::Source Source_;
-typedef Ransac<Model_, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-typedef RRANSACTemplateParameters<SE2_se2,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+typedef ModelSENPosVel<SE2_se2, TransformNULL> TargetModel_;
+typedef typename TargetModel_::State TargetState_;
+typedef typename TargetModel_::Source TargetSource_;
+typedef typename TargetState_::Algebra TargetAlgebra_;
+
+typedef ModelRN<R2_r2,TransformNULL,SourceRN> TrackingModel_;
+typedef typename TrackingModel_::Transformation Transformation_;
+typedef typename TrackingModel_::Transformation::MatData TransformMatData_;
+typedef typename TrackingModel_::State TrackingState_;
+typedef typename TrackingState_::Algebra TrackingAlgebra_;
+typedef typename TrackingModel_::Source TrackingSource_;
+typedef RRANSACTemplateParameters<R2_r2,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
 typedef RRANSAC<RRANSACParameters> RRANSAC_;
 typedef Eigen::Matrix<double,4,4> MatR_;
-// typedef Eigen::Matrix<double,2,2> MatR_;
-// static constexpr MeasurementTypes MeasurementType= MeasurementTypes::SEN_POS;
-static constexpr MeasurementTypes MeasurementType= MeasurementTypes::SEN_POS_VEL;
-typedef Eigen::Matrix<double,5,5> ProcessNoiseCov_;
-typedef Eigen::Matrix<double,3,1> VecU_;
+static constexpr MeasurementTypes MeasurementType= MeasurementTypes::RN_POS_VEL;
+typedef Eigen::Matrix<double,4,4> ProcessNoiseCov_;
+typedef Eigen::Matrix<double,2,1> VecU_;
 
 
 
 
 CameraData camera_data_;
-std::vector<Model_> tracks_;
+std::vector<TargetModel_> tracks_;
 double dt_;
 double end_time_;
 double start_time_;
@@ -119,21 +124,21 @@ TransformMatData_ t_data_;
 Transformation_ transformation_;
 static constexpr bool transform_data_ = false;
 RRANSAC_ rransac_;
-const System<Model_>* sys_;
-std::vector<Source_> sources_;
+const System<TrackingModel_>* sys_;
+std::vector<TargetSource_> sources_;
 Meas<double> m_;
-Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat_;
+Eigen::Matrix<double,TargetAlgebra_::dim_,TargetAlgebra_::dim_> noise_mat_;
 double process_noise_;
 double meas_noise_;
-VisualizationHost<Model_, DrawMeasR2SE2PosPolicy, DrawTrackPolicySE2> viz_;
+VisualizationHost<TrackingModel_, DrawMeasR2SE2PosPolicy, DrawTrackPolicyR2> viz_;
 std::default_random_engine gen_;
 
 CameraSimR2(const CameraData& camera_data, double dt, double end_time, int num_tracks);
 
-State_ GenerateRandomState();
+TargetState_ GenerateRandomState();
 
-bool InsurveillanceRegion(const State_& state);
+bool InsurveillanceRegion(const TargetState_& state);
 
-void Propagate(double start_time, double end_time, Stats<Model_>& stats);
+void Propagate(double start_time, double end_time, Stats<TrackingModel_>& stats);
 
 };

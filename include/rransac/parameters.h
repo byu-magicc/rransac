@@ -4,7 +4,9 @@
 
 #include <vector>
 #include <Eigen/Core>
-
+#include <Eigen/Eigenvalues>
+#include <iostream>
+#include <stdexcept>
 
 namespace rransac
 {

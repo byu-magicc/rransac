@@ -1,7 +1,5 @@
 #include "rransac/parameters.h"
 
-#include <iostream>
-#include <stdexcept>
 
 namespace rransac {
 
