@@ -347,8 +347,6 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawClus
     for (auto cluster_iterator = sys->data_tree_.data_.begin(); cluster_iterator != sys->data_tree_.data_.end(); ++cluster_iterator) {
         if(cluster_iterator->cluster_label_  >= 0) {
             while (cluster_iterator->cluster_label_  >= cluster_colors_.size()) {
-                std::cerr << "cluster label: " << cluster_iterator->cluster_label_ << std::endl;
-                std::cerr << "cluster color size: " <<  cluster_colors_.size() << std::endl;
                 cluster_colors_.push_back(GetRandomColor());
                 if (cluster_iterator->cluster_label_ > 1e3)
                     break;
