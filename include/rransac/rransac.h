@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <string>
+#include <iostream>
 
 #include "rransac/system.h"
 #include "rransac/track_initialization/ransac.h"
@@ -210,7 +211,10 @@ public:
     void RunTrackManagement() {
         if (!system_parameters_set_)
             throw std::runtime_error("System parameters are not set. ");
-        tModelManager::ManageModels(sys_,sys_.current_time_-sys_.params_.meas_time_window_);}
+        
+        tModelManager::ManageModels(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
+        }
+        
 
     /**
      * Returns a constant pointer to the system which contains all of the R-RANSAC data. 
@@ -365,10 +369,12 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
     
         sys_.current_time_ = new_measurements.begin()->time_stamp; 
         sys_.data_tree_.PruneDataTree(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
+
         sys_.new_meas_ = new_measurements;
 
-        if (dt > 0)
+        if (dt > 0) {
             tModelManager::PropagateModels(sys_,dt);
+        }
 
 // Calculate the innovation covariances used to compute the validation region. This is only for visualization purposes. 
 #if RRANSAC_VIZ_HOOKS
@@ -380,21 +386,21 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
 #endif
 
 
-    if (transform_data_) {
-        sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
-        tModelManager::TransformModels(sys_);
-        transform_data_ = false;
-    }
+        if (transform_data_) {
+            sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
+            tModelManager::TransformModels(sys_);
+            transform_data_ = false;
+        }
 
-    DataAssociation::AssociateNewMeasurements(sys_);
+        DataAssociation::AssociateNewMeasurements(sys_);
 
-    tModelManager::UpdateModels(sys_);
+        tModelManager::UpdateModels(sys_);
 
-    sys_.data_tree_.ConstructClusters(sys_);
+        sys_.data_tree_.ConstructClusters(sys_);
 
 
-    if (!sys_.time_set_)
-        sys_.time_set_ = true;
+        if (!sys_.time_set_)
+            sys_.time_set_ = true;
 
 
     } else {
@@ -427,6 +433,7 @@ void RRANSAC<tRRANSACTemplateParameters>::RunTrackInitialization() {
         throw std::runtime_error("System parameters are not set. ");
 
     ransac_.Run(sys_);
+
 
 }
 

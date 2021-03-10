@@ -10,11 +10,11 @@ namespace rransac {
 
 struct DrawInfo {
 
-cv::Scalar color_meas_pos = cv::Scalar(255,0,127);                /**< The color of measurements not assigned to a cluster. */
-cv::Scalar color_new_meas_pos = cv::Scalar(0,0,0);                /**< The color of new measurements not associated to a track or cluster. */
-cv::Scalar color_estimated_poor_track_pos=cv::Scalar(204,102,0);  /**< The color of the objects representing the poor track's pose. */
-cv::Scalar color_estimated_good_track_pos=cv::Scalar(0,153,153);  /**< The color of the objects representing the good track's pose. */
-cv::Scalar color_true_track_pos=cv::Scalar(0,255,0);              /**< The color of the objects representing the true track's pose. */
+cv::Scalar color_meas_pos = cv::Scalar(255,0,127);                /**< The color of measurements not assigned to a cluster. Default is purple */
+cv::Scalar color_new_meas_pos = cv::Scalar(0,0,0);                /**< The color of new measurements not associated to a track or cluster. Default is black */
+cv::Scalar color_estimated_poor_track_pos=cv::Scalar(204,102,0);  /**< The color of the objects representing the poor track's pose. Default is blue*/
+cv::Scalar color_estimated_good_track_pos=cv::Scalar(0,153,153);  /**< The color of the objects representing the good track's pose. Default is gold*/
+cv::Scalar color_true_track_pos=cv::Scalar(0,255,0);              /**< The color of the objects representing the true track's pose. Default is green*/
 cv::Scalar color_vel = cv::Scalar(0,0,255);                       /** < Every object drawn associated with velocity will be this color. */
 double scale_draw_pos=2;                                          /** < When the object being drawn is a filled object, this value will scale the volume of the drawn object */
 double scale_draw_vel=2;                                          /** < This scales the size of the velocity vectors that are being drawn */

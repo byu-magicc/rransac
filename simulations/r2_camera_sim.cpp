@@ -1,6 +1,10 @@
 
 #include "r2_camera_sim.h"
+#include <chrono>
 
+unsigned int add_measurement_time = 0;
+unsigned int track_initialization_time = 0;
+unsigned int track_management_time =0;
 
 
 using namespace lie_groups;
@@ -201,16 +205,25 @@ void CameraSimR2::Propagate(double start_time, double end_time, Stats<TrackingMo
 
 
         
-
+        auto start = std::chrono::steady_clock::now();
         if (transform_data_) {
             this->rransac_.AddMeasurements(new_measurements,t_data_);
         } else {
             this->rransac_.AddMeasurements(new_measurements);
         }
+        auto end = std::chrono::steady_clock::now();
         
+        add_measurement_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+
+        start = std::chrono::steady_clock::now();
         this->rransac_.RunTrackInitialization();
+        end = std::chrono::steady_clock::now();
+        track_initialization_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
         // viz_.DrawSystem(sys_);
+        start = std::chrono::steady_clock::now();
         this->rransac_.RunTrackManagement();
+        end = std::chrono::steady_clock::now();
+        track_management_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
         std::vector<TrackingModel_> converted_tracks;
         TrackingModel_ tmp_track;
@@ -277,6 +290,14 @@ for (int ii = 0; ii < num_sim; ++ii) {
 
 stats.CalculateTotalPerformanceMeasures();
 stats.WriteData("/home/mark/tmp/data");
+double time_scale = 1e9;
+std::cout << "total add measurement time: " << add_measurement_time/time_scale << std::endl;
+std::cout << "total track initialization time: " << track_initialization_time/time_scale << std::endl;
+std::cout << "total track management time: " << track_management_time/time_scale << std::endl;
+std::cout << "total time: " << (track_management_time +add_measurement_time + track_initialization_time)/time_scale << std::endl;
+std::cout << "average add measurement time: " << static_cast<double>(add_measurement_time) /num_sim/time_scale<< std::endl;
+std::cout << "average track initialization time: " << static_cast<double>(track_initialization_time)/num_sim/time_scale << std::endl;
+std::cout << "average track management time: " << static_cast<double>(track_management_time)/num_sim/time_scale << std::endl;
 
 return 0;
 

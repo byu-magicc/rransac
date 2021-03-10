@@ -87,8 +87,7 @@ private:
  */ 
 void MergeClusters(const typename std::list<Cluster<DataType>>::iterator iter1, const typename std::list<Cluster<DataType>>::iterator iter2);
 
-unsigned int cluster_label_ =0; /**< When a cluster is elevated to a good cluster, it will receive a unique label. A good cluster is a cluster that 
-                                     meets the minimum subset requirement as specified by Parameters::RANSAC_minimum_subset_. This label is for visualization purposes only */
+
 
 };
 
@@ -112,7 +111,7 @@ void DataTreeClusters<tDataType>::DerivedAddMeasurement(const tSystem& sys, cons
     }
     
     if (neighbor_clusters.size() == 0) {           // The measurement is not a neighbor to any cluster, so make a new one
-        this->data_.emplace_back(Cluster<DataType>(meas));
+        this->data_.emplace_back(meas);
     } else if (neighbor_clusters.size() == 1) {    // The measurement is only a neighbor to one cluster, so add it
 
         neighbor_clusters.front()->AddMeasurement(meas);
@@ -163,8 +162,8 @@ void DataTreeClusters<tDataType>::DerivedConstructClusters(tSystem& sys) {
     for(auto cluster_iter = this->data_.begin(); cluster_iter != this->data_.end(); ++cluster_iter) {
         if(cluster_iter->data_.size() >= sys.params_.cluster_min_size_requirement_) {
             if (cluster_iter->cluster_label_ < 0) {
-                cluster_iter->cluster_label_ = cluster_label_;
-                cluster_label_++;
+                cluster_iter->cluster_label_ = sys.cluster_label_;
+                sys.cluster_label_++;
             }
             sys.clusters_.push_back(cluster_iter); }
 

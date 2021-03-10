@@ -411,7 +411,7 @@ for (auto& th: threads) {
 }
 
 // Delete the pointers and wait for new ones to be given.
-sys.clusters_.empty();
+sys.clusters_.clear();
 
 }
 

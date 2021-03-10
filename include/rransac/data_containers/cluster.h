@@ -54,13 +54,27 @@ struct IteratorPair {
 /**
  * Default constructor.
  */ 
-Cluster()=default;
+Cluster() : cluster_label_(-1), size_(0) {}
 
 /**
  * A cluster can be constructed with a measurement.
  * @param[in] meas The first measurement to be added to the cluster.
  */ 
-Cluster(const Meas<DataType>& meas) { AddMeasurement(meas); }
+Cluster(const Meas<DataType>& meas) : Cluster() { AddMeasurement(meas); }
+
+/**
+ * The copy constructor
+ */ 
+Cluster(const Cluster& other) : cluster_label_(other.cluster_label_), size_(other.size_), data_(other.data_) {}
+
+/**
+ * The assignment constructor
+ */ 
+Cluster& operator=(const Cluster& other) {
+    cluster_label_ = other.cluster_label_;
+    size_ = other.size_;
+    data_ = other.data_;
+}
 
 /**
  * Adds a measurement to the cluster. It is assumed that the measurement has a valid time stamp and valid data.
@@ -138,11 +152,11 @@ bool IsNeighboringMeasurement(const tSource& source, const Parameters& param, co
 
 std::list<std::list<Meas<DataType>>> data_; /**< Contains all of the measurements. The outer container organizes the measurements in chronological order. */
 
-long int cluster_label_=-1;  /**< When a cluster is elevated to a good cluster, it will receive a unique label whose numerical value is non negative. */ 
+long int cluster_label_;  /**< When a cluster is elevated to a good cluster, it will receive a unique label whose numerical value is non negative. */ 
 
 private:
 
-unsigned int size_=0; /**< The total number of measurements in the cluster. */
+unsigned int size_; /**< The total number of measurements in the cluster. */
 
 };
 

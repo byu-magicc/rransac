@@ -344,19 +344,28 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawClus
     cv::Scalar color(0,0,0);
     draw_info_.draw_threshold = draw_info_.draw_cluster_velocity_position_threshold;
 
-    for (auto cluster_iterator : sys->clusters_) {
-        while (cluster_iterator->cluster_label_  >= cluster_colors_.size())
-            cluster_colors_.push_back(GetRandomColor());
-        color = cluster_colors_[cluster_iterator->cluster_label_ ];
+    for (auto cluster_iterator = sys->data_tree_.data_.begin(); cluster_iterator != sys->data_tree_.data_.end(); ++cluster_iterator) {
+        if(cluster_iterator->cluster_label_  >= 0) {
+            while (cluster_iterator->cluster_label_  >= cluster_colors_.size()) {
+                std::cerr << "cluster label: " << cluster_iterator->cluster_label_ << std::endl;
+                std::cerr << "cluster color size: " <<  cluster_colors_.size() << std::endl;
+                cluster_colors_.push_back(GetRandomColor());
+                if (cluster_iterator->cluster_label_ > 1e3)
+                    break;
+            }
+                
+            color = cluster_colors_[cluster_iterator->cluster_label_ ];
 
-        for(auto outer_iter = cluster_iterator->data_.begin(); outer_iter != cluster_iterator->data_.end(); ++ outer_iter) {
-            draw_info_.color_pos = ScalarFadeColor(color, outer_iter->front().time_stamp, sys->current_time_, sys->params_.meas_time_window_);
-            draw_info_.color_vel = ScalarFadeColor(draw_info_original_.color_vel, outer_iter->front().time_stamp, sys->current_time_, sys->params_.meas_time_window_);
+            for(auto outer_iter = cluster_iterator->data_.begin(); outer_iter != cluster_iterator->data_.end(); ++ outer_iter) {
+                draw_info_.color_pos = ScalarFadeColor(color, outer_iter->front().time_stamp, sys->current_time_, sys->params_.meas_time_window_);
+                draw_info_.color_vel = ScalarFadeColor(draw_info_original_.color_vel, outer_iter->front().time_stamp, sys->current_time_, sys->params_.meas_time_window_);
 
-            for (auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter) {
-                DrawMeas(img_, *inner_iter, sys, draw_info_);
+                for (auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter) {
+                    DrawMeas(img_, *inner_iter, sys, draw_info_);
+                }
             }
         }
+
     }
 
     draw_info_ = draw_info_original_;
