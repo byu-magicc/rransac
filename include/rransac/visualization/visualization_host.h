@@ -381,9 +381,9 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawEsti
         for (auto& track : sys->models_) {
 
             if(track.model_likelihood_ >= sys->params_.track_good_model_threshold_){
-                draw_info_.color_pos = ScalarFadeColor(draw_info_original_.color_estimated_good_track_pos, sys->current_time_-track.missed_detection_time_, sys->current_time_, sys->params_.meas_time_window_);
+                draw_info_.color_pos = ScalarFadeColor(draw_info_original_.color_estimated_good_track_pos, track.newest_measurement_time_stamp, sys->current_time_, sys->params_.meas_time_window_);
             } else {
-                draw_info_.color_pos = ScalarFadeColor(draw_info_original_.color_estimated_poor_track_pos, sys->current_time_-track.missed_detection_time_, sys->current_time_, sys->params_.meas_time_window_);
+                draw_info_.color_pos = ScalarFadeColor(draw_info_original_.color_estimated_poor_track_pos, track.newest_measurement_time_stamp, sys->current_time_, sys->params_.meas_time_window_);
             }
             
 
@@ -392,8 +392,8 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawEsti
 
     } else {
         for (auto&& track : sys->good_models_) {
-            draw_info_.color_pos = ScalarFadeColor(draw_info_original_.color_estimated_good_track_pos, sys->current_time_-track->missed_detection_time_, sys->current_time_, sys->params_.meas_time_window_);
-            draw_info_.color_vel = ScalarFadeColor(draw_info_original_.color_vel, sys->current_time_-track->missed_detection_time_, sys->current_time_, sys->params_.meas_time_window_);
+            draw_info_.color_pos = ScalarFadeColor(draw_info_original_.color_estimated_good_track_pos, track->newest_measurement_time_stamp, sys->current_time_, sys->params_.meas_time_window_);
+            draw_info_.color_vel = ScalarFadeColor(draw_info_original_.color_vel, track->newest_measurement_time_stamp, sys->current_time_, sys->params_.meas_time_window_);
             DrawTrack(img_, *track,sys, draw_info_);
         }
     }

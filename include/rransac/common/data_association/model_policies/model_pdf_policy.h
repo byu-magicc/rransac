@@ -225,7 +225,8 @@ void ModelPDFPolicy<tModel>::AssociateMeasurements(System<tModel>& sys, std::vec
     }
 
     // Add the new measurements
-    for(auto meas_iter = sys.new_meas_.begin(); meas_iter != sys.new_meas_.end(); ++meas_iter) {
+    auto meas_iter = sys.new_meas_.begin();
+    while(meas_iter != sys.new_meas_.end()) {
         bool meas_associated = false;
 
         // Indicates that a source produced a measurement
@@ -250,7 +251,8 @@ void ModelPDFPolicy<tModel>::AssociateMeasurements(System<tModel>& sys, std::vec
         // Remove the measurement if it was associated
         if(meas_associated) {
             meas_iter = sys.new_meas_.erase(meas_iter);
-            --meas_iter;
+        } else {
+            ++meas_iter;
         }
     
     }

@@ -174,13 +174,16 @@ void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
     // ITS LIKELIHOOD COULD BE SO LOW THAT IT TAKES A WHILE TO HAVE A POSITIVE LIKELIHOOD AGAIN
 
     // Remove the models that have not received a measurement for a while
-    for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
-        if(it->missed_detection_time_ > sys.params_.track_max_missed_detection_time_) {
-            auto it_copy = it;
-            --it;                       // We are going to remove it so we need to back up to the previous
-            sys.models_.erase(it_copy);
+    for (auto it_expired_model = sys.models_.begin(); it_expired_model !=sys.models_.end();) {
+        // std::cerr << "current time: " << sys.current_time_ << std::endl;
+        // std::cerr << "it_expired_model->newest_measurement_time_stamp): " << it_expired_model->newest_measurement_time_stamp << std::endl;
+        if((sys.current_time_ - it_expired_model->newest_measurement_time_stamp) > sys.params_.track_max_missed_detection_time_) {
+            it_expired_model = sys.models_.erase(it_expired_model); // erases the current iterator and returns the next iterator      
+        } else {
+            ++it_expired_model;
         }
     }
+ 
 
     // Remove the worst ones until there are only the desired number of models or less
     while (sys.models_.size() > sys.params_.track_max_num_tracks_) {
@@ -192,7 +195,17 @@ void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
                 iter_to_remove = it;
             }
         }
-        sys.models_.erase(iter_to_remove);
+#ifdef DEBUG_BUILD  // Had an issue with the begining iterator being the same as the end iterator when size wasn't zero. We believe the cause was due to not locking resources when threading in track initialization.
+        if (iter_to_remove != sys.models_.end())
+            sys.models_.erase(iter_to_remove);
+        else {
+            throw std::runtime_error("ModelManager::PruneModels: Iter of model to be removed is pointing to the end of the list. There is no model there!!");
+        }
+#else
+    sys.models_.erase(iter_to_remove);
+#endif
+
+        
     }
 }
 
@@ -230,17 +243,17 @@ template <typename tModel>
 void ModelManager<tModel>::MergeModels(System<tModel>& sys) {
 
 for (auto iter1 = sys.models_.begin(); iter1 != sys.models_.end(); ++iter1) {
-
-    for (auto iter2 = std::next(iter1,1); iter2 != sys.models_.end(); ++iter2) {
-
+    
+    for(auto iter2 = std::next(iter1,1); iter2 != sys.models_.end();) {
         if (SimilarModels(sys, *iter1, *iter2)) {
             *iter1 = FuseModels(*iter1, *iter2);   // Fuse the models and store them as iter1
             iter2 = sys.models_.erase(iter2);      // Erase the element at iter2 and point iter2 to the next one
-            --iter2;                               // Bring iter2 back one b/c the for loop will increment it.
+                                                   
+        } else {
+            ++iter2;
         }
-
-
     }
+   
 }
 
 }
@@ -348,8 +361,8 @@ fused_model.OPlusEQ(P*P2_inv*tModel::OMinus(model2, model1));
 fused_model.err_cov_ = P;
 
 // set the missed_detection_time to the lowest between the states
-if (model1.missed_detection_time_ > model2.missed_detection_time_)
-    fused_model.missed_detection_time_ = model2.missed_detection_time_;
+if (model1.newest_measurement_time_stamp < model2.newest_measurement_time_stamp)
+    fused_model.newest_measurement_time_stamp = model2.newest_measurement_time_stamp;
 
 // Set the label to the most recent label
 if (model1.label_ == -1)

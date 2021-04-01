@@ -154,13 +154,13 @@ new_measurements.push_back(m4);
 
 // Add invalid measurements
 #ifdef DEBUG_BUILD
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements));
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time));
 ASSERT_EQ(sys->new_meas_.size(), 0);
 ASSERT_FALSE(sys->time_set_);
 #endif
 
 new_measurements.back().time_stamp = time;
-ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements));
+ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements,time));
 ASSERT_EQ(sys->new_meas_.size(), 0);
 ASSERT_EQ(sys->data_tree_.Size(), new_measurements.size());
 ASSERT_TRUE(sys->time_set_);
@@ -175,34 +175,34 @@ m5.pose = MatPose::Random();
 m5.twist = MatPose::Random();
 new_measurements.push_back(m5);
 #ifdef DEBUG_BUILD
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements));
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time));
 
 for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++iter) {
     iter->time_stamp = 0;
 }
 
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements));
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time));
 
 for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++iter) {
     iter->time_stamp = 2;
 }
 
 new_measurements.back().source_index = -1;
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements)); // Source index out of scope
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time)); // Source index out of scope
 ASSERT_EQ(sys->data_tree_.Size(), new_measurements.size()-1);
 
 new_measurements.back().source_index = sys->sources_.size();
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements)); // Source index out of scope
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time)); // Source index out of scope
 ASSERT_EQ(sys->data_tree_.Size(), new_measurements.size()-1);
 
 new_measurements.back().source_index = 0;
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements)); // source index and measurement type do not match.
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time)); // source index and measurement type do not match.
 new_measurements.back().source_index = 2;
 new_measurements.back().pose = Eigen::Matrix3d::Identity();
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements)); // Pose not proper measurement type.
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time)); // Pose not proper measurement type.
 new_measurements.back().pose = MatPose::Identity();
 new_measurements.back().twist = Eigen::Matrix3d::Identity();
-ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements)); // Twist not proper measurement type.
+ASSERT_ANY_THROW(rransac.AddMeasurements(new_measurements,time)); // Twist not proper measurement type.
 new_measurements.back().twist = MatPose::Identity();
 #endif
 
@@ -210,15 +210,15 @@ for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++ite
     iter->time_stamp = 2;
 }
 
-ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements));
+ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements,time));
 
 Eigen::Matrix3d transform_data; // Should transform all measurements to the zero vector
 transform_data << 0, 0, 0, 0, 0, 0, 0, 0, 1;
-rransac.AddMeasurements(empty_measurements,transform_data);
+rransac.AddMeasurements(empty_measurements,time,transform_data);
 ASSERT_EQ(sys->new_meas_.size(), 0);
 ASSERT_EQ(sys->data_tree_.Size(), 9);
 ASSERT_TRUE(sys->time_set_);
-ASSERT_EQ(sys->current_time_,new_measurements.back().time_stamp);
+ASSERT_EQ(sys->current_time_,time);
 
 // std::list<Cluster<double>>
 
@@ -235,7 +235,7 @@ for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++ite
     iter->time_stamp = 3;
 }
 
-ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements));
+ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements,new_measurements.back().time_stamp));
 ASSERT_EQ(sys->new_meas_.size(), 0);
 ASSERT_EQ(sys->data_tree_.Size(), 14);
 ASSERT_TRUE(sys->time_set_);
@@ -246,7 +246,7 @@ for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++ite
     iter->time_stamp = time + sys->params_.meas_time_window_ + new_measurements.back().time_stamp;
 }
 
-ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements));
+ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements,new_measurements.back().time_stamp));
 ASSERT_EQ(sys->new_meas_.size(), 0);
 ASSERT_EQ(sys->data_tree_.Size(), 5);
 ASSERT_EQ(sys->current_time_,new_measurements.back().time_stamp);

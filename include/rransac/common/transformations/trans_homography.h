@@ -183,7 +183,7 @@ inline void TransformHomography<lie_groups::SE2_se2>::DerivedSetData(const Mat3d
     if ( fabs((H1_.transpose()*H1_).trace() -2.0) == 0) {
         H1p_ = H1_;
     } else {
-        Eigen::JacobiSVD<Eigen::Matrix<DataType,2,2>> svd(H1_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::JacobiSVD<Eigen::Matrix<DataType,2,2>> svd(H1_, Eigen::ComputeFullU | Eigen::ComputeFullV);
         H1p_ = svd.matrixU()*(svd.matrixV().transpose());
     }
 }

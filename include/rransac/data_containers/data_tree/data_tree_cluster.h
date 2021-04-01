@@ -176,7 +176,8 @@ void DataTreeClusters<tDataType>::DerivedConstructClusters(tSystem& sys) {
 template<typename tDataType>
 template <typename tSystem>
 void DataTreeClusters<tDataType>::DerivedPruneDataTree(const tSystem sys, const double expiration_time) {
-    for(auto iter = this->data_.begin(); iter != this->data_.end(); ++iter) {
+    auto iter = this->data_.begin();
+    while(iter != this->data_.end()) {
         double size_diff = iter->Size();
         iter->PruneCluster(expiration_time);
         size_diff -= iter->Size();
@@ -184,16 +185,16 @@ void DataTreeClusters<tDataType>::DerivedPruneDataTree(const tSystem sys, const 
 
         // After pruning the cluster, if it doesn't have any elements, remove it
         if(iter->Size() == 0) {
-            iter = this->data_.erase(iter);
-            --iter;                       // Since erase returns an iterator to the next iterator, we need to back it up one; otherwise, the for loop would skip it 
+            iter = this->data_.erase(iter); // removes the element at iter and returns the next iterator
         } 
         // If the latest measurement in the cluster has a time stamp before the current time minus the time threshold,
         // It won't receive any other measurements and it hasn't been made into a model. Thus it won't ever become a model
         // so it should be removed. 
         else if (iter->data_.back().front().time_stamp <= (sys.current_time_ - sys.params_.cluster_time_threshold_)) {
             this->size_ -= iter->Size();
-            iter = this->data_.erase(iter);
-            --iter;
+            iter = this->data_.erase(iter); // removes the element at iter and returns the next iterator
+        } else {
+            ++iter; 
         }
  
     }

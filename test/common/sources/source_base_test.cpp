@@ -94,11 +94,9 @@ ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups:
 source_params.meas_cov_ << -1, 0, 0, -1;
 ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 
-// Invalid expected number of false measurements
+// Invalid spacial density
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.spacial_density_of_false_meas_ = -0.1;
-ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
-source_params.spacial_density_of_false_meas_ = 1.1;
 ASSERT_ANY_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 source_params.spacial_density_of_false_meas_ = 0.9;
 

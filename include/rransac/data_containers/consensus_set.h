@@ -164,6 +164,10 @@ void ConsensusSet<tMeasurement>::AddMeasurementsToConsensusSetSameTimeStamp(cons
 template <class tMeasurement>
 void ConsensusSet<tMeasurement>::PruneConsensusSet(double expiration_time) {
 
+// It is empty, nothing to remove
+if(consensus_set_.size() == 0)
+    return;
+
 // If all of the measurements are expired, clear the list
 if(consensus_set_.back().front().time_stamp < expiration_time) {
     consensus_set_.clear();

@@ -24,7 +24,7 @@ include_directories(../include
 # ../src/parameters.cpp)
 # target_link_libraries(se2_camera_sim Ceres::ceres ${OpenCV_LIBS} )
 
-add_executable(r2_camera_sim
-r2_camera_sim.cpp
-../src/parameters.cpp)
-target_link_libraries(r2_camera_sim Ceres::ceres ${OpenCV_LIBS} )
+# add_executable(r2_camera_sim
+# r2_camera_sim.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(r2_camera_sim Ceres::ceres ${OpenCV_LIBS} )

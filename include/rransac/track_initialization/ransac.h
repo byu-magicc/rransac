@@ -150,7 +150,7 @@ static void CalculateMeasurmentAndLikelihoodData(const System<tModel>& sys, tMod
  * @param cluster_iter An iterator to a cluster on which RANSAC will be performed
  * @param sys An object containing all the R-RANSAC data
  */ 
-static  void RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys);
+static  void RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys, std::mutex& mtx);
 
 
 };
@@ -329,7 +329,7 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::GenerateTrack(con
 
 
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<typename > typename tAssociationPolicy>
-void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys) {
+void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys, std::mutex& mtx) {
 
     int best_score = 0;
     int score = 0;
@@ -370,18 +370,18 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::RunSingle(const typ
         tModel new_track =  GenerateTrack(best_hypothetical_state, sys, best_inliers);
         typename DataTreeClusters<DataType>::MeasurementLocationInfo info;
         info.cluster_iter = cluster_iter;
-        std::mutex m;
+        
         
         for (auto iter = best_inliers.begin(); iter != best_inliers.end(); ++iter) {
             info.iter_pair = *iter;
-            {
-            std::lock_guard<std::mutex> lockGuard(m);
+            mtx.lock();
             sys.data_tree_.RemoveMeasurement(info);
-            }
+            mtx.unlock();
         }
         {
-        std::lock_guard<std::mutex> lockGuard(m);
+        mtx.lock();
         ModelManager<Model>::AddModel(sys,new_track);
+        mtx.unlock();
         }
     }
 
@@ -397,17 +397,18 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tAssociationPolicy>::Run(System<tModel>&
 
 
 std::vector<std::thread> threads;
+std::mutex mtx;
 
 for (auto& cluster_iter : sys.clusters_) {
     
     if (cluster_iter->data_.size() > sys.params_.RANSAC_minimum_subset_ && cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_ && cluster_iter->data_.back().front().time_stamp == sys.current_time_) {
 
-        threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys)));
+        threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys),std::ref(mtx)));
     }
 }
 
-for (auto& th: threads) {
-    th.join();
+for (int ii = 0; ii < threads.size(); ++ii) {
+    threads.at(ii).join();
 }
 
 // Delete the pointers and wait for new ones to be given.

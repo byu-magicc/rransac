@@ -170,7 +170,7 @@ for (unsigned int ii = 0; ii < num_iters; ++ii) {
 // std::cerr << "here 3" << std::endl;
 // Construct Jacobians with state0 and dt
 Eigen::Matrix<double, g_dim_*2, g_dim_*2> F_tmp, G_tmp;
-F_tmp.block(0,0,g_dim_, g_dim_) = typename Model::Model::State::g_type_(Model::Model::State::u_type_::Exp(state0.u_.data_*dt)).Adjoint();
+F_tmp.block(0,0,g_dim_, g_dim_) = typename Model::Model::State::g_type_(Model::Model::State::u_type_::Exp(-state0.u_.data_*dt)).Adjoint();
 F_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt;
 F_tmp.block(g_dim_,0,g_dim_,g_dim_).setZero();
 F_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity(); 
@@ -178,10 +178,10 @@ F_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity();
 // std::cout << "f_tmp: " << std::endl << F_tmp << std::endl << std::endl;
 
 
-G_tmp.block(0,0,g_dim_, g_dim_) = (state0.u_*dt).Jr()*dt;
-G_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()*dt*dt/2;
+G_tmp.block(0,0,g_dim_, g_dim_) = (state0.u_*dt).Jr();
+G_tmp.block(0,g_dim_,g_dim_,g_dim_) = (state0.u_*dt).Jr()/2;
 G_tmp.block(g_dim_,0,g_dim_,g_dim_).setZero(); 
-G_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,Model::Model::g_dim_,Model::Model::g_dim_>::Identity()*dt;
+G_tmp.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<double,Model::Model::g_dim_,Model::Model::g_dim_>::Identity();
 
 F = Filter*F_tmp*Filter.transpose();
 G = Filter*G_tmp*Filter.transpose();
@@ -232,6 +232,8 @@ TYPED_TEST(ModelTest, AllFunctions) {
 this->track.Init(this->params);
 ASSERT_EQ(this->track.Q_, this->params.process_noise_covariance_);
 ASSERT_EQ(this->track.err_cov_, TypeParam::Model::Mat::Identity());
+ASSERT_EQ(this->track.newest_measurement_time_stamp, 0);
+
 
 // Test propagate state
 this->state = this->state0;
@@ -257,14 +259,14 @@ this->track.PropagateModel(this->dt);
 // std::cout << "this->F: " << this->F << std::endl << std::endl;
 // std::cout << "G_: " << this->track.G_ << std::endl << std::endl;
 // std::cout << "Q_: " << this->track.Q_ << std::endl << std::endl;
-ASSERT_EQ(this->track.missed_detection_time_, this->dt);
+// ASSERT_EQ(this->track.missed_detection_time_, this->dt);
 ASSERT_LE( (this->track.F_- this->F).norm(), 1e-12  );
 ASSERT_LE( (this->track.G_- this->G).norm(), 1e-12  );
 ASSERT_LE( (this->track.state_.g_.data_ - this->states[1].g_.data_).norm(), 1e-12  );
 ASSERT_LE( (this->track.state_.u_.data_ - this->states[1].u_.data_).norm(), 1e-12  );
 
 
-ASSERT_LE( (this->track.err_cov_ - this->F*this->F.transpose() - this->G*this->track.Q_*this->G.transpose()).norm(), 1e-12  );
+ASSERT_LE( (this->track.err_cov_ - this->F*this->F.transpose() - this->G*this->track.Q_*this->dt*this->G.transpose()).norm(), 1e-12  );
 
 // Test the update model function
 this->track.err_cov_.setIdentity();
@@ -292,8 +294,7 @@ for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
     ASSERT_TRUE(model_likelihood_prev < this->track.model_likelihood_);
 
 }
-
-ASSERT_EQ(this->track.missed_detection_time_, 0);
+ASSERT_DOUBLE_EQ(this->track.newest_measurement_time_stamp,this->num_iters*this->dt - this->dt);
 
 // Test covariance
 ASSERT_LE(  ((this->track.err_cov_ + this->track.err_cov_.transpose())/2.0 - this->track.err_cov_ ).norm(), 1e-12); // symmetric
