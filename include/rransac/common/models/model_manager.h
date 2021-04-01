@@ -140,11 +140,10 @@ static bool SimilarModels(const System<tModel>& sys, const tModel& model1, const
  * label is kept because it corresponds to the first track that was promoted to a good track. We do not properly fuse the model likelihoods together. To properly fuse them 
  * would require keeping a history of their ModelBase::model_likelihood_update_info_, which could require a lot of data storage depending on how long the tracks have existed.
  * So we simplified the prosecces by assigning the largetest model likelihood to the fused track.
- * @param[in] model1 One of the two tracks that will be fused together.
+ * @param[in,out] model1 One of the two tracks that will be fused together. model1 will become the merged track.
  * @param[in] model2 One of the two tracks that will be fused together.
- * @return The fused track.
  */ 
-static tModel FuseModels(const tModel& model1, const tModel& model2);
+static void FuseModels(tModel& model1, const tModel& model2);
 
 
 
@@ -246,7 +245,7 @@ for (auto iter1 = sys.models_.begin(); iter1 != sys.models_.end(); ++iter1) {
     
     for(auto iter2 = std::next(iter1,1); iter2 != sys.models_.end();) {
         if (SimilarModels(sys, *iter1, *iter2)) {
-            *iter1 = FuseModels(*iter1, *iter2);   // Fuse the models and store them as iter1
+            FuseModels(*iter1, *iter2);   // Fuse the models and store them as iter1
             iter2 = sys.models_.erase(iter2);      // Erase the element at iter2 and point iter2 to the next one
                                                    
         } else {
@@ -307,9 +306,9 @@ bool ModelManager<tModel>::SimilarModels(const System<tModel>& sys, const tModel
 //-------------------------------------------------------------------------------------------------------------------
 
 template <typename tModel>
-tModel ModelManager<tModel>::FuseModels(const tModel& model1, const tModel& model2) {
+void ModelManager<tModel>::FuseModels(tModel& model1, const tModel& model2) {
 
-tModel fused_model = model1;
+
 
 //////////////////////
 // Error covariance
@@ -355,30 +354,32 @@ for (auto& sample : samples) {
 // Scale the error covariance
 P = P/(0.5*(r_min + r_max));
 
-fused_model.OPlusEQ(P*P2_inv*tModel::OMinus(model2, model1));
+model1.OPlusEQ(P*P2_inv*tModel::OMinus(model2, model1));
 
 
-fused_model.err_cov_ = P;
+model1.err_cov_ = P;
 
 // set the missed_detection_time to the lowest between the states
 if (model1.newest_measurement_time_stamp < model2.newest_measurement_time_stamp)
-    fused_model.newest_measurement_time_stamp = model2.newest_measurement_time_stamp;
+    model1.newest_measurement_time_stamp = model2.newest_measurement_time_stamp;
 
 // Set the label to the most recent label
 if (model1.label_ == -1)
-    fused_model.label_ = model2.label_;
+    model1.label_ = model2.label_;
 else if (model1.label_ > model2.label_ && model2.label_ >=0) 
-    fused_model.label_ = model2.label_;
+    model1.label_ = model2.label_;
 
 // An accurate model_likelihood would require keeping a history of the number of associated measurements, probability of detection, etc which we dont do.
 // thus we set the model likelihood to the best one. 
 if (model1.model_likelihood_ < model2.model_likelihood_)
-    fused_model.model_likelihood_ = model2.model_likelihood_;
+    model1.model_likelihood_ = model2.model_likelihood_;
 
 
+for (auto iter = model2.cs_.consensus_set_.begin(); iter != model2.cs_.consensus_set_.end(); ++iter) {
+    
+    model1.cs_.AddMeasurementsToConsensusSetSameTimeStamp((*iter));
 
-fused_model.cs_ = fused_model.cs_.MergeConsensusSets(model1.cs_, model2.cs_);
-return fused_model;
+}
 }
 
 
