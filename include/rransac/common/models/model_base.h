@@ -109,7 +109,7 @@ public:
     State state_;                      /**< The estimated state of the target.*/
     Mat err_cov_;                      /**< The error covariance. */
     ConsensusSet<Meas<DataType>> cs_;  /**< The consensus set. */
-    double missed_detection_time_;     /**< The time elapsed since a measurement was associated with the target. */
+    double newest_measurement_time_stamp;  /**< The time stamp associated with the newest measurement. */
     long int label_;                   /**< When the track becomes a good track, it receives a unique label. */   
     double model_likelihood_;          /**< The likelihood that the track represents an actual phenomenon.  */
     Mat F_;                            /**< The Jacobian of the state transition function w.r.t. the states */
@@ -329,8 +329,8 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(const Paramete
     F_.setIdentity();
     G_.setIdentity();
     SetParameters(params);
+    newest_measurement_time_stamp=0;
     model_likelihood_ = 0;
-    missed_detection_time_ = 0;
     label_ = -1;                    // Indicates that it has not received a proper label.
 }
 
@@ -343,7 +343,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(cons
     F_ = GetLinTransFuncMatState(state_,dt);
     G_ = GetLinTransFuncMatNoise(state_,dt);
 
-    missed_detection_time_+=dt;
+    
 
 
     // Transform covariance
@@ -359,12 +359,14 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(cons
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
 void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModel(const std::vector<Source>& sources, const Parameters& params) {
     if (new_assoc_meas_.size() > 0) {
+        newest_measurement_time_stamp = new_assoc_meas_.front().front().time_stamp;
         OPlusEQ(PerformCentralizedMeasurementFusion(sources, params));
         for (auto& new_measurements: new_assoc_meas_) {
             cs_.AddMeasurementsToConsensusSet(new_measurements);
         }
-        missed_detection_time_ = 0;      // reset the missed detection time since a measurement was received
+        
     }
+    
     
     new_assoc_meas_.clear();
     UpdateModelLikelihood(sources);

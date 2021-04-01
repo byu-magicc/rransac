@@ -277,9 +277,9 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
         
 
         if (T::transform_data_) {
-            this->rransac_.AddMeasurements(new_measurements,test_data_.transform_data);
+            this->rransac_.AddMeasurements(new_measurements,new_measurements.front().time_stamp,test_data_.transform_data);
         } else {
-            this->rransac_.AddMeasurements(new_measurements);
+            this->rransac_.AddMeasurements(new_measurements,new_measurements.front().time_stamp);
         }
         
         this->rransac_.RunTrackInitialization();

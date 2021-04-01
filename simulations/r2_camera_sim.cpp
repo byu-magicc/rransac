@@ -207,9 +207,9 @@ void CameraSimR2::Propagate(double start_time, double end_time, Stats<TrackingMo
         
         auto start = std::chrono::steady_clock::now();
         if (transform_data_) {
-            this->rransac_.AddMeasurements(new_measurements,t_data_);
+            this->rransac_.AddMeasurements(new_measurements,new_measurements.front().time_stamp, t_data_);
         } else {
-            this->rransac_.AddMeasurements(new_measurements);
+            this->rransac_.AddMeasurements(new_measurements,new_measurements.front().time_stamp);
         }
         auto end = std::chrono::steady_clock::now();
         

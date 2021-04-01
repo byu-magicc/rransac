@@ -186,7 +186,7 @@ public:
      * @param[in] new_measurements A list that contains new measurements with the same time stamp. 
      * a unique source. 
      */
-    void AddMeasurements(const std::list<tMeas>& new_measurements);
+    void AddMeasurements(const std::list<tMeas>& new_measurements, const double current_time);
 
     /**
      * \detail Performes data management by first propagating the tracks to the current time stamp, transforming the tracks,
@@ -197,7 +197,7 @@ public:
      * @param[in] transformation_data The data required to transform the tracks and measurements.
      * a unique source. 
      */
-    void AddMeasurements(const std::list<tMeas>& new_measurements, const TransformationData& transformation_data);
+    void AddMeasurements(const std::list<tMeas>& new_measurements, const double current_time, const TransformationData& transformation_data);
 
 
     /**
@@ -350,14 +350,14 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<tMe
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tRRANSACTemplateParameters>
-void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>& new_measurements) {
+void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>& new_measurements, const double current_time) {
 
     if (!system_parameters_set_)
         throw std::runtime_error("System parameters are not set. ");
 
-    if (new_measurements.size() > 0) {
+    if (new_measurements.size() >= 0) {
 
-        double dt = new_measurements.begin()->time_stamp - sys_.current_time_;
+        double dt = current_time - sys_.current_time_;
 
 #ifdef DEBUG_BUILD
         bool correct = VerifyMeasurements(new_measurements);
@@ -367,7 +367,7 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
 #endif
 
     
-        sys_.current_time_ = new_measurements.begin()->time_stamp; 
+        sys_.current_time_ = current_time; 
         sys_.data_tree_.PruneDataTree(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
 
         sys_.new_meas_ = new_measurements;
@@ -409,6 +409,7 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
             tModelManager::TransformModels(sys_);
             transform_data_ = false;
         }
+        sys_.current_time_ = current_time;
     }
 
 }
@@ -416,11 +417,11 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 template<typename tRRANSACTemplateParameters>
-void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>& new_measurements, const TransformationData& transformation_data) {
+void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>& new_measurements, const double current_time, const TransformationData& transformation_data) {
 
     sys_.transformaion_.SetData(transformation_data);
     transform_data_ = true;
-    AddMeasurements(new_measurements);
+    AddMeasurements(new_measurements,current_time);
 
 }
 

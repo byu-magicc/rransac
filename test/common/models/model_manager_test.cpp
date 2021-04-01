@@ -60,7 +60,7 @@ for (int ii = 0; ii < 10; ++ii) {
     model_manager.PropagateModels(sys,dt);
 }
 
-ASSERT_DOUBLE_EQ(sys.models_.begin()->missed_detection_time_, 1.0);
+
 ASSERT_LE( (sys.models_.front().state_.u_.data_- model.state_.u_.data_).norm(), 1e-12 );
 ASSERT_LE( (sys.models_.front().state_.g_.data_- model.state_.g_.data_ -model.state_.u_.data_).norm(), 1e-12 );
 ASSERT_LE( (sys.models_.back().state_.u_.data_ - model.state_.u_.data_).norm(), 1e-12 );
@@ -89,10 +89,12 @@ model.cs_.AddMeasurementsToConsensusSet(meas);
 model.err_cov_.setIdentity();
 model.label_ = -1;
 
+
 sys.params_.track_max_num_tracks_ = 10;
 sys.params_.track_good_model_threshold_ = 5;
 sys.params_.track_similar_tracks_threshold_ = 2;
-sys.params_.track_max_missed_detection_time_ = 30;
+sys.params_.track_max_missed_detection_time_ = 0.9;
+sys.current_time_ = 1;
  
 // setup the models
 
@@ -109,9 +111,9 @@ for(int ii = 0; ii < sys.params_.track_max_num_tracks_+4; ++ii) {
     }
     
     if (ii == 7) {
-        model.missed_detection_time_ = 40;
+        model.newest_measurement_time_stamp = 0;
     } else {
-        model.missed_detection_time_ = 1;
+        model.newest_measurement_time_stamp = 1;
     }
     
     model_manager.AddModel(sys, model);
@@ -121,9 +123,9 @@ for(int ii = 0; ii < sys.params_.track_max_num_tracks_+4; ++ii) {
 
 sys.models_.back().model_likelihood_ = 0.1;
 
-// Make a model similar to model 8 so that it will be merged. Give this model the better label, missed detection time and likelihood
+// Make a model similar to model 8 so that it will be merged. Give this model the better label, newest measurment time stamp and likelihood
 model.model_likelihood_ = 20;
-model.missed_detection_time_ = 0;
+model.newest_measurement_time_stamp = 2;
 model.state_.g_.data_ << 8.5, 27.5, 10.5;
 model.state_.u_.data_ << 4.5,8.5,16.5;
 model.err_cov_ = Eigen::Matrix<double,6,6>::Identity()*2;
@@ -191,7 +193,7 @@ ASSERT_GT(iter->err_cov_(3,3), 0);
 ASSERT_GT(iter->err_cov_(4,4), 0);
 ASSERT_GT(iter->err_cov_(5,5), 0);
 
-ASSERT_EQ(iter->missed_detection_time_,merge2.missed_detection_time_);
+ASSERT_EQ(iter->newest_measurement_time_stamp,merge2.newest_measurement_time_stamp);
 ASSERT_EQ(iter->label_,merge2.label_);
 ASSERT_EQ(iter->model_likelihood_, merge2.model_likelihood_);
 
@@ -273,7 +275,7 @@ Measurement m;
 m.source_index = 0;
 m.weight = 1;
 m.likelihood = 1;
-m.time_stamp = 0;
+m.time_stamp = 0.1;
 m.type = MeasurementTypes::RN_POS;
 m.pose = Eigen::Matrix<double,3,1>::Random();
 
@@ -293,13 +295,13 @@ model_manager.AddModel(sys, model);
 for (int ii = 0; ii < 10; ++ii) {
     model_manager.PropagateModels(sys,dt);
 }
-ASSERT_DOUBLE_EQ(sys.models_.begin()->missed_detection_time_, 1.0);
+ASSERT_DOUBLE_EQ(sys.models_.begin()->newest_measurement_time_stamp,0);
 
 model_manager.UpdateModels(sys);
 
 
-ASSERT_EQ(sys.models_.front().missed_detection_time_, 0);
-ASSERT_EQ(sys.models_.back().missed_detection_time_, 0);
+ASSERT_EQ(sys.models_.front().newest_measurement_time_stamp, 0.1);
+ASSERT_EQ(sys.models_.back().newest_measurement_time_stamp, 0.1);
 
 
 }
