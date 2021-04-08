@@ -43,7 +43,6 @@ CameraSimR2::CameraSimR2(const CameraData& camera_data, double dt, double end_ti
     track_source_params1.type_ = MeasurementType;
     track_source_params1.source_index_ = 0;
     track_source_params1.meas_cov_ =camera_data_.R;
-    track_source_params1.RANSAC_inlier_probability_ = 0.8;
     track_source_params1.gate_probability_ = 0.8;
     track_source_params1.spacial_density_of_false_meas_ = camera_data_.lambda;
 
@@ -71,7 +70,7 @@ CameraSimR2::CameraSimR2(const CameraData& camera_data, double dt, double end_ti
     params.cluster_min_size_requirement_ = 10;
     params.track_max_num_tracks_ = num_tracks+5;
     params.track_similar_tracks_threshold_ = 0.1;
-    params.track_good_model_threshold_ = 100;
+    params.track_good_model_threshold_ = 0.8;
     params.track_max_missed_detection_time_ = 0.5;
     params.set_initial_error_covariance_to_id_ = false;
     params.initial_error_covariance_ = ProcessNoiseCov_::Identity()*1e-1;
@@ -90,7 +89,7 @@ CameraSimR2::CameraSimR2(const CameraData& camera_data, double dt, double end_ti
     tracks_.resize(num_tracks);
     for (int ii = 0; ii < num_tracks; ++ii) {
         TargetState_ state = GenerateRandomState();
-        tracks_[ii].Init(target_params);
+        tracks_[ii].Init(target_params,sys_->sources_.size());
         tracks_[ii].state_ = state;
     }
 
@@ -269,7 +268,7 @@ int num_false_meas = 100;
 double dt = 0.1;
 double end_time = 10;
 int num_tracks = 20;
-int num_sim = 10;
+int num_sim = 100;
 
 Stats<typename CameraSimR2::TrackingModel_> stats;
 stats.Reset();

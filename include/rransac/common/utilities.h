@@ -9,6 +9,11 @@
 namespace rransac {
 namespace utilities {
 
+template <typename T>
+struct AlwaysFalse : std::false_type
+{
+};
+
 
 inline Eigen::MatrixXd GaussianRandomGenerator(const int size){
 

@@ -24,8 +24,9 @@
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/common/transformations/trans_homography.h"
 #include "rransac/track_initialization/ransac.h"
-#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
-#include "rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
+#include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
+#include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
+#include "rransac/common/data_association/measurement_weight_policies/mw_ipdaf_policy.h"
 #include "rransac/rransac.h"
 #include "rransac/common/utilities.h"
 
@@ -42,8 +43,8 @@ struct Test1 {
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef typename RRANSACParameters::tRansac RANSAC_;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     typedef Eigen::Matrix<double,2,2> MatR_;
     typedef Eigen::Matrix<double,4,4> MatR2_;
@@ -94,10 +95,9 @@ struct Test2 {
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-
+    typedef typename RRANSACParameters::tRansac RANSAC_;
     typedef Eigen::Matrix<double,3,3> MatR_;
     typedef Eigen::Matrix<double,6,6> MatR2_;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
@@ -148,10 +148,9 @@ struct Test3 {
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-
+    typedef typename RRANSACParameters::tRansac RANSAC_;
     typedef Eigen::Matrix<double,3,3> MatR_;
     typedef Eigen::Matrix<double,6,6> MatR2_;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
@@ -210,10 +209,9 @@ struct Test4 {
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-
+    typedef typename RRANSACParameters::tRansac RANSAC_;
     typedef Eigen::Matrix<double,6,6> MatR_;
     typedef Eigen::Matrix<double,12,12> MatR2_;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
@@ -276,9 +274,9 @@ struct Test5 {
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<State_,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<State_,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
+    typedef typename RRANSACParameters::tRansac RANSAC_;
     TransformMatData_ transform_data;
     static constexpr bool transform_data_ = true;
     // static constexpr bool transform_data_ = false;
@@ -366,19 +364,16 @@ void SetUp() override {
     source_params1.type_ = T::MeasurementType1;
     source_params1.source_index_ = 0;
     source_params1.meas_cov_ = T::MatR_::Identity()*noise_;
-    source_params1.RANSAC_inlier_probability_ = 0.95;
     source_params1.gate_probability_ = 0.9;
 
     source_params2.type_ = T::MeasurementType2;
     source_params2.source_index_ = 1;
     source_params2.meas_cov_ = T::MatR2_::Identity()*noise_;
-    source_params2.RANSAC_inlier_probability_ = 0.95;
     source_params2.gate_probability_ = 0.9;
 
     source_params3.type_ = T::MeasurementType2;
     source_params3.source_index_ = 2;
     source_params3.meas_cov_ = T::MatR2_::Identity()*noise_;
-    source_params3.RANSAC_inlier_probability_ = 0.95;
     source_params3.gate_probability_ = 0.9;
 
     Source_ source1, source2, source3;
@@ -406,7 +401,7 @@ void SetUp() override {
     params.cluster_position_threshold_ = 1.2;
     params.track_max_num_tracks_ = 5;
     params.track_similar_tracks_threshold_ = 1;
-    params.track_good_model_threshold_ = 90;
+    params.track_good_model_threshold_ = 0.8;
     // params.nonlinear_innov_cov_id_ = true;
 
     rransac_.SetSystemParameters(params);
@@ -430,7 +425,7 @@ void SetUp() override {
     // Setup tracks
     tracks_.resize(4);
     for (int ii = 0; ii < 4; ++ii) {
-        tracks_[ii].Init(sys_->params_);
+        tracks_[ii].Init(sys_->params_,sys_->sources_.size());
         tracks_[ii].state_ = test_data_.states[ii];
     }
 
@@ -474,7 +469,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // Generates measurements according to the probability of detection
             rand_num.setRandom();
-            if ( ii + dt_ >= end_time) // Ensure there is a measurement at the last time step
+            if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
                 rand_num << 0;
 
 
@@ -482,20 +477,40 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
-                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.5));
+                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.1));
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
+
+                new_measurements.push_back(this->m1_);
+            }
+
+            // Generates measurements according to the probability of detection
+            rand_num.setRandom();
+            if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
+                rand_num << 0;
+            if (fabs(rand_num(0,0)) < this->sources_[this->m2_.source_index].params_.probability_of_detection_) {
+
+                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0.1));
+
                 this->m2_.time_stamp = ii;
                 this->m2_.pose = tmp2.pose;
                 this->m2_.twist = tmp2.twist;
+
+                new_measurements.push_back(this->m2_);
+            }
+
+            // Generates measurements according to the probability of detection
+            rand_num.setRandom();
+            if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
+                rand_num << 0;
+            if (fabs(rand_num(0,0)) < this->sources_[this->m4_.source_index].params_.probability_of_detection_) {
+
+                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.1));
+
                 this->m4_.time_stamp = ii;
                 this->m4_.pose = tmp4.pose;
 
-                new_measurements.push_back(this->m1_);
-                new_measurements.push_back(this->m2_);
                 new_measurements.push_back(this->m4_);
             }
 
@@ -648,14 +663,15 @@ for (auto index : track_indices) {
 
 // One of the good tracks stopped receiving measurements so it's likelihood should be less while the other two should be 
 // larger. Since all of the tracks received measurements, none of them should have stayed the same. 
+double gate = 1e-6;
 int num_increase = 0;
 int num_decrease = 0;
 int num_constant = 0;
 for (auto& created_track: this->sys_->models_) {
     if (created_track.label_ < model_likelihood.size() && created_track.label_ >=0) {
-        if ( created_track.model_likelihood_ < model_likelihood[created_track.label_]) {
+        if ( created_track.model_likelihood_ < model_likelihood[created_track.label_]-gate) {
             num_decrease++;
-        } else if (created_track.model_likelihood_ > model_likelihood[created_track.label_]) {
+        } else if (created_track.model_likelihood_ > model_likelihood[created_track.label_]-gate) {
             num_increase++;
         } else {
             num_constant++;
@@ -664,7 +680,7 @@ for (auto& created_track: this->sys_->models_) {
     
 }
 
-ASSERT_GE(num_increase,2);
+ASSERT_GE(num_increase+num_constant,2); // They should've increased or stayed the same. They would stay the same if their likelihood is already really close to 1. 
 ASSERT_GE(num_decrease,1);
 
 

@@ -19,7 +19,7 @@ Parameters::Parameters()
     RANSAC_score_minimum_requirement_ = 5;
     RANSAC_minimum_subset_ = 3;
     
-    track_good_model_threshold_ = 100;
+    track_good_model_threshold_ = 0.8;
     track_max_missed_detection_time_ = 5;
     track_similar_tracks_threshold_ = 1;
     track_max_num_tracks_ = 10;
@@ -72,8 +72,8 @@ bool Parameters::SetParameters(const Parameters &new_params) {
         track_max_missed_detection_time_ = new_params.track_max_missed_detection_time_;
     }
 
-    if (new_params.track_good_model_threshold_ <= 0 ) {
-        throw std::runtime_error("Parameters::SetParameters The provided value of track_good_model_threshold_ has not been initialized");
+    if (new_params.track_good_model_threshold_ <= 0 || new_params.track_good_model_threshold_ > 1) {
+        throw std::runtime_error("Parameters::SetParameters The provided value of track_good_model_threshold_ must be greater than 0 and less than or equal to 1");
         successfull = false;
     } else {
         track_good_model_threshold_ = new_params.track_good_model_threshold_;

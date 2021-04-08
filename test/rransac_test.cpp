@@ -7,10 +7,11 @@
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/common/transformations/trans_homography.h"
-#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
-#include "rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
 #include "rransac/track_initialization/seed_policies/null_seed_policy.h"
 #include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
+#include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
+#include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
+#include "rransac/common/data_association/measurement_weight_policies/mw_ipdaf_policy.h"
 
 
 
@@ -29,7 +30,7 @@ bool func(const State& state) {
 };
 
 typedef ModelRN<R2_r2,TransformHomography,SourceRN> Model;
-typedef RRANSACTemplateParameters<R2_r2,SourceRN,TransformHomography,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ModelPDFPolicy, DataTreeClusterAssociationPolicy> RANSACParams;
+typedef RRANSACTemplateParameters<R2_r2,SourceRN,TransformHomography,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSACParams;
 typedef Eigen::Matrix<double,2,1> MatPose;
 
 TEST(RRANSACTest, AddSource_AddMeasurement) {

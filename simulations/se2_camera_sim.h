@@ -19,8 +19,9 @@
 #include "rransac/track_initialization/lmle_policies/nonlinear_lmle_policy.h"
 #include "rransac/common/transformations/trans_homography.h"
 #include "rransac/track_initialization/ransac.h"
-#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
-#include "rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
+#include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
+#include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
+#include "rransac/common/data_association/measurement_weight_policies/mw_ipdaf_policy.h"
 #include "rransac/rransac.h"
 #include "rransac/common/utilities.h"
 #include "rransac/visualization/visualization_host.h"
@@ -96,9 +97,9 @@ typedef typename Model_::Transformation::MatData TransformMatData_;
 typedef typename Model_::State State_;
 typedef typename State_::Algebra Algebra_;
 typedef typename Model_::Source Source_;
-typedef Ransac<Model_, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-typedef RRANSACTemplateParameters<SE2_se2,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+typedef RRANSACTemplateParameters<SE2_se2,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
 typedef RRANSAC<RRANSACParameters> RRANSAC_;
+typedef typename RRANSACParameters::tRansac RANSAC_;
 typedef Eigen::Matrix<double,4,4> MatR_;
 // typedef Eigen::Matrix<double,2,2> MatR_;
 // static constexpr MeasurementTypes MeasurementType= MeasurementTypes::SEN_POS;

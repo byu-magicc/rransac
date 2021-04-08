@@ -71,6 +71,7 @@
         "matrixfunctions": "cpp",
         "*.cuh": "cpp",
         "dense": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "filesystem": "cpp"
     }
 }

@@ -24,11 +24,11 @@ namespace rransac
 using namespace lie_groups;
 
 typedef ModelRN<R2_r2, TransformNULL, SourceRN> Model1;
-typedef ModelRN<R3_r3, TransformNULL, SourceRN> Model2;
-typedef ModelSENPosVel<SE2_se2, TransformNULL, SourceSENPosVel> Model3;
-typedef ModelSENPoseTwist<SE2_se2, TransformNULL, SourceSENPoseTwist> Model4;
-typedef ModelSENPosVel<SE3_se3, TransformNULL, SourceSENPosVel> Model5;
-typedef ModelSENPoseTwist<SE3_se3, TransformNULL, SourceSENPoseTwist> Model6;
+// typedef ModelRN<R3_r3, TransformNULL, SourceRN> Model2;
+// typedef ModelSENPosVel<SE2_se2, TransformNULL, SourceSENPosVel> Model3;
+// typedef ModelSENPoseTwist<SE2_se2, TransformNULL, SourceSENPoseTwist> Model4;
+// typedef ModelSENPosVel<SE3_se3, TransformNULL, SourceSENPosVel> Model5;
+// typedef ModelSENPoseTwist<SE3_se3, TransformNULL, SourceSENPoseTwist> Model6;
 
 
 
@@ -40,16 +40,16 @@ struct ModelHelper {
 };
 
 typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
-typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
-typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
-typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
-typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
-typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
+// typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
+// typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
+// typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
+// typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
+// typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
 // using MyTypes = ::testing::Types<ModelHelper3, ModelHelper5 >;
-// using MyTypes = ::testing::Types< ModelHelper1>;
+using MyTypes = ::testing::Types< ModelHelper1>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -229,10 +229,18 @@ TYPED_TEST_SUITE(ModelTest, MyTypes);
 TYPED_TEST(ModelTest, AllFunctions) {
 
 // Test init function and set parameters function
-this->track.Init(this->params);
+this->track.Init(this->params,this->sources.size());
 ASSERT_EQ(this->track.Q_, this->params.process_noise_covariance_);
 ASSERT_EQ(this->track.err_cov_, TypeParam::Model::Mat::Identity());
 ASSERT_EQ(this->track.newest_measurement_time_stamp, 0);
+ASSERT_EQ(this->track.model_likelihood_, 0.5);
+ASSERT_EQ(this->track.label_, -1);
+ASSERT_EQ(this->track.innov_cov_set_.size(), this->sources.size());
+ASSERT_EQ(this->track.innovation_covariances_.size(), this->sources.size());
+ASSERT_EQ(this->track.new_assoc_meas_.size(), this->sources.size());
+ASSERT_EQ(this->track.model_likelihood_update_info_.size(), this->sources.size());
+
+
 
 
 // Test propagate state
@@ -252,13 +260,13 @@ ASSERT_LE( ( this->track.GetLinTransFuncMatState(this->state0,this->dt) - this->
 ASSERT_LE( ( this->track.GetLinTransFuncMatNoise(this->state0,this->dt) - this->G).norm(), 1e-12);
 
 // Test the Propagate Model Function
+std::fill(this->track.innov_cov_set_.begin(), this->track.innov_cov_set_.end(), true); // make sure that this is reset to false.
 this->track.state_ = this->state0;
 this->track.PropagateModel(this->dt);
+for (auto val : this->track.innov_cov_set_) {
+    ASSERT_FALSE(val);
+}
 
-// std::cout << "err_cov: " << this->track.err_cov_ << std::endl << std::endl;
-// std::cout << "this->F: " << this->F << std::endl << std::endl;
-// std::cout << "G_: " << this->track.G_ << std::endl << std::endl;
-// std::cout << "Q_: " << this->track.Q_ << std::endl << std::endl;
 // ASSERT_EQ(this->track.missed_detection_time_, this->dt);
 ASSERT_LE( (this->track.F_- this->F).norm(), 1e-12  );
 ASSERT_LE( (this->track.G_- this->G).norm(), 1e-12  );
@@ -268,18 +276,49 @@ ASSERT_LE( (this->track.state_.u_.data_ - this->states[1].u_.data_).norm(), 1e-1
 
 ASSERT_LE( (this->track.err_cov_ - this->F*this->F.transpose() - this->G*this->track.Q_*this->dt*this->G.transpose()).norm(), 1e-12  );
 
+// Test the innovation covariance function.
+////////////////////////////////////////////////
+Eigen::MatrixXd H0, H1, V0, V1, S0, S1, S0_e, S1_e; // Observation function jacobians w.r.t. the state and noise for both sources and innovation covariances.
+H0 = this->track.GetLinObsMatState(this->sources,this->track.state_,0);
+V0 = this->track.GetLinObsMatSensorNoise(this->sources,this->track.state_,0);
+H1 = this->track.GetLinObsMatState(this->sources,this->track.state_,1);
+V1 = this->track.GetLinObsMatSensorNoise(this->sources,this->track.state_,1);
+S0 = H0*this->track.err_cov_*H0.transpose() + V0*this->sources[0].params_.meas_cov_*V0.transpose();
+S1 = H1*this->track.err_cov_*H1.transpose() + V1*this->sources[1].params_.meas_cov_*V1.transpose();
+S0_e = this->track.GetInnovationCovariance(this->sources,0);
+ASSERT_EQ(this->track.innov_cov_set_.size(),this->sources.size());
+ASSERT_EQ(this->track.innovation_covariances_.size(),this->sources.size());
+ASSERT_TRUE(this->track.innov_cov_set_[0]);  // Make sure the innovation covariance for the first source was set and none other.
+ASSERT_GT(this->track.innovation_covariances_[0].rows(),0);
+for(int ii = 1; ii < this->sources.size(); ++ii) {
+    ASSERT_FALSE(this->track.innov_cov_set_[ii]);
+    ASSERT_EQ(this->track.innovation_covariances_[ii].rows(),0);
+}
+ASSERT_LE( (S0- S0_e).norm(), 1e-12  );
+
+S1_e = this->track.GetInnovationCovariance(this->sources,1);
+ASSERT_TRUE(this->track.innov_cov_set_[1]);  // Make sure the innovation covariance for the first source was set and none other.
+ASSERT_GT(this->track.innovation_covariances_[1].rows(),0);
+ASSERT_LE( (S1- S1_e).norm(), 1e-12  );
+
+this->track.UpdateModel(this->sources, this->params); // Make sure that the update model resets the innov_cov_set to false
+for (auto val : this->track.innov_cov_set_) {
+    ASSERT_FALSE(val);
+}
+
+
 // Test the update model function
 this->track.err_cov_.setIdentity();
 this->track.state_ = this->track.state_.Identity();
+
+
+
+
 
 // std::cerr << "state0: " << this->track.state_.g_.data_ << std::endl;
 // std::cerr <<  this->track.state_.u_.data_ << std::endl;
 double model_likelihood_prev;
 ModelLikelihoodUpdateInfo info;
-info.in_local_surveillance_region = true;
-info.num_assoc_meas = 1;
-info.source_index = 0;
-info.volume = 1;
 
 
 for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
@@ -287,11 +326,11 @@ for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
     this->track.PropagateModel(this->dt);
     this->track.new_assoc_meas_ = this->new_meas[ii];
     model_likelihood_prev = this->track.model_likelihood_;
-    this->track.model_likelihood_update_info_.push_back(info);
+
     this->track.UpdateModel(this->sources, this->params);
 
-    // Since it is getting a measurement at every time step, the likelihood should be increasing
-    ASSERT_TRUE(model_likelihood_prev < this->track.model_likelihood_);
+
+    
 
 }
 ASSERT_DOUBLE_EQ(this->track.newest_measurement_time_stamp,this->num_iters*this->dt - this->dt);
@@ -343,25 +382,7 @@ this->track.PruneConsensusSet(0);
 ASSERT_EQ(this->track.cs_.Size(), this->num_iters-1);
 
 
-// Continue testing model likelihood update
-info.in_local_surveillance_region = true;
-info.num_assoc_meas = 0;
-info.source_index = 0;
-info.volume = 1;
-this->track.model_likelihood_update_info_.clear();
 
-for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
-
-    this->track.PropagateModel(this->dt);
-    model_likelihood_prev = this->track.model_likelihood_;
-    this->track.model_likelihood_update_info_.push_back(info);
-    this->track.UpdateModel(this->sources, this->params);
-
-    // Since it is not getting a measurement at every time step and a source says that 
-    // it is inside the surveillance region, the likelihood should be decreasing
-    ASSERT_TRUE(model_likelihood_prev > this->track.model_likelihood_);
-
-}
 
 }
 

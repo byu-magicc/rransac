@@ -133,15 +133,26 @@ include_directories(../include
 #---------------------------------------
 # Data Association
 #---------------------------------------
-# add_executable(cluster_data_tree_data_associationTest 
-# common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(cluster_data_tree_data_associationTest gtest_main )
 
-# add_executable(model_pdf_policyTest 
-# common/data_association/model_policies/model_pdf_policy_test.cpp
+# add_executable(data_association_host_test 
+# common/data_association/data_association_host_test.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(model_pdf_policyTest gtest_main )
+# target_link_libraries(data_association_host_test gtest_main )
+
+# add_executable(validation_region_policy_tests 
+# common/data_association/validation_region_policies/validation_region_policy_tests.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(validation_region_policy_tests gtest_main )
+
+# add_executable(tli_ipdaf_policy_test 
+# common/data_association/track_likelihood_info_policies/tli_ipdaf_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(tli_ipdaf_policy_test gtest_main )
+
+# add_executable(mw_ipdaf_policy_test 
+# common/data_association/measurement_weight_policy/mw_ipdaf_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(mw_ipdaf_policy_test gtest_main )
 
 #---------------------------------------
 # Track Initialization
