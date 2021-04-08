@@ -2,36 +2,43 @@
 #define RRANSAC_COMMON_DATA_ASSOCIATION_DATA_ASSOCIATION_HOST_H_
 #pragma once
 
-
+#include <vector>
 
 #include "rransac/system.h"
 
 namespace rransac
 {
 
+struct DataAssociationInfo {
+
+    std::vector<bool> source_produced_measurements_;                                         /**< When a sensor scan occurs one or more sources can produce measurements. This flag indicates if a source 
+                                                                                                  during the latest sensor scan produced measurements. */
+
+};
+
 /**
  * \class DataAssociationHost
  * 
  * Associates the new measurements System::new_measurements_ to the tracks, clusters, and data tree. 
- * This class is host to two policies: the model data association policy and the cluster and data tree data association policy. 
+ * This class is host to three policies. The first policy is the validation region policy and it returns true if a measurement falls inside a track's validation region. The 
+ * second ploicy is the track's likelihood policy and it is responsible
+ * for updating the track's likelihood. The last policy is the measurement weight policy and is responsible for calculating weights for each measurement associated to a model.
  *  
- * The model data association is a policy that must associate the new measurements to tracks and assign model associated measurement a weight. The sum of
- * the weights of associated measurement from every unique measurement source must be 1. For example: if a model is associated with five measurements, three 
- * from one source and two from another, then the wights of the three measurements from the first source must sum to one and the weights of the 
- * two measurements from the other source must sum to one. If a measurement is associated to a model, it is removed from System::new_meas_ and added to ModelBase::new_assoc_meas_
- * using the method ModelBase::AddNewMeasurement. It must also update the model member variable Model::model_likelihood_update_info_ with the proper information.
- * The policy must expose the function static void PolicyDataAssociationModel(System& sys) which is called by the host class.
- * 
- * The model data association policy must also expose the policy CalculateMeasurmentAndLikelihoodDataPolicy which calculates the weights for the measurements and the model likelihood.
- * This policy is not used by this class. but it is used by RANSAC. 
- * 
- * 
- * The cluster and data tree policy associates new measurements to clusters and the data tree. When measurements are associated, they are removed from 
- * System::new_measurements_ and added to the corresponding cluster and data tree. The policy class must expose a function 
- * static void PolicyDataAssociationClusterDataTree(System<tModel>& sys).
+ * The validation region policy takes in two arguments: a measurement and a track. It returns true if the measurement falls inside of the track's validation region; otherwise false. 
+ *
+ * The track likelihood update policy uses the new measurements associated with a track to update the track's likelihood. The track's likelihood is the probability that the target which the track represents
+ * exists.
+ *
+ * The measurement weight policy assigns a weight to each track associated measurement that is used to update the state estimate and error covariance.
+ *
  */ 
-template<typename tModel, template<class> typename tModelDataAssociationPolicyClass, template<class> typename tClusterDataTreeAssociationPolicyClass>
-class DataAssociationHost : public tModelDataAssociationPolicyClass<tModel>, tClusterDataTreeAssociationPolicyClass<tModel>{
+template<typename tModel, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
+class DataAssociationHost : public tValidationRegionPolicy<tModel>, tUpdateTrackLikelihoodPolicy<tModel>, tMeasurementWeightPolicy<tModel>{
+
+// Some policies are only compatible with others. These assertions enforce compatability. 
+static_assert(tMeasurementWeightPolicy<tModel>::template CompatiblityCheck<tValidationRegionPolicy,tUpdateTrackLikelihoodPolicy>::value,"MW_IPDAFPolicy::CompatiblityCheck The policy MW_IPDAFPolicy is only compatible with the update track likelihood policy TLI_IPDAFPolicy." );
+
+
 
 public:
 
@@ -39,9 +46,13 @@ public:
      * Associates new measurements to the tracks, clusters and the data tree. 
      * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
      */ 
-    static void AssociateNewMeasurements(System<tModel>& sys ) {
-        DataAssociationModel(sys);
-        DataAssociationClusterDataTree(sys);
+    void AssociateNewMeasurements(System<tModel>& sys) {
+        SourceProducedMeasurement(sys, this->data_association_info_);                    // Determine which sources produced measurements
+        ResetModelLikelihoodAndNewMeasurements(sys);  
+        DataAssociation(sys,this->data_association_info_);
+        UpdateTrackLikelihood(sys,this->data_association_info_);
+        CalculateMeasurementWeight(sys,this->data_association_info_);
+        
 
         if(sys.new_meas_.size() != 0)   
             throw std::runtime_error("DataAssociationHost::AssociateNewMeasurements: All new measurements should have been copied to a model, cluster, or data tree and removed from System<Model>::new_meas_");
@@ -50,25 +61,122 @@ public:
 private:
 
     /**
-     * Calls the policy class member function void PolicyDataAssociationModel to
-     * associate new measurements to the model.
+     * Associates measurements to at least one track or the data tree. If a measurement falls within the validation region of a track, then it is associated with the track; otherwise it is added
+     * to the data tree. The validation region is determined by the policy. 
      * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
      */ 
-    static void DataAssociationModel(System<tModel>& sys){
-        DataAssociationHost::PolicyDataAssociationModel(sys);
+    void DataAssociation(System<tModel>& sys, DataAssociationInfo& info);
+
+    /**
+     *  Determines if the measurement falls inside the validation region of the track according to the policy. 
+     * @param[in] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
+     * @param[in] meas The measurement
+     * @param[in] track The track. It is not a constant reference so be careful!! 
+     */ 
+    bool InValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track) {
+        return DataAssociationHost::PolicyInValidationRegion(sys, meas,track);
+    }
+
+    /** 
+     * Uses the new associated measurements to update the track's likelihood. 
+     * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
+     */
+    void UpdateTrackLikelihood(System<tModel>& sys, DataAssociationInfo& info ) {
+        DataAssociationHost::PolicyUpdateTrackLikelihood(sys,info);
+    }
+
+    /** 
+     * Calculates the weights for each track associated measurement. 
+     * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
+     */
+    void CalculateMeasurementWeight(System<tModel>& sys, DataAssociationInfo& info) {
+        DataAssociationHost::PolicyCalculateMeasurementWeight(sys,info);
     }
 
     /**
-     * Calls the policy class memver function void PolicyDataAssociationClusterDataTree
-     * to associate new measurements to clusters and the data tree
-     * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree.
+     * Sets the member vairable SourceBase::source_produced_measurements_ to true if the source produced a measurement this sensor scan; otherwise false.
+     * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
      */
-    static void  DataAssociationClusterDataTree(System<tModel>& sys) {
-        DataAssociationHost::PolicyDataAssociationClusterDataTree(sys);
-    }
+    void SourceProducedMeasurement(System<tModel>& sys, DataAssociationInfo& info);
+
+    /** 
+     * Ensures that none of the tracks have any new associated measurements in ModelBase::new_assoc_meas_, and it resets the
+     * model likelihood update info.
+     */ 
+    void ResetModelLikelihoodAndNewMeasurements(System<tModel>& sys);
+
+    DataAssociationInfo data_association_info_;
 
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Definitions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//------------------------------------------------------------------------------------------------------------------------------------
+
+template<typename tModel, template<class> typename tValidationRegionPolicy, template<class> typename tTrackLikelihoodUpdatePolicy, template<class> typename tMeasurementWeightPolicy>
+void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePolicy,tMeasurementWeightPolicy>::DataAssociation(System<tModel>& sys, DataAssociationInfo& info) {
+
+    bool associated_with_track = false;;
+    for (auto meas_iter = sys.new_meas_.begin(); meas_iter != sys.new_meas_.end(); ++meas_iter) {
+        associated_with_track = false;
+        for (auto track_iter = sys.models_.begin(); track_iter != sys.models_.end(); ++track_iter) {
+            if(InValidationRegion(sys,*meas_iter,*track_iter)) {
+                track_iter->AddNewMeasurement(*meas_iter);
+                associated_with_track = true;
+            }
+        }
+
+        if(!associated_with_track) {
+            sys.data_tree_.AddMeasurement(sys,*meas_iter);
+        }
+
+    }
+
+    sys.new_meas_.clear();
+
+}
+
+//---------------------------------------------------------------------------------------------------------------
+template<typename tModel, template<class> typename tValidationRegionPolicy, template<class> typename tTrackLikelihoodUpdatePolicy, template<class> typename tMeasurementWeightPolicy>
+void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePolicy,tMeasurementWeightPolicy>::SourceProducedMeasurement(System<tModel>& sys, DataAssociationInfo& info) {
+
+    // Reset the vector
+    if(info.source_produced_measurements_.size() != sys.sources_.size()) {
+        info.source_produced_measurements_.clear();
+        info.source_produced_measurements_.resize(sys.sources_.size(),false);
+    } else {
+        std::fill(info.source_produced_measurements_.begin(), info.source_produced_measurements_.end(), false);
+    }
+
+
+
+    // If there is only one source and at least one measurement, 
+    // then the source produced the measurement
+    if (sys.sources_.size() ==1 && sys.new_meas_.size() >0) {
+         info.source_produced_measurements_[0] = true;
+    } else {
+        for(auto& meas : sys.new_meas_) {
+            info.source_produced_measurements_[0] = true;
+        }
+    }
+
+}
+
+//---------------------------------------------------------------------------------------------------------------
+
+template<typename tModel, template<class> typename tValidationRegionPolicy, template<class> typename tTrackLikelihoodUpdatePolicy, template<class> typename tMeasurementWeightPolicy>
+void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePolicy,tMeasurementWeightPolicy>::ResetModelLikelihoodAndNewMeasurements(System<tModel>& sys) {
+    
+    for (auto track_iter = sys.models_.begin(); track_iter != sys.models_.end(); ++track_iter) {
+
+        for (int ii =0; ii < track_iter->new_assoc_meas_.size(); ++ii) {
+            track_iter->model_likelihood_update_info_[ii].Reset();
+            track_iter->new_assoc_meas_[ii].clear();
+        }
+    }
+}
 
 
 } // namespace rransac

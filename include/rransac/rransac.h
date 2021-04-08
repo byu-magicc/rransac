@@ -10,8 +10,6 @@
 #include "rransac/track_initialization/ransac.h"
 #include "rransac/common/data_association/data_association_host.h"
 #include "rransac/common/models/model_manager.h"
-#include "rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
-#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
 
 
 
@@ -22,7 +20,7 @@ namespace rransac {
  * \class RRANSACTemplateParameters
  * Contains all of the template parameters for RRANSAC that used to initialize RRANSAC. See RRANSAC for more information
  */ 
-template<typename tState, template<typename> typename tSource, template<typename> typename tTransformation, template<typename, template <typename> typename, template<typename> typename> typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tModelDataAssociationPolicyClass = ModelPDFPolicy,template<class> typename tClusterDataTreeAssociationPolicyClass = DataTreeClusterAssociationPolicy>
+template<typename tState, template<typename> typename tSource, template<typename> typename tTransformation, template<typename, template <typename> typename, template<typename> typename> typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
 struct RRANSACTemplateParameters {
 
     
@@ -34,8 +32,8 @@ struct RRANSACTemplateParameters {
     typedef tModel<tState,tTransformation,tSource> Model;                                           /**< The object type of the model. @see ModelBase. */                          
     typedef ModelManager<Model> tModelManager;                                                      /**< The object type of the model manager. @see ModelManager. */
     typedef Meas<DataType> tMeas;                                                                   /**< The object type of the measurement. @see Meas */
-    typedef Ransac<Model,tSeed,tLMLEPolicy,tModelDataAssociationPolicyClass> tRansac;               /**< The object type of Ransac or the track initializer. @see Ransac */
-    typedef DataAssociationHost<Model,tModelDataAssociationPolicyClass,tClusterDataTreeAssociationPolicyClass> DataAssociation; /**< The object type of the data association method. @see DataAssociationHost */
+    typedef Ransac<Model,tSeed,tLMLEPolicy,tValidationRegionPolicy,tUpdateTrackLikelihoodPolicy,tMeasurementWeightPolicy> tRansac;               /**< The object type of Ransac or the track initializer. @see Ransac */
+    typedef DataAssociationHost<Model,tValidationRegionPolicy,tUpdateTrackLikelihoodPolicy,tMeasurementWeightPolicy> DataAssociation; /**< The object type of the data association method. @see DataAssociationHost */
 
 
 };
@@ -56,8 +54,9 @@ struct RRANSACTemplateParameters {
  * what type of LMLE solver to use. Currently there are two types: one for linear systems and one for non linear systems. There are several compatibility checks but they are not comprehensive
  * so you must be carefull with putting the pieces together. 
  * 
- * All of the different pieces can be overwhelming at first but currently the few choices make it fairly simple. Since there is currently only one cluster and data tree association policy use
- * DataTreeClusterAssociationPolicy, and since there is currently only one model data association policy use ModelPDFPolicy. There are only two LMLE solver policies: one for linear systems and one
+ * All of the different pieces can be overwhelming at first but currently the few choices make it fairly simple. Since there is currently only one update track likelihood policy and one measurement
+ * weight policy use TLI_IPDAFPolicy and MW_IPDAFPolicy. There are several choices for the validation region. See the description of each one to help you choose the one you want. 
+ * There are only two LMLE solver policies: one for linear systems and one
  * for nonlinear systems. If your system is linear, use LinearLMLEPolicy; otherwise, use NonLinearLMLEPolicy. There are a few more choices with the seed policy; however, if your system is linear or
  * you want to initialize the optimizer with zeros, use the NULLSeedPolicy; otherwise, look at the other options.  * 
  * The transformation policy, transforms the measurements and tracks from the previous tracking frame to the current tracking frame. If the tracking frame doesn't move, then use TransformNULL; otherwise
@@ -184,6 +183,8 @@ public:
      * then associating the measurements to tracks, clusters, or the data tree. Measurements associated to tracks are then used to 
      * update the tracks.
      * @param[in] new_measurements A list that contains new measurements with the same time stamp. 
+     * @param[in] current_time There are times when you can call AddMeasurements without giving any measurements. In this case, the time stamp on the 
+     *                         measurements cannot be used to get the current time; thus this parameter is needed. 
      * a unique source. 
      */
     void AddMeasurements(const std::list<tMeas>& new_measurements, const double current_time);
@@ -194,6 +195,8 @@ public:
      * then associating the measurements to tracks, clusters, or the data tree. Measurements associated to tracks are then used to 
      * update the tracks.
      * @param[in] new_measurements A list that contains new measurements with the same time stamp. 
+     * @param[in] current_time There are times when you can call AddMeasurements without giving any measurements. In this case, the time stamp on the 
+     *                         measurements cannot be used to get the current time; thus this parameter is needed. 
      * @param[in] transformation_data The data required to transform the tracks and measurements.
      * a unique source. 
      */
@@ -223,10 +226,12 @@ public:
 
 private:
 
-    System<Model> sys_;                   /**< Contains all of the data for R-RANSAC. */
-    tRansac ransac_;                       /**< The track initializer. */
+    System<Model> sys_;                          /**< Contains all of the data for R-RANSAC. */
+    tRansac ransac_;                             /**< The track initializer. */
+    DataAssociation data_association_host_;  /**< The data association host. Responsible for associating new measurements to tracks and the data tree. */
     bool transform_data_ = false;          /**< A flag used to indicate if the measurements and tracks should be transformed. */
     bool system_parameters_set_ = false;   /**< A flag used to indicate if the system parameters have been set. true indicates that they have been set. */
+    bool can_add_sources_ = true;        /**< Once measurements are added, sources cannot be added. */
 
     /**
      * When the build type is Debug, checks will be done on the measurements to verify 
@@ -247,16 +252,24 @@ private:
 template<typename tRRANSACTemplateParameters>
 bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& source_params) {
 
-    if (source_params.source_index_ != sys_.source_index_counter_) {
-        throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. Your source index is " + std::to_string(source_params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
-        return false;
+    if (can_add_sources_) {
+        if (source_params.source_index_ != sys_.source_index_counter_) {
+            throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. Your source index is " + std::to_string(source_params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
+            return false;
+        } else {
+            Source source;
+            source.Init(source_params);
+            sys_.sources_.push_back(source);
+            ++sys_.source_index_counter_;
+            return true;
+            
+        }
     } else {
-        Source source;
-        source.Init(source_params);
-        sys_.sources_.push_back(source);
-        ++sys_.source_index_counter_;
-        return true;
-        
+        // Cannot add sources once measurements have been added. 
+#ifdef DEBUG_BUILD
+        std::cerr << "RRANSAC::AddSource Cannot add sources once measuremens have been added."
+#endif
+        return false;
     }
 
 }
@@ -266,16 +279,25 @@ bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& sour
 template<typename tRRANSACTemplateParameters>
 bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& source_params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
 
-    if (source_params.source_index_ != sys_.source_index_counter_) {
-        throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. Your source index is " + std::to_string(source_params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
+    if (can_add_sources_) {
+        if (source_params.source_index_ != sys_.source_index_counter_) {
+            throw std::runtime_error("RRANSAC::AddSource Sources must be added in consecutive sequential order of their source index starting from 0. Your source index is " + std::to_string(source_params.source_index_) + " when it should be " + std::to_string(sys_.source_index_counter_));
+            return false;
+        } else {
+            Source source;
+            source.Init(source_params,state_in_surveillance_region_callback);
+            sys_.sources_.push_back(source);
+            ++sys_.source_index_counter_;
+            return true;
+            
+        }
+    }
+    else {
+        // Cannot add sources once measurements have been added. 
+#ifdef DEBUG_BUILD
+        std::cerr << "RRANSAC::AddSource Cannot add sources once measuremens have been added."
+#endif
         return false;
-    } else {
-        Source source;
-        source.Init(source_params,state_in_surveillance_region_callback);
-        sys_.sources_.push_back(source);
-        ++sys_.source_index_counter_;
-        return true;
-        
     }
 
 }
@@ -357,11 +379,11 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
 
     if (new_measurements.size() >= 0) {
 
-        double dt = current_time - sys_.current_time_;
+        sys_.dt_ = current_time - sys_.current_time_;
 
 #ifdef DEBUG_BUILD
         bool correct = VerifyMeasurements(new_measurements);
-        if (dt < 0)
+        if (sys_.dt_ < 0)
             throw std::runtime_error("Measurements must be provided in chronological order. The current time stamp is: " + std::to_string(sys_.current_time_)+ " The measurement time stamp is: " + std::to_string(new_measurements.begin()->time_stamp));
 
 #endif
@@ -372,8 +394,8 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
 
         sys_.new_meas_ = new_measurements;
 
-        if (dt > 0) {
-            tModelManager::PropagateModels(sys_,dt);
+        if (sys_.dt_ > 0) {
+            tModelManager::PropagateModels(sys_,sys_.dt_);
         }
 
 // Calculate the innovation covariances used to compute the validation region. This is only for visualization purposes. 
@@ -392,7 +414,7 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
             transform_data_ = false;
         }
 
-        DataAssociation::AssociateNewMeasurements(sys_);
+        data_association_host_.AssociateNewMeasurements(sys_);
 
         tModelManager::UpdateModels(sys_);
 
@@ -411,6 +433,8 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<tMeas>
         }
         sys_.current_time_ = current_time;
     }
+
+    can_add_sources_ = false;
 
 }
 

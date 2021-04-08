@@ -37,6 +37,7 @@ params.cluster_position_threshold_ = 2.2;
 params.cluster_velocity_threshold_ = 1;
 params.RANSAC_minimum_subset_ = 5;
 params.process_noise_covariance_ = Eigen::Matrix4d::Identity();
+params.track_good_model_threshold_ = 0.8;
 
 Transform trans;
 Eigen::Matrix3d homography;

@@ -274,14 +274,14 @@ sys.params_.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
 Measurement m;
 m.source_index = 0;
 m.weight = 1;
-m.likelihood = 1;
+m.probability = 1;
 m.time_stamp = 0.1;
 m.type = MeasurementTypes::RN_POS;
 m.pose = Eigen::Matrix<double,3,1>::Random();
 
 
 Model model;
-model.Init(sys.params_);
+model.Init(sys.params_,sys.sources_.size());
 model.state_.g_.data_ << 1,1,1;
 model.state_.u_.data_ << 2,3,4;
 
@@ -346,14 +346,14 @@ sys.transformaion_ = trans;
 Measurement m;
 m.source_index = 0;
 m.weight = 1;
-m.likelihood = 1;
+m.probability = 1;
 m.time_stamp = 0;
 m.type = MeasurementTypes::RN_POS;
 m.pose = Eigen::Matrix<double,2,1>::Random();
 
 
 Model model;
-model.Init(sys.params_);
+model.Init(sys.params_,sys.sources_.size());
 model.state_.g_.data_ << 1,1;
 model.state_.u_.data_ << 2,3;
 model.err_cov_ == Eigen::Matrix4d::Identity();

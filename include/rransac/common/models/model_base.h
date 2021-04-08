@@ -25,10 +25,15 @@ namespace rransac {
  */ 
 struct ModelLikelihoodUpdateInfo{
 
-bool in_local_surveillance_region;        /** < Indicates if the track is in the local surveillance region of the source */
+bool in_lsr_and_produced_meas;            /** < Indicates if the track is in the local surveillance region of the source and the source produced measurements. */
 int num_assoc_meas;                       /** < Indicates the number of measurements associated to the track from the source */
-unsigned int source_index;                /** < The source index */
-double volume;                            /** < The volume of the validation region */
+double delta;                             /** < A value used in the integrated probabilistic data association filter.  */
+
+void Reset() {
+    in_lsr_and_produced_meas = false;
+    num_assoc_meas = 0;
+    delta = 0;
+}
 
 };
 
@@ -114,6 +119,11 @@ public:
     double model_likelihood_;          /**< The likelihood that the track represents an actual phenomenon.  */
     Mat F_;                            /**< The Jacobian of the state transition function w.r.t. the states */
     Mat G_;                            /**< The Jacobian of the state transition function w.r.t. the noise  */
+    std::vector<MatXd> innovation_covariances_; /**< A vector of innovation covariances. The vector index corresponds to the measurement source index. It is used 
+                                                    in order to mitigate how many times the innovation covariance is calculated. */
+    std::vector<bool> innov_cov_set_;           /**< Indicates if the member variable innovation_covariances_ have been set and are valid since new measurements were received. This
+                                                     variable is reset to false after the update step in UpdateModel and the propagation step in PropagateModel since
+                                                     the innovation covariances are no longer valid. The index of the vector corresponds to the source index. */
     Mat Q_;                            /**< Process noise covariance */
 
 #if RRANSAC_VIZ_HOOKS
@@ -131,7 +141,7 @@ public:
      * @param[in] sources A reference to the sources contained in system
      * @param[in] params  The system parameters specified by the user
      */ 
-    void Init(const Parameters& params);
+    void Init(const Parameters& params, const int num_sources);
     
     /**
      * Sets the user defined parameters
@@ -233,6 +243,15 @@ public:
     MatXd GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index) const ;
 
     /**
+     * Returns the innovation covariance associated with a source. If the innovation covariance has been set in innovation_covariances_
+     * then it returns the precomputed value; otherwise, it computes the innovation covariance from the constant method GetInnovationCovariance
+     * stores the result in innovation_covariances_ and returns it. 
+     * @param[in] sources A reverence to a vector containing all of the source.
+     * @param[in] source_index The index of the source of which we want to compute the innovation covariance.
+     */ 
+    MatXd GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index);
+
+    /**
      * Using the transformation data provided by the user, this function transforms the state estimate and error covariance
      * from the previous tracking frame to the current tracking frame.
      * @param[in] T The transformation object provided by the user. The object should already have the data it needs to transform the model.
@@ -256,12 +275,6 @@ public:
     static VecCov OMinus(const tDerived& track1, const tDerived& track2) {
         return tDerived::DerivedOMinus(track1, track2);
     }
-
-    /**
-     * Update the model likelihood using the info ModelBase::model_likelihood_update_info_.
-     * @param[in] sources The vector of all of the sources. The source parameters are needed to update the model likelihood. 
-     */
-    void UpdateModelLikelihood(const std::vector<Source>& sources); 
 
     /**
      * Returns a Random State
@@ -313,7 +326,7 @@ Eigen::Matrix<DataType,tCovDim,1> PerformCentralizedMeasurementFusion(const std:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
-void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(const Parameters& params) {
+void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(const Parameters& params, const int num_sources) {
 
     if (params.set_initial_error_covariance_to_id_) {
         err_cov_.setIdentity();
@@ -330,8 +343,12 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::Init(const Paramete
     G_.setIdentity();
     SetParameters(params);
     newest_measurement_time_stamp=0;
-    model_likelihood_ = 0;
+    model_likelihood_ = 0.5;
     label_ = -1;                    // Indicates that it has not received a proper label.
+    innov_cov_set_.resize(num_sources,false);
+    innovation_covariances_.resize(num_sources);
+    new_assoc_meas_.resize(num_sources);
+    model_likelihood_update_info_.resize(num_sources);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -351,6 +368,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(cons
 
     // Propagate state
     state_.g_.OPlusEq(state_.u_.data_*dt);
+    std::fill(innov_cov_set_.begin(), innov_cov_set_.end(),false);
 
 }
 
@@ -358,18 +376,27 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::PropagateModel(cons
 
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
 void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModel(const std::vector<Source>& sources, const Parameters& params) {
-    if (new_assoc_meas_.size() > 0) {
-        newest_measurement_time_stamp = new_assoc_meas_.front().front().time_stamp;
-        OPlusEQ(PerformCentralizedMeasurementFusion(sources, params));
-        for (auto& new_measurements: new_assoc_meas_) {
-            cs_.AddMeasurementsToConsensusSet(new_measurements);
+
+    for(auto& source_meas : new_assoc_meas_) {
+        if(source_meas.size() > 0) {
+            newest_measurement_time_stamp = source_meas.front().time_stamp;
+            break;
         }
-        
+    }
+
+    OPlusEQ(PerformCentralizedMeasurementFusion(sources, params));
+    for (auto& new_measurements: new_assoc_meas_) {
+        cs_.AddMeasurementsToConsensusSet(new_measurements);
     }
     
     
-    new_assoc_meas_.clear();
-    UpdateModelLikelihood(sources);
+    
+    // UpdateModelLikelihood(sources);
+    // Reset member variables
+    std::fill(innov_cov_set_.begin(), innov_cov_set_.end(),false);
+    for (auto iter = new_assoc_meas_.begin(); iter != new_assoc_meas_.end(); ++iter) {
+        iter->clear();
+    }
 
 }
 
@@ -388,12 +415,13 @@ state_update_sum.setZero();
 cov_sum.setZero();
 
 // loop through the measurements per source
-for (std::vector<Meas<DataType>> meas : new_assoc_meas_) {
-
+for (auto& meas : new_assoc_meas_) {
+    if(meas.size()>0) {
         GetStateUpdateAndCovariance(sources, meas, state_update, cov);
 
-    state_update_sum+= state_update;
-    cov_sum += (cov.inverse() - error_cov_inverse);
+        state_update_sum+= state_update;
+        cov_sum += (cov.inverse() - error_cov_inverse);
+    }
 }
 
 
@@ -435,7 +463,7 @@ covSum.setZero();
 
 Meas<DataType> estimated_meas = sources[meas.front().source_index].GetEstMeas(state_);
 
-S_inverse = (H*err_cov_*H.transpose() + V*sources[meas.front().source_index].params_.meas_cov_*V.transpose()).inverse();
+S_inverse = GetInnovationCovariance(sources,meas.front().source_index).inverse();
 K = err_cov_*H.transpose()*S_inverse;
 
 DataType B0 = 1;
@@ -463,22 +491,14 @@ state_update = K*nu;
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
-void ModelBase<tSource, tTransformation, tCovDim, tDerived>::UpdateModelLikelihood(const std::vector<tSource>& sources) {
-    for (auto& update_info : model_likelihood_update_info_) {
-        if ( update_info.in_local_surveillance_region) {
-            const tSource& source = sources[update_info.source_index];
-            model_likelihood_ += std::log(1 + source.params_.probability_of_detection_*source.params_.gate_probability_*( update_info.num_assoc_meas/(source.params_.spacial_density_of_false_meas_*update_info.volume)-1));
-        }
-    }
-    model_likelihood_update_info_.clear();
-} 
-
-//---------------------------------------------------------------------------------------------------------
-
 
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
 Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index) const {
+
+    // If the innovation covariance has been set this sensor scan return it. 
+    if(innov_cov_set_[source_index]) {
+       return innovation_covariances_[source_index]; 
+    }
 
     MatXd H = GetLinObsMatState(sources, this->state_,source_index);         // Jacobian of observation function w.r.t. state
     MatXd V = GetLinObsMatSensorNoise(sources, this->state_,source_index);   // Jacobian of observation function w.r.t. noise
@@ -488,10 +508,28 @@ Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> M
 
 //---------------------------------------------------------------------------------------------------------
 
+
+template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>  
+Eigen::Matrix<typename tSource::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSource, tTransformation, tCovDim, tDerived>::GetInnovationCovariance(const std::vector<Source>& sources, const unsigned int source_index) {
+
+
+    // If the innovation covariance has not been set this sensor scan, calculate it.
+    if(!innov_cov_set_[source_index]) {
+
+        innovation_covariances_[source_index] = const_cast<const ModelBase*>(this)->GetInnovationCovariance(sources,source_index);
+        innov_cov_set_[source_index] = true;
+    }
+
+    return innovation_covariances_[source_index];
+
+}
+
+//---------------------------------------------------------------------------------------------------------
+
 template <typename tSource, typename tTransformation, int tCovDim,  typename tDerived>
 void ModelBase<tSource, tTransformation, tCovDim, tDerived>::AddNewMeasurement( const Meas<DataType>& meas) {
 
-    bool meas_added = false;
+    
 
 #ifdef DEBUG_BUILD
     // The new associated measurements should all have the same time stamp.
@@ -502,19 +540,7 @@ void ModelBase<tSource, tTransformation, tCovDim, tDerived>::AddNewMeasurement( 
 
 #endif
 
-    // See if there is already a measurement with the same source index. If it is, add it to the list
-    for(auto iter = this->new_assoc_meas_.begin(); iter != this->new_assoc_meas_.end(); ++iter) {
-        if(iter->begin()->source_index == meas.source_index) {
-            iter->push_back(meas);
-            meas_added = true;
-            break;
-        }
-    }
-
-    // Create a new sub list and add the measurement
-    if(!meas_added) {
-        this->new_assoc_meas_.emplace_back(std::vector<Meas<DataType>>{meas});
-    }
+    new_assoc_meas_[meas.source_index].push_back(meas);
 
 }
 

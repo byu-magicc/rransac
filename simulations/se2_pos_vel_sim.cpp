@@ -16,8 +16,9 @@
 #include "rransac/track_initialization/lmle_policies/nonlinear_lmle_policy.h"
 #include "rransac/common/transformations/trans_homography.h"
 #include "rransac/track_initialization/ransac.h"
-#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
-#include "rransac/common/data_association/cluster_data_tree_policies/data_tree_cluster_association_policy.h"
+#include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
+#include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
+#include "rransac/common/data_association/measurement_weight_policies/mw_ipdaf_policy.h"
 #include "rransac/rransac.h"
 #include "rransac/common/utilities.h"
 #include "rransac/visualization/visualization_host.h"
@@ -38,8 +39,8 @@ struct Scenario1 {
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef typename Model_::Source Source_;
-    typedef Ransac<Model_, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC_;
-    typedef RRANSACTemplateParameters<SE2_se2,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ModelPDFPolicy,DataTreeClusterAssociationPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<SE2_se2,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef typename RRANSACParameters::tRansac RANSAC_;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     TransformMatData_ transform_data;
     // static constexpr bool transform_data_ = true;
@@ -125,15 +126,13 @@ void SetUp() {
     source_params1.type_ = T::MeasurementType1;
     source_params1.source_index_ = 0;
     source_params1.meas_cov_ = T::MatR_::Identity()*noise_;
-    source_params1.RANSAC_inlier_probability_ = 0.95;
-    source_params1.gate_probability_ = 0.99;
+    source_params1.gate_probability_ = 0.95;
     source_params1.spacial_density_of_false_meas_ = 0.03125;
 
     source_params2.type_ = T::MeasurementType2;
     source_params2.source_index_ = 1;
     source_params2.meas_cov_ = T::MatR2_::Identity()*noise_;
-    source_params2.RANSAC_inlier_probability_ = 0.95;
-    source_params2.gate_probability_ = 0.99;
+    source_params2.gate_probability_ = 0.95;
     source_params2.spacial_density_of_false_meas_ = 0.03125;
 
 
@@ -161,7 +160,7 @@ void SetUp() {
     params.cluster_min_size_requirement_ = 5;
     params.track_max_num_tracks_ = 5;
     params.track_similar_tracks_threshold_ = 1;
-    params.track_good_model_threshold_ = 100;
+    params.track_good_model_threshold_ = 0.8;
     params.track_max_missed_detection_time_ = 2;
     // params.nonlinear_innov_cov_id_ = true;
 
@@ -181,7 +180,7 @@ void SetUp() {
     // Setup tracks
     tracks_.resize(4);
     for (int ii = 0; ii < 4; ++ii) {
-        tracks_[ii].Init(sys_->params_);
+        tracks_[ii].Init(sys_->params_,sys_->sources_.size());
         tracks_[ii].state_ = test_data_.states[ii];
     }
 

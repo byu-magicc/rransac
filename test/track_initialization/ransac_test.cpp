@@ -11,8 +11,10 @@
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/common/sources/source_RN.h"
-#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
 #include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
+#include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
+#include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
+#include "rransac/common/data_association/measurement_weight_policies/mw_ipdaf_policy.h"
 
 using namespace rransac;
 using namespace lie_groups;
@@ -23,8 +25,18 @@ struct LMLEDummy : tSeed<tModel>{
 };
 
 template<typename tModel>
-struct StatisticDummy{
-    static void CalculateMeasurmentAndLikelihoodDataPolicy(const System<tModel>& sys, tModel& model);
+struct ValidationRegionDummyPolicy{
+    static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track);
+};
+
+template<typename tModel>
+struct UpdateTrackLikelihoodDummyPolicy{
+    static void PolicyUpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info, const double dt);
+};
+
+template<typename tModel>
+struct CalculateMeasurementWeightsDummyPolicy{
+    static void PolicyCalculateMeasurementWeightSingle(System<tModel>& sys, tModel& track, DataAssociationInfo& info);
 };
 
 template<typename tModel>
@@ -40,7 +52,7 @@ typedef ModelRN<R2_r2, TransformNULL> Model;
 
 
 Cluster<double> cluster;
-Ransac<Model, SeedDummy, LMLEDummy, StatisticDummy> ransac;
+Ransac<Model, SeedDummy, LMLEDummy, ValidationRegionDummyPolicy,UpdateTrackLikelihoodDummyPolicy,CalculateMeasurementWeightsDummyPolicy > ransac;
 
 srand(time(NULL));
 
@@ -127,17 +139,17 @@ SourceParameters source_params1, source_params2, source_params3;
 source_params1.type_ = MeasurementTypes::RN_POS;
 source_params1.source_index_ = 0;
 source_params1.meas_cov_ = Eigen::Matrix2d::Identity()*noise;
-source_params1.RANSAC_inlier_probability_ = 0.9;
+source_params1.gate_probability_ = 0.9;
 
 source_params2.type_ = MeasurementTypes::RN_POS_VEL;
 source_params2.source_index_ = 1;
 source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
-source_params2.RANSAC_inlier_probability_ = 0.9;
+source_params2.gate_probability_ = 0.9;
 
 source_params3.type_ = MeasurementTypes::RN_POS_VEL;
 source_params3.source_index_ = 2;
 source_params3.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
-source_params3.RANSAC_inlier_probability_ = 0.9;
+source_params3.gate_probability_ = 0.9;
 
 
 SourceR2 source1,source2, source3;
@@ -159,7 +171,7 @@ Cluster<double> cluster;
 
 // Setup the model
 Model x;
-x.Init(params);
+x.Init(params,sys.sources_.size());
 x.state_.g_.data_.setRandom();
 x.state_.u_.data_.setRandom();
 
@@ -223,7 +235,7 @@ for (double ii = start_time; ii < steps*dt; ii += dt ) {
 
 // Get score and inliers
 std::vector<Cluster<double>::IteratorPair> inliers;
-Ransac<Model, SeedDummy, LMLEDummy, ModelPDFPolicy> ransac;
+Ransac<Model, SeedDummy, LMLEDummy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> ransac;
 int score = ransac.ScoreHypotheticalStateEstimate(x.state_,cluster,sys,inliers);
 
 // std::cout << "score: " << score << std::endl;
@@ -271,17 +283,17 @@ SourceParameters source_params1, source_params2, source_params3;
 source_params1.type_ = MeasurementTypes::RN_POS;
 source_params1.source_index_ = 0;
 source_params1.meas_cov_ = Eigen::Matrix2d::Identity()*noise;
-source_params1.RANSAC_inlier_probability_ = 0.9;
+source_params1.gate_probability_ = 0.9;
 
 source_params2.type_ = MeasurementTypes::RN_POS_VEL;
 source_params2.source_index_ = 1;
 source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
-source_params2.RANSAC_inlier_probability_ = 0.9;
+source_params2.gate_probability_ = 0.9;
 
 source_params3.type_ = MeasurementTypes::RN_POS_VEL;
 source_params3.source_index_ = 2;
 source_params3.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
-source_params3.RANSAC_inlier_probability_ = 0.9;
+source_params3.gate_probability_ = 0.9;
 
 
 SourceR2 source1,source2, source3;
@@ -325,14 +337,14 @@ m4.source_index = 0;
 m4.type = MeasurementTypes::RN_POS;
 
 // setup ransac
-Ransac<Model, SeedDummy, LinearLMLEPolicy, ModelPDFPolicy> ransac;
+Ransac<Model, SeedDummy, LinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> ransac;
 
 // Setup the models that will produce the measurements in the clusters
 std::vector<Model> tracks(4);
-tracks[0].Init(sys.params_);
-tracks[1].Init(sys.params_);
-tracks[2].Init(sys.params_);
-tracks[3].Init(sys.params_);
+tracks[0].Init(sys.params_,sys.sources_.size());
+tracks[1].Init(sys.params_,sys.sources_.size());
+tracks[2].Init(sys.params_,sys.sources_.size());
+tracks[3].Init(sys.params_,sys.sources_.size());
 
 double pos = 5;
 double vel = 0.1;

@@ -35,32 +35,31 @@ struct SourceParameters {
                                       
     Eigen::MatrixXd meas_cov_;        /**< The measurement covariance. It must be positive definite. This parameter must be set by the user. */
 
-    float spacial_density_of_false_meas_;  /**< We assume that measurement sources produce false measurements uniformly across their surveillance region. The number
+    double spacial_density_of_false_meas_;  /**< We assume that measurement sources produce false measurements uniformly across their surveillance region. The number
                                                  of false measurements per sensor scan is modeled using a Poison distribution with expected value \f$ \lambda \f$. The spacial density
                                                  of false measurements is the expected value of the Poison distribution divided by the volume of the surveillance region. See Tracking and 
                                                  Data Fusion by Bar-Shalom 2011 for more detail. This parameter must be set by the user. */    
 
-    float probability_of_detection_; /**< The probability that the target of interest is detected by the source during
+    double probability_of_detection_; /**< The probability that the target of interest is detected by the source during
                                           a sensor scan. This value must be between 0 and 1. This parameter must be set by the user. */
 
-    float gate_probability_;         /**< The probability that a true measurement will be inside the validation region of a track. This value must
-                                          be between 0 and 1. This parameter must be set by the user. See Tracking and Data Fusion by Bar-Shalom 2011 for more detail on the validation region. */
+    double gate_probability_;         /**< The probability that a true measurement will be inside the validation region of a track. This value must
+                                          be between 0 and 1. This parameter must be set by the user. See Tracking and Data Fusion by Bar-Shalom 2011 for more detail on the validation region. 
+                                          It is also used during track initialization. 
+                                          During track initialization, a hypothetical state is scored according to the number of measurement inliers. A measurement is an inlier if
+                                          it is a certain distance from the hypothetical state. The threshold on the distance is determined by this parameter. Thus, it is 
+                                          the probability that a measurement is an inlier according to a chi squared distribution. See Tracking and Data Fusion by Bar-Shalom 2011 for 
+                                          more detail. This parameter must be set by the user. */
 
-    double RANSAC_inlier_probability_; /**< During track initialization, a hypothetical state is scored according to the number of measurement inliers. A measurement is an inlier if
-                                            it is a certain distance from the hypothetical state. The threshold on the distance is determined by this parameter. Thus, it is 
-                                            the probability that a measurement is an inlier according to a chi squared distribution. See Tracking and Data Fusion by Bar-Shalom 2011 for 
-                                            more detail. This parameter must be set by the user. */
-
-    
+    double gate_threshold_;              /**< The gate threshold of the validation region. If this value is non positive, then the gate_threshold_ will be calculated using SourceParameters::gate_probability_ as 
+                                              described in Tracking and Data Fusion by Bar-Shalom 2011 regarding the validation region. If this value is set to a positive value, then it will retain that 
+                                              value. By default, this value is set to zero in the constructor. This gate threshold is used to associate measurements to tracks and to determine if a measurement
+                                              is an inlier during the track initialization phase.*/
     
 
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
     // TODO:: I should have the user specify if it has twist or not. Add it as a template parameter to optimize things. 
     bool has_twist;                      /**< Indicates if the measurement has twist data in addition to pose. This is calculated from SourceParameters::type_. */
-    double gate_threshold_;              /**< The gate threshold of the validation region. See Tracking and Data Fusion by Bar-Shalom 2011 for more detail on the validation region. 
-                                              This is calculated from SourceParameters::gate_probability_. */
-    double RANSAC_inlier_threshold_;      /**< The inlier threshold used in RANSAC to see if a measurement is an inlier to a hypothetical state estimate. This is calculated from 
-                                               SourceParameters::RANSAC_inlier_probability_. */
     double gate_threshold_sqrt_;         /**< The square root of the gate threshold. */    
     double vol_unit_hypershpere_;        /**< The volume of the unit hypershpere in the measurement space. This is determined by the dimension of the measurement source. */
 
@@ -69,7 +68,7 @@ struct SourceParameters {
         spacial_density_of_false_meas_ = 0.1;
         probability_of_detection_ = 0.9;
         gate_probability_ = 0.8;
-        RANSAC_inlier_probability_ = 0.8;
+        gate_threshold_ = 0;
     }
 
 };
@@ -117,6 +116,11 @@ public:
    
     std::function<bool(const State&)> state_in_surveillance_region_callback_;   /**< A pointer to the function which determines if a target's state is inside the source's surveillance region. */
     SourceParameters params_;                                                   /**< The source parameters @see SourceParameters. */
+    
+
+                                                                                    
+    MatXd H_; /**< The Jacobian of the observation function w.r.t. the state. */
+    MatXd V_; /**< The Jacobian of the observation function w.r.t. the measurement noise. */
 
     /**
      * Copy Constructor.
@@ -277,10 +281,6 @@ public:
      * \return returns true if the parameters were set; otherwise, false.
      */
     bool SetParameters(const SourceParameters& params); 
-
-// protected:
-    MatXd H_; /**< The Jacobian of the observation function w.r.t. the state. */
-    MatXd V_; /**< The Jacobian of the observation function w.r.t. the measurement noise. */
     
 
 // private:
@@ -466,12 +466,7 @@ bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
 
     }
 
-    // Verify the gate probability
-    if (params.RANSAC_inlier_probability_ < 0 || params.RANSAC_inlier_probability_ > 1) {
-        throw std::runtime_error("SourceBase::VerifySourceParameters: RANSAC_inlier_probability_ must be between 0 and 1. ");
-        success = false;
 
-    }
 
     return success;
 
@@ -486,14 +481,16 @@ bool SourceBase<tState,tDerived>::SetParameters(const SourceParameters& params) 
         if(this->params_.type_ == MeasurementTypes::RN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POS_VEL || this->params_.type_ == MeasurementTypes::SEN_POSE_TWIST) {
             this->params_.has_twist = true;
             boost::math::chi_squared dist(meas_space_dim_*2);
-            this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
-            this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
+            if (this->params_.gate_threshold_ <= 0) { // not set by user so calculate it
+                this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+            }
             this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_))/boost::math::tgamma(static_cast<double>(meas_space_dim_) +1.0);
         } else {
             this->params_.has_twist = false;
             boost::math::chi_squared dist(meas_space_dim_);
-            this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
-            this->params_.RANSAC_inlier_threshold_ = boost::math::quantile(dist, this->params_.RANSAC_inlier_probability_);
+            if (this->params_.gate_threshold_ <= 0) { // not set by user so calculate it
+                this->params_.gate_threshold_ = boost::math::quantile(dist, this->params_.gate_probability_);
+            }
             this->params_.vol_unit_hypershpere_ = pow(M_PI, static_cast<double>(meas_space_dim_)/2.0)/boost::math::tgamma(static_cast<double>(meas_space_dim_)/2.0 +1.0);
         }
     

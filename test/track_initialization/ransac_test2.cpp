@@ -23,7 +23,9 @@
 #include "rransac/track_initialization/lmle_policies/nonlinear_lmle_policy.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/track_initialization/ransac.h"
-#include "rransac/common/data_association/model_policies/model_pdf_policy.h"
+#include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
+#include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
+#include "rransac/common/data_association/measurement_weight_policies/mw_ipdaf_policy.h"
 
 using namespace lie_groups;
 using namespace rransac;
@@ -34,7 +36,7 @@ struct Test1 {
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
-    typedef Ransac<Model, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC;
+    typedef Ransac<Model, NULLSeedPolicy, LinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,2,2> MatR;
     typedef Eigen::Matrix<double,4,4> MatR2;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
@@ -76,7 +78,7 @@ struct Test2 {
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
-    typedef Ransac<Model, NULLSeedPolicy, LinearLMLEPolicy, ModelPDFPolicy> RANSAC;
+    typedef Ransac<Model, NULLSeedPolicy, LinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,3,3> MatR;
     typedef Eigen::Matrix<double,6,6> MatR2;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
@@ -118,7 +120,7 @@ struct Test3 {
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
-    typedef Ransac<Model, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC;
+    typedef Ransac<Model, NULLSeedPolicy, NonLinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,3,3> MatR;
     typedef Eigen::Matrix<double,6,6> MatR2;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
@@ -169,7 +171,7 @@ struct Test4 {
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
-    typedef Ransac<Model, NULLSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC;
+    typedef Ransac<Model, NULLSeedPolicy, NonLinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,6,6> MatR;
     typedef Eigen::Matrix<double,12,12> MatR2;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
@@ -222,7 +224,7 @@ struct Test5 {
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
     typedef typename Model::Source Source;
-    typedef Ransac<Model, SE2PosSeedPolicy, NonLinearLMLEPolicy, ModelPDFPolicy> RANSAC;
+    typedef Ransac<Model, SE2PosSeedPolicy, NonLinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,2,2> MatR;
     typedef Eigen::Matrix<double,4,4> MatR2;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POS;
@@ -330,17 +332,22 @@ SourceParameters source_params1, source_params2, source_params3;
 source_params1.type_ = T::MeasurementType1;
 source_params1.source_index_ = 0;
 source_params1.meas_cov_ = T::MatR::Identity()*noise;
-source_params1.RANSAC_inlier_probability_ = 0.9;
+source_params1.gate_probability_ = 0.9;
+source_params1.probability_of_detection_ = 0.85;
 
 source_params2.type_ = T::MeasurementType2;
 source_params2.source_index_ = 1;
 source_params2.meas_cov_ = T::MatR2::Identity()*noise;
-source_params2.RANSAC_inlier_probability_ = 0.9;
+source_params2.gate_probability_ = 0.9;
+source_params2.probability_of_detection_ = 0.85;
+
 
 source_params3.type_ = T::MeasurementType2;
 source_params3.source_index_ = 2;
 source_params3.meas_cov_ = T::MatR2::Identity()*noise;
-source_params3.RANSAC_inlier_probability_ = 0.9;
+source_params3.gate_probability_ = 0.9;
+source_params3.probability_of_detection_ = 0.85;
+
 
 Source source1,source2, source3;
 source1.Init(source_params1);
@@ -383,9 +390,9 @@ m4.source_index = 0;
 m4.type =source_params1.type_ ;
 
 // Setup tracks
-tracks.resize(4);
-for (int ii = 0; ii < 4; ++ii) {
-    tracks[ii].Init(sys.params_);
+tracks.resize(test_data.states.size());
+for (int ii = 0; ii < test_data.states.size(); ++ii) {
+    tracks[ii].Init(sys.params_,sys.sources_.size());
     tracks[ii].state_ = test_data.states[ii];
 }
 
@@ -431,6 +438,7 @@ for (double ii =start_time; ii < end_time; ii += dt) {
 }
 
 sys.data_tree_.ConstructClusters(sys);
+sys.dt_ = dt;
 
 
 }
@@ -448,8 +456,8 @@ RANSAC ransac;
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
-// using MyTypes = ::testing::Types<Test6>;
+// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
+using MyTypes = ::testing::Types<Test1>;
 TYPED_TEST_SUITE(RANSACTest, MyTypes);
 
 TYPED_TEST(RANSACTest, FullTest) {
@@ -491,10 +499,10 @@ for (auto& created_track: this->sys.models_) {
 
 }
 
-// Make sure that the consensus set is not empty and that the model likelihood is greater than 0.
+// Make sure that the consensus set is not empty and that the model likelihood is greater than 0.5.
 for (auto& track : this->sys.models_) {
     ASSERT_GE(track.cs_.Size(), this->sys.params_.RANSAC_score_minimum_requirement_);
-    ASSERT_GE(track.model_likelihood_, 10);
+    ASSERT_GE(track.model_likelihood_, 0.5);
 }
 
 
