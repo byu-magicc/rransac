@@ -46,11 +46,11 @@ include_directories(../include
 # Cluster 
 #---------------------------------------
 
-# add_executable(cluster_Test 
-# data_containers/cluster_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(cluster_Test gtest_main )
-# add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
+add_executable(cluster_Test 
+data_containers/cluster_test.cpp
+../src/parameters.cpp)
+target_link_libraries(cluster_Test gtest_main )
+add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
 
 
 #---------------------------------------

@@ -4,8 +4,8 @@
 namespace rransac {
 
 //------------------------------------------------------------------------------------
-Parameters::Parameters()
-{
+Parameters::Parameters() {
+    
     meas_time_window_ = 5;
     transform_consensus_set_ = false;
     
@@ -107,8 +107,9 @@ bool Parameters::SetParameters(const Parameters &new_params) {
                 }
             }
 
-            if (successfull)
+            if (successfull) {
                 initial_error_covariance_ = new_params.initial_error_covariance_;
+            }
         }
     }
 
@@ -216,4 +217,4 @@ Parameters::~Parameters() = default;
 
 
 
-}
+} // namespace rransac

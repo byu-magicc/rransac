@@ -128,9 +128,6 @@ public:
     typedef typename tRRANSACTemplateParameters::DataAssociation DataAssociation;           /**< The object type of the data association method. @see DataAssociationHost */
 
 
-
-
-
     /**
      * This method creates a new source with the default surveillance region. Before adding a source,
      * it verifies that the source has a unique ID and that the member variables of the source

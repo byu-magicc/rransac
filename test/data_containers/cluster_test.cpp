@@ -147,8 +147,9 @@ for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end()
     inner_iter = std::next(inner_iter, std::round(fabs(time(0,0))*10));
 
     // We dont want the last iterator since it contains nothing
-    if (inner_iter == outer_iter->end())
+    if (inner_iter == outer_iter->end()) {
         inner_iter++;
+    }
 
     iter_pair.outer_it = outer_iter;
     iter_pair.inner_it = inner_iter;
@@ -186,8 +187,9 @@ if (cluster_.data_.begin() != cluster_.data_.end()) {
     outer_iter_sts = std::next(outer_iter_sts,std::round(time(0,0)*20));
 
     // We dont want the last one so we just iterate again
-    if(outer_iter_sts == cluster_.data_.end())
+    if(outer_iter_sts == cluster_.data_.end()) {
         outer_iter_sts++;
+    }
 
     for (auto inner_iter = outer_iter_sts->begin(); inner_iter != outer_iter_sts->end(); ++ inner_iter ) {
         iter_pair.outer_it = outer_iter_sts;

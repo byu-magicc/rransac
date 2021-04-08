@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(rransac VERSION 1.0.0 LANGUAGES C CXX)
 
+set(CMAKE_CXX_CLANG_TIDY clang-tidy; -header-filter=include/rransac/.; -checks=-*,google-*)
 set(CMAKE_CXX_STANDARD 14)
 # set(CMAKE_BUILD_TYPE RELEASE)
 # set(CMAKE_BUILD_TYPE DEBUG)
@@ -65,7 +66,7 @@ foreach(p LIB BIN INCLUDE CMAKE)
 endforeach()
 
 
-add_library(${PROJECT_NAME} SHARED ${sources})
+add_library(${PROJECT_NAME} SHARED ${sources} )
 
 # target_link_libraries( ${PROJECT_NAME} 
   # PRIVATE Ceres::ceres)
@@ -155,7 +156,7 @@ install(FILES
 
 # option(BUILD_TESTS "Build the Params GTests" OFF)
 # if(BUILD_TESTS)
-  # add_subdirectory(test)
+  add_subdirectory(test)
 # endif()
 
 

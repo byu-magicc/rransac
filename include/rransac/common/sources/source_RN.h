@@ -194,8 +194,9 @@ Meas<typename tState::DataType> SourceRN<tState>::DerivedGetEstMeas(const State&
     Meas<DataType> m;
     m.type = type;
     m.pose = state.g_.data_;
-    if (MeasurementTypes::RN_POS_VEL == type)
+    if (MeasurementTypes::RN_POS_VEL == type) {
         m.twist = state.u_.data_;
+    }
     return m;
 
 }
@@ -260,7 +261,7 @@ typedef SourceRN<lie_groups::R2_r2> SourceR2;
 typedef SourceRN<lie_groups::R3_r3> SourceR3;
 
 
-} // namesapce rransac
+} // namespace rransac
 
 
 #endif // RRANSAC_COMMON_SOURCES_SOURCE_RN_H_

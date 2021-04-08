@@ -60,7 +60,7 @@ Cluster() : cluster_label_(-1), size_(0) {}
  * A cluster can be constructed with a measurement.
  * @param[in] meas The first measurement to be added to the cluster.
  */ 
-Cluster(const Meas<DataType>& meas) : Cluster() { AddMeasurement(meas); }
+explicit Cluster(const Meas<DataType>& meas) : Cluster() { AddMeasurement(meas); }
 
 /**
  * The copy constructor
@@ -91,8 +91,9 @@ void AddMeasurement(const Meas<DataType>& meas);
  */ 
 template<typename tContainerMeas>
 void AddMeasurements(const tContainerMeas& measurements){    
-    for (auto iter = measurements.begin(); iter != measurements.end(); ++iter) 
+    for (auto iter = measurements.begin(); iter != measurements.end(); ++iter) {
         AddMeasurement(*iter);
+    }
 }
 
 
@@ -109,8 +110,9 @@ void RemoveMeasurement(const IteratorPair& iter_pair);
  */ 
 template<typename tContainerIteratorPair>
 void RemoveMeasurements(const tContainerIteratorPair& iter_pairs){
-    for(auto iter = iter_pairs.begin(); iter != iter_pairs.end(); ++iter)
+    for(auto iter = iter_pairs.begin(); iter != iter_pairs.end(); ++iter) {
         RemoveMeasurement(*iter);
+    }
 }
 
 /**
@@ -152,7 +154,7 @@ bool IsNeighboringMeasurement(const tSource& source, const Parameters& param, co
 
 std::list<std::list<Meas<DataType>>> data_; /**< Contains all of the measurements. The outer container organizes the measurements in chronological order. */
 
-long int cluster_label_;  /**< When a cluster is elevated to a good cluster, it will receive a unique label whose numerical value is non negative. */ 
+int64_t cluster_label_;  /**< When a cluster is elevated to a good cluster, it will receive a unique label whose numerical value is non negative. */ 
 
 private:
 
@@ -241,18 +243,21 @@ bool Cluster<tDataType>::IsNeighboringMeasurement(const tSource& source, const P
     for (auto outer_iter = std::prev(data_.end()); outer_iter != data_.end(); --outer_iter) {
 
         // New measurement is too far away from any recent measurement
-        if( source.GetTemporalDistance(meas, outer_iter->front(), params) > params.cluster_time_threshold_)
+        if( source.GetTemporalDistance(meas, outer_iter->front(), params) > params.cluster_time_threshold_) {
             return false;
+        }
 
         for(auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++ inner_iter){
 
             // If same time stamp, use the position distance
             if(inner_iter->time_stamp == meas.time_stamp) {
-                if(source.GetSpatialDistance(*inner_iter, meas, params) <= params.cluster_position_threshold_)
+                if(source.GetSpatialDistance(*inner_iter, meas, params) <= params.cluster_position_threshold_) {
                     return true;
+                }
             } else { // Else use the velocity distance
-                if(source.GetVelocityDistance(*inner_iter,meas,params) <= params.cluster_velocity_threshold_)
+                if(source.GetVelocityDistance(*inner_iter,meas,params) <= params.cluster_velocity_threshold_) {
                     return true;
+                }
             }
 
         }

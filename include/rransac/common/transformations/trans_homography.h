@@ -121,8 +121,9 @@ Mat2d ConstructCovTrans12(const Vec2d& pos, const Vec2d& vel) const {
 Mat2d TransformRotation(const Vec2d& vel_transformed) const {
 
     // The velocity is small so set the rotation to identity.
-    if (vel_transformed.norm() == 0)
+    if (vel_transformed.norm() == 0) {
         return Mat2d::Identity();
+    }
 
     Vec2d tmp = vel_transformed.normalized();
     Mat2d R_transformed;
