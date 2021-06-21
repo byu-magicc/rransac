@@ -27,6 +27,7 @@ enum MeasurementTypes {
     SEN_POSE_TWIST,           // The target space is SEN and the pose and twist is measured and are elements of SEN and sen. The pose is in the surveillance region frame and the twist is in the body frame 
     SEN_POS,                  // The target space is SEN and the position is measured. The position is in the surveillance region frame
     SEN_POS_VEL,              // The target space is SEN and the position and velocity is measured. The position and velocity are measured in the surveillance region frame
+    SE3_CAM_DEPTH,            // The target space is SE3 and the targets location on the normalized image sphere and its depth to the camera are observed.
     NUM_TYPES
 };
 

@@ -445,7 +445,9 @@ bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
     case MeasurementTypes::SEN_POSE:
         break;  
     case MeasurementTypes::SEN_POSE_TWIST:
-        break;  
+        break; 
+    case MeasurementTypes::SE3_CAM_DEPTH:
+        break; 
     default:
         throw std::runtime_error("SourceBase::VerifySourceParameters: The measurement type is not known. ");
         success = false;

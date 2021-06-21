@@ -46,11 +46,11 @@ include_directories(../include
 # Cluster 
 #---------------------------------------
 
-add_executable(cluster_Test 
-data_containers/cluster_test.cpp
-../src/parameters.cpp)
-target_link_libraries(cluster_Test gtest_main )
-add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
+# add_executable(cluster_Test 
+# data_containers/cluster_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(cluster_Test gtest_main )
+# add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
 
 
 #---------------------------------------
@@ -82,6 +82,12 @@ add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
 # ../src/parameters.cpp)
 # target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
+
+add_executable(source_SE3_CamDepth
+common/sources/source_SE3_cam_depth_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SE3_CamDepth gtest_main )
+add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SE3_CamDepth)
 
 #---------------------------------------
 # Consensus Set Test
