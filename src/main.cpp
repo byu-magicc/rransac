@@ -1,6 +1,9 @@
 
 #include "lie_groups/state.h"
-#include<Eigen/Dense>
+#include <Eigen/Dense>
+#include "rransac/common/models/model_SEN_pos_vel.h"
+#include "rransac/common/sources/source_SEN_pos_vel.h"
+#include "rransac/common/transformations/transformation_null.h"
 #include <iostream>
 
 
@@ -8,27 +11,14 @@ using namespace lie_groups;
 
 int main() {
 
-double dt = 1e-7;
 
-  SE2<double> x;
-  x = SE2<double>::Random();
-  x.t_*=10;
+  rransac::ModelSENPosVel<lie_groups::SE3_se3,rransac::TransformNULL,rransac::SourceSENPosVel> model;
 
-  Eigen::Matrix<double,3,1> t;
-  Eigen::Matrix<double,3,1> y;
-  y.setRandom();
-  y*=10;
-  t.setRandom();
-  t*=10;
-  se2<double> l_g(se2<double>::Log(x.data_));
-  se2<double> l_gh(se2<double>::Log(x.data_ *se2<double>::Exp(t*dt)));
-  
+  model.state_ = model.GetRandomState();
 
-  Eigen::Matrix<double,3,1> ans = (l_gh.JlInv()*l_g.Jl()*l_gh.JrInv()*y - l_g.JrInv()*y)/dt;
+  Eigen::MatrixXd F = model.GetLinTransFuncMatState(model.state_,0.1);
 
-  std::cout << "ans: " << std::endl << y << std::endl;
-
-  std::cout << "t: " << std::endl << se2<double>::Wedge(t)*y  << std::endl;
+  std::cout << "F: " << std::endl << F << std::endl;
 
 
 
