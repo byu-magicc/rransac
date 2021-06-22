@@ -83,11 +83,11 @@ include_directories(../include
 # target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
 
-add_executable(source_SE3_CamDepth
-common/sources/source_SE3_cam_depth_test.cpp
-../src/parameters.cpp)
-target_link_libraries(source_SE3_CamDepth gtest_main )
-add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SE3_CamDepth)
+# add_executable(source_SE3_CamDepth
+# common/sources/source_SE3_cam_depth_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_SE3_CamDepth gtest_main )
+# add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SE3_CamDepth)
 
 #---------------------------------------
 # Consensus Set Test
@@ -105,6 +105,11 @@ add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SE3_CamDepth)
 # common/transformations/transformation_homography_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(trans_homographyTest gtest_main )
+
+add_executable(trans_SE3_cam_depthTest
+common/transformations/trans_SE3_cam_depth_test.cpp
+../src/parameters.cpp)
+target_link_libraries(trans_SE3_cam_depthTest gtest_main )
 
 #---------------------------------------
 # Model
