@@ -29,7 +29,7 @@ Meas<double> m1,m2;
 
 double d = state.g_.t_.norm();
 Eigen::Matrix<double,3,1> s = state.g_.t_/d;
-Eigen::Matrix<double,3,1> ds = state.g_.R_*state.u_.p_/d - state.g_.t_*state.g_.t_.transpose()*state.g_.R_*state.u_.p_/powf(d,3);
+Eigen::Matrix<double,3,1> ds = state.g_.R_*state.u_.p_/d - state.g_.t_*state.g_.t_.transpose()*state.g_.R_*state.u_.p_/pow(d,3);
 m2.pose = Eigen::Matrix<double,4,1>::Zero();
 m2.twist = Eigen::Matrix<double,3,1>::Zero();
 m2.pose(0,0) = d;
@@ -49,34 +49,75 @@ ASSERT_EQ(m1.twist, m2.twist);
 // std::cout << "m1 pose: " << m1.pose << std::endl;
 // std::cout << "m1 twist: " << m1.twist << std::endl;
 
-// Test the generate random measurement function
-
-
-
-
 
 
 // Test the OMinus operation and the generate random measurement function
 m1 = m2;
 Eigen::MatrixXd error = source.OMinus(m1,m2);
+Eigen::MatrixXd Rstd = Eigen::Matrix<double,7,7>::Identity()*sqrt(noise);
+Eigen::Matrix<double,7,7> cov;
+cov.setZero();
 ASSERT_DOUBLE_EQ(error.norm(),0);
 
 error.setZero();
 
-unsigned int num_iters = 1e3;
+m2 = source.GenerateRandomMeasurement(state,Rstd*0);
+error = source.OMinus(m1,m2);
+ASSERT_DOUBLE_EQ(error.norm(),0);
+
+// Construct the covariance from the random measurements and compare it
+// with the specified covariance. 
+unsigned int num_iters = 1e4;
 for (unsigned int ii = 0; ii < num_iters; ++ii) {
-    m2 = source.GenerateRandomMeasurement(state,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
-    error += source.OMinus(m1,m2);
+    m2 = source.GenerateRandomMeasurement(state,Rstd);
+    error = source.OMinus(m1,m2);
+    cov +=error*error.transpose();
+}
+cov/=num_iters;
+ASSERT_DOUBLE_EQ(m2.pose.block(1,0,3,1).norm(),1);
+ASSERT_NE(m2.pose,m1.pose);
+ASSERT_NE(m2.twist,m1.twist);
+ASSERT_LT( (cov-Rstd).norm(),0.9);
+
+
+
+// Test the Jacobians
+double dt = 1e-7;
+Eigen::Matrix<double,7,12> Hn;
+Eigen::Matrix<double,10,12> Proj;
+State dstate = state;
+
+// setup the deviations
+std::vector<Eigen::Matrix<double,12,1>> dx(12);
+for (int ii =0; ii < 12; ++ii) {
+    dx[ii].setZero();
+    dx[ii](ii) = dt;
 }
 
-Eigen::Matrix<double,6,6> cov = error*error.transpose()/num_iters;
-std::cout << "m2: " << std::endl << m2.pose << std::endl << m2.twist << std::endl;
-std::cout << "cov: " << std::endl << cov << std::endl;
+// Construct the numerical approximate of the observation function Jacobian
+for (int ii=0; ii < 12; ++ii) {
+
+    dstate = state.OPlus(dx[ii]);
+    m1 = source.GetEstMeas(dstate);
+    m2 = source.GetEstMeas(state);
+
+    Hn.block(0,ii,7,1) = source.OMinus(m1,m2)/dt;
+}
+
+// Construct the projection matrix
+Proj.setZero();
+Proj.block(0,0,7,7).setIdentity();
+Proj.block(7,9,3,3).setIdentity();
+
+// Get the analytical Jacobian
+Eigen::MatrixXd Ha = source.GetLinObsMatState(state);
 
 
+ASSERT_LT( (Ha-Hn*Proj.transpose()).norm(),1e-6);
 
+Ha = source.GetLinObsMatState(state,MeasurementTypes::SE3_CAM_DEPTH);
 
-
+ASSERT_LT( (Ha-Hn*Proj.transpose()).norm(),1e-6);
 }
 
 

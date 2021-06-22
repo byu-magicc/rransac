@@ -133,17 +133,19 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3
     const Eigen::Matrix<DataType,dim_t_vel,1>& p = state.u_.p_;
     const Eigen::Matrix<DataType,dim_rot,dim_rot>& R = state.g_.R_;
     double d = t.norm();
-    double d3 = powf(d,3);
-    double d5 = powf(d,5);
-    Eigen::Matrix<DataType,dim_pos,dim_pos> ttR = t*t.transpose()*R;
+    double d3 = pow(d,3);
+    double d5 = pow(d,5);
+    Eigen::Matrix<DataType,3,3> ttR = t*t.transpose()*R;
     Eigen::Matrix<DataType,3,3> tmp = R/d - ttR/d3;
 
-    H.block(0,0,dim_pos,dim_pos) = t.transpose()*R/d;
-    H.block(dim_pos,0,dim_rot,dim_pos) = R/d - ttR/d3;
+    H.block(0,0,1,3) = t.transpose()*R/d;
+    H.block(1,0,3,3) = R/d - ttR/d3;
 
-    H.block(dim_pos+dim_rot,0,dim_pos,dim_pos) = 3*ttR*p*t.transpose()*R/d5 - (R*p*t.transpose()*R + t.transpose()*p + R*t.transpose()*R*p)/d3;
-    H.block(dim_pos+dim_rot,dim_pos,dim_rot,dim_rot) = -tmp*lie_groups::se3<DataType>::SSM(p);
-    H.block(6,6,3,1) = tmp.block(0,0,3,1);
+    H.block(4,0,3,3) = 3*ttR*(p*t.transpose())*R/d5 - (R*(p*t.transpose())*R + t*p.transpose() + R*(t.transpose()*R*p))/d3;
+    H.block(4,3,3,3) = -tmp*lie_groups::se3<DataType>::SSM(p);
+    H.block(4,6,3,1) = tmp.block(0,0,3,1);
+
+    return H;
 
 
 }
@@ -170,7 +172,7 @@ Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGetEstMeas(con
     m.pose(0,0) = d;
     if (d != 0) {
         m.pose.block(1,0,3,1) = state.g_.t_/d;
-        m.twist = R*p/d - t*t.transpose()*R*p/powf(d,3);
+        m.twist = R*p/d - t*t.transpose()*R*p/pow(d,3);
     }
 
     
@@ -183,7 +185,8 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3
 
     Eigen::Matrix<DataType, meas_space_dim_,1> error;
     error.block(0,0,4,1) = m1.pose - m2.pose;
-    error.block(0,4,3,1) = m1.twist - m2.twist;
+    error.block(4,0,3,1) = m1.twist - m2.twist;
+
 
     return error;
 
@@ -227,7 +230,7 @@ Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGetEstMeas(con
     m.pose(0,0) = d;
     if (d != 0) {
         m.pose.block(1,0,3,1) = state.g_.t_/d;
-        m.twist = R*p/d - t*t.transpose()*R*p/powf(d,3);
+        m.twist = R*p/d - t*t.transpose()*R*p/pow(d,3);
     }
 
     return m;
@@ -251,17 +254,17 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3
     const Eigen::Matrix<DataType,dim_t_vel,1>& p = state.u_.p_;
     const Eigen::Matrix<DataType,dim_rot,dim_rot>& R = state.g_.R_;
     double d = t.norm();
-    double d3 = powf(d,3);
-    double d5 = powf(d,5);
-    Eigen::Matrix<DataType,dim_pos,dim_pos> ttR = t*t.transpose()*R;
+    double d3 = pow(d,3);
+    double d5 = pow(d,5);
+    Eigen::Matrix<DataType,3,3> ttR = t*t.transpose()*R;
     Eigen::Matrix<DataType,3,3> tmp = R/d - ttR/d3;
 
-    H.block(0,0,dim_pos,dim_pos) = t.transpose()*R/d;
-    H.block(dim_pos,0,dim_rot,dim_pos) = R/d - ttR/d3;
+    H.block(0,0,1,3) = t.transpose()*R/d;
+    H.block(1,0,3,3) = R/d - ttR/d3;
 
-    H.block(dim_pos+dim_rot,0,dim_pos,dim_pos) = 3*ttR*p*t.transpose()*R/d5 - (R*p*t.transpose()*R + t.transpose()*p + R*t.transpose()*R*p)/d3;
-    H.block(dim_pos+dim_rot,dim_pos,dim_rot,dim_rot) = -tmp*lie_groups::se3<DataType>::SSM(p);
-    H.block(6,6,3,1) = tmp.block(0,0,3,1);
+    H.block(4,0,3,3) = 3*ttR*(p*t.transpose())*R/d5 - (R*(p*t.transpose())*R + t*p.transpose() + R*(t.transpose()*R*p))/d3;
+    H.block(4,3,3,3) = -tmp*lie_groups::se3<DataType>::SSM(p);
+    H.block(4,6,3,1) = tmp.block(0,0,3,1);
    
     return H;
 
