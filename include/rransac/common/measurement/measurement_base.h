@@ -47,7 +47,11 @@ struct Meas
     MeasurementTypes type;      /**< The measurement type. @see MeasurementTypes */
     MatX pose;                  /**< The part of the measurement corresponding to the pose of the target. (position, attitude, or both). */
     MatX twist;                 /**< The part of the measurement corresponding to the derivative of the pose. (velocity, angular rates, or both). */
-  
+    bool state_transform_data=false;  /**< Sometimes the measurement cannot be transformed into the tracking frame, but the tracks can be transformed into the measurement frame. If the tracks
+                                     need to be transformed into the measurement frame, set this value to true. */
+    MatX trans_data;            /**< The data used by the transform manager to transform the track from the tracking frame to the measurement frame. */                                
+
+
     // These member variables are reserved
     double probability=0;          /**< The probability that the measurement came from the track it was associated with. This value is set during the data
                                       association process.*/

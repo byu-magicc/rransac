@@ -106,10 +106,10 @@ include_directories(../include
 # ../src/parameters.cpp)
 # target_link_libraries(trans_homographyTest gtest_main )
 
-add_executable(trans_SE3_cam_depthTest
-common/transformations/trans_SE3_cam_depth_test.cpp
-../src/parameters.cpp)
-target_link_libraries(trans_SE3_cam_depthTest gtest_main )
+# add_executable(trans_SE3_cam_depthTest
+# common/transformations/trans_SE3_cam_depth_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(trans_SE3_cam_depthTest gtest_main )
 
 #---------------------------------------
 # Model

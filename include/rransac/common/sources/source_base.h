@@ -309,9 +309,29 @@ private:
     static double GSD_RN_RN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
     static double GSD_SEN_SEN_POSE(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (State::Group::OMinus(meas1.pose,meas2.pose)).norm(); }
     static double GSD_SEN_SEN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
-    static double GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm();}
     static double GSD_NotImplemented(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
-    
+    static double GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){
+        
+        double d = 0;
+
+        if(meas1.state_transform_data && meas2.state_transform_data) {
+
+            d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
+
+        } else if(meas1.state_transform_data) {
+
+            d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.pose(0,0)*meas2.pose.block(1,0,3,1)).norm();
+
+        } else if(meas2.state_transform_data) {
+            
+            d = (meas1.pose(0,0)*meas1.pose.block(1,0,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
+
+        } else {
+            d = (meas1.pose - meas2.pose).norm();
+        }
+
+        return d;
+        }
     
 
 };

@@ -121,4 +121,68 @@ ASSERT_LT( (Ha-Hn*Proj.transpose()).norm(),1e-6);
 }
 
 
+
+TEST(SOURCE_SE3_CAM_DEPTH, SpatialDistanceTest) { 
+
+
+using State = SE3_se3;
+using Source = SourceSE3CamDepth<State>;
+
+Parameters rransac_params;
+
+SourceParameters params;
+params.type_ = MeasurementTypes::SE3_CAM_DEPTH;
+double noise = 0.1;
+params.meas_cov_ = Eigen::Matrix<double,7,7>::Identity()*noise;
+params.source_index_ = 0;
+
+Source source;
+source.Init(params);
+
+State state, transform1, transform2, state_t1, state_t2;
+state = state.Random();
+transform1 = State::Random();
+transform2 = State::Random();
+state_t1 = state;
+state_t1.g_.data_ = transform1.g_.data_*state_t1.g_.data_;
+state_t2 = state;
+state_t2.g_.data_ = transform2.g_.data_*state_t2.g_.data_;
+
+Meas<double> m1,m2;
+m1.source_index = 0;
+m1.type = MeasurementTypes::SE3_CAM_DEPTH;
+m2.source_index= 0;
+m2.type = MeasurementTypes::SE3_CAM_DEPTH;
+m1 = source.GetEstMeas(state);
+m1.state_transform_data = false;
+m2 = source.GetEstMeas(state);
+m2.state_transform_data = false;
+
+double d0, d1, d2, d3;
+
+d0 = source.GetSpatialDistance(m1,m2,rransac_params);
+
+ASSERT_EQ(d0, 0);
+
+m1.state_transform_data = true;
+m1.trans_data = transform1.g_.data_;
+m2 = source.GetEstMeas(state_t1);
+d1 = source.GetSpatialDistance(m1,m2,rransac_params);
+
+ASSERT_LT(d1,1e-12);
+
+d2 = source.GetSpatialDistance(m2,m1,rransac_params);
+
+ASSERT_LT(d2,1e-12);
+
+m2 = m1;
+
+d3 = source.GetSpatialDistance(m2,m1,rransac_params);
+
+ASSERT_LT(d3,1e-12);
+
+
+}
+
+
 } // namespace rransac

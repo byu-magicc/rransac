@@ -75,6 +75,19 @@ void TransformTrack(State& state, MatCov& cov) const {
     static_cast<const tDerived*>(this)->DerivedTransformTrack(state,cov);
 }
 
+/** 
+ * Transforms the state and error covariance using user provided transform data.
+ * This function is useful when you need to transform a track to a measurement frame. 
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
+ */ 
+void TransformTrack(State& state, MatCov& cov, const Data& transfrom_data) {
+    Data tmp = data_;
+    this->SetData(transfrom_data);
+    TransformTrack(state, cov);
+    this->SetData(tmp);
+}
+
 
 private:
 TransformBase()=default;
