@@ -79,7 +79,13 @@ void TransformSE3CamDepth<tState>::DerivedTransformMeasurement(Meas<DataType>& m
 
     Eigen::Matrix<DataType,3,1> t_oa_a = d_oa_a*s_oa_a;
     Eigen::Matrix<DataType,3,1> t_ob_b = R_ab*t_oa_a + t_ab_b;
-    Eigen::Matrix<DataType,3,1> v_oa_a = (I*pow(d_oa_a,2) - t_oa_a*t_oa_a.transpose()).inverse()*pow(d_oa_a,3)*sd_oa_a;
+    Eigen::Matrix<DataType,3,1> v_oa_a = (I*pow(d_oa_a,2) - (t_oa_a*t_oa_a.transpose())).inverse()*pow(d_oa_a,3)*sd_oa_a;
+
+    std::cout << "I: " << std::endl << I << std::endl;
+    std::cout << "d_oa_a: " << std::endl << d_oa_a << std::endl;
+    std::cout << "t_oa_a: " << std::endl << t_oa_a << std::endl;
+    std::cout << "sd_oa_a:  " << std::endl << sd_oa_a << std::endl;
+
 
     DataType d_ob_b = sqrt(  (t_ob_b.transpose()*t_ob_b)(0,0)   );
     Eigen::Matrix<DataType,3,1> s_ob_b = t_ob_b/d_ob_b;

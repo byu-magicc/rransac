@@ -32,6 +32,7 @@ cov.setRandom();
 cov_transformed = cov;
 State target, transform_data, target_transformed;
 target = State::Random();
+target.g_.t_*=10;
 target_transformed = target;
 transform_data = State::Random();
 
@@ -51,6 +52,9 @@ m2 = source.GetEstMeas(target_transformed);
 TransformSE3CamDepth<State> trans; 
 trans.SetData(transform_data.g_.data_);
 
+std::cout << "t" << std::endl << target.g_.t_ << std::endl;
+std::cout << "t" << std::endl << target_transformed.g_.t_ << std::endl;
+std::cout << "Rp" << std::endl << target.g_.R_*target.u_.p_ << std::endl;
 
 // Test the transform target
 trans.TransformTrack(target,cov);
@@ -58,7 +62,7 @@ ASSERT_EQ(cov,cov_transformed);
 ASSERT_EQ(target.g_.data_, target_transformed.g_.data_);
 ASSERT_EQ(target.u_.data_, target_transformed.u_.data_);
 
-std::cout << "Rp" << std::endl << target.g_.R_*target.u_.p_ << std::endl;
+
 
 // Test the transform measurements
 trans.TransformMeasurement(m1_transformed);
