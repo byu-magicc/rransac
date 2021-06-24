@@ -168,16 +168,7 @@ public:
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
-    static MatXd GetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data) {
-        if(transform_state && !Transformation::is_null_transform_) {
-            State state_transformed = Transformation::TransformState(state,transform_data);
-            MatXd transform_jacobian = Transformation::GetTransformationJacobian(state,transform_data);
-            return tDerived::DerivedGetLinObsMatState(state_transformed)*transform_jacobian;
-
-        } else {
-            return tDerived::DerivedGetLinObsMatState(state);
-        }        
-    }    
+    static MatXd GetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data);
                  
 
     /** 
@@ -188,15 +179,7 @@ public:
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
-    static MatXd GetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data) {
-        if(transform_state && !Transformation::is_null_transform_) {
-            State state_transformed = Transformation::TransformState(state,transform_data);
-            return tDerived::DerivedGetLinObsMatSensorNoise(state_transformed);
-
-        } else {
-            return tDerived::DerivedGetLinObsMatSensorNoise(state);
-        }
-    }       
+    static MatXd GetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data);    
 
     /**
      *  Implements the observation function and returns an estimated measurement based on the state. 
@@ -206,25 +189,7 @@ public:
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
-    static Meas<DataType> GetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data)  {
-        
-#ifdef DEBUG_BUILD
-        if(transform_state && Transformation::is_null_transform_) {
-            throw std::runtime_error("SourceBase::GetEstMeas Trying to transform the state when the transform object is TransformNULL");
-        } else if(transform_state && transform_data.rows() == 0) {
-            throw std::runtime_error("SourceBase::GetEstMeas Trying to transform the state when transform data is empty");
-
-        }
-#endif
-        
-        if(transform_state && !Transformation::is_null_transform_) {
-            State state_transformed = Transformation::TransformState(state,transform_data);
-            return tDerived::DerivedGetEstMeas(state_transformed);
-
-        } else {
-            return tDerived::DerivedGetEstMeas(state);
-        }
-    } 
+    static Meas<DataType> GetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data);
 
     /**
      * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
@@ -246,15 +211,7 @@ public:
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */ 
-    Meas<DataType> GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const {
-        if(transform_state && !Transformation::is_null_transform_) {
-            State state_transformed = Transformation::TransformState(state,transform_data);
-            return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state_transformed);
-
-        } else {
-            return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state);
-        }
-    }
+    Meas<DataType> GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const ;
 
     /**
      * Returns true if the state is inside the source's surveillance region. The state can be transformed into another
@@ -263,16 +220,7 @@ public:
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
-    bool StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) const {
-        
-        if(transform_state && !Transformation::is_null_transform_) {
-            State state_transformed = Transformation::TransformState(state,transform_data);
-            return state_in_surveillance_region_callback_(state_transformed);
-
-        } else {
-            return state_in_surveillance_region_callback_(state);
-        }
-    }
+    bool StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) const;
 
     /**
      * Calculates the temporal distance between two measurements.
@@ -356,28 +304,7 @@ private:
     static double GSD_SEN_SEN_POSE(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (State::Group::OMinus(meas1.pose,meas2.pose)).norm(); }
     static double GSD_SEN_SEN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
     static double GSD_NotImplemented(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
-    static double GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){
-        
-        double d = 0;
-
-        if(meas1.state_transform_data && meas2.state_transform_data) {
-
-            d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
-
-        } else if(meas1.state_transform_data) {
-
-            d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.pose(0,0)*meas2.pose.block(1,0,3,1)).norm();
-
-        } else if(meas2.state_transform_data) {
-            
-            d = (meas1.pose(0,0)*meas1.pose.block(1,0,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
-
-        } else {
-            d = (meas1.pose - meas2.pose).norm();
-        }
-
-        return d;
-        }
+    static double GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params);
     
 
 };
@@ -530,7 +457,7 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::VerifySourceP
 
 }
 
-//---------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
 template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
 bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SetParameters(const SourceParameters& params) {
     bool success = VerifySourceParameters(params);
@@ -557,8 +484,108 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SetParameters
     return success;
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+Meas<typename tState::DataType> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data)  {
+        
+#ifdef DEBUG_BUILD
+    if(transform_state && Transformation::is_null_transform_) {
+        throw std::runtime_error("SourceBase::GetEstMeas Trying to transform the state when the transform object is TransformNULL");
+    } else if(transform_state && transform_data.rows() == 0) {
+        throw std::runtime_error("SourceBase::GetEstMeas Trying to transform the state when transform data is empty");
+
+    }
+#endif
+    
+    if(transform_state && !Transformation::is_null_transform_) {
+        State state_transformed = Transformation::TransformState(state,transform_data);
+        return tDerived::DerivedGetEstMeas(state_transformed);
+
+    } else {
+        return tDerived::DerivedGetEstMeas(state);
+    }
+} 
 
 
+//------------------------------------------------------------------------------------------------------------------------
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+Eigen::Matrix<typename tState::DataType, Eigen::Dynamic, Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data) {
+    if(transform_state && !Transformation::is_null_transform_) {
+        State state_transformed = Transformation::TransformState(state,transform_data);
+        MatXd transform_jacobian = Transformation::GetTransformationJacobian(state,transform_data);
+        return tDerived::DerivedGetLinObsMatState(state_transformed)*transform_jacobian;
+
+    } else {
+        return tDerived::DerivedGetLinObsMatState(state);
+    }        
+}    
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+Eigen::Matrix<typename tState::DataType, Eigen::Dynamic, Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data) {
+    if(transform_state && !Transformation::is_null_transform_) {
+        State state_transformed = Transformation::TransformState(state,transform_data);
+        return tDerived::DerivedGetLinObsMatSensorNoise(state_transformed);
+
+    } else {
+        return tDerived::DerivedGetLinObsMatSensorNoise(state);
+    }
+}  
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+Meas<typename tState::DataType> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const {
+    if(transform_state && !Transformation::is_null_transform_) {
+        State state_transformed = Transformation::TransformState(state,transform_data);
+        return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state_transformed);
+
+    } else {
+        return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state);
+    }
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) const {
+    
+    if(transform_state && !Transformation::is_null_transform_) {
+        State state_transformed = Transformation::TransformState(state,transform_data);
+        return state_in_surveillance_region_callback_(state_transformed);
+
+    } else {
+        return state_in_surveillance_region_callback_(state);
+    }
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+double SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){
+    
+    double d = 0;
+
+    if(meas1.state_transform_data && meas2.state_transform_data) {
+
+        d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
+
+    } else if(meas1.state_transform_data) {
+
+        d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.pose(0,0)*meas2.pose.block(1,0,3,1)).norm();
+
+    } else if(meas2.state_transform_data) {
+        
+        d = (meas1.pose(0,0)*meas1.pose.block(1,0,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
+
+    } else {
+        d = (meas1.pose - meas2.pose).norm();
+    }
+
+    return d;
+    }
 
 
 } // namespace rransac
