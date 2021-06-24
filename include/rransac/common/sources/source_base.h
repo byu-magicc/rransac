@@ -160,37 +160,70 @@ public:
 
     /** 
      * Returns the jacobian of the observation function w.r.t. the states. 
+     * If transformation data is provided, the state will be transformed before calculating the Jacobian.
+     * Let H denote the Jacobian of the observation function without the state being transformed, and T
+     * denote the Jacobian of the transformation. If the state is transformed, the new Jacobian becomes H*T,
+     * which this function implements.
      * @param[in] state A state of the target.
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
     static MatXd GetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data) {
-        if(transform_state) {
-            State state_transformed;
-            
-        }
-        return tDerived::DerivedGetLinObsMatState(state);
+        if(transform_state && !Transformation::is_null_transform_) {
+            State state_transformed = Transformation::TransformState(state,transform_data);
+            MatXd transform_jacobian = Transformation::GetTransformationJacobian(state,transform_data);
+            return tDerived::DerivedGetLinObsMatState(state_transformed)*transform_jacobian;
+
+        } else {
+            return tDerived::DerivedGetLinObsMatState(state);
+        }        
     }    
                  
 
     /** 
      * Returns the jacobian of the observation function w.r.t. the sensor noise.
+     * If transformation data is provided, the state will be transformed before calculating
+     * the Jacobian.
      * @param[in] state A state of the target.
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
     static MatXd GetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data) {
-        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
+        if(transform_state && !Transformation::is_null_transform_) {
+            State state_transformed = Transformation::TransformState(state,transform_data);
+            return tDerived::DerivedGetLinObsMatSensorNoise(state_transformed);
+
+        } else {
+            return tDerived::DerivedGetLinObsMatSensorNoise(state);
+        }
     }       
 
     /**
      *  Implements the observation function and returns an estimated measurement based on the state. 
+     * If transformation data is provided, the state will be transformed first before calculating the
+     * estimated measurement.
      * @param[in] state A state of the target.
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
     static Meas<DataType> GetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data)  {
-        return tDerived::DerivedGetEstMeas(state);
+        
+#ifdef DEBUG_BUILD
+        if(transform_state && Transformation::is_null_transform_) {
+            throw std::runtime_error("SourceBase::GetEstMeas Trying to transform the state when the transform object is TransformNULL");
+        } else if(transform_state && transform_data.rows() == 0) {
+            throw std::runtime_error("SourceBase::GetEstMeas Trying to transform the state when transform data is empty");
+
+        }
+#endif
+        
+        if(transform_state && !Transformation::is_null_transform_) {
+            State state_transformed = Transformation::TransformState(state,transform_data);
+            return tDerived::DerivedGetEstMeas(state_transformed);
+
+        } else {
+            return tDerived::DerivedGetEstMeas(state);
+        }
     } 
 
     /**
@@ -206,24 +239,39 @@ public:
 
    /**
      * Generates a random measurement from a Gaussian distribution with mean defined by the state and standard deviation defined by meas_std. This
-     * method is used primarily in simulations and tests.
+     * method is used primarily in simulations and tests. If transformation data is provided, the state will be transformed by the data before 
+     * generating the estimated measurement.
      * @param[in] meas_std The measurement standard deviation.
      * @param[in] state    The state that serves as the mean of the Gaussian distribution.
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */ 
-    Meas<DataType> GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data){
-        return static_cast<tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std, state);
+    Meas<DataType> GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const {
+        if(transform_state && !Transformation::is_null_transform_) {
+            State state_transformed = Transformation::TransformState(state,transform_data);
+            return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state_transformed);
+
+        } else {
+            return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state);
+        }
     }
 
     /**
-     * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
+     * Returns true if the state is inside the source's surveillance region. The state can be transformed into another
+     * frame if the transformation data is provided.  
      * @param[in] state A state of the target.
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */
-    static bool StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) {
-        return state_in_surveillance_region_callback_(state);
+    bool StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) const {
+        
+        if(transform_state && !Transformation::is_null_transform_) {
+            State state_transformed = Transformation::TransformState(state,transform_data);
+            return state_in_surveillance_region_callback_(state_transformed);
+
+        } else {
+            return state_in_surveillance_region_callback_(state);
+        }
     }
 
     /**
@@ -234,7 +282,7 @@ public:
      * \return Returns temporal distance between two measurements
      */
    
-    static DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) { return fabs(meas1.time_stamp - meas2.time_stamp); }
+    DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return fabs(meas1.time_stamp - meas2.time_stamp); }
 
     /**
      * Calculates the geodesic distance between the pose of two measurements that have the same measurement space.
@@ -244,7 +292,7 @@ public:
      * \return Returns geodesic distance between pose of two measurements
      */
     
-    static DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params)  {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
+    DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
     /**
      * Finds the geodesic distance between the pose of two measurements of different time stamps normalized by the temporal distance. The measurements must have the same measurement space.
@@ -253,7 +301,7 @@ public:
      * @param[in] params The system parameters.
      * \return Returns geodesic distance between two measurements
      */
-    static DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params)  {
+    DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {
         if (meas1.time_stamp == meas2.time_stamp) {
             throw std::runtime_error("SourceBase::GetVelocityDistance Measurements have the same time stamp");
         } else {
@@ -261,15 +309,24 @@ public:
         }
     }
 
+    /**
+     * Returns a const reference to the source parameters. 
+     */ 
+    const SourceParameters& GetParams(){return params_;}
+
 
 // private:
      SourceBase();
     ~SourceBase();
     friend tDerived; /**< The object that inherits this base class. */
 
+protected:
+
+     SourceParameters params_;  
+
 private:
 
-    SourceParameters params_;  
+   
 
     /**
      * Ensure that the source parameters meet the specified criteria. If a parameter doesn't, a runtime error will be thrown.
@@ -411,6 +468,8 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::VerifySourceP
     bool success = true;
     unsigned int mult = 1;
 
+ 
+
     if(params.type_ == MeasurementTypes::RN_POS_VEL || params.type_ == MeasurementTypes::SEN_POS_VEL || params.type_ == MeasurementTypes::SEN_POSE_TWIST) {
         mult = 2;
     }
@@ -445,7 +504,7 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::VerifySourceP
     }
 
     // Verify the number of measurement types
-    if(params_.type_ != meas_type_) {
+    if(params.type_ != meas_type_) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: The measurement type doesn't match. ");
         success = false;
     }

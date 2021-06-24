@@ -58,7 +58,27 @@ struct Meas
     double weight=0;              /**< The weight assigned to the measurement when updating the track. This value is set during the data association process. */
 };
 
-//////// Measurement Type Utilities 
+///////////////////////////////////
+//////// Measurement Type Utilities
+///////////////////////////////////
+/**
+ * \class MeasHasVelocity
+ * Determines the the measurement type contains velocity information
+ */ 
+template <MeasurementTypes tMeasurementType> 
+struct MeasHasVelocity : std::false_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::RN_POS_VEL> : std::true_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::SEN_POSE_TWIST> : std::true_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::SEN_POS_VEL> : std::true_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::SE3_CAM_DEPTH> : std::true_type {};
 
 
 

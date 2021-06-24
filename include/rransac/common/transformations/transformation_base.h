@@ -21,7 +21,7 @@ namespace rransac
  * 
 */
 
-template <class tData, class tState, class tMatCov, class tDerived>
+template <class tData, class tState, class tMatCov, bool tNullTransform, class tDerived>
 class TransformBase {
 
 public:
@@ -31,7 +31,8 @@ typedef tState State;                           /**< The state of the target. @s
 typedef tMatCov MatCov;                         /**< The object type of the tracks error covariance. */
 typedef tDerived Derived;                       /**< The child class that implements the specific member functions. */
 typedef typename tState::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
-typedef Eigen::Matrix<Eigen::Dynamic,Eigen::Dynamic> MatXd; /**< Dynamic Eigen Matrix */
+typedef Eigen::Matrix<DataType, Eigen::Dynamic,Eigen::Dynamic> MatXd; /**< Dynamic Eigen Matrix */
+static constexpr bool is_null_transform_ = tNullTransform; /**< Indicates if the derived transform call is the null transform */
 
 /**
  * Used to initialize the transformation object.
@@ -82,8 +83,8 @@ void TransformTrack(State& state, MatCov& cov) const {
  * @param[in] cov   The track's error covariance to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static void TransformTrack(State& state, MatCov& cov, const Data& transfrom_data) {
-   tDerived::TransformTrack(state,cov,transfrom_data);
+static void TransformTrack(State& state, MatCov& cov, const Data& transform_data) {
+   tDerived::DerivedTransformTrack(state,cov,transform_data);
 }
 
 /** 
@@ -92,8 +93,8 @@ static void TransformTrack(State& state, MatCov& cov, const Data& transfrom_data
  * @param[in] state The track's state to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static State TransformState(const State& state, const Data& transfrom_data) {
-    return tDerived::TransformState(state,transfrom_data);
+static State TransformState(const State& state, const Data& transform_data) {
+    return tDerived::DerivedTransformState(state,transform_data);
 }
 
 /** 
@@ -101,8 +102,8 @@ static State TransformState(const State& state, const Data& transfrom_data) {
  * @param[in] state The state of the target after it has been transformed using transform_data
  * @param[in] transform_data The data used in the transformation
  */ 
-static MatXd GetTransformationJacobian(const State& state, const Data& transfrom_data) {
-   return tDerived::GetTransformationJacobian(state,transform_data);
+static MatXd GetTransformationJacobian(const State& state, const Data& transform_data) {
+   return tDerived::DerivedGetTransformationJacobian(state,transform_data);
 }
 
 

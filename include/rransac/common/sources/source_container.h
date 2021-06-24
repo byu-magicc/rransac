@@ -130,7 +130,7 @@ Meas<DataType> GenerateRandomMeasurement(const unsigned int source_index, const 
  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
  * @param[in] transform_data The data needed to transform the state
  */
-static bool StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data);
+bool StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) const ;
 
 /**
  * Calculates the temporal distance between two measurements.
@@ -139,7 +139,7 @@ static bool StateInsideSurveillanceRegion(const unsigned int source_index, const
  * @param[in] params The system parameters.
  * \return Returns temporal distance between two measurements
  */
-static DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) { return S0::GetTemporalDistance(meas1,meas2); }
+DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return S0::GetTemporalDistance(meas1,meas2); }
 
 /**
  * Calculates the geodesic distance between the pose of two measurements that have the same measurement space.
@@ -148,7 +148,7 @@ static DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<Data
  * @param[in] params The system parameters.
  * \return Returns geodesic distance between pose of two measurements
  */
-static DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) {return S0::GetSpatialDistance(meas1,meas2);}
+DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return S0::GetSpatialDistance(meas1,meas2);}
 
 /**
  * Finds the geodesic distance between the pose of two measurements of different time stamps normalized by the temporal distance. The measurements must have the same measurement space.
@@ -157,7 +157,7 @@ static DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataT
  * @param[in] params The system parameters.
  * \return Returns geodesic distance between two measurements
  */
-static DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) { return S0::GetVelocityDistance(meas1,meas2);}
+DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return S0::GetVelocityDistance(meas1,meas2);}
 
 
 private:
@@ -469,7 +469,7 @@ Meas<typename S0::DataType> SourceContainter<S0,S1,S2,S3,S4>::GenerateRandomMeas
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainter<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
+bool SourceContainter<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) const {
     switch (source_index_)
     {
     case 0:
