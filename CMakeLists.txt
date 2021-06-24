@@ -148,13 +148,13 @@ install(FILES
 #   ${EIGEN3_INCLUDE_DIR}
 # )
 
-# add_executable(main src/main.cpp src/parameters.cpp)
-# target_include_directories(main PUBLIC
-#           include
-# 					liegroups/include
-# 					${EIGEN3_INCLUDE_DIR}
-# 					${Boost_INCLUDE_DIRS}
-# 					${OpenCV_INCLUDE_DIRS})
+add_executable(main src/main.cpp src/parameters.cpp)
+target_include_directories(main PUBLIC
+          include
+					liegroups/include
+					${EIGEN3_INCLUDE_DIR}
+					${Boost_INCLUDE_DIRS}
+					${OpenCV_INCLUDE_DIRS})
 
 
 
@@ -162,7 +162,7 @@ install(FILES
 
 # option(BUILD_TESTS "Build the Params GTests" OFF)
 # if(BUILD_TESTS)
-  add_subdirectory(test)
+  # add_subdirectory(test)
 # endif()
 
 

@@ -4,6 +4,8 @@
 #include "memory.h"
 
 #include "rransac/common/sources/source_base.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/measurement/measurement_base.h"
 
 namespace rransac {
 
@@ -20,29 +22,37 @@ bool func(const State& state) {
 };
 
 // Dummy function needed to initialize SourceBase
-template <class tState, int tDims>
-class Dummy : public SourceBase<tState, Dummy<tState,tDims>> 
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+class Dummy : public SourceBase<tState, tMeasurementType, tTransformation<tState>, Dummy<tState,tMeasurementType,tTransformation>> 
 {
 public:
 
     using State = tState;
-    static constexpr unsigned int meas_space_dim_ = tDims;
+    typedef tTransformation<State> Transformation;
+    typedef typename tState::DataType DataType;
+    typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
+    static constexpr unsigned int meas_space_dim_ = 2;
+    static constexpr MeasurementTypes meas_type_ = tMeasurementType;
+    typedef SourceBase<tState, tMeasurementType, tTransformation<tState>, Dummy<tState,tMeasurementType,tTransformation>> Base;
+
+
+    static MatXd H_;
+    static MatXd V_;
 
     /** Initializes the measurement source. This function must set the parameters.  */
-    void DerivedInit(const SourceParameters& params) {
-        this->H_ = Eigen::Matrix2d::Identity();
-        this->V_ = Eigen::Matrix2d::Identity();
+    void DerivedInit(const SourceParameters& params) { 
+        H_ = 
     }
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state) const {
-        return this->H_;
+    static Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state)  {
+        return H_;
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
     Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state)const {
-        return this->V_;
+        return V_;
     }                         
 
     /** Computes the estimated measurement given a state */
@@ -55,9 +65,9 @@ public:
 
 };
 
-typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,1>> DummySource1;
-typedef SourceBase<lie_groups::R2_r2, Dummy<lie_groups::R2_r2,2>> DummySource2;
-typedef SourceBase<lie_groups::R3_r3, Dummy<lie_groups::R3_r3,3>> DummySource3;
+typedef Dummy<lie_groups::R2_r2, MeasurementTypes::RN_POS, TransformNULL> DummySource1;
+typedef Dummy<lie_groups::R2_r2, MeasurementTypes::RN_POS_VEL, TransformNULL> DummySource2;
+typedef Dummy<lie_groups::R3_r3, MeasurementTypes::RN_POS, TransformNULL> DummySource3;
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -329,7 +339,7 @@ Parameters params_;
 
 // se2
 typedef lie_groups::SE2_se2 State_SE2;
-SourceBase<State_SE2, Dummy<lie_groups::SE2_se2,2>> source1;
+Dummy<lie_groups::SE2_se2, MeasurementTypes::SEN_POSE, TransformNULL> source1;
 Meas<double> m_SE2_Pose_1, m_SE2_Pose_2, m_SE2_Pose_Twist_1, m_SE2_Pose_Twist_2;
 m_SE2_Pose_1.pose  = State_SE2::Algebra::Exp(Eigen::Matrix<double,3,1>::Random());
 m_SE2_Pose_2.pose  = State_SE2::Algebra::Exp(Eigen::Matrix<double,3,1>::Random());
@@ -351,7 +361,7 @@ ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_1,pa
 
 
 typedef lie_groups::SE3_se3 State_SE3;
-SourceBase<State_SE3, Dummy<lie_groups::SE3_se3,2>> source2;
+Dummy<lie_groups::SE3_se3, MeasurementTypes::SEN_POSE, TransformNULL> source2;
 Meas<double> m_SE3_Pose_1, m_SE3_Pose_2, m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2;
 m_SE3_Pose_1.pose  = State_SE3::Algebra::Exp(Eigen::Matrix<double,6,1>::Random());
 m_SE3_Pose_2.pose  = State_SE3::Algebra::Exp(Eigen::Matrix<double,6,1>::Random());

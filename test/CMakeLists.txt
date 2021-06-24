@@ -56,11 +56,11 @@ include_directories(../include
 #---------------------------------------
 # Source tests
 #---------------------------------------
-# add_executable(source_baseTest
-# common/sources/source_base_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_baseTest gtest_main )
-# add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
+add_executable(source_baseTest
+common/sources/source_base_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_baseTest gtest_main )
+add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
 
 
 # add_executable(source_RNTest

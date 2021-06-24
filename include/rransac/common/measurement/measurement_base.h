@@ -58,6 +58,12 @@ struct Meas
     double weight=0;              /**< The weight assigned to the measurement when updating the track. This value is set during the data association process. */
 };
 
+//////// Measurement Type Utilities 
+
+
+
+
+
 
 } // namespace rransac
 

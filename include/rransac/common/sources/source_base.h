@@ -11,11 +11,11 @@
 #include <boost/math/special_functions/gamma.hpp>
 #include <functional>
 
+
 #include "lie_groups/state.h"
 #include "rransac/parameters.h"
 #include "rransac/common/measurement/measurement_base.h"
 #include "rransac/common/utilities.h"
-
 
 namespace rransac
 {
@@ -103,32 +103,32 @@ struct SourceParameters {
  * 
  */ 
 
-template<typename tState, typename tDerived>
+
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
 class SourceBase
 {
 
 public:
 
     typedef tState State;                                                       /**< The state of the target. @see State. */
+    typedef tTransformation Transformation;                                     /**< The transformation used to transform the measurements and tracks. */
     typedef typename tState::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
     typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
     static constexpr unsigned int meas_space_dim_ = tDerived::meas_space_dim_;  /**< The Dimension of the measurement space. */
-   
+    static constexpr MeasurementTypes meas_type_ = tMeasurementType;
+
     std::function<bool(const State&)> state_in_surveillance_region_callback_;   /**< A pointer to the function which determines if a target's state is inside the source's surveillance region. */
     SourceParameters params_;                                                   /**< The source parameters @see SourceParameters. */
     
 
                                                                                     
-    MatXd H_; /**< The Jacobian of the observation function w.r.t. the state. */
-    MatXd V_; /**< The Jacobian of the observation function w.r.t. the measurement noise. */
-
+ 
     /**
      * Copy Constructor.
      */ 
     SourceBase(const SourceBase& other) : SourceBase() {
         params_ = other.params_;
-        H_ = other.H_;
-        V_ = other.V_;
         state_in_surveillance_region_callback_ = other.state_in_surveillance_region_callback_;
     }
 
@@ -153,8 +153,8 @@ public:
      * This is an optimized function that returns the jacobian of the observation function w.r.t. the states. 
      * @param[in] state A state of the target.
     */
-    MatXd GetLinObsMatState(const State& state) const {
-        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatState(state);
+    static MatXd GetLinObsMatState(const State& state) {
+        return tDerived::DerivedGetLinObsMatState(state);
     }    
 
     /** 
@@ -339,16 +339,16 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename tState, typename tDerived>
-void SourceBase<tState,tDerived>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+void SourceBase<tState,tMeasurementType,tTransformation,tDerived>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
     this->Init(params);
     this->state_in_surveillance_region_callback_ = state_in_surveillance_region_callback;
 }
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived>
-void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+void SourceBase<tState,tMeasurementType,tTransformation,tDerived>::Init(const SourceParameters& params) {
 
     bool success = SetParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown. Otherwise, the parameters are set.
     this->state_in_surveillance_region_callback_ = StateInsideSurveillanceRegionDefaultCallback;
@@ -357,16 +357,16 @@ void SourceBase<tState,tDerived>::Init(const SourceParameters& params) {
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic>  SourceBase<tState,tDerived>::GaussianRandomGenerator(const int size){
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic>  SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GaussianRandomGenerator(const int size){
 
     return utilities::GaussianRandomGenerator(size);
 }
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, typename tDerived>
-SourceBase<tState,tDerived>::SourceBase() {
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SourceBase() {
 
     // Generate two dimensional array of function pointers.
     gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
@@ -403,8 +403,8 @@ SourceBase<tState,tDerived>::SourceBase() {
 
 //---------------------------------------------------
 
-template<typename tState, typename tDerived>
-SourceBase<tState,tDerived>::~SourceBase() {
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+SourceBase<tState,tMeasurementType,tTransformation,tDerived>::~SourceBase() {
 
     for (int i = 0; i < MeasurementTypes::NUM_TYPES; i++) {
         delete [] gsd_ptr_[i];
@@ -415,8 +415,8 @@ SourceBase<tState,tDerived>::~SourceBase() {
 
 //---------------------------------------------------
 
-template<typename tState, typename tDerived>
-bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters& params) {
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::VerifySourceParameters(const SourceParameters& params) {
 
     bool success = true;
     unsigned int mult = 1;
@@ -499,8 +499,8 @@ bool SourceBase<tState,tDerived>::VerifySourceParameters(const SourceParameters&
 }
 
 //---------------------------------------------------
-template<typename tState, typename tDerived>
-bool SourceBase<tState,tDerived>::SetParameters(const SourceParameters& params) {
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SetParameters(const SourceParameters& params) {
     bool success = VerifySourceParameters(params);
     if (success) {
         this->params_ = params;
