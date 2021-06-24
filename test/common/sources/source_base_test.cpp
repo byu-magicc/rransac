@@ -46,18 +46,18 @@ public:
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
-    static Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state)  {
+    static Eigen::MatrixXd DerivedGetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data)  {
         return Base::H_;
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
-    Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state)const {
+    static Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data)  {
         return Base::V_;
     }                         
 
     /** Computes the estimated measurement given a state */
-    Meas<double> DerivedGetEstMeas(const tState& state) const {
-        Meas<double> tmp;
+    static Meas<DataType> DerivedGetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data) {
+        Meas<DataType> tmp;
         tmp.pose = state.g_.data_;
         return tmp;
     } /** Returns an estimated measurement according to the state. */

@@ -31,7 +31,7 @@ typedef tState State;                           /**< The state of the target. @s
 typedef tMatCov MatCov;                         /**< The object type of the tracks error covariance. */
 typedef tDerived Derived;                       /**< The child class that implements the specific member functions. */
 typedef typename tState::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
-
+typedef Eigen::Matrix<Eigen::Dynamic,Eigen::Dynamic> MatXd; /**< Dynamic Eigen Matrix */
 
 /**
  * Used to initialize the transformation object.
@@ -80,12 +80,29 @@ void TransformTrack(State& state, MatCov& cov) const {
  * This function is useful when you need to transform a track to a measurement frame. 
  * @param[in] state The track's state to be transformed.
  * @param[in] cov   The track's error covariance to be transformed.
+ * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-void TransformTrack(State& state, MatCov& cov, const Data& transfrom_data) {
-    Data tmp = data_;
-    this->SetData(transfrom_data);
-    TransformTrack(state, cov);
-    this->SetData(tmp);
+static void TransformTrack(State& state, MatCov& cov, const Data& transfrom_data) {
+   tDerived::TransformTrack(state,cov,transfrom_data);
+}
+
+/** 
+ * Transforms the state using user provided transform data.
+ * This function is useful when you need to transform a track to a measurement frame. 
+ * @param[in] state The track's state to be transformed.
+ * @param[in] transform_data The data used to transform the state and error covariance
+ */ 
+static State TransformState(const State& state, const Data& transfrom_data) {
+    return tDerived::TransformState(state,transfrom_data);
+}
+
+/** 
+ * Returns the Jacobian of the transformation
+ * @param[in] state The state of the target after it has been transformed using transform_data
+ * @param[in] transform_data The data used in the transformation
+ */ 
+static MatXd GetTransformationJacobian(const State& state, const Data& transfrom_data) {
+   return tDerived::GetTransformationJacobian(state,transform_data);
 }
 
 

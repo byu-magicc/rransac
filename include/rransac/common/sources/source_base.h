@@ -120,7 +120,7 @@ public:
     static constexpr MeasurementTypes meas_type_ = tMeasurementType;
 
     std::function<bool(const State&)> state_in_surveillance_region_callback_;   /**< A pointer to the function which determines if a target's state is inside the source's surveillance region. */
-    SourceParameters params_;                                                   /**< The source parameters @see SourceParameters. */
+                                                     /**< The source parameters @see SourceParameters. */
     
 
     static MatXd H_;
@@ -151,52 +151,46 @@ public:
     void Init(const SourceParameters& params);     
 
 
-    /** 
-     * This is an optimized function that returns the jacobian of the observation function w.r.t. the states. 
-     * @param[in] state A state of the target.
-    */
-    static MatXd GetLinObsMatState(const State& state) {
-        return tDerived::DerivedGetLinObsMatState(state);
-    }    
+    /**
+     * Verify that the parameters are valid. If they are, the parameters are set. 
+     * @param[in] params Source parameters.
+     * \return returns true if the parameters were set; otherwise, false.
+     */
+    bool SetParameters(const SourceParameters& params); 
 
     /** 
      * Returns the jacobian of the observation function w.r.t. the states. 
      * @param[in] state A state of the target.
-    */
-    static MatXd GetLinObsMatState(const State& state, const MeasurementTypes type) {
-        return tDerived::DerivedGetLinObsMatState(state, type);
-    }                            
-
-    /** 
-     * This is an optimized function that returns the jacobian of the observation function w.r.t. the sensor noise.
-     * @param[in] state A state of the target.
+     * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
+     * @param[in] transform_data The data needed to transform the state
      */
-    MatXd GetLinObsMatSensorNoise(const State& state) const {
-        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
-    }       
+    static MatXd GetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data) {
+        if(transform_state) {
+            State state_transformed;
+            
+        }
+        return tDerived::DerivedGetLinObsMatState(state);
+    }    
+                 
 
     /** 
      * Returns the jacobian of the observation function w.r.t. the sensor noise.
      * @param[in] state A state of the target.
+     * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
+     * @param[in] transform_data The data needed to transform the state
      */
-    static MatXd GetLinObsMatSensorNoise(const State& state, const MeasurementTypes type)  {
-        return tDerived::DerivedGetLinObsMatSensorNoise(state, type);
-    }                      
-
-    /** 
-     * This is an optimized function that implements the observation function and returns an estimated measurement based on the state.
-     * @param[in] state A state of the target.
-     */
-    Meas<DataType> GetEstMeas(const State& state) const {
-        return static_cast<const tDerived*>(this)->DerivedGetEstMeas(state);
-    } 
+    static MatXd GetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data) {
+        return static_cast<const tDerived*>(this)->DerivedGetLinObsMatSensorNoise(state);
+    }       
 
     /**
      *  Implements the observation function and returns an estimated measurement based on the state. 
      * @param[in] state A state of the target.
+     * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
+     * @param[in] transform_data The data needed to transform the state
      */
-    static Meas<DataType> GetEstMeas(const State& state, const MeasurementTypes type)  {
-        return tDerived::DerivedGetEstMeas(state,type);
+    static Meas<DataType> GetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data)  {
+        return tDerived::DerivedGetEstMeas(state);
     } 
 
     /**
@@ -213,33 +207,23 @@ public:
    /**
      * Generates a random measurement from a Gaussian distribution with mean defined by the state and standard deviation defined by meas_std. This
      * method is used primarily in simulations and tests.
-     * @param[in] state    The state that serves as the mean of the Gaussian distribution.
      * @param[in] meas_std The measurement standard deviation.
+     * @param[in] state    The state that serves as the mean of the Gaussian distribution.
+     * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
+     * @param[in] transform_data The data needed to transform the state
      */ 
-    Meas<DataType> GenerateRandomMeasurement(const State& state, const MatXd& meas_std){
-        return static_cast<tDerived*>(this)->DerivedGenerateRandomMeasurement(state,meas_std);
+    Meas<DataType> GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data){
+        return static_cast<tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std, state);
     }
-
-   /**
-     * Generates a vector of random numbers from a Gaussian distribution of zero mean and unit standard deviation
-     * @param[in] randn_nums The Gaussian random numbers to be generated
-     */ 
-    MatXd GaussianRandomGenerator(const int size);
 
     /**
      * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
      * @param[in] state A state of the target.
+     * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
+     * @param[in] transform_data The data needed to transform the state
      */
-    bool StateInsideSurveillanceRegion(const State& state) const {
+    static bool StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) {
         return state_in_surveillance_region_callback_(state);
-    }
-
-    /**
-     * The Default callback function used with StateInsideSurveillanceRegion. It always returns true.  
-     * @param[in] state A state of the target.
-     */
-    static bool StateInsideSurveillanceRegionDefaultCallback(const State& state) {
-        return true;
     }
 
     /**
@@ -260,7 +244,7 @@ public:
      * \return Returns geodesic distance between pose of two measurements
      */
     
-    DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
+    static DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params)  {return gsd_ptr_[meas1.type][meas2.type](meas1,meas2,params);}
 
     /**
      * Finds the geodesic distance between the pose of two measurements of different time stamps normalized by the temporal distance. The measurements must have the same measurement space.
@@ -269,7 +253,7 @@ public:
      * @param[in] params The system parameters.
      * \return Returns geodesic distance between two measurements
      */
-    DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {
+    static DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params)  {
         if (meas1.time_stamp == meas2.time_stamp) {
             throw std::runtime_error("SourceBase::GetVelocityDistance Measurements have the same time stamp");
         } else {
@@ -277,13 +261,6 @@ public:
         }
     }
 
-    /**
-     * Verify that the parameters are valid. If they are, the parameters are set. 
-     * @param[in] params Source parameters.
-     * \return returns true if the parameters were set; otherwise, false.
-     */
-    bool SetParameters(const SourceParameters& params); 
-    
 
 // private:
      SourceBase();
@@ -292,12 +269,22 @@ public:
 
 private:
 
+    SourceParameters params_;  
+
     /**
      * Ensure that the source parameters meet the specified criteria. If a parameter doesn't, a runtime error will be thrown.
      * @param params The source parameters needed to initialize the source. 
      * \return Returns true if the parameters were successfully set. 
      */ 
     bool VerifySourceParameters(const SourceParameters& params);
+
+    /**
+     * The Default callback function used with StateInsideSurveillanceRegion. It always returns true.  
+     * @param[in] state A state of the target.
+     */
+    static bool StateInsideSurveillanceRegionDefaultCallback(const State& state) {
+        return true;
+    }
 
     /**
      * This array of function pointers, holds pointers to the different methods of calculating the spatial distance
@@ -365,13 +352,6 @@ void SourceBase<tState,tMeasurementType,tTransformation,tDerived>::Init(const So
     static_cast<tDerived*>(this)->DerivedInit(params_);
 }   
 
-//-------------------------------------------------------------------------------
-
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic>  SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GaussianRandomGenerator(const int size){
-
-    return utilities::GaussianRandomGenerator(size);
-}
 
 //-------------------------------------------------------------------------------
 
@@ -465,28 +445,11 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::VerifySourceP
     }
 
     // Verify the number of measurement types
-    switch (params.type_)
-    {
-    case MeasurementTypes::RN_POS:
-        break;    
-    case MeasurementTypes::RN_POS_VEL:
-        break;  
-    case MeasurementTypes::SEN_POS:
-        break;   
-    case MeasurementTypes::SEN_POS_VEL:
-        break;  
-    case MeasurementTypes::SEN_POSE:
-        break;  
-    case MeasurementTypes::SEN_POSE_TWIST:
-        break; 
-    case MeasurementTypes::SE3_CAM_DEPTH:
-        break; 
-    default:
-        throw std::runtime_error("SourceBase::VerifySourceParameters: The measurement type is not known. ");
+    if(params_.type_ != meas_type_) {
+        throw std::runtime_error("SourceBase::VerifySourceParameters: The measurement type doesn't match. ");
         success = false;
-
-        break;
     }
+
 
     // Verify the probability of detection 
     if (params.probability_of_detection_ < 0 || params.probability_of_detection_ > 1) {
