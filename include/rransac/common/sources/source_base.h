@@ -105,6 +105,7 @@ struct SourceParameters {
 
 
 
+
 template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
 class SourceBase
 {
@@ -122,7 +123,8 @@ public:
     SourceParameters params_;                                                   /**< The source parameters @see SourceParameters. */
     
 
-                                                                                    
+    static MatXd H_;
+    static MatXd V_;                                                                          
  
     /**
      * Copy Constructor.
@@ -335,6 +337,14 @@ private:
     
 
 };
+
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::H_;
+
+template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::V_;
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions

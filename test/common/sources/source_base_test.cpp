@@ -36,23 +36,23 @@ public:
     typedef SourceBase<tState, tMeasurementType, tTransformation<tState>, Dummy<tState,tMeasurementType,tTransformation>> Base;
 
 
-    static MatXd H_;
-    static MatXd V_;
+    // static MatXd H_;
+    // static MatXd V_;
 
     /** Initializes the measurement source. This function must set the parameters.  */
     void DerivedInit(const SourceParameters& params) { 
-        H_ = 
+        Base::H_ = Eigen::Matrix2d::Identity();
     }
 
 
     /** Returns the jacobian of the observation function w.r.t. the states */
     static Eigen::MatrixXd DerivedGetLinObsMatState(const tState& state)  {
-        return H_;
+        return Base::H_;
     }                              
 
     /** Returns the jacobian of the observation function w.r.t. the sensor noise */
     Eigen::MatrixXd DerivedGetLinObsMatSensorNoise(const tState& state)const {
-        return V_;
+        return Base::V_;
     }                         
 
     /** Computes the estimated measurement given a state */
