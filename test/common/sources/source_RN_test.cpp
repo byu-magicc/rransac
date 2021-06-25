@@ -1,9 +1,16 @@
 #include <gtest/gtest.h>
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/common/transformations/transformation_null.h"
+
+
 
 namespace rransac
 {
-    
+
+
+typedef SourceRN<lie_groups::R2_r2, MeasurementTypes::RN_POS, TransformNULL> SourceR2Pos;
+typedef SourceRN<lie_groups::R2_r2, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR2PosVel;
 
 TEST(Source_RN, INIT){
 
@@ -17,28 +24,29 @@ params.probability_of_detection_ = 0.9;
 
 // This source can only handle measurement types of RN_POS and RN_POS_VEL. Make sure invalid types dont work.
 params.type_ = MeasurementTypes::SEN_POS;
-SourceR2 source_r2;
-ASSERT_ANY_THROW(source_r2.Init(params));
+SourceR2Pos source_r2_pos;
+SourceR2PosVel source_r2_pos_vel;
+ASSERT_ANY_THROW(source_r2_pos.Init(params));
 
 params.type_ = MeasurementTypes::SEN_POS_VEL;
-ASSERT_ANY_THROW(source_r2.Init(params));
+ASSERT_ANY_THROW(source_r2_pos.Init(params));
 
 params.type_ = MeasurementTypes::SEN_POSE;
-ASSERT_ANY_THROW(source_r2.Init(params));
+ASSERT_ANY_THROW(source_r2_pos.Init(params));
 
 params.type_ = MeasurementTypes::SEN_POSE_TWIST;
-ASSERT_ANY_THROW(source_r2.Init(params));
+ASSERT_ANY_THROW(source_r2_pos.Init(params));
 
 // Give it a valid type.
 params.type_ = MeasurementTypes::RN_POS;
-ASSERT_NO_THROW(source_r2.Init(params));
+ASSERT_NO_THROW(source_r2_pos.Init(params));
 
 params.type_ = MeasurementTypes::RN_POS_VEL;
 params.meas_cov_ = Eigen::Matrix4d::Identity();
-ASSERT_NO_THROW(source_r2.Init(params));
+ASSERT_NO_THROW(source_r2_pos_vel.Init(params));
 
 // Make sure parameters were set correctly.
-ASSERT_EQ(params.type_, source_r2.params_.type_);
+ASSERT_EQ(params.type_, source_r2_pos_vel.GetParams().type_);
 
 }
 
@@ -58,28 +66,28 @@ params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 lie_groups::R2_r2 state = lie_groups::R2_r2::Random();
 
-SourceR2 source1;
+SourceR2Pos source1;
 source1.Init(params);
 Eigen::Matrix<double,2,4> H1;
 H1 << 1,0,0,0,0,1,0,0;
 Eigen::Matrix<double,2,2> V1;
 V1.setIdentity();
 
-ASSERT_EQ(source1.GetLinObsMatState(state),H1);
-ASSERT_EQ(source1.GetLinObsMatSensorNoise(state),V1);
-ASSERT_EQ(source1.GetLinObsMatState(state,params.type_),H1);
-ASSERT_EQ(source1.GetLinObsMatSensorNoise(state,params.type_),V1);
-Meas<double> m = source1.GetEstMeas(state);
+Eigen::MatrixXd EmptyMat;
+bool transform_state = false;
+
+ASSERT_EQ(source1.GetLinObsMatState(state, transform_state, EmptyMat),H1);
+ASSERT_EQ(source1.GetLinObsMatSensorNoise(state, transform_state, EmptyMat),V1);
+Meas<double> m = source1.GetEstMeas(state, transform_state, EmptyMat);
 ASSERT_EQ(m.pose, state.g_.data_);
-ASSERT_EQ(m.twist, state.u_.data_);
 m.pose.setZero(); 
 m.twist.setZero();
-m = SourceR2::GetEstMeas(state,m.type);
+m = SourceR2Pos::GetEstMeas(state, transform_state, EmptyMat);
 ASSERT_EQ(m.pose, state.g_.data_);
 m.pose.setZero(); 
 m.twist.setZero();
 m.type = MeasurementTypes::RN_POS_VEL;
-m = SourceR2::GetEstMeas(state,m.type);
+m = SourceR2PosVel::GetEstMeas(state, transform_state, EmptyMat);
 ASSERT_EQ(m.pose, state.g_.data_);
 ASSERT_EQ(m.twist, state.u_.data_);
 
@@ -103,7 +111,7 @@ params2.gate_probability_ = 0.8;
 params2.probability_of_detection_ = 0.9;
 
 
-SourceR2 source2;
+SourceR2PosVel source2;
 source2.Init(params2);
 m3.type = MeasurementTypes::RN_POS;
 m4.type = MeasurementTypes::RN_POS;
@@ -132,13 +140,13 @@ error_mean2.setZero();
 for (unsigned long int ii = 0; ii < num_rand; ++ii) {
 
     rand_meas1[ii].type = MeasurementTypes::RN_POS;
-    rand_meas1[ii] = source1.GenerateRandomMeasurement(state,std1);
+    rand_meas1[ii] = source1.GenerateRandomMeasurement(std1,state, transform_state, EmptyMat);
     rand_meas2[ii].type = MeasurementTypes::RN_POS_VEL;
-    rand_meas2[ii] = source2.GenerateRandomMeasurement(state,std2);
+    rand_meas2[ii] = source2.GenerateRandomMeasurement(std2,state, transform_state, EmptyMat);
     
 
-    error_1[ii] = source1.OMinus(rand_meas1[ii], source1.GetEstMeas(state,rand_meas1[ii].type));
-    error_2[ii] = source2.OMinus(rand_meas2[ii], source2.GetEstMeas(state,rand_meas2[ii].type));
+    error_1[ii] = source1.OMinus(rand_meas1[ii], source1.GetEstMeas(state, transform_state, EmptyMat));
+    error_2[ii] = source2.OMinus(rand_meas2[ii], source2.GetEstMeas(state, transform_state, EmptyMat));
     error_mean1+=error_1[ii];
     error_mean2+=error_2[ii];
 

@@ -185,6 +185,7 @@ public:
      *  Implements the observation function and returns an estimated measurement based on the state. 
      * If transformation data is provided, the state will be transformed first before calculating the
      * estimated measurement.
+     * Currently, the measurement is only given a pose, twist, and measurement type. 
      * @param[in] state A state of the target.
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
@@ -198,6 +199,11 @@ public:
      * @param[in] m2 a measurement
      */
     static MatXd OMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
+#ifdef DEBUG_BUILD
+    if(m1.type != tMeasurementType || m2.type !=tMeasurementType) {
+        throw std::runtime_error("SourceBase:: The measurements are not the right type.");
+    }
+#endif
         return tDerived::DerivedOMinus(m1, m2);
     } 
 
@@ -568,17 +574,17 @@ double SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GSD_SE3_Cam
     
     double d = 0;
 
-    if(meas1.state_transform_data && meas2.state_transform_data) {
+    if(meas1.transform_state && meas2.transform_state) {
 
-        d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
+        d = (meas1.transform_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.transform_data.block(0,3,3,1) - meas2.transform_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.transform_data.block(0,3,3,1)).norm();
 
-    } else if(meas1.state_transform_data) {
+    } else if(meas1.transform_state) {
 
-        d = (meas1.trans_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.trans_data.block(0,3,3,1) - meas2.pose(0,0)*meas2.pose.block(1,0,3,1)).norm();
+        d = (meas1.transform_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.transform_data.block(0,3,3,1) - meas2.pose(0,0)*meas2.pose.block(1,0,3,1)).norm();
 
-    } else if(meas2.state_transform_data) {
+    } else if(meas2.transform_state) {
         
-        d = (meas1.pose(0,0)*meas1.pose.block(1,0,3,1) - meas2.trans_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.trans_data.block(0,3,3,1)).norm();
+        d = (meas1.pose(0,0)*meas1.pose.block(1,0,3,1) - meas2.transform_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.transform_data.block(0,3,3,1)).norm();
 
     } else {
         d = (meas1.pose - meas2.pose).norm();

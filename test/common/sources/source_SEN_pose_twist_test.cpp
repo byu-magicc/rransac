@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "rransac/common/sources/source_SEN_pose_twist.h"
+#include "rransac/common/transformations/transformation_null.h"
 
 
 
@@ -22,9 +23,10 @@ TYPED_TEST(SEN_POSE_TWIST_Test, INIT) {
 
 typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
-typedef SourceSENPoseTwist<TypeParam> Source;
-typedef Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_> MatMeas1;
-typedef Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2> MatMeas2;
+typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POS,TransformNULL> SourcePos;
+typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourcePosVel;
+typedef Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_> MatMeas1;
+typedef Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2> MatMeas2;
 
 SourceParameters params;
 params.spacial_density_of_false_meas_ = 0.1;
@@ -32,7 +34,8 @@ params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
 
-Source source;
+SourcePos source_pos;
+SourcePosVel source_pos_vel;
 
 // Valid state type
 if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name() == typeid(SE3_se3).name()) {
@@ -40,24 +43,24 @@ if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name
 // Valid measurement types
 params.type_ = MeasurementTypes::SEN_POSE;
 params.meas_cov_ = MatMeas1::Identity();
-ASSERT_NO_THROW(source.Init(params));
+ASSERT_NO_THROW(source_pos.Init(params));
 params.type_ = MeasurementTypes::SEN_POSE_TWIST;
 params.meas_cov_ = MatMeas2::Identity();
-ASSERT_NO_THROW(source.Init(params));
+ASSERT_NO_THROW(source_pos_vel.Init(params));
 
 // Invalid measurements
 params.type_ = MeasurementTypes::RN_POS;
 params.meas_cov_ = MatMeas1::Identity();
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos.Init(params));
 params.type_ = MeasurementTypes::RN_POS_VEL;
 params.meas_cov_ = MatMeas2::Identity();
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos_vel.Init(params));
 params.type_ = MeasurementTypes::SEN_POS;
 params.meas_cov_ = MatMeas1::Identity();
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos.Init(params));
 params.type_ = MeasurementTypes::SEN_POS_VEL;
 params.meas_cov_ = MatMeas2::Identity();
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos_vel.Init(params));
 
 
 }
@@ -68,7 +71,7 @@ else {
     // Valid measurement types
     params.type_ = MeasurementTypes::SEN_POSE;
     params.meas_cov_ = MatMeas1::Identity();
-    ASSERT_ANY_THROW(source.Init(params));
+    ASSERT_ANY_THROW(source_pos.Init(params));
 
 }
 
@@ -96,7 +99,10 @@ params.spacial_density_of_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
-Source source;
+SourcePos source_pos;
+SourcePosVel source_pos_vel;
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 TypeParam state = TypeParam::Random();
 
 

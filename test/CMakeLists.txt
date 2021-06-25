@@ -56,11 +56,11 @@ include_directories(../include
 #---------------------------------------
 # Source tests
 #---------------------------------------
-add_executable(source_baseTest
-common/sources/source_base_test.cpp
-../src/parameters.cpp)
-target_link_libraries(source_baseTest gtest_main )
-add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
+# add_executable(source_baseTest
+# common/sources/source_base_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_baseTest gtest_main )
+# add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
 
 
 # add_executable(source_RNTest
@@ -77,11 +77,11 @@ add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
 # add_test(NAME AllTestsInSourceSENPosVelTest COMMAND source_SEN_Pos_VelTest)
 
 
-# add_executable(source_SEN_Pose_TwistTest
-# common/sources/source_SEN_pose_twist_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
-# add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
+add_executable(source_SEN_Pose_TwistTest
+common/sources/source_SEN_pose_twist_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
+add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
 
 # add_executable(source_SE3_CamDepth
 # common/sources/source_SE3_cam_depth_test.cpp

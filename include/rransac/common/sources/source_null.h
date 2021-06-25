@@ -70,7 +70,7 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
  * @param[in] state    The state that serves as the mean of the Gaussian distribution.
  * @param[in] meas_std The measurement standard deviation.
  */ 
-Meas<DataType> DerivedGenerateRandomMeasurement(const State& state, const MatXd& meas_std){
+Meas<DataType> DerivedGenerateRandomMeasurement(const State& state, const MatXd& meas_std) const {
     throw std::runtime_error("SourceNull::DerivedGenerateRandomMeasurement Function Not Implemented, and shouldn't be called. "); 
 
 }

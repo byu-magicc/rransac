@@ -19,7 +19,7 @@ namespace rransac {
  */ 
 
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-class SourceRN : public SourceBase<tState, tMeasurementType, tTransformation<tState> SourceRN<tState,tMeasurementType,tTransformation>> {
+class SourceRN : public SourceBase<tState, tMeasurementType, tTransformation<tState>, SourceRN<tState,tMeasurementType,tTransformation>> {
 
 public:
 
@@ -33,13 +33,14 @@ static constexpr unsigned int meas_pose_cols_ = 1;                          /**<
 static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;       /**< The number of rows in the twist measurement. */
 static constexpr unsigned int meas_twist_cols_ = 1;                         /**< The number of columns in the twist measurement. */
 typedef utilities::CompatibleWithModelRN ModelCompatibility;                /**< Indicates which model this source is compatible with. */
-typedef SourceBase<tState, tMeasurementType, tTransformation<tState> SourceRN<tState,tMeasurementType,tTransformation>> Base;                          /**< The source base class. */
+typedef SourceBase<tState, tMeasurementType, tTransformation<tState>, SourceRN<tState,tMeasurementType,tTransformation>> Base;                          /**< The source base class. */
 
-static constexpr int dim_mult = MeasHasVelocity<tMeasurementType>::value ? 2 : 1; /**< a constant used when the measurement contains velocity. */
+static constexpr int dim_mult_ = MeasHasVelocity<tMeasurementType>::value ? 2 : 1; /**< a constant used when the measurement contains velocity. */
+static constexpr int has_vel_ = MeasHasVelocity<tMeasurementType>::value ? true : false; /**< Indicates if the measurement contains velocity.  */
 
 // Perform compatibility checks
 static_assert(lie_groups::utilities::StateIsRN_rN<tState>::value, "SourceRN: The state is not compatible with the model");
-static_assert( std::is_same<tMeasurementType,MeasurementTypes::RN_POS>::value || std::is_same<tMeasurementType,MeasurementTypes::RN_POS_VEL>::value, "SourceRN: The measurement type is not compatible with the source."    );
+static_assert( tMeasurementType == MeasurementTypes::RN_POS || tMeasurementType==MeasurementTypes::RN_POS_VEL, "SourceRN: The measurement type is not compatible with the source."    );
 
 
 SourceRN()=default;
@@ -70,6 +71,7 @@ static MatXd DerivedGetLinObsMatSensorNoise(const State& state);
 
 /**
  *  Implements the observation function and returns an estimated measurement based on the state. 
+ * Currently, the measurement is only given a pose, twist, and measurement type. 
  * @param[in] state A state of the target.
  */
 static Meas<DataType> DerivedGetEstMeas(const State& state);
@@ -85,11 +87,11 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2);
 
 
 /**
- * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
+ * Generates a random measurement from a Gaussian distribution with mean defined by the state and standard deviation of the measurement covariance
  * @param[in] state The state that serves as the mean in the Gaussian distribution
  * @param[in] meas_std The measurement standard deviation
  */ 
-Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std) const;
+Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const;
 
 };
 
@@ -103,9 +105,9 @@ template <typename tState, MeasurementTypes tMeasurementType, template <typename
 void SourceRN<tState, tMeasurementType, tTransformation>::DerivedInit(const SourceParameters& params) {
 
 
-    Base::H_ = Eigen::Matrix<DataType, meas_space_dim_*dim_mult, state_dim_>::Zeros();
-    H_.block(0,0, meas_space_dim_*dim_mult, meas_space_dim_*dim_mult).setIdentity();
-    Base::V_ = Eigen::Matrix<DataType, meas_space_dim_*dim_mult,meas_space_dim_*dim_mult>::Identity();
+    Base::H_ = Eigen::Matrix<DataType, meas_space_dim_*dim_mult_, state_dim_>::Zero();
+    Base::H_.block(0,0, meas_space_dim_*dim_mult_, meas_space_dim_*dim_mult_).setIdentity();
+    Base::V_ = Eigen::Matrix<DataType, meas_space_dim_*dim_mult_,meas_space_dim_*dim_mult_>::Identity();
     
 }
 
@@ -114,26 +116,15 @@ void SourceRN<tState, tMeasurementType, tTransformation>::DerivedInit(const Sour
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
 Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<tState, tMeasurementType, tTransformation>::DerivedGetLinObsMatState(const State& state) {
 
-    const unsigned int sizeg = tState::Group::dim_;
-    const unsigned int sizeu = tState::Algebra::dim_;
+    return Base::H_;
+}
 
-    // Construct the Jacobians
-    MatXd H;
-    switch (type)
-    {
-    case MeasurementTypes::RN_POS:
-        H = Eigen::Matrix<DataType,sizeg,sizeg+sizeu>::Zero();
-        H.block(0,0,sizeg,sizeg).setIdentity();
-        break;
-    case MeasurementTypes::RN_POS_VEL:
-        H = Eigen::Matrix<DataType,sizeg+sizeu,sizeg+sizeu>::Identity();
-        break;
-    default:
-        throw std::runtime_error("SourceRN::Init Measurement type not supported.");
-        break;
-    }
-    return H;
+//-------------------------------------------------------------------------------------------------------------------------
 
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<tState, tMeasurementType, tTransformation>::DerivedGetLinObsMatSensorNoise(const State& state) {
+
+    return Base::V_;
 }
 
 //---------------------------------------------------------------------------
@@ -141,100 +132,58 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
 Meas<typename tState::DataType> SourceRN<tState,tMeasurementType, tTransformation>::DerivedGetEstMeas(const tState& state) {
     Meas<DataType> m;
-    m.type = this->params_.type_;
-    m.source_index
+    m.type = tMeasurementType;
     m.pose = state.g_.data_;
-    m.twist = state.u_.data_;
+    if (has_vel_) {
+        m.twist = state.u_.data_;
+    }
     return m;
 } 
 
 //---------------------------------------------------------------------------
-template<class tState>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<tState>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<tState,tMeasurementType, tTransformation>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
 
-    if (m1.type == MeasurementTypes::RN_POS && m2.type == m1.type) {
-        return m1.pose - m2.pose;
-    } else if (m1.type == MeasurementTypes::RN_POS_VEL && m2.type == m1.type){
-        Eigen::Matrix<DataType, tState::Group::dim_*2,1> error;
-        error.block(0,0,tState::Group::dim_,1) = m1.pose - m2.pose;
-        error.block(tState::Group::dim_,0,tState::Group::dim_,1) = m1.twist - m2.twist;
-        return error;
-    } else {
-        throw std::runtime_error("SourceRN::OMinus Measurement type not supported.");
+#ifdef DEBUG_BUILD
+    if(m1.type != tMeasurementType || m2.type !=tMeasurementType) {
+        throw std::runtime_error("SourceRN::DerivedOMinus The measurements are not the right type.");
     }
+
+#endif
+
+    Eigen::Matrix<DataType, meas_space_dim_*dim_mult_,1> error;
+    error.block(0,0,meas_space_dim_,1) = m1.pose - m2.pose;
+
+    if(has_vel_) {
+        error.block(meas_space_dim_,0,meas_space_dim_,1) = m1.twist - m2.twist;
+    }
+    
+    return error;
 }
 
 //---------------------------------------------------------------------------------------------
-template<class tState>
-Meas<typename tState::DataType> SourceRN<tState>::DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std){
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Meas<typename tState::DataType> SourceRN<tState,tMeasurementType, tTransformation>::DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const {
     Meas<DataType> m;
+
+    MatXd deviation = meas_std*utilities::GaussianRandomGenerator(meas_std.rows());
+
+    m = DerivedGetEstMeas(state);
     m.source_index = this->params_.source_index_;
 
-    MatXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
+    m.pose += deviation.block(0,0,meas_space_dim_,1);
 
-    switch (this->params_.type_)
-    {
-    case MeasurementTypes::RN_POS:        
-        m.pose = tState::Group::OPlus(state.g_.data_,deviation);
-        m.type = MeasurementTypes::RN_POS;
-        break;
-    case MeasurementTypes::RN_POS_VEL:
-        m.pose = tState::Group::OPlus(state.g_.data_, deviation.block(0,0,tState::Group::dim_,1));
-        m.twist = state.u_.data_ + deviation.block(tState::Group::dim_,0,tState::Group::dim_,1);
-        m.type = MeasurementTypes::RN_POS_VEL;
-        break;
-    default:
-        throw std::runtime_error("SourceRN::GenerateRandomMeasurement Measurement type not supported.");
-        break;
+    if(has_vel_) {
+        m.twist += deviation.block(meas_space_dim_,0,meas_space_dim_,1);
     }
 
     return m;
 }
 
-//-------------------------------------------------------------------------------------------------------------------------
-
-template<class tState>
-Meas<typename tState::DataType> SourceRN<tState>::DerivedGetEstMeas(const State& state, const MeasurementTypes type) {
-
-    Meas<DataType> m;
-    m.type = type;
-    m.pose = state.g_.data_;
-    if (MeasurementTypes::RN_POS_VEL == type) {
-        m.twist = state.u_.data_;
-    }
-    return m;
-
-}
 
 
 
-//-------------------------------------------------------------------------------------------------------------------------
 
-template<class tState>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<tState>::DerivedGetLinObsMatSensorNoise(const State& state, const MeasurementTypes type) {
-
-    const unsigned int sizeg = tState::Group::dim_;
-    const unsigned int sizeu = tState::Algebra::dim_;
-
-    MatXd V;
-
-    // Construct the Jacobians
-    switch (type)
-    {
-    case MeasurementTypes::RN_POS:
-        V = Eigen::Matrix<DataType,sizeg,sizeg>::Identity();
-        break;
-    case MeasurementTypes::RN_POS_VEL:
-        V = Eigen::Matrix<DataType,sizeg+sizeu,sizeg+sizeu>::Identity();
-        break;
-    default:
-        throw std::runtime_error("SourceRN::Init Measurement type not supported.");
-        break;
-    }
-
-    return V;
-
-}
 
 
 
