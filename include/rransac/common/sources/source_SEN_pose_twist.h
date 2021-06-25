@@ -41,7 +41,7 @@ static constexpr int dim_mult_ = MeasHasVelocity<tMeasurementType>::value ? 2 : 
 static constexpr int has_vel_ = MeasHasVelocity<tMeasurementType>::value ? true : false; /**< Indicates if the measurement contains velocity.  */
 
 static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "SourceSENPoseTwist: The state is not compatible with the model");
-static_assert( tMeasurementType == MeasurementTypes::SEN_POSE || tMeasurementType==MeasurementTypes::SEN_POSE_TWIST, "SourceSENPoseTwist: The measurement type is not compatible with the source."    );
+static_assert( tMeasurementType == MeasurementTypes::SEN_POSE || tMeasurementType == MeasurementTypes::SEN_POSE_TWIST, "SourceSENPoseTwist: The measurement type is not compatible with the source."    );
 
 
 /** 
@@ -152,6 +152,7 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
     if (has_vel_) {
         error.block(meas_space_dim_,0,meas_space_dim_,1) = m1.twist - m2.twist;
     }
+    return error;
 }
 
 //----------------------------------------------------------------------------------------

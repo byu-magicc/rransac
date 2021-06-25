@@ -144,12 +144,6 @@ Meas<typename tState::DataType> SourceRN<tState,tMeasurementType, tTransformatio
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
 Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<tState,tMeasurementType, tTransformation>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
 
-#ifdef DEBUG_BUILD
-    if(m1.type != tMeasurementType || m2.type !=tMeasurementType) {
-        throw std::runtime_error("SourceRN::DerivedOMinus The measurements are not the right type.");
-    }
-
-#endif
 
     Eigen::Matrix<DataType, meas_space_dim_*dim_mult_,1> error;
     error.block(0,0,meas_space_dim_,1) = m1.pose - m2.pose;

@@ -23,8 +23,8 @@ TYPED_TEST(SEN_POSE_TWIST_Test, INIT) {
 
 typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
-typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POS,TransformNULL> SourcePos;
-typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourcePosVel;
+typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE,TransformNULL> SourcePos;
+typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourcePosVel;
 typedef Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_> MatMeas1;
 typedef Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2> MatMeas2;
 
@@ -83,9 +83,10 @@ TYPED_TEST(SEN_POSE_TWIST_Test, Funcs) {
 
 typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
-typedef SourceSENPoseTwist<TypeParam> Source;
-typedef Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_> MatMeas1;
-typedef Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2> MatMeas2;
+typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE,TransformNULL> SourcePos;
+typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourcePosVel;
+typedef Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_> MatMeas1;
+typedef Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2> MatMeas2;
 
 typedef TypeParam S;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_,1> Mat_p;
@@ -129,28 +130,21 @@ Eigen::MatrixXd H_pose_twist = Eigen::Matrix<double,S::dim_,S::dim_>::Identity()
 // Tests
 params.type_ = MeasurementTypes::SEN_POSE;
 params.meas_cov_ = MatMeas1::Identity();
-ASSERT_NO_THROW(source.Init(params));
+ASSERT_NO_THROW(source_pos.Init(params));
 
-ASSERT_EQ(source.GetLinObsMatState(state),H_pose);
-ASSERT_EQ(source.GetLinObsMatState(state,params.type_),H_pose);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state),V_pose);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state,params.type_),V_pose);
-ASSERT_EQ(source.GetEstMeas(state).pose,m.pose);
-ASSERT_EQ(source.GetEstMeas(state,params.type_).pose,m.pose);
+ASSERT_EQ(source_pos.GetLinObsMatState(state, transform_state, EmptyMat),H_pose);
+ASSERT_EQ(source_pos.GetLinObsMatSensorNoise(state, transform_state, EmptyMat),V_pose);
+ASSERT_EQ(source_pos.GetEstMeas(state, transform_state, EmptyMat).pose,m.pose);
 
 params.type_ = MeasurementTypes::SEN_POSE_TWIST;
 m.type = SEN_POSE_TWIST;
 params.meas_cov_ = MatMeas2::Identity();
-ASSERT_NO_THROW(source.Init(params));
+ASSERT_NO_THROW(source_pos_vel.Init(params));
 
-ASSERT_EQ(source.GetLinObsMatState(state),H_pose_twist);
-ASSERT_EQ(source.GetLinObsMatState(state,params.type_),H_pose_twist);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state),V_pose_twist);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state,params.type_),V_pose_twist);
-ASSERT_EQ(source.GetEstMeas(state).pose,m.pose);
-ASSERT_EQ(source.GetEstMeas(state,params.type_).pose,m.pose);
-ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
-ASSERT_EQ(source.GetEstMeas(state,params.type_).twist,m.twist);
+ASSERT_EQ(source_pos_vel.GetLinObsMatState(state, transform_state, EmptyMat),H_pose_twist);
+ASSERT_EQ(source_pos_vel.GetLinObsMatSensorNoise(state, transform_state, EmptyMat),V_pose_twist);
+ASSERT_EQ(source_pos_vel.GetEstMeas(state, transform_state, EmptyMat).pose,m.pose);
+ASSERT_EQ(source_pos_vel.GetEstMeas(state, transform_state, EmptyMat).twist,m.twist);
 
 
 
@@ -173,9 +167,9 @@ params2.probability_of_detection_ = 0.9;
 params1.type_ = MeasurementTypes::SEN_POSE;
 params2.type_ = MeasurementTypes::SEN_POSE_TWIST;
 
-Source source1, source2;
-source1.Init(params1);
-source2.Init(params2);
+
+source_pos.Init(params1);
+source_pos_vel.Init(params2);
 
 TypeParam state_tmp = TypeParam::Random();
 
@@ -192,10 +186,10 @@ error2.block(TypeParam::Group::dim_,0,TypeParam::Group::dim_,1) = m3.twist - m4.
 
 m3.type = MeasurementTypes::SEN_POSE;
 m4.type = MeasurementTypes::SEN_POSE;
-ASSERT_LE( (source1.OMinus(m3,m4) - TypeParam::Group::OMinus(m3.pose,m4.pose)).norm(), 1e-8  );
+ASSERT_LE( (source_pos.OMinus(m3,m4) - TypeParam::Group::OMinus(m3.pose,m4.pose)).norm(), 1e-8  );
 m3.type = MeasurementTypes::SEN_POSE_TWIST;
 m4.type = MeasurementTypes::SEN_POSE_TWIST;
-ASSERT_LE( (source2.OMinus(m3,m4) - error2).norm(), 1e-8) ;
+ASSERT_LE( (source_pos_vel.OMinus(m3,m4) - error2).norm(), 1e-8) ;
 
 
 
@@ -219,12 +213,12 @@ error_mean2.setZero();
 for (unsigned long int ii = 0; ii < num_rand; ++ii) {
 
     rand_meas1[ii].type = MeasurementTypes::SEN_POSE;
-    rand_meas1[ii] = source1.GenerateRandomMeasurement(state,std1);
+    rand_meas1[ii] = source_pos.GenerateRandomMeasurement(std1,state, transform_state, EmptyMat);
     rand_meas2[ii].type = MeasurementTypes::SEN_POSE_TWIST;
-    rand_meas2[ii] = source2.GenerateRandomMeasurement(state,std2);
+    rand_meas2[ii] = source_pos_vel.GenerateRandomMeasurement(std2,state,transform_state, EmptyMat);
 
-    error_1[ii] = source1.OMinus(rand_meas1[ii], source1.GetEstMeas(state));
-    error_2[ii] = source2.OMinus(rand_meas2[ii], source2.GetEstMeas(state));
+    error_1[ii] = source_pos.OMinus(rand_meas1[ii], source_pos.GetEstMeas(state,transform_state, EmptyMat));
+    error_2[ii] = source_pos_vel.OMinus(rand_meas2[ii], source_pos_vel.GetEstMeas(state,transform_state, EmptyMat));
     error_mean1+=error_1[ii];
     error_mean2+=error_2[ii];
 
