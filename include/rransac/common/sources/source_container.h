@@ -23,9 +23,15 @@ struct CountSources<> { static constexpr int value = 0;};
 
 
 template <typename S0 = SourceNull<>, typename S1 = SourceNull<>, typename S2 = SourceNull<>, typename S3 = SourceNull<>, typename S4=SourceNull<> >
-class SourceContainter {
+class SourceContainer {
 
 public:
+
+typedef S0 Source0;
+typedef S1 Source1;
+typedef S2 Source2;
+typedef S3 Source3;
+typedef S4 Source4;
 
 typedef typename S0::State State;                                           /**< The state of the target. @see State. */
 typedef typename S0::DataType DataType;                                     /**< The scalar object for the data. Ex. float, double, etc. */
@@ -33,7 +39,7 @@ typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**<
 
 
 
-SourceContainter();
+SourceContainer() : source_initialized_(num_sources_,false) {};
 
 /**
  * This method creates a new source with the default surveillance region. Before adding a source,
@@ -60,14 +66,6 @@ bool AddSource(const SourceParameters& source_params, std::function<bool(const S
  * @param source_index The index to the source being inquired
  */ 
 const SourceParameters& GetParams(const unsigned int source_index);
-
-/**
- * Verify that the parameters are valid. If they are, the parameters are set. 
- * @param[in] params Source parameters.
- * @param source_index The index to the source being inquired
- * \return returns true if the parameters were set; otherwise, false.
- */
-bool SetParameters(const unsigned int source_index, const SourceParameters& params); 
 
 /**
  * Changes some of the parameters of the source. 
@@ -121,7 +119,7 @@ static MatXd OMinus(const unsigned int source_index, const Meas<DataType>& m1, c
  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
  * @param[in] transform_data The data needed to transform the state
  */ 
-Meas<DataType> GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data);
+Meas<DataType> GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const;
 
 /**
  * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
@@ -166,7 +164,15 @@ static const std::size_t num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;
 
 std::tuple<S0,S1,S2,S3,S4> sources_;
 
-std::vector<bool> source_initialized_(num_sources_,false);
+std::vector<bool> source_initialized_;
+
+/**
+ * Verify that the parameters are valid. If they are, the parameters are set. 
+ * @param[in] params Source parameters.
+ * @param source_index The index to the source being inquired
+ * \return returns true if the parameters were set; otherwise, false.
+ */
+bool SetParameters(const unsigned int source_index, const SourceParameters& params); 
 
 };
 
@@ -174,7 +180,7 @@ std::vector<bool> source_initialized_(num_sources_,false);
 //                                                           Definitions
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainter<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_params) {
+bool SourceContainer<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_params) {
 
     bool added = false;
 
@@ -189,19 +195,24 @@ bool SourceContainter<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_
         switch (source_params.source_index_)
         {
         case 0:
-            added=std::get<0>(sources_).Init(source_params);
+            std::get<0>(sources_).Init(source_params);
+            added = true;
             break;
         case 1:
-            added=std::get<1>(sources_).Init(source_params);
+            std::get<1>(sources_).Init(source_params);
+            added = true;
             break;
         case 2:
-            added=std::get<2>(sources_).Init(source_params);
+            std::get<2>(sources_).Init(source_params);
+            added = true;
             break;
         case 3:
-            added=std::get<3>(sources_).Init(source_params);
+            std::get<3>(sources_).Init(source_params);
+            added = true;
             break;
         case 4:
-            added=std::get<4>(sources_).Init(source_params);
+            std::get<4>(sources_).Init(source_params);
+            added = true;
             break;      
         default:
             break;
@@ -216,7 +227,7 @@ bool SourceContainter<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_
 
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainter<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
+bool SourceContainer<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
 
     bool added = false;
 
@@ -231,19 +242,24 @@ bool SourceContainter<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_
         switch (source_params.source_index_)
         {
         case 0:
-            added=std::get<0>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            std::get<0>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            added = true;
             break;
         case 1:
-            added=std::get<1>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            std::get<1>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            added = true;
             break;
         case 2:
-            added=std::get<2>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            std::get<2>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            added = true;
             break;
         case 3:
-            added=std::get<3>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            std::get<3>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            added = true;
             break;
         case 4:
-            added=std::get<4>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            std::get<4>(sources_).Init(source_params,state_in_surveillance_region_callback);
+            added = true;
             break;      
         default:
             break;
@@ -256,10 +272,10 @@ bool SourceContainter<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_
 
 //-------------------------------------------------------------------------------
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-const SourceParameters& SourceContainter<S0,S1,S2,S3,S4>::GetParams(const unsigned int source_index) {
+const SourceParameters& SourceContainer<S0,S1,S2,S3,S4>::GetParams(const unsigned int source_index) {
 
 
-    switch (source_index_)
+    switch (source_index)
     {
     case 0:
         return std::get<0>(sources_).GetParams();
@@ -277,7 +293,7 @@ const SourceParameters& SourceContainter<S0,S1,S2,S3,S4>::GetParams(const unsign
         return std::get<4>(sources_).GetParams();
         break;      
     default:
-        throw std::runtime_error("SourceContainter::GetParams The source index must be greater than 0 and less than " + std::to_string(num_sources_)); 
+        throw std::runtime_error("SourceContainer::GetParams The source index must be greater than 0 and less than " + std::to_string(num_sources_)); 
         break;
     }
 
@@ -287,9 +303,9 @@ const SourceParameters& SourceContainter<S0,S1,S2,S3,S4>::GetParams(const unsign
 
 //-------------------------------------------------------------------------------
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainter<S0,S1,S2,S3,S4>::SetParameters(const unsigned int source_index, const SourceParameters& params) {
+bool SourceContainer<S0,S1,S2,S3,S4>::SetParameters(const unsigned int source_index, const SourceParameters& params) {
 
-    switch (source_index_)
+    switch (source_index)
     {
     case 0:
         return std::get<0>(sources_).SetParameters(params);
@@ -307,7 +323,7 @@ bool SourceContainter<S0,S1,S2,S3,S4>::SetParameters(const unsigned int source_i
         return std::get<4>(sources_).SetParameters(params);
         break;      
     default:
-     throw std::runtime_error("SourceContainter::SetParameters The source index must be greater than 0 and less than " + std::to_string(num_sources_)); 
+     throw std::runtime_error("SourceContainer::SetParameters The source index must be greater than 0 and less than " + std::to_string(num_sources_)); 
         break;
     }
 
@@ -316,13 +332,13 @@ bool SourceContainter<S0,S1,S2,S3,S4>::SetParameters(const unsigned int source_i
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainter<S0,S1,S2,S3,S4>::ChangeSourceParameters(const unsigned int source_index, const SourceParameters &new_params) {
+bool SourceContainer<S0,S1,S2,S3,S4>::ChangeSourceParameters(const unsigned int source_index, const SourceParameters &new_params) {
     if (new_params.source_index_ < 0 || new_params.source_index_ >= num_sources_) {
-        throw std::runtime_error("SourceContainter::ChangeSourceParameters The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        throw std::runtime_error("SourceContainer::ChangeSourceParameters The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         return false;
     }
     else if (GetParams(new_params.source_index_).source_index_ != new_params.source_index_) {
-        throw std::runtime_error("SourceContainter::ChangeSourceParameters Cannot change the source index.");
+        throw std::runtime_error("SourceContainer::ChangeSourceParameters Cannot change the source index.");
         return false;
     } else {
         return SetParameters(new_params.source_index_, new_params);
@@ -333,27 +349,27 @@ bool SourceContainter<S0,S1,S2,S3,S4>::ChangeSourceParameters(const unsigned int
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainter<S0,S1,S2,S3,S4>::GetLinObsMatState(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
+Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainer<S0,S1,S2,S3,S4>::GetLinObsMatState(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
 
-    switch (source_index_)
+    switch (source_index)
     {
     case 0:
-        return std::get<0>(sources_).GetLinObsMatState(state, transform_state, transform_data);
+        return S0::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 1:
-        return std::get<1>(sources_).GetLinObsMatState(state, transform_state, transform_data);
+        return S1::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 2:
-        return std::get<2>(sources_).GetLinObsMatState(state, transform_state, transform_data);
+        return S2::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 3:
-        return std::get<3>(sources_).GetLinObsMatState(state, transform_state, transform_data);
+        return S3::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 4:
-        return std::get<4>(sources_).GetLinObsMatState(state, transform_state, transform_data);
+        return S4::GetLinObsMatState(state, transform_state, transform_data);
         break;      
     default:
-        throw std::runtime_error("SourceContainter::GetLinObsMatState The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        throw std::runtime_error("SourceContainer::GetLinObsMatState The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         break;
     }
 
@@ -362,26 +378,26 @@ Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContain
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainter<S0,S1,S2,S3,S4>::GetLinObsMatSensorNoise(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
-    switch (source_index_)
+Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainer<S0,S1,S2,S3,S4>::GetLinObsMatSensorNoise(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
+    switch (source_index)
     {
     case 0:
-        return std::get<0>(sources_).GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return S0::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 1:
-        return std::get<1>(sources_).GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return S1::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 2:
-        return std::get<2>(sources_).GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return S2::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 3:
-        return std::get<3>(sources_).GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return S3::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 4:
-        return std::get<4>(sources_).GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return S4::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;      
     default:
-        throw std::runtime_error("SourceContainter::GetLinObsMatSensorNoise The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        throw std::runtime_error("SourceContainer::GetLinObsMatSensorNoise The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         break;
     }
 }
@@ -389,26 +405,26 @@ Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContain
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Meas<typename S0::DataType> SourceContainter<S0,S1,S2,S3,S4>::GetEstMeas(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
-    switch (source_index_)
+Meas<typename S0::DataType> SourceContainer<S0,S1,S2,S3,S4>::GetEstMeas(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
+    switch (source_index)
     {
     case 0:
-        return std::get<0>(sources_).GetEstMeas(state, transform_state, transform_data);
+        return S0::GetEstMeas(state, transform_state, transform_data);
         break;
     case 1:
-        return std::get<1>(sources_).GetEstMeas(state, transform_state, transform_data);
+        return S1::GetEstMeas(state, transform_state, transform_data);
         break;
     case 2:
-        return std::get<2>(sources_).GetEstMeas(state, transform_state, transform_data);
+        return S2::GetEstMeas(state, transform_state, transform_data);
         break;
     case 3:
-        return std::get<3>(sources_).GetEstMeas(state, transform_state, transform_data);
+        return S3::GetEstMeas(state, transform_state, transform_data);
         break;
     case 4:
-        return std::get<4>(sources_).GetEstMeas(state, transform_state, transform_data);
+        return S4::GetEstMeas(state, transform_state, transform_data);
         break;      
     default:
-        throw std::runtime_error("SourceContainter::GetEstMeas The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        throw std::runtime_error("SourceContainer::GetEstMeas The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         break;
     }
 }
@@ -416,34 +432,34 @@ Meas<typename S0::DataType> SourceContainter<S0,S1,S2,S3,S4>::GetEstMeas(const u
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainter<S0,S1,S2,S3,S4>::OMinus(const unsigned int source_index, const Meas<DataType>& m1, const Meas<DataType>& m2) {
-    switch (source_index_)
+Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainer<S0,S1,S2,S3,S4>::OMinus(const unsigned int source_index, const Meas<DataType>& m1, const Meas<DataType>& m2) {
+    switch (source_index)
     {
     case 0:
-        return std::get<0>(sources_).OMinus(m1,m2);
+        return S0::OMinus(m1,m2);
         break;
     case 1:
-        return std::get<1>(sources_).OMinus(m1,m2);
+        return S1::OMinus(m1,m2);
         break;
     case 2:
-        return std::get<2>(sources_).OMinus(m1,m2);
+        return S2::OMinus(m1,m2);
         break;
     case 3:
-        return std::get<3>(sources_).OMinus(m1,m2);
+        return S3::OMinus(m1,m2);
         break;
     case 4:
-        return std::get<4>(sources_).OMinus(m1,m2);
+        return S4::OMinus(m1,m2);
         break;      
     default:
-        throw std::runtime_error("SourceContainter::OMinus The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        throw std::runtime_error("SourceContainer::OMinus The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         break;
     }
 }
 
 //-------------------------------------------------------------------------------
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Meas<typename S0::DataType> SourceContainter<S0,S1,S2,S3,S4>::GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) {
-    switch (source_index_)
+Meas<typename S0::DataType> SourceContainer<S0,S1,S2,S3,S4>::GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const {
+    switch (source_index)
     {
     case 0:
         return std::get<0>(sources_).GenerateRandomMeasurement(meas_std, state, transform_state, transform_data);
@@ -461,7 +477,7 @@ Meas<typename S0::DataType> SourceContainter<S0,S1,S2,S3,S4>::GenerateRandomMeas
         return std::get<4>(sources_).GenerateRandomMeasurement(meas_std, state, transform_state, transform_data);
         break;      
     default:
-        throw std::runtime_error("SourceContainter::GenerateRandomMeasurement The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        throw std::runtime_error("SourceContainer::GenerateRandomMeasurement The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         break;
     }
 }
@@ -469,8 +485,8 @@ Meas<typename S0::DataType> SourceContainter<S0,S1,S2,S3,S4>::GenerateRandomMeas
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainter<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) const {
-    switch (source_index_)
+bool SourceContainer<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) const {
+    switch (source_index)
     {
     case 0:
         return std::get<0>(sources_).StateInsideSurveillanceRegion(state, transform_state, transform_data);
@@ -488,7 +504,7 @@ bool SourceContainter<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsig
         return std::get<4>(sources_).StateInsideSurveillanceRegion(state, transform_state, transform_data);
         break;      
     default:
-        throw std::runtime_error("SourceContainter::GenerateRandomMeasurement The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        throw std::runtime_error("SourceContainer::GenerateRandomMeasurement The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         break;
     }
 }

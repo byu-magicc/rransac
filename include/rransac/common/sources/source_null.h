@@ -16,6 +16,7 @@ class SourceNull : public SourceBase<tState,tMeasurementType,tTransformation<tSt
 public:
 
 typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
+typedef typename tState::Datatype DataType;
 
 /** 
  * Initializes the measurement source by setting the parameters using SetParameters, calculating the non user specified parameters,
@@ -31,7 +32,7 @@ void Init(const SourceParameters& params) {
  * Returns the jacobian of the observation function w.r.t. the states. 
  * @param[in] state A state of the target.
 */
-static MatXd DerivedGetLinObsMatState(const State& state) {
+static MatXd DerivedGetLinObsMatState(const tState& state) {
     throw std::runtime_error("SourceNull::DerivedGetLinObsMatState Function Not Implemented, and shouldn't be called. "); 
 }   
 
@@ -39,7 +40,7 @@ static MatXd DerivedGetLinObsMatState(const State& state) {
  * Returns the jacobian of the observation function w.r.t. the sensor noise.
  * @param[in] state A state of the target.
  */
-static MatXd DerivedGetLinObsMatSensorNoise(const State& state)  {
+static MatXd DerivedGetLinObsMatSensorNoise(const tState& state)  {
     throw std::runtime_error("SourceNull::DerivedGetLinObsMatSensorNoise Function Not Implemented, and shouldn't be called. "); 
 
 } 
@@ -48,7 +49,7 @@ static MatXd DerivedGetLinObsMatSensorNoise(const State& state)  {
  *  Implements the observation function and returns an estimated measurement based on the state. 
  * @param[in] state A state of the target.
  */
-static Meas<DataType> DerivedGetEstMeas(const State& state)  {
+static Meas<DataType> DerivedGetEstMeas(const tState& state)  {
     throw std::runtime_error("SourceNull::DerivedGetEstMeas Function Not Implemented, and shouldn't be called. "); 
 
 } 
@@ -70,7 +71,7 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
  * @param[in] state    The state that serves as the mean of the Gaussian distribution.
  * @param[in] meas_std The measurement standard deviation.
  */ 
-Meas<DataType> DerivedGenerateRandomMeasurement(const State& state, const MatXd& meas_std) const {
+Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std) const {
     throw std::runtime_error("SourceNull::DerivedGenerateRandomMeasurement Function Not Implemented, and shouldn't be called. "); 
 
 }

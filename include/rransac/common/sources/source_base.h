@@ -58,7 +58,6 @@ struct SourceParameters {
     
 
     // These parameters are not defined by the user, but are calculated depending on the user specified parameters.
-    // TODO(Mark Petersen) I should have the user specify if it has twist or not. Add it as a template parameter to optimize things. 
     bool has_twist;                      /**< Indicates if the measurement has twist data in addition to pose. This is calculated from SourceParameters::type_. */
     double gate_threshold_sqrt_;         /**< The square root of the gate threshold. */    
     double vol_unit_hypershpere_;        /**< The volume of the unit hypershpere in the measurement space. This is determined by the dimension of the measurement source. */
