@@ -265,7 +265,7 @@ public:
     /**
      * Returns a const reference to the source parameters. 
      */ 
-    const SourceParameters& GetParams(){return params_;}
+    const SourceParameters& GetParams() const {return params_;}
 
 
 // private:

@@ -11,29 +11,29 @@
 namespace rransac {
 
 /**
- * \class ModelRN
+ * \class ModelSENPoseTwist
  * This model is designed to be used for target's whose configuration manifold is SEN and the measurement space is also SEN. See ModelBase for more detail.
  */ 
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource = SourceSENPoseTwist>
-class ModelSENPoseTwist : public ModelBase< SourceSENPoseTwist<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelSENPoseTwist<tState, tTransformation,tSource>> {
+template <typename tSourceContainer>
+class ModelSENPoseTwist : public ModelBase< tSourceContainer, tSourceContainer::State::Group::dim_*2, ModelSENPoseTwist<tSourceContainer>> {
 
 public:
 
-typedef tState State;                                                       /**< The state of the target. @see State. */
+typedef tSourceContainer SourceContainer;                                   /**< The Source container. */
+typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
 typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
-typedef tSource<tState> Source;                                             /**< The object type of the source. @see SourceBase. */
-typedef tTransformation<tState> Transformation;                             /**< The object type of the measurement and track transformation. */
+typedef typename SourceContainer::Transformation Transformation;            /**< The transformation data type. */
 
 template <typename tScalar, template<typename> typename tStateTemplate>
-using ModelTemplate = ModelSENPoseTwist<tStateTemplate<tScalar>,tTransformation,tSource>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
+using ModelTemplate = ModelSENPoseTwist<tSourceContainer>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
                                                                                      nonlinear log maximum likelihood estimation problem by Ceres. */
 
 static constexpr unsigned int cov_dim_ = State::Group::dim_*2;                 /**< The dimension of the error covariance. */
 static constexpr unsigned int g_dim_ = State::Group::dim_;                      /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */
 typedef Eigen::Matrix<DataType,2*g_dim_,2*g_dim_> Mat;                          /**< The object type of the error covariance, Jacobians, and others. */
 
-static_assert(std::is_same<typename tSource<tState>::ModelCompatibility,  utilities::CompatibleWithModelSENPoseTwist>::value, "The source is not compatible with the model");
-static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "The state is not compatible with the model");
+static_assert(std::is_same<typename SourceContainer::ModelCompatibility,  utilities::CompatibleWithModelSENPoseTwist>::value, "The source is not compatible with the model");
+static_assert(lie_groups::utilities::StateIsSEN_seN<State>::value, "The state is not compatible with the model");
 
 
 /**
@@ -80,8 +80,8 @@ static Eigen::Matrix<DataType,cov_dim_,1> DerivedOMinus(const ModelSENPoseTwist&
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
-typename ModelSENPoseTwist<tState,tTransformation,tSource>::Mat ModelSENPoseTwist<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {    
+template <typename tSourceContainer>
+typename ModelSENPoseTwist<tSourceContainer>::Mat ModelSENPoseTwist<tSourceContainer>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {    
     Mat F;
     F.block(g_dim_,0,g_dim_,g_dim_).setZero();
     F.block(g_dim_,g_dim_,g_dim_,g_dim_).setIdentity();
@@ -92,8 +92,8 @@ typename ModelSENPoseTwist<tState,tTransformation,tSource>::Mat ModelSENPoseTwis
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
-typename ModelSENPoseTwist<tState,tTransformation,tSource>::Mat ModelSENPoseTwist<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
+template <typename tSourceContainer>
+typename ModelSENPoseTwist<tSourceContainer>::Mat ModelSENPoseTwist<tSourceContainer>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt){
     Mat G;
     Eigen::Matrix<DataType, g_dim_, g_dim_> tmp = (state.u_*dt).Jr();
     G.block(g_dim_,0,g_dim_,g_dim_).setZero();
@@ -106,8 +106,8 @@ typename ModelSENPoseTwist<tState,tTransformation,tSource>::Mat ModelSENPoseTwis
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
-void ModelSENPoseTwist<tState,tTransformation,tSource>::DerivedOPlusEq(const Eigen::Matrix<DataType,2*g_dim_,1>& state_update) {
+template <typename tSourceContainer>
+void ModelSENPoseTwist<tSourceContainer>::DerivedOPlusEq(const Eigen::Matrix<DataType,2*g_dim_,1>& state_update) {
     this->state_.g_.OPlusEq(state_update.block(0,0,g_dim_,1));
     this->state_.u_.data_ += state_update.block(g_dim_,0,g_dim_,1);
 }

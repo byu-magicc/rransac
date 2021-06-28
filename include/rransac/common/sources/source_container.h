@@ -35,7 +35,16 @@ typedef S4 Source4;
 
 typedef typename S0::State State;                                           /**< The state of the target. @see State. */
 typedef typename S0::DataType DataType;                                     /**< The scalar object for the data. Ex. float, double, etc. */
+typedef typename S0::Transformation Transformation;                         /**< The transformation data type. */
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
+static constexpr std::size_t num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;
+typedef typename S0::ModelCompatibility ModelCompatibility;                 /**< Indicates which model this source is compatible with. */
+
+// Ensure that all sources have the same model compatibility
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S1::ModelCompatibility>::value || std::is_same<S1,SourceNull<>>::value, "The sources are not compatible with the same model" );
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S2::ModelCompatibility>::value || std::is_same<S2,SourceNull<>>::value, "The sources are not compatible with the same model" );
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S3::ModelCompatibility>::value || std::is_same<S3,SourceNull<>>::value, "The sources are not compatible with the same model" );
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S4::ModelCompatibility>::value || std::is_same<S4,SourceNull<>>::value, "The sources are not compatible with the same model" );
 
 
 
@@ -65,7 +74,7 @@ bool AddSource(const SourceParameters& source_params, std::function<bool(const S
  * Retruns a reference to the source parameters.
  * @param source_index The index to the source being inquired
  */ 
-const SourceParameters& GetParams(const unsigned int source_index);
+const SourceParameters& GetParams(const unsigned int source_index) const;
 
 /**
  * Changes some of the parameters of the source. 
@@ -160,7 +169,6 @@ DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& 
 
 private:
 
-static const std::size_t num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;
 
 std::tuple<S0,S1,S2,S3,S4> sources_;
 
@@ -272,7 +280,7 @@ bool SourceContainer<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_p
 
 //-------------------------------------------------------------------------------
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-const SourceParameters& SourceContainer<S0,S1,S2,S3,S4>::GetParams(const unsigned int source_index) {
+const SourceParameters& SourceContainer<S0,S1,S2,S3,S4>::GetParams(const unsigned int source_index) const {
 
 
     switch (source_index)

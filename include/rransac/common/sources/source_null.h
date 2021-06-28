@@ -6,6 +6,7 @@
 #include "rransac/common/sources/source_base.h"
 #include "lie_groups/state.h"
 #include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/utilities.h"
 
 namespace rransac {
 
@@ -16,7 +17,8 @@ class SourceNull : public SourceBase<tState,tMeasurementType,tTransformation<tSt
 public:
 
 typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-typedef typename tState::Datatype DataType;
+typedef double DataType;
+typedef utilities::CompatibleWithModelNull ModelCompatibility;              /**<Indicates which model this source is compatible with. */
 
 /** 
  * Initializes the measurement source by setting the parameters using SetParameters, calculating the non user specified parameters,
@@ -49,7 +51,7 @@ static MatXd DerivedGetLinObsMatSensorNoise(const tState& state)  {
  *  Implements the observation function and returns an estimated measurement based on the state. 
  * @param[in] state A state of the target.
  */
-static Meas<DataType> DerivedGetEstMeas(const tState& state)  {
+static Meas<double> DerivedGetEstMeas(const tState& state)  {
     throw std::runtime_error("SourceNull::DerivedGetEstMeas Function Not Implemented, and shouldn't be called. "); 
 
 } 
@@ -71,7 +73,7 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
  * @param[in] state    The state that serves as the mean of the Gaussian distribution.
  * @param[in] meas_std The measurement standard deviation.
  */ 
-Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std) const {
+Meas<double> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const {
     throw std::runtime_error("SourceNull::DerivedGenerateRandomMeasurement Function Not Implemented, and shouldn't be called. "); 
 
 }

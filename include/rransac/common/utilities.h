@@ -36,6 +36,7 @@ inline Eigen::MatrixXd GaussianRandomGenerator(const int size){
 struct CompatibleWithModelRN{};
 struct CompatibleWithModelSENPosVel{};
 struct CompatibleWithModelSENPoseTwist{};
+struct CompatibleWithModelNull{};
 
 
 
