@@ -143,9 +143,9 @@ template<typename tModel, template<class> typename tValidationRegionPolicy, temp
 void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePolicy,tMeasurementWeightPolicy>::SourceProducedMeasurement(System<tModel>& sys, DataAssociationInfo& info) {
 
     // Reset the vector
-    if(info.source_produced_measurements_.size() != sys.sources_.size()) {
+    if(info.source_produced_measurements_.size() != sys.source_container_.num_sources_) {
         info.source_produced_measurements_.clear();
-        info.source_produced_measurements_.resize(sys.sources_.size(),false);
+        info.source_produced_measurements_.resize(sys.source_container_.num_sources_,false);
     } else {
         std::fill(info.source_produced_measurements_.begin(), info.source_produced_measurements_.end(), false);
     }
@@ -154,7 +154,7 @@ void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePo
 
     // If there is only one source and at least one measurement, 
     // then the source produced the measurement
-    if (sys.sources_.size() ==1 && sys.new_meas_.size() >0) {
+    if (sys.source_container_.num_sources_ ==1 && sys.new_meas_.size() >0) {
          info.source_produced_measurements_[0] = true;
     } else {
         for(auto& meas : sys.new_meas_) {

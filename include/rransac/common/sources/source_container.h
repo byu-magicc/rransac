@@ -28,10 +28,13 @@ class SourceContainer {
 public:
 
 typedef S0 Source0;
-typedef S1 Source1;
-typedef S2 Source2;
-typedef S3 Source3;
-typedef S4 Source4;
+typedef typename std::conditional<std::is_same<S1,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S1>::type Source1;
+typedef typename std::conditional<std::is_same<S2,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S2>::type Source2;
+typedef typename std::conditional<std::is_same<S3,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S3>::type Source3;
+typedef typename std::conditional<std::is_same<S4,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S4>::type Source4;
+// typedef S2 Source2;
+// typedef S3 Source3;
+// typedef S4 Source4;
 
 typedef typename S0::State State;                                           /**< The state of the target. @see State. */
 typedef typename S0::DataType DataType;                                     /**< The scalar object for the data. Ex. float, double, etc. */
@@ -170,7 +173,7 @@ DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& 
 private:
 
 
-std::tuple<S0,S1,S2,S3,S4> sources_;
+std::tuple<Source0,Source1,Source2,Source3,Source4> sources_;
 
 std::vector<bool> source_initialized_;
 
@@ -362,19 +365,19 @@ Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContain
     switch (source_index)
     {
     case 0:
-        return S0::GetLinObsMatState(state, transform_state, transform_data);
+        return Source0::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 1:
-        return S1::GetLinObsMatState(state, transform_state, transform_data);
+        return Source1::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 2:
-        return S2::GetLinObsMatState(state, transform_state, transform_data);
+        return Source2::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 3:
-        return S3::GetLinObsMatState(state, transform_state, transform_data);
+        return Source3::GetLinObsMatState(state, transform_state, transform_data);
         break;
     case 4:
-        return S4::GetLinObsMatState(state, transform_state, transform_data);
+        return Source4::GetLinObsMatState(state, transform_state, transform_data);
         break;      
     default:
         throw std::runtime_error("SourceContainer::GetLinObsMatState The source index must be greater than 0 and less than " + std::to_string(num_sources_));
@@ -390,19 +393,19 @@ Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContain
     switch (source_index)
     {
     case 0:
-        return S0::GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return Source0::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 1:
-        return S1::GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return Source1::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 2:
-        return S2::GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return Source2::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 3:
-        return S3::GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return Source3::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;
     case 4:
-        return S4::GetLinObsMatSensorNoise(state, transform_state, transform_data);
+        return Source4::GetLinObsMatSensorNoise(state, transform_state, transform_data);
         break;      
     default:
         throw std::runtime_error("SourceContainer::GetLinObsMatSensorNoise The source index must be greater than 0 and less than " + std::to_string(num_sources_));
@@ -417,19 +420,19 @@ Meas<typename S0::DataType> SourceContainer<S0,S1,S2,S3,S4>::GetEstMeas(const un
     switch (source_index)
     {
     case 0:
-        return S0::GetEstMeas(state, transform_state, transform_data);
+        return Source0::GetEstMeas(state, transform_state, transform_data);
         break;
     case 1:
-        return S1::GetEstMeas(state, transform_state, transform_data);
+        return Source1::GetEstMeas(state, transform_state, transform_data);
         break;
     case 2:
-        return S2::GetEstMeas(state, transform_state, transform_data);
+        return Source2::GetEstMeas(state, transform_state, transform_data);
         break;
     case 3:
-        return S3::GetEstMeas(state, transform_state, transform_data);
+        return Source3::GetEstMeas(state, transform_state, transform_data);
         break;
     case 4:
-        return S4::GetEstMeas(state, transform_state, transform_data);
+        return Source4::GetEstMeas(state, transform_state, transform_data);
         break;      
     default:
         throw std::runtime_error("SourceContainer::GetEstMeas The source index must be greater than 0 and less than " + std::to_string(num_sources_));

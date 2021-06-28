@@ -33,6 +33,7 @@ static constexpr unsigned int meas_pose_rows_ = 4;                              
 static constexpr unsigned int meas_pose_cols_ = 1;                               /**< The number of columns in the pose measurement. */
 static constexpr unsigned int meas_twist_rows_ = 3;                              /**< The number of rows in the twist measurement. */
 static constexpr unsigned int meas_twist_cols_ = 1;                              /**< The number of columns in the twist measurement. */
+static constexpr MeasurementTypes measurement_type_ = tMeasurementType;          /**< The measurement type of the source. */
 typedef utilities::CompatibleWithModelSENPosVel ModelCompatibility;              /**< Indicates which model this source is compatible with. */
 typedef SourceBase<tState,tMeasurementType, tTransformation<tState>, SourceSE3CamDepth<tState,tMeasurementType,tTransformation>> Base;                          /**< The source base class. */
 

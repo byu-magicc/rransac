@@ -121,10 +121,10 @@ include_directories(../include
 # Model
 #---------------------------------------
 
-add_executable(model_baseTest
-common/models/model_base_test.cpp
-../src/parameters.cpp)
-target_link_libraries(model_baseTest gtest_main )
+# add_executable(model_baseTest
+# common/models/model_base_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(model_baseTest gtest_main )
 
 # add_executable(model_baseTest2
 # common/models/model_base_test2.cpp
@@ -156,10 +156,10 @@ target_link_libraries(model_baseTest gtest_main )
 # ../src/parameters.cpp)
 # target_link_libraries(data_association_host_test gtest_main )
 
-# add_executable(validation_region_policy_tests 
-# common/data_association/validation_region_policies/validation_region_policy_tests.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(validation_region_policy_tests gtest_main )
+add_executable(validation_region_policy_tests 
+common/data_association/validation_region_policies/validation_region_policy_tests.cpp
+../src/parameters.cpp)
+target_link_libraries(validation_region_policy_tests gtest_main )
 
 # add_executable(tli_ipdaf_policy_test 
 # common/data_association/track_likelihood_info_policies/tli_ipdaf_policy_test.cpp

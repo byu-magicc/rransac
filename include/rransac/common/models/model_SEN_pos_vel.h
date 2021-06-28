@@ -54,7 +54,7 @@ static_assert(lie_groups::utilities::StateIsSEN_seN<typename SourceContainer::St
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-static Mat DerivedGetLinTransFuncMaState(const State& state, const DataType dt);
+static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -99,7 +99,7 @@ static VecCov DerivedOMinus(const ModelSENPosVel& model1, const ModelSENPosVel& 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tSourceContainer>
-typename ModelSENPosVel<tSourceContainer>::Mat  ModelSENPosVel<tSourceContainer>::DerivedGetLinTransFuncMaState(const State& state, const DataType dt) {  
+typename ModelSENPosVel<tSourceContainer>::Mat  ModelSENPosVel<tSourceContainer>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {  
     Mat F;
     F.block(g_dim_,0,l_dim_,g_dim_).setZero();
     F.block(g_dim_, g_dim_, l_dim_, l_dim_).setIdentity();

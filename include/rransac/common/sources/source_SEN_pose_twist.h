@@ -34,6 +34,7 @@ static constexpr unsigned int meas_pose_rows_ = State::Group::size1_;           
 static constexpr unsigned int meas_pose_cols_ = State::Group::size2_;               /**< The number of columns in the pose measurement. */
 static constexpr unsigned int meas_twist_rows_ = State::Group::dim_;                /**< The number of rows in the twist measurement. */
 static constexpr unsigned int meas_twist_cols_ = 1;                                 /**< The number of columns in the twist measurement. */
+static constexpr MeasurementTypes measurement_type_ = tMeasurementType;             /**< The measurement type of the source. */
 typedef utilities::CompatibleWithModelSENPoseTwist ModelCompatibility;              /**< Indicates which model this source is compatible with. */
 typedef SourceBase<tState, tMeasurementType, tTransformation<tState>, SourceSENPoseTwist<tState,tMeasurementType,tTransformation>> Base;                          /**< The source base class. */
 

@@ -11,14 +11,16 @@
 namespace rransac {
 
 
-template<typename tState=lie_groups::R2_r2, MeasurementTypes tMeasurementType=MeasurementTypes::NUM_TYPES, template <typename > typename tTransformation = TransformNULL>
-class SourceNull : public SourceBase<tState,tMeasurementType,tTransformation<tState>,SourceNull<tState,tMeasurementType,tTransformation>> {
+template<typename tState=lie_groups::R2_r2, MeasurementTypes tMeasurementType=MeasurementTypes::NUM_TYPES, typename tTransformation = TransformNULL<lie_groups::R2_r2>>
+class SourceNull : public SourceBase<tState,tMeasurementType,tTransformation,SourceNull<tState,tMeasurementType,tTransformation>> {
 
 public:
 
 typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 typedef double DataType;
 typedef utilities::CompatibleWithModelNull ModelCompatibility;              /**<Indicates which model this source is compatible with. */
+static constexpr MeasurementTypes measurement_type_ = tMeasurementType;     /**< The measurement type of the source. */
+
 
 /** 
  * Initializes the measurement source by setting the parameters using SetParameters, calculating the non user specified parameters,

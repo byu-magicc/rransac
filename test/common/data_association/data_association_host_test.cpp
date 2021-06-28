@@ -13,11 +13,15 @@
 #include "rransac/system.h"
 #include "lie_groups/state.h"
 #include "rransac/common/data_association/data_association_host.h"
+#include "rransac/common/sources/source_container.h"
 
 using namespace lie_groups;
 using namespace rransac;
 
-typedef ModelRN<R2_r2, TransformNULL, SourceRN> Model;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourcePos;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourcePosVel;
+typedef SourceContainer<SourcePos,SourcePosVel> SC;
+typedef ModelRN<SC> Model;
 
 const int knum_assoc =100;
 const double kdelta = 0.6;
@@ -65,7 +69,7 @@ public:
     static void PolicyCalculateMeasurementWeight(System<tModel>& sys, DataAssociationInfo& info) {
 
         for (auto& track: sys.models_) {
-            for (int source_index =0; source_index < sys.sources_.size(); ++source_index) {
+            for (int source_index =0; source_index < sys.source_container_.num_sources_; ++source_index) {
                 for(auto& meas : track.new_assoc_meas_[source_index]) {
                     meas.weight = kmeas_weight;
                 }
@@ -101,10 +105,6 @@ source_params1.source_index_ = 1;
 source_params1.type_ = MeasurementTypes::RN_POS_VEL;
 source_params1.meas_cov_ = Eigen::Matrix<double,4,4>::Identity()*meas_noise1;
 
-Model::Source source0, source1;
-source0.Init(source_params0);
-source1.Init(source_params1);
-
 // Setup parameters
 Parameters params;
 double process_noise = 0.31;
@@ -112,14 +112,14 @@ params.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity()*process
 
 // Setup tracks
 Model track0, track1;
-track0.Init(params,2);
-track1.Init(params,2);
+track0.Init(params);
+track1.Init(params);
 
 
 // Setup system
 System<Model> sys;
-sys.sources_.push_back(source0);
-sys.sources_.push_back(source1);
+sys.source_container_.AddSource(source_params0);
+sys.source_container_.AddSource(source_params1);
 sys.models_.push_back(track0);
 sys.models_.push_back(track1);
 sys.current_time_ = 0.1;
