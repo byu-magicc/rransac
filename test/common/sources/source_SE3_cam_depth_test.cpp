@@ -167,7 +167,7 @@ d0 = source.GetSpatialDistance(m1,m2,rransac_params);
 ASSERT_EQ(d0, 0);
 
 m1.transform_state = true;
-m1.transform_data = transform1.g_.data_;
+m1.transform_data_m_t = transform1.g_.data_;
 m2 = source.GetEstMeas(state_t1,transform_state, EmptyMat);
 d1 = source.GetSpatialDistance(m1,m2,rransac_params);
 

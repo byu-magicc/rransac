@@ -36,86 +36,86 @@ include_directories(../include
 # Parameter Test
 #---------------------------------------
 
-# add_executable(parameterTest 
-# parameters_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(parameterTest gtest_main)
-# add_test(NAME AllTestsInParameterTest COMMAND parameterTest)
+add_executable(parameterTest 
+parameters_test.cpp
+../src/parameters.cpp)
+target_link_libraries(parameterTest gtest_main)
+add_test(NAME AllTestsInParameterTest COMMAND parameterTest)
 
 #---------------------------------------
 # Cluster 
 #---------------------------------------
 
-# add_executable(cluster_Test 
-# data_containers/cluster_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(cluster_Test gtest_main )
-# add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
+add_executable(cluster_Test 
+data_containers/cluster_test.cpp
+../src/parameters.cpp)
+target_link_libraries(cluster_Test gtest_main )
+add_test(NAME AllTestsInClusterTest COMMAND cluster_Test)
 
 
 #---------------------------------------
 # Source tests
 #---------------------------------------
-# add_executable(source_baseTest
-# common/sources/source_base_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_baseTest gtest_main )
-# add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
+add_executable(source_baseTest
+common/sources/source_base_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_baseTest gtest_main )
+add_test(NAME AllTestsInsSourceBaseTest COMMAND source_baseTest)
 
 
-# add_executable(source_RNTest
-# common/sources/source_RN_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_RNTest gtest_main )
-# add_test(NAME AllTestsInSourceRNTest COMMAND source_RNTest)
+add_executable(source_RNTest
+common/sources/source_RN_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_RNTest gtest_main )
+add_test(NAME AllTestsInSourceRNTest COMMAND source_RNTest)
 
 
-# add_executable(source_SEN_Pos_VelTest
-# common/sources/source_SEN_pos_vel_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_SEN_Pos_VelTest gtest_main )
-# add_test(NAME AllTestsInSourceSENPosVelTest COMMAND source_SEN_Pos_VelTest)
+add_executable(source_SEN_Pos_VelTest
+common/sources/source_SEN_pos_vel_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SEN_Pos_VelTest gtest_main )
+add_test(NAME AllTestsInSourceSENPosVelTest COMMAND source_SEN_Pos_VelTest)
 
 
-# add_executable(source_SEN_Pose_TwistTest
-# common/sources/source_SEN_pose_twist_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
-# add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
+add_executable(source_SEN_Pose_TwistTest
+common/sources/source_SEN_pose_twist_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
+add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
 
-# add_executable(source_SE3_CamDepth
-# common/sources/source_SE3_cam_depth_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_SE3_CamDepth gtest_main )
-# add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SE3_CamDepth)
+add_executable(source_SE3_CamDepthTest
+common/sources/source_SE3_cam_depth_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SE3_CamDepthTest gtest_main )
+add_test(NAME AllTestsInSourceSE3CamDepthTest COMMAND source_SE3_CamDepthTest)
 
 add_executable(source_containerTest
 common/sources/source_container_test.cpp
 ../src/parameters.cpp)
 target_link_libraries(source_containerTest gtest_main )
-add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_containerTest)
+add_test(NAME AllTestsInSourceContainerTest COMMAND source_containerTest)
 
 #---------------------------------------
 # Consensus Set Test
 #---------------------------------------
-# add_executable(consensus_setTest 
-# data_containers/consensus_set_test.cpp)
-# target_link_libraries(consensus_setTest gtest_main)
-# add_test(NAME AllTestsInConsensusSetTest COMMAND consensus_setTest)
+add_executable(consensus_setTest 
+data_containers/consensus_set_test.cpp)
+target_link_libraries(consensus_setTest gtest_main)
+add_test(NAME AllTestsInConsensusSetTest COMMAND consensus_setTest)
 
 #---------------------------------------
 # Transformations
 #---------------------------------------
 
-# add_executable(trans_homographyTest
-# common/transformations/transformation_homography_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(trans_homographyTest gtest_main )
+add_executable(trans_homographyTest
+common/transformations/transformation_homography_test.cpp
+../src/parameters.cpp)
+target_link_libraries(trans_homographyTest gtest_main )
 
-# add_executable(trans_SE3_cam_depthTest
-# common/transformations/trans_SE3_cam_depth_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(trans_SE3_cam_depthTest gtest_main )
+add_executable(trans_SE3_cam_depthTest
+common/transformations/trans_SE3_cam_depth_test.cpp
+../src/parameters.cpp)
+target_link_libraries(trans_SE3_cam_depthTest gtest_main )
 
 #---------------------------------------
 # Model

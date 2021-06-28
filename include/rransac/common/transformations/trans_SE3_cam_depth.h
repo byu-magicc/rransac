@@ -21,13 +21,16 @@ namespace rransac
 */
 
 template<class tState>
-class TransformSE3CamDepth : public TransformBase<Eigen::Matrix<typename tState::DataType,4,4>, tState, Eigen::Matrix<typename tState::DataType, 10,10>, TransformSE3CamDepth<tState>> {
+class TransformSE3CamDepth : public TransformBase<Eigen::Matrix<typename tState::DataType,4,4>, tState, Eigen::Matrix<typename tState::DataType, 10,10>, false, TransformSE3CamDepth<tState>> {
 
 public:
 
+typedef tState State;
 typedef typename tState::DataType DataType; /**< The scalar object for the data. Ex. float, double, etc. */
 typedef Eigen::Matrix<double,4,4> MatData;
 typedef Eigen::Matrix<double,10,10> MatCov;
+typedef Eigen::Matrix<DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;  
+
 
 static_assert(std::is_same<tState,lie_groups::State< lie_groups::SE3,typename tState::DataType,tState::N>>::value, "TransformSE3CamDepth: The state is not supported");
 
@@ -38,7 +41,8 @@ void DerivedInit() {};
 
 /** 
  * Sets the data and the block components of the homography.
- * @param data The data required to transform the measurements, states, and error covariance
+ * @param data The data required to transform the measurements, states, and error covariance. This should be a transformation on SE(3) from the previous tracking
+ * frame to the current tracking frame.
  */ 
 void DerivedSetData(const MatData data) {
     this->data_ = data;
@@ -62,6 +66,42 @@ void DerivedTransformTrack(tState& state, MatCov& cov) const {
 }
 
 
+/** 
+ * Transforms the state and error covariance using user provided transform data.
+ * The transform data is an element of SE(3) and transforms the state from the current
+ * tracking frame to a measurement frame.
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
+ * @param[in] transform_data The data used to transform the state and error covariance
+ */ 
+static void DerivedTransformTrack(State& state, MatCov& cov, const MatData& transform_data) {
+   state.g_.data_ = transform_data*state.g_.data_;
+}
+
+/** 
+ * Transforms the state using user provided transform data.
+ * The transform data is an element of SE(3) and transforms the state from the current
+ * tracking frame to a measurement frame.
+ * @param[in] state The track's state to be transformed.
+ * @param[in] transform_data The data used to transform the state and error covariance
+ */ 
+static State DerivedTransformState(const State& state, const MatData& transform_data) {
+    State transformed_state;
+    transformed_state.u_.data_= state.u_.data_;
+    transformed_state.g_.data_ = transform_data*state.g_.data_;
+    return transformed_state;
+}
+
+/** 
+ * Returns the Jacobian of the transformation
+ * The transform data is an element of SE(3) and transforms the state from the current
+ * tracking frame to a measurement frame.
+ * @param[in] state The state of the target after it has been transformed using transform_data
+ * @param[in] transform_data The data used in the transformation
+ */ 
+static MatXd DerivedGetTransformationJacobian(const State& state, const MatData& transform_data) {
+   return Eigen::Matrix<DataType,4,4>::Identity();
+}
 
 
 };
@@ -69,11 +109,13 @@ void DerivedTransformTrack(tState& state, MatCov& cov) const {
 template<class tState>
 void TransformSE3CamDepth<tState>::DerivedTransformMeasurement(Meas<DataType>& meas) const {
 
-    if(!meas.state_transform_data) {
-        meas.state_transform_data = true;
-        meas.trans_data = this->data_;
+    if(!meas.transform_state) {
+        meas.transform_state = true;
+        meas.transform_data_m_t = this->data_;
+        meas.transform_data_t_m = this->data_.inverse();
     } else {
-        meas.trans_data = this->data_ * meas.trans_data;
+        meas.transform_data_m_t = this->data_ * meas.transform_data_m_t;
+        meas.transform_data_t_m = meas.transform_data_t_m * this->data_.inverse();
     }
 
     // DataType d_oa_a = meas.pose(0,0);

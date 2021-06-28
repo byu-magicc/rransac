@@ -575,15 +575,15 @@ double SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GSD_SE3_Cam
 
     if(meas1.transform_state && meas2.transform_state) {
 
-        d = (meas1.transform_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.transform_data.block(0,3,3,1) - meas2.transform_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.transform_data.block(0,3,3,1)).norm();
+        d = (meas1.transform_data_m_t.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.transform_data_m_t.block(0,3,3,1) - meas2.transform_data_m_t.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.transform_data_m_t.block(0,3,3,1)).norm();
 
     } else if(meas1.transform_state) {
 
-        d = (meas1.transform_data.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.transform_data.block(0,3,3,1) - meas2.pose(0,0)*meas2.pose.block(1,0,3,1)).norm();
+        d = (meas1.transform_data_m_t.block(0,0,3,3)*meas1.pose(0,0)*meas1.pose.block(1,0,3,1) + meas1.transform_data_m_t.block(0,3,3,1) - meas2.pose(0,0)*meas2.pose.block(1,0,3,1)).norm();
 
     } else if(meas2.transform_state) {
         
-        d = (meas1.pose(0,0)*meas1.pose.block(1,0,3,1) - meas2.transform_data.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.transform_data.block(0,3,3,1)).norm();
+        d = (meas1.pose(0,0)*meas1.pose.block(1,0,3,1) - meas2.transform_data_m_t.block(0,0,3,3)*meas2.pose(0,0)*meas2.pose.block(1,0,3,1) - meas2.transform_data_m_t.block(0,3,3,1)).norm();
 
     } else {
         d = (meas1.pose - meas2.pose).norm();

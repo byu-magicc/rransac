@@ -4,6 +4,7 @@
 #include "rransac/common/sources/source_RN.h"
 #include "rransac/common/sources/source_SEN_pose_twist.h"
 #include "rransac/common/sources/source_container.h"
+#include "rransac/parameters.h"
 
 namespace rransac
 {
@@ -189,13 +190,23 @@ TEST_F(SourceContainerTest, JacobiansMeasOMinusRandomMeasurement) {
     bool transform_state = false;
     Eigen::MatrixXd EmptyMat;
 
-    // Construct Jacobians and Estimated Measurements
+    // Construct the Estimated Measurements
+    typename SC::Source4::State state;
+    state = SC::Source4::State::Random();
+    typename SC::Source4 source;
+    source.Init(source_params[4]);
 
     std::vector<Meas<double>> m1;
     std::vector<Meas<double>> m2;
+    m1.resize(num_sources);
+    m2.resize(num_sources);
+    Eigen::Matrix<double,SC::Source4::meas_space_dim_*2,SC::Source4::meas_space_dim_*2> std;
+    std.setIdentity();
+    std *=0.1;
 
     for (int ii = 0; ii < num_sources; ++ii) {
-        
+        m1[ii] = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
+        m2[ii] = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
     }
     
     
@@ -224,12 +235,54 @@ TEST_F(SourceContainerTest, JacobiansMeasOMinusRandomMeasurement) {
     ASSERT_EQ(source_container_full.GetEstMeas(3,states[3],transform_state,EmptyMat).pose, SC::Source3::GetEstMeas(states[3],transform_state, EmptyMat).pose);
     ASSERT_EQ(source_container_full.GetEstMeas(4,states[4],transform_state,EmptyMat).pose, SC::Source4::GetEstMeas(states[4],transform_state, EmptyMat).pose);
 
-    ASSERT_EQ(source_container_full.OMinus(0,m01,m02), SC::Source0::OMinus(m01,m02));
-    ASSERT_EQ(source_container_full.OMinus(1,m11,m12), SC::Source1::OMinus(m11,m12));
-    ASSERT_EQ(source_container_full.OMinus(2,m21,m22), SC::Source2::OMinus(m21,m22));
-    ASSERT_EQ(source_container_full.OMinus(3,m31,m32), SC::Source3::OMinus(m31,m32));
-    ASSERT_EQ(source_container_full.OMinus(4,m41,m42), SC::Source4::OMinus(m41,m42));
+    ASSERT_EQ(source_container_full.OMinus(0,m1[0],m2[0]), SC::Source0::OMinus(m1[0],m2[0]));
+    ASSERT_EQ(source_container_full.OMinus(1,m1[1],m2[1]), SC::Source1::OMinus(m1[1],m2[1]));
+    ASSERT_EQ(source_container_full.OMinus(2,m1[2],m2[2]), SC::Source2::OMinus(m1[2],m2[2]));
+    ASSERT_EQ(source_container_full.OMinus(3,m1[3],m2[3]), SC::Source3::OMinus(m1[3],m2[3]));
+    ASSERT_EQ(source_container_full.OMinus(4,m1[4],m2[4]), SC::Source4::OMinus(m1[4],m2[4]));
     
+
+}
+
+
+//------------------------------------------------------------------------------------------------------
+
+
+TEST_F(SourceContainerTest, DistanceTests) {
+
+    SC source_container_full;
+    bool transform_state = false;
+    Eigen::MatrixXd EmptyMat;
+
+    // Construct the measurements
+    Meas<double> m1, m2;
+    typename SC::Source4::State state;
+    state = SC::Source4::State::Random();
+    typename SC::Source4 source;
+    source.Init(source_params[4]);
+    Eigen::Matrix<double,SC::Source4::meas_space_dim_*2,SC::Source4::meas_space_dim_*2> std;
+    std.setIdentity();
+    std *=0.1;
+    m1 = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
+    m2 = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
+    m1.time_stamp = 0;
+    m2.time_stamp = 1;
+    m1.type = SC::Source4::meas_type_;
+    m2.type = SC::Source4::meas_type_;
+    m1.source_index = 4;
+    m2.source_index = 4;
+
+    // Setup parameters
+    Parameters params;
+
+    for (int ii = 0; ii < num_sources; ++ii) {
+
+        ASSERT_EQ(source_container_full.GetTemporalDistance(m1,m2,params), source.GetTemporalDistance(m1,m2,params));
+        ASSERT_EQ(source_container_full.GetSpatialDistance(m1,m2,params), source.GetSpatialDistance(m1,m2,params));
+        ASSERT_EQ(source_container_full.GetVelocityDistance(m1,m2,params), source.GetVelocityDistance(m1,m2,params));
+
+    }
+
 
 }
 

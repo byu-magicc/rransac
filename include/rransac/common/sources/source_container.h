@@ -137,7 +137,7 @@ bool StateInsideSurveillanceRegion(const unsigned int source_index, const State&
  * @param[in] params The system parameters.
  * \return Returns temporal distance between two measurements
  */
-DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return S0::GetTemporalDistance(meas1,meas2); }
+DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return std::get<0>(sources_).GetTemporalDistance(meas1,meas2,params); }
 
 /**
  * Calculates the geodesic distance between the pose of two measurements that have the same measurement space.
@@ -146,7 +146,7 @@ DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& 
  * @param[in] params The system parameters.
  * \return Returns geodesic distance between pose of two measurements
  */
-DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return S0::GetSpatialDistance(meas1,meas2);}
+DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return std::get<0>(sources_).GetSpatialDistance(meas1,meas2,params);}
 
 /**
  * Finds the geodesic distance between the pose of two measurements of different time stamps normalized by the temporal distance. The measurements must have the same measurement space.
@@ -155,7 +155,7 @@ DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& m
  * @param[in] params The system parameters.
  * \return Returns geodesic distance between two measurements
  */
-DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return S0::GetVelocityDistance(meas1,meas2);}
+DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return std::get<0>(sources_).GetVelocityDistance(meas1,meas2,params);}
 
 
 private:

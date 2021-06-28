@@ -6,6 +6,7 @@
 #include "lie_groups/state.h"
 #include "rransac/data_containers/cluster.h"
 #include "rransac/common/transformations/trans_homography.h"
+#include "rransac/common/transformations/transformation_null.h"
 #include "rransac/parameters.h"
 #include "rransac/common/sources/source_RN.h"
 
@@ -239,7 +240,7 @@ params.cluster_time_threshold_ = 2;
 
 Cluster<double> cluster;
 
-SourceR2 source; // We need the source for calculating distances
+SourceRN<lie_groups::R2_r2,MeasurementTypes::RN_POS,TransformNULL> source; // We need the source for calculating distances
 SourceParameters source_params;
 source_params.spacial_density_of_false_meas_ = 0.1;
 source_params.gate_probability_ = 0.8;

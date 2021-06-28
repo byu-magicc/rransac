@@ -49,7 +49,8 @@ struct Meas
     MatX twist;                 /**< The part of the measurement corresponding to the derivative of the pose. (velocity, angular rates, or both). */
     bool transform_state=false;  /**< Sometimes the measurement cannot be transformed into the tracking frame, but the tracks can be transformed into the measurement frame. If the tracks
                                      need to be transformed into the measurement frame, set this value to true. */
-    MatX transform_data;            /**< The data used by the transform manager to transform the track from the tracking frame to the measurement frame. */                                
+    MatX transform_data_m_t;            /**< The transform data used to transform objects from the measurement frame to the tracking frame. */                                
+    MatX transform_data_t_m;            /**< The transform data used to transform objects from the tracking frame to the measurement frame. */                                
 
 
     // These member variables are reserved
