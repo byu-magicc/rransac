@@ -8,6 +8,7 @@
 
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_container.h"
 #include "rransac/parameters.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/system.h"
@@ -21,7 +22,16 @@
 using namespace lie_groups;
 using namespace rransac;
 
-typedef ModelRN<R2_r2, TransformNULL, SourceRN> Model;
+
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVel;
+
+
+typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
+
+
+
+typedef ModelRN<SourceContainerR2> Model;
 
 TEST(TargetLikelihoodUpdateTest, IPDAF) {
 
@@ -50,9 +60,7 @@ source_params1.source_index_ = 1;
 source_params1.type_ = MeasurementTypes::RN_POS_VEL;
 source_params1.meas_cov_ = Eigen::Matrix<double,4,4>::Identity()*meas_noise1;
 
-Model::Source source0, source1;
-source0.Init(source_params0);
-source1.Init(source_params1);
+
 
 // Setup parameters
 Parameters params;
@@ -63,13 +71,13 @@ params.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity()*process
 Model track0, track1;
 double track0_init_model_likelihood = 0.5;
 double track1_init_model_likelihood = 0.7;
-track0.Init(params,2);
+track0.Init(params);
 track0.state_.g_.data_ << 0,0;
 track0.state_.u_.data_ << 0,0;
 track0.err_cov_ = Eigen::Matrix<double,4,4>::Identity()*2;
 track0.model_likelihood_ = track0_init_model_likelihood;
 track0.newest_measurement_time_stamp = 0;
-track1.Init(params,2);
+track1.Init(params);
 track1.state_.g_.data_ << 1,-1;
 track1.state_.u_.data_ <<-1, 1;
 track1.err_cov_ = Eigen::Matrix<double,4,4>::Identity()*2;
@@ -79,8 +87,8 @@ track1.newest_measurement_time_stamp = 0;
 
 // Setup system
 System<Model> sys;
-sys.sources_.push_back(source0);
-sys.sources_.push_back(source1);
+sys.source_container_.AddSource(source_params0);
+sys.source_container_.AddSource(source_params1);
 sys.models_.push_back(track0);
 sys.models_.push_back(track1);
 sys.current_time_ = 0.1;
@@ -131,7 +139,7 @@ for (int model_index =0; model_index < 2; ++model_index) {
             meas[model_index][source_index][meas_index] = meas_base[source_index];
             meas[model_index][source_index][meas_index].probability = (meas_index+1)/10;
             model_iter[model_index]->AddNewMeasurement(meas[model_index][source_index][meas_index] );
-            meas[model_index][source_index][meas_index].weight = sys.sources_[source_index].params_.probability_of_detection_*meas[model_index][source_index][meas_index].probability/sys.sources_[source_index].params_.spacial_density_of_false_meas_/(1.0-model_iter[model_index]->model_likelihood_update_info_[source_index].delta);
+            meas[model_index][source_index][meas_index].weight = sys.source_container_.GetParams(source_index).probability_of_detection_*meas[model_index][source_index][meas_index].probability/sys.source_container_.GetParams(source_index).spacial_density_of_false_meas_/(1.0-model_iter[model_index]->model_likelihood_update_info_[source_index].delta);
         }
     }
 }

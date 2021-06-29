@@ -13,6 +13,8 @@ struct DataAssociationInfo {
 
     std::vector<bool> source_produced_measurements_;                                         /**< When a sensor scan occurs one or more sources can produce measurements. This flag indicates if a source 
                                                                                                   during the latest sensor scan produced measurements. */
+    std::vector<bool> transform_state_;                                                      /**< Indicates if a measurement from a source requires the state to be transformed into the measurement frame. */
+    std::vector<Eigen::MatrixXd> transform_data_t_m_;                                        /**< The data required to transform the state into the measurement frame. */
 
 };
 
@@ -47,7 +49,7 @@ public:
      * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
      */ 
     void AssociateNewMeasurements(System<tModel>& sys) {
-        SourceProducedMeasurement(sys, this->data_association_info_);                    // Determine which sources produced measurements
+        CalculateDataAssociationInfo(sys, this->data_association_info_);                    // Determine which sources produced measurements
         ResetModelLikelihoodAndNewMeasurements(sys);  
         DataAssociation(sys,this->data_association_info_);
         UpdateTrackLikelihood(sys,this->data_association_info_);
@@ -57,6 +59,8 @@ public:
         if(sys.new_meas_.size() != 0)   
             throw std::runtime_error("DataAssociationHost::AssociateNewMeasurements: All new measurements should have been copied to a model, cluster, or data tree and removed from System<Model>::new_meas_");
     }
+
+    const DataAssociationInfo& GetDataAssociationInfo() const {return data_association_info_;}
 
 private:
 
@@ -94,10 +98,13 @@ private:
     }
 
     /**
-     * Sets the member vairable SourceBase::source_produced_measurements_ to true if the source produced a measurement this sensor scan; otherwise false.
+     * Calculates the data association info.
+     * Sets the member vairable DataAssociationInfo::source_produced_measurements_ to true if the source produced a measurement this sensor scan; otherwise false.
+     * Sets the member vairable DataAssociationInfo::transform_state_ to true if the track needs to be transformed into the measurement frame. This info is taken from the measurement.
+     * Sets the member vairable DataAssociationInfo::transform_data_t_m_ to contain the transformation data necessary to transform the track to the measurement frame. This info is taken from the measurement.
      * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
      */
-    void SourceProducedMeasurement(System<tModel>& sys, DataAssociationInfo& info);
+    void CalculateDataAssociationInfo(System<tModel>& sys, DataAssociationInfo& info);
 
     /** 
      * Ensures that none of the tracks have any new associated measurements in ModelBase::new_assoc_meas_, and it resets the
@@ -140,27 +147,39 @@ void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePo
 
 //---------------------------------------------------------------------------------------------------------------
 template<typename tModel, template<class> typename tValidationRegionPolicy, template<class> typename tTrackLikelihoodUpdatePolicy, template<class> typename tMeasurementWeightPolicy>
-void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePolicy,tMeasurementWeightPolicy>::SourceProducedMeasurement(System<tModel>& sys, DataAssociationInfo& info) {
+void DataAssociationHost<tModel,tValidationRegionPolicy,tTrackLikelihoodUpdatePolicy,tMeasurementWeightPolicy>::CalculateDataAssociationInfo(System<tModel>& sys, DataAssociationInfo& info) {
+
+    static Eigen::MatrixXd EmptyMat;
 
     // Reset the vector
     if(info.source_produced_measurements_.size() != sys.source_container_.num_sources_) {
         info.source_produced_measurements_.clear();
+        info.transform_state_.clear();
         info.source_produced_measurements_.resize(sys.source_container_.num_sources_,false);
+        info.transform_state_.resize(sys.source_container_.num_sources_,false);
+        info.transform_data_t_m_.resize(sys.source_container_.num_sources_,EmptyMat);
     } else {
         std::fill(info.source_produced_measurements_.begin(), info.source_produced_measurements_.end(), false);
+        std::fill(info.transform_state_.begin(), info.transform_state_.end(), false);
+        std::fill(info.transform_data_t_m_.begin(), info.transform_data_t_m_.end(), EmptyMat);
     }
 
 
 
     // If there is only one source and at least one measurement, 
     // then the source produced the measurement
-    if (sys.source_container_.num_sources_ ==1 && sys.new_meas_.size() >0) {
-         info.source_produced_measurements_[0] = true;
-    } else {
-        for(auto& meas : sys.new_meas_) {
-            info.source_produced_measurements_[0] = true;
+    for(auto& meas :sys.new_meas_) {
+        if (info.source_produced_measurements_[meas.source_index] == false) {
+            info.source_produced_measurements_[meas.source_index] = true;
+            info.transform_state_[meas.source_index] = meas.transform_state;
+            info.transform_data_t_m_[meas.source_index] = meas.transform_data_t_m;
+        }
+        // Stop searching if we have all the information we need.
+        if(std::all_of(info.source_produced_measurements_.begin(),info.source_produced_measurements_.end(),[](bool v){return v;})) {
+            break;
         }
     }
+
 
 }
 

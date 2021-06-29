@@ -20,7 +20,7 @@ namespace rransac {
  * of this, the dimension of the error covariance is less than the dimension of the state. So, in order to properly model the target, we had to make adjustments. 
  */ 
 template <typename tSourceContainer>
-class ModelSENPosVel : public ModelBase<tSourceContainer, tSourceContainer::State::Group::dim_ + tSourceContainer::State::Algebra::dim_ - tSourceContainer::State::Algebra::dim_t_vel_ + 1, ModelSENPosVel<tSourceContainer>> {
+class ModelSENPosVel : public ModelBase<tSourceContainer, tSourceContainer::State::Group::dim_ + tSourceContainer::State::Algebra::dim_ - tSourceContainer::State::Algebra::dim_t_vel_ + 1, ModelSENPosVel> {
 
 public:
 
@@ -28,10 +28,6 @@ typedef tSourceContainer SourceContainer;                                   /**<
 typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
 typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
 typedef typename SourceContainer::Transformation Transformation;            /**< The transformation data type. */
-
-template <typename tScalar, template<typename> typename StateTemplate>
-using ModelTemplate = ModelSENPosVel<tSourceContainer>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
-                                                                                     nonlinear log maximum likelihood estimation problem by Ceres. */
 
 static constexpr int cov_dim_ = State::Group::dim_ + State::Algebra::dim_ - State::Algebra::dim_t_vel_ + 1;   /**< The dimension of the error covariance. */
 static constexpr unsigned int g_dim_ = State::Group::dim_;                                                    /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */                                          

@@ -5,6 +5,7 @@
 #include "rransac/system.h"
 #include "rransac/common/sources/source_base.h"
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_container.h"
 #include "rransac/common/models/model_base.h"
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/transformations/transformation_null.h"
@@ -18,7 +19,18 @@ using namespace lie_groups;
 
 TEST(LINEAR_LMLE_POLICY_TEST, MainTest){
 
-typedef ModelRN<R3_r3, TransformNULL> Model;
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNULL> SourceR3Pos;
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR3PosVel;
+
+
+typedef SourceContainer<SourceR3Pos,SourceR3PosVel> SourceContainerR3;
+
+
+
+typedef ModelRN<SourceContainerR3> Model;
+
+
+
 typedef Meas<double> Measurement;
 
 // Setup sources
@@ -41,11 +53,7 @@ source_params2.spacial_density_of_false_meas_ = 0.8;
 source_params2.probability_of_detection_ = 0.8;
 source_params2.gate_probability_ = 0.8;
 
-SourceR3 source1;
-SourceR3 source2;
 
-source1.Init(source_params1);
-source2.Init(source_params2);
 
 // Setup system parameters
 Parameters params;
@@ -53,8 +61,8 @@ params.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity()*noise;
 
 // Setup system
 System<Model> sys;
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
 sys.params_ = params;
 
 // Setup Measurements
@@ -80,11 +88,14 @@ int steps = 3;
 double dt = 0.1;
 double start_time = 0;
 
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
+
 for (double ii = start_time; ii < steps*dt; ii += dt ) {
     x.PropagateModel(dt);
     meas_time.clear();
-    Measurement tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix3d::Identity()*sqrt(noise));
-    Measurement tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
+    Measurement tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix3d::Identity()*sqrt(noise), x.state_,transform_state,EmptyMat);
+    Measurement tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,6,6>::Identity()*sqrt(noise),x.state_,transform_state,EmptyMat);
     m1.time_stamp = ii + dt;
     m1.pose = tmp1.pose;
     m2.time_stamp = ii +dt;

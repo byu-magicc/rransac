@@ -20,7 +20,7 @@ namespace rransac {
  * source is compatible with MeasurementType::CamDepth
  */ 
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-class SourceSE3CamDepth: public SourceBase<tState,tMeasurementType, tTransformation<tState>, SourceSE3CamDepth<tState,tMeasurementType,tTransformation>> {
+class SourceSE3CamDepth: public SourceBase<tState,tMeasurementType, tTransformation, 7, SourceSE3CamDepth> {
 
 public:
 
@@ -35,11 +35,8 @@ static constexpr unsigned int meas_twist_rows_ = 3;                             
 static constexpr unsigned int meas_twist_cols_ = 1;                              /**< The number of columns in the twist measurement. */
 static constexpr MeasurementTypes measurement_type_ = tMeasurementType;          /**< The measurement type of the source. */
 typedef utilities::CompatibleWithModelSENPosVel ModelCompatibility;              /**< Indicates which model this source is compatible with. */
-typedef SourceBase<tState,tMeasurementType, tTransformation<tState>, SourceSE3CamDepth<tState,tMeasurementType,tTransformation>> Base;                          /**< The source base class. */
+typedef SourceBase<tState,tMeasurementType, tTransformation, 7, SourceSE3CamDepth> Base;                          /**< The source base class. */
 
-
-static constexpr int dim_mult_ = 1;    /**< a constant used when the measurement contains velocity. */
-static constexpr int has_vel_ = true; /**< Indicates if the measurement contains velocity.  */
 
 // static constexpr unsigned int l_dim_ =  tState::Algebra::dim_a_vel_ + 1;         /**< The dimension of the angular velocity of the target plus one. */
 static constexpr unsigned int cov_dim_ = tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1; /**< The dimension of the state covariance. */
@@ -49,12 +46,16 @@ static_assert(std::is_same<tState,lie_groups::SE3_se3>::value, "SourceSE3CamDept
 static_assert( tMeasurementType == MeasurementTypes::SE3_CAM_DEPTH, "SourceSE3CamDepth: The measurement type is not compatible with the source."    );
 
 
+/**
+ * Initializes the Jacobians
+ */ 
+SourceSE3CamDepth();
 
 /** 
- * Initializes the measurement source by initializing the Jacobians. 
+ * Initializes the measurement source. Currently it does nothing. 
  * @param[in] params The source parameters.
  */
-void DerivedInit(const SourceParameters& params);      
+void DerivedInit(const SourceParameters& params){}   
 
 
 /** 
@@ -106,11 +107,11 @@ Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tSt
 
 
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-void SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::DerivedInit(const SourceParameters& params) {
+SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::SourceSE3CamDepth() {
 
     // Verify measurement type
-    Base::V_ = Eigen::Matrix<DataType,meas_space_dim_,meas_space_dim_>::Identity();
-    Base::H_ = Eigen::Matrix<DataType, meas_space_dim_, this->cov_dim_>::Zero();
+    Base::V_ = Eigen::Matrix<DataType,Base::meas_space_dim_,Base::meas_space_dim_>::Identity();
+    Base::H_ = Eigen::Matrix<DataType, Base::meas_space_dim_, cov_dim_>::Zero();
 }
 
 //-----------------------------------------------------------------

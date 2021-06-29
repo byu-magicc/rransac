@@ -50,9 +50,9 @@ public:
      */ 
     static void PolicyCalculateMeasurementWeightSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info) {
 
-        for (int source_index =0; source_index < sys.sources_.size(); ++source_index) {
+        for (int source_index =0; source_index < sys.source_container_.num_sources_; ++source_index) {
             for(auto& meas : track.new_assoc_meas_[source_index]) {
-                meas.weight = sys.sources_[source_index].params_.probability_of_detection_*meas.probability/sys.sources_[source_index].params_.spacial_density_of_false_meas_/(1.0 - track.model_likelihood_update_info_[source_index].delta);
+                meas.weight = sys.source_container_.GetParams(source_index).probability_of_detection_*meas.probability/sys.source_container_.GetParams(source_index).spacial_density_of_false_meas_/(1.0 - track.model_likelihood_update_info_[source_index].delta);
             }
         }
 

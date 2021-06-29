@@ -28,7 +28,9 @@ public:
 */ 
 static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track)  {
 
-    Eigen::MatrixXd err = sys.source_container_.OMinus(meas.source_index, meas, sys.source_container_.GetEstMeas(meas.source_index,track.state_));
+
+
+    Eigen::MatrixXd err = sys.source_container_.OMinus(meas.source_index, meas, sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m));
     Eigen::MatrixXd S = track.GetInnovationCovariance(sys.source_container_,meas.source_index,meas.transform_state,meas.transform_data_m_t);
 
     if( (err.transpose()*S.inverse()*err)(0,0) <= sys.source_container_.GetParams(meas.source_index).gate_threshold_ ) {

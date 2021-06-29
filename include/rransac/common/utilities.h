@@ -6,6 +6,7 @@
 #include <random>
 #include <Eigen/Core>
 
+
 namespace rransac {
 namespace utilities {
 
@@ -37,6 +38,9 @@ struct CompatibleWithModelRN{};
 struct CompatibleWithModelSENPosVel{};
 struct CompatibleWithModelSENPoseTwist{};
 struct CompatibleWithModelNull{};
+
+
+
 
 
 

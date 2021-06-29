@@ -74,7 +74,7 @@ static MatXd DerivedGetTransformationJacobian(const State& state, const Data& tr
 // Dummy Source needed to initialize SourceBase
 /////////////////////////////////////////////////
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-class DummySource : public SourceBase<tState, tMeasurementType, tTransformation<tState>, DummySource<tState,tMeasurementType,tTransformation>> 
+class DummySource : public SourceBase<tState, tMeasurementType, tTransformation,tState::Group::dim_, DummySource> 
 {
 public:
 
@@ -84,17 +84,17 @@ public:
     typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
     static constexpr unsigned int meas_space_dim_ = tState::Group::dim_;
     static constexpr MeasurementTypes meas_type_ = tMeasurementType;
-    typedef SourceBase<tState, tMeasurementType, tTransformation<tState>, DummySource<tState,tMeasurementType,tTransformation>> Base;
+    typedef SourceBase<tState, tMeasurementType, tTransformation, tState::Group::dim_, DummySource> Base;
 
-    static constexpr int dim_mult = MeasHasVelocity<tMeasurementType>::value ? 2 : 1;
+    static constexpr int dim_mult_ = MeasHasVelocity<tMeasurementType>::value ? 2 : 1;
 
     // static MatXd H_;
     // static MatXd V_;
 
     /** Initializes the measurement source. This function must set the parameters.  */
     void DerivedInit(const SourceParameters& params) { 
-        Base::H_ = Eigen::Matrix<double,dim_mult*meas_space_dim_,tState::Group::dim_*2>::Identity();
-        Base::V_ = Eigen::Matrix<double,dim_mult*meas_space_dim_,dim_mult*meas_space_dim_>::Identity();
+        Base::H_ = Eigen::Matrix<double,dim_mult_*meas_space_dim_,tState::Group::dim_*2>::Identity();
+        Base::V_ = Eigen::Matrix<double,dim_mult_*meas_space_dim_,dim_mult_*meas_space_dim_>::Identity();
     }
 
 
@@ -215,12 +215,19 @@ source_params.probability_of_detection_ = 0.9;
 
 ASSERT_NO_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::R2_r2>::func, call, std::placeholders::_1)));
 
+// Check that the dimesions were set.
+int meas_space_dim = DummySource1::meas_space_dim_;
+int meas_space_dim_mult = DummySource1::dim_mult_;
+ASSERT_EQ(source.GetParams().meas_space_dim_,meas_space_dim);
+ASSERT_EQ(source.GetParams().meas_space_dim_mult_,meas_space_dim_mult);
+
 // Check the gate threshold and unit hyptersphere.
 ASSERT_LE( fabs(1- source.GetParams().gate_threshold_), 1e-6);
 ASSERT_LE( fabs(1- source.GetParams().gate_threshold_sqrt_), 1e-4);
 ASSERT_LE( fabs(M_PI- source.GetParams().vol_unit_hypershpere_  ), 1e-6);
 
 DummySource2 source2;
+
 source_params.type_ = MeasurementTypes::RN_POS_VEL;
 source_params.meas_cov_ = Eigen::Matrix4d::Identity();
 source_params.gate_probability_ = 0.593994150290162;
@@ -228,6 +235,11 @@ ASSERT_NO_THROW(source2.Init(source_params, std::bind(&CallbackClass<lie_groups:
 ASSERT_LE( fabs(4- source2.GetParams().gate_threshold_), 1e-3);
 ASSERT_LE( fabs(2- source2.GetParams().gate_threshold_sqrt_), 1e-3);
 ASSERT_LE( fabs(4.934802200544679- source2.GetParams().vol_unit_hypershpere_  ), 1e-3);
+
+meas_space_dim = DummySource2::meas_space_dim_;
+meas_space_dim_mult = DummySource2::dim_mult_;
+ASSERT_EQ(source2.GetParams().meas_space_dim_,meas_space_dim);
+ASSERT_EQ(source2.GetParams().meas_space_dim_mult_,meas_space_dim_mult);
 
 // State is within surveillance region.
 Eigen::MatrixXd EmptyMat;

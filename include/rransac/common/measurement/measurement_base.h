@@ -81,7 +81,35 @@ struct MeasHasVelocity<MeasurementTypes::SEN_POS_VEL> : std::true_type {};
 template<>
 struct MeasHasVelocity<MeasurementTypes::SE3_CAM_DEPTH> : std::true_type {};
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * \class MeasDimMultiplier
+ * Determines the measurement dimension multiplier
+ */ 
+template <MeasurementTypes tMeasurementType> 
+struct MeasDimMultiplier {
+    public:
+    static constexpr unsigned int value = 1;
+};
+
+template<>
+struct MeasDimMultiplier<MeasurementTypes::RN_POS_VEL> {
+    public:
+    static constexpr unsigned int value = 2;
+};
+
+template<>
+struct MeasDimMultiplier<MeasurementTypes::SEN_POSE_TWIST> {
+    public:
+    static constexpr unsigned int value = 2;
+};
+
+template<>
+struct MeasDimMultiplier<MeasurementTypes::SEN_POS_VEL> {
+    public:
+    static constexpr unsigned int value = 2;
+};
 
 
 

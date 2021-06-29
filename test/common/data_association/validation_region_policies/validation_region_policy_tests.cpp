@@ -14,21 +14,21 @@
 #include "rransac/system.h"
 
 #include "rransac/common/data_association/validation_region_policies/validation_region_fixed_policy.h"
-// #include "rransac/common/data_association/validation_region_policies/validation_region_fixed_pos_policy.h"
+#include "rransac/common/data_association/validation_region_policies/validation_region_fixed_pos_policy.h"
 #include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
 
 using namespace lie_groups;
 using namespace rransac;
 
-typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNull> SourceR2Pos;
-typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNull> SourceR2PosVel;
-typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNull> SourceR3Pos;
-typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNull> SourceR3PosVel;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVel;
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNULL> SourceR3Pos;
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR3PosVel;
 
-typedef SourceRN<SE2_se2,MeasurementTypes::SEN_POS,TransformNull> SourceSE2Pos;
-typedef SourceRN<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNull> SourceSE2PosVel;
-typedef SourceRN<SE3_se3,MeasurementTypes::SEN_POS,TransformNull> SourceSE3Pos;
-typedef SourceRN<SE3_se3,MeasurementTypes::SEN_POS_VEL,TransformNull> SourceSE3PosVel;
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2Pos;
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVel;
+typedef SourceSENPosVel<SE3_se3,MeasurementTypes::SEN_POS,TransformNULL> SourceSE3Pos;
+typedef SourceSENPosVel<SE3_se3,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE3PosVel;
 
 typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
 typedef SourceContainer<SourceR3Pos,SourceR3PosVel> SourceContainerR3;
@@ -56,7 +56,7 @@ struct ModelHelper {
     static Eigen::MatrixXd GetError(const M& track, const Meas<typename M::DataType>& meas, const typename M::SourceContainer& source_container) {
         bool transform_state = false;
         Eigen::MatrixXd EmptyMat;
-        return source_container.OMinus(meas.source_index, source_container.GetEstMeas(meas.source_index, track.state_, transform_state, EmptyMat));
+        return source_container.OMinus(meas.source_index, meas, source_container.GetEstMeas(meas.source_index, track.state_, transform_state, EmptyMat));
     }
 };
 
@@ -70,8 +70,8 @@ typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS
 typedef ModelHelper<Model4, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL,3> ModelHelper4;
 
 
-// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4>;
-using MyTypes = ::testing::Types<ModelHelper1>;
+using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4>;
+// using MyTypes = ::testing::Types<ModelHelper3>;
 
 template<class ModelHelper>
 class ValidationRegionTest : public ::testing::Test {
@@ -199,6 +199,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPolicy ) {
 
     bool in_validation_region = false;
     Eigen::MatrixXd err;
+    int num_true = 0;
 
 
 
@@ -206,10 +207,11 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPolicy ) {
     for (auto& meas: this->sys.new_meas_) {
 
 
-        err = TypeParam::ModelHelper::GetError(this->track,meas,this->sys.sources_);
+        err = TypeParam::ModelHelper::GetError(this->track,meas,this->sys.source_container_);
 
-        if(err.norm() <= this->sys.sources_[meas.source_index].params_.gate_threshold_) {
+        if(err.norm() <= this->sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
             in_validation_region = true;
+            num_true++;
         } else {
             in_validation_region = false;
             // std::cout << "err: " << std::endl <<  err << std::endl;
@@ -219,6 +221,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPolicy ) {
         }
 
         ASSERT_EQ(in_validation_region, validation_region.PolicyInValidationRegion(this->sys,meas,this->track));
+        EXPECT_GT(num_true,0) << "Try running the test case again" << std::endl;
 
 
     }
@@ -226,38 +229,39 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPolicy ) {
 
 //-------------------------------------------------------------------------------------------------------------------------------
 
-// TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPosPolicy ) {
+TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPosPolicy ) {
 
 
-//     ValidationRegionFixedPosPolicy<typename TypeParam::ModelHelper::Model> validation_region;
+    ValidationRegionFixedPosPolicy<typename TypeParam::ModelHelper::Model> validation_region;
 
 
-//     bool in_validation_region = false;
-//     Eigen::MatrixXd err;
+    bool in_validation_region = false;
+    Eigen::MatrixXd err;
+
+    int num_true = 0;
 
 
+    for (auto& meas: this->sys.new_meas_) {
 
 
-//     for (auto& meas: this->sys.new_meas_) {
+        err = TypeParam::ModelHelper::GetPosError(this->track,meas);
 
+        if(err.norm() <= this->sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
+            in_validation_region = true;
+            num_true++;
+        } else {
+            in_validation_region = false;
+            // std::cout << "err: " << std::endl <<  err << std::endl;
+            // std::cout << "err norm: "  <<  err.norm() << std::endl;
+            // std::cout << "meas: " << std::endl <<  meas.pose << std::endl;
+            // std::cout << "track: " << std::endl <<  this->track.state_.g_.data_ << std::endl;
+        }
 
-//         err = TypeParam::ModelHelper::GetPosError(this->track,meas);
+        ASSERT_EQ(in_validation_region, validation_region.PolicyInValidationRegion(this->sys,meas,this->track));
+        EXPECT_GT(num_true,0) << "Try running the test case again" << std::endl;
 
-//         if(err.norm() <= this->sys.sources_[meas.source_index].params_.gate_threshold_) {
-//             in_validation_region = true;
-//         } else {
-//             in_validation_region = false;
-//             // std::cout << "err: " << std::endl <<  err << std::endl;
-//             // std::cout << "err norm: "  <<  err.norm() << std::endl;
-//             // std::cout << "meas: " << std::endl <<  meas.pose << std::endl;
-//             // std::cout << "track: " << std::endl <<  this->track.state_.g_.data_ << std::endl;
-//         }
-
-//         ASSERT_EQ(in_validation_region, validation_region.PolicyInValidationRegion(this->sys,meas,this->track));
-
-
-//     }
-// }
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------------------
 
@@ -270,6 +274,11 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionInnovPolicy ) {
     bool in_validation_region = false;
     Eigen::MatrixXd err;
     Eigen::MatrixXd S;
+    bool transform_state = false;
+    Eigen::MatrixXd EmptyMat;
+
+    int num_true = 0;
+
 
 
 
@@ -277,14 +286,15 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionInnovPolicy ) {
     for (auto& meas: this->sys.new_meas_) {
 
 
-        err = TypeParam::ModelHelper::GetError(this->track,meas, this->sys.sources_);
-        S = this->track.GetInnovationCovariance(this->sys.sources_, meas.source_index);
+        err = TypeParam::ModelHelper::GetError(this->track,meas, this->sys.source_container_);
+        S = this->track.GetInnovationCovariance(this->sys.source_container_, meas.source_index, transform_state, EmptyMat);
 
         // std::cout << "err: " << std::endl << err << std::endl;
         // std::cout << "S: " << std::endl << S << std::endl;
 
-        if((err.transpose()*S.inverse()*err)(0,0) <= this->sys.sources_[meas.source_index].params_.gate_threshold_) {
+        if((err.transpose()*S.inverse()*err)(0,0) <= this->sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
             in_validation_region = true;
+            num_true++;
         } else {
             in_validation_region = false;
             // std::cout << "err: " << std::endl <<  err << std::endl;
@@ -294,6 +304,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionInnovPolicy ) {
         }
 
         ASSERT_EQ(in_validation_region, validation_region.PolicyInValidationRegion(this->sys,meas,this->track));
+        EXPECT_GT(num_true,0) << "Try running the test case again" << std::endl;
 
 
     }

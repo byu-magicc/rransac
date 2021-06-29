@@ -22,34 +22,35 @@ namespace rransac {
  */ 
 
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-class SourceSENPoseTwist : public SourceBase<tState, tMeasurementType, tTransformation<tState>,SourceSENPoseTwist<tState,tMeasurementType,tTransformation>> {
+class SourceSENPoseTwist : public SourceBase<tState, tMeasurementType, tTransformation,tState::Group::dim_, SourceSENPoseTwist> {
 
 public:
 
 typedef tState State;                                                               /**< The state of the target. @see State. */
 typedef typename tState::DataType DataType;                                         /**< The scalar object for the data. Ex. float, double, etc. */
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;                /**< The object type of the Jacobians. */
-static constexpr unsigned int meas_space_dim_ = State::Group::dim_;                 /**< The dimension of the measurement space. */
 static constexpr unsigned int meas_pose_rows_ = State::Group::size1_;               /**< The number of rows in the pose measurement. */
 static constexpr unsigned int meas_pose_cols_ = State::Group::size2_;               /**< The number of columns in the pose measurement. */
 static constexpr unsigned int meas_twist_rows_ = State::Group::dim_;                /**< The number of rows in the twist measurement. */
 static constexpr unsigned int meas_twist_cols_ = 1;                                 /**< The number of columns in the twist measurement. */
 static constexpr MeasurementTypes measurement_type_ = tMeasurementType;             /**< The measurement type of the source. */
 typedef utilities::CompatibleWithModelSENPoseTwist ModelCompatibility;              /**< Indicates which model this source is compatible with. */
-typedef SourceBase<tState, tMeasurementType, tTransformation<tState>, SourceSENPoseTwist<tState,tMeasurementType,tTransformation>> Base;                          /**< The source base class. */
+typedef SourceBase<tState, tMeasurementType, tTransformation,State::Group::dim_, SourceSENPoseTwist> Base;                          /**< The source base class. */
 
-static constexpr int dim_mult_ = MeasHasVelocity<tMeasurementType>::value ? 2 : 1; /**< a constant used when the measurement contains velocity. */
-static constexpr int has_vel_ = MeasHasVelocity<tMeasurementType>::value ? true : false; /**< Indicates if the measurement contains velocity.  */
 
 static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "SourceSENPoseTwist: The state is not compatible with the model");
 static_assert( tMeasurementType == MeasurementTypes::SEN_POSE || tMeasurementType == MeasurementTypes::SEN_POSE_TWIST, "SourceSENPoseTwist: The measurement type is not compatible with the source."    );
 
+/** 
+ * Sets up the Jacobians
+ */
+SourceSENPoseTwist();
 
 /** 
- * Initializes the measurement source by initializing the Jacobians. 
+ * Used to initialize the source. Currently it does noting.
  * @param[in] params The source parameters.
  */
-void DerivedInit(const SourceParameters& params);      
+void DerivedInit(const SourceParameters& params){}     
 
 
 /** 
@@ -98,19 +99,21 @@ Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tSt
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
 //-----------------------------------------------------------------
 
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-void SourceSENPoseTwist<tState,tMeasurementType,tTransformation>::DerivedInit(const SourceParameters& params) {
+SourceSENPoseTwist<tState,tMeasurementType,tTransformation>::SourceSENPoseTwist() {
 
 
-    if(has_vel_) {
-        Base::H_ = Eigen::Matrix<DataType,meas_space_dim_*2,State::dim_>::Identity();
-        Base::V_ = Eigen::Matrix<DataType,meas_space_dim_*2,meas_space_dim_*2>::Identity();
+    if(Base::has_vel_) {
+        Base::H_ = Eigen::Matrix<DataType,Base::meas_space_dim_*2,State::dim_>::Identity();
+        Base::V_ = Eigen::Matrix<DataType,Base::meas_space_dim_*2,Base::meas_space_dim_*2>::Identity();
     } else {
-        Base::H_ = Eigen::Matrix<DataType, meas_space_dim_, State::dim_>::Zero();
-        Base::H_.block(0,0,meas_space_dim_,meas_space_dim_).setIdentity();
-        Base::V_ = Eigen::Matrix<DataType,meas_space_dim_,meas_space_dim_>::Identity();
+        Base::H_ = Eigen::Matrix<DataType, Base::meas_space_dim_, State::dim_>::Zero();
+        Base::H_.block(0,0,Base::meas_space_dim_,Base::meas_space_dim_).setIdentity();
+        Base::V_ = Eigen::Matrix<DataType,Base::meas_space_dim_,Base::meas_space_dim_>::Identity();
     }
 
 }
@@ -136,7 +139,7 @@ Meas<typename tState::DataType> SourceSENPoseTwist<tState,tMeasurementType,tTran
     Meas<DataType> m;
     m.type = tMeasurementType;
     m.pose = state.g_.data_;
-    if(has_vel_) {
+    if(Base::has_vel_) {
         m.twist = state.u_.data_;
     }
     
@@ -147,11 +150,11 @@ Meas<typename tState::DataType> SourceSENPoseTwist<tState,tMeasurementType,tTran
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
 Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPoseTwist<tState,tMeasurementType,tTransformation>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
 
-    Eigen::Matrix<DataType,meas_space_dim_*dim_mult_,1> error;
+    Eigen::Matrix<DataType,Base::meas_space_dim_*Base::meas_space_dim_mult_,1> error;
 
-    error.block(0,0,meas_space_dim_,1) = State::Group::OMinus(m1.pose,m2.pose);
-    if (has_vel_) {
-        error.block(meas_space_dim_,0,meas_space_dim_,1) = m1.twist - m2.twist;
+    error.block(0,0,Base::meas_space_dim_,1) = State::Group::OMinus(m1.pose,m2.pose);
+    if (Base::has_vel_) {
+        error.block(Base::meas_space_dim_,0,Base::meas_space_dim_,1) = m1.twist - m2.twist;
     }
     return error;
 }
@@ -167,7 +170,7 @@ Meas<typename tState::DataType> SourceSENPoseTwist<tState,tMeasurementType,tTran
 
     m.pose = State::Group::OPlus(state.g_.data_, deviation.block(0,0,State::Group::dim_,1));
 
-    if (has_vel_) {
+    if (Base::has_vel_) {
         m.twist = state.u_.data_ + deviation.block(State::Group::dim_,0,State::Group::dim_,1);
     }
 

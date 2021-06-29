@@ -7,6 +7,7 @@
 #include "rransac/common/sources/source_base.h"
 #include "rransac/common/sources/source_null.h"
 #include "rransac/common/measurement/measurement_base.h"
+#include "rransac/common/utilities.h"
 
 namespace rransac {
 
@@ -28,10 +29,10 @@ class SourceContainer {
 public:
 
 typedef S0 Source0;
-typedef typename std::conditional<std::is_same<S1,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S1>::type Source1;
-typedef typename std::conditional<std::is_same<S2,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S2>::type Source2;
-typedef typename std::conditional<std::is_same<S3,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S3>::type Source3;
-typedef typename std::conditional<std::is_same<S4,SourceNull<>>::value,SourceNull<typename S0::State, S0::measurement_type_, typename S0::Transformation>,S4>::type Source4;
+typedef typename std::conditional<IsSourceNull<S1>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S1>::type Source1;
+typedef typename std::conditional<IsSourceNull<S2>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S2>::type Source2;
+typedef typename std::conditional<IsSourceNull<S3>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S3>::type Source3;
+typedef typename std::conditional<IsSourceNull<S4>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S4>::type Source4;
 // typedef S2 Source2;
 // typedef S3 Source3;
 // typedef S4 Source4;
@@ -40,14 +41,23 @@ typedef typename S0::State State;                                           /**<
 typedef typename S0::DataType DataType;                                     /**< The scalar object for the data. Ex. float, double, etc. */
 typedef typename S0::Transformation Transformation;                         /**< The transformation data type. */
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
-static constexpr std::size_t num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;
+static constexpr int num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;
 typedef typename S0::ModelCompatibility ModelCompatibility;                 /**< Indicates which model this source is compatible with. */
 
 // Ensure that all sources have the same model compatibility
-static_assert( std::is_same<typename S0::ModelCompatibility, typename S1::ModelCompatibility>::value || std::is_same<S1,SourceNull<>>::value, "The sources are not compatible with the same model" );
-static_assert( std::is_same<typename S0::ModelCompatibility, typename S2::ModelCompatibility>::value || std::is_same<S2,SourceNull<>>::value, "The sources are not compatible with the same model" );
-static_assert( std::is_same<typename S0::ModelCompatibility, typename S3::ModelCompatibility>::value || std::is_same<S3,SourceNull<>>::value, "The sources are not compatible with the same model" );
-static_assert( std::is_same<typename S0::ModelCompatibility, typename S4::ModelCompatibility>::value || std::is_same<S4,SourceNull<>>::value, "The sources are not compatible with the same model" );
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S1::ModelCompatibility>::value || IsSourceNull<S1>::value, "The sources are not compatible with the same model" );
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S2::ModelCompatibility>::value || IsSourceNull<S2>::value, "The sources are not compatible with the same model" );
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S3::ModelCompatibility>::value || IsSourceNull<S3>::value, "The sources are not compatible with the same model" );
+static_assert( std::is_same<typename S0::ModelCompatibility, typename S4::ModelCompatibility>::value || IsSourceNull<S4>::value, "The sources are not compatible with the same model" );
+
+
+
+// template <typename tScalar, template<typename> typename tStateTemplate>
+// using ModelTemplate = ModelRN<tSourceContainer>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
+//                                                                                      nonlinear log maximum likelihood estimation problem by Ceres. */
+
+template<typename tDataType>
+using SourceContainerTemplate = SourceContainer<typename Source0::template SourceTemplate<tDataType>, typename Source1::template SourceTemplate<tDataType>, typename Source2::template SourceTemplate<tDataType>, typename Source3::template SourceTemplate<tDataType>, typename Source4::template SourceTemplate<tDataType>>;
 
 
 

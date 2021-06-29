@@ -54,15 +54,16 @@ static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typen
 
 template<typename tDataType, int tN, template <typename > typename tTransformation, MeasurementTypes tMeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename tS0, typename tS1, typename tS2, typename tS3, typename tS4>
 class ValidationRegionFixedPosPolicy<ModelRN<SourceContainer<tS0<lie_groups::State<lie_groups::Rn,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>>>{
-// class ValidationRegionFixedPosPolicy<ModelRN<lie_groups::State<lie_groups::Rn,tDataType,tN>, tTransformation, tSource> > {
 
     typedef ModelRN<SourceContainer<tS0<lie_groups::State<lie_groups::Rn,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>> Model;
 public:
     static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
 
-        Eigen::Matrix<double,tN,1> err = track.state_.g_.data_.block(0,0,tN,1) - meas.pose;
+        Meas<tDataType> m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
 
-        if(err.norm() <= sys.sources_[meas.source_index].params_.gate_threshold_ ) {
+        Eigen::Matrix<double,tN,1> err = m.pose - meas.pose;
+
+        if(err.norm() <= sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
             return true;
         } else {
             return false;
@@ -72,55 +73,57 @@ public:
 
 };
 
-// //-------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------
 
-// template<typename tDataType, int tN, template <typename > typename tTransformation, template <typename > typename tSource>
-// class ValidationRegionFixedPosPolicy<ModelSENPosVel<lie_groups::State<lie_groups::SE2,tDataType,tN>, tTransformation, tSource> > {
+template<typename tDataType, int tN, template <typename > typename tTransformation, MeasurementTypes tMeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename tS0, typename tS1, typename tS2, typename tS3, typename tS4>
+class ValidationRegionFixedPosPolicy<ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE2,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>>>{
 
-//     typedef ModelSENPosVel<lie_groups::State<lie_groups::SE2,tDataType,tN>, tTransformation, tSource> Model;
-// public:
-//     static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
+    typedef ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE2,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>> Model;
+public:
+    static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
 
-// #ifdef DEBUG_BUILD
-//        if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
-//         throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
-// #endif
+#ifdef DEBUG_BUILD
+       if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
+        throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
+#endif
 
-//         Eigen::MatrixXd err = track.state_.g_.t_ - meas.pose;
+        Meas<tDataType> m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
+        Eigen::MatrixXd err = m.pose - meas.pose;
 
-//         if(err.norm() <= sys.sources_[meas.source_index].params_.gate_threshold_ ) {
-//             return true;
-//         } else {
-//             return false;
-//         }
+        if(err.norm() <= sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
+            return true;
+        } else {
+            return false;
+        }
 
-// }
+}
 
-// };
+};
 
-// //-------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------
 
-// template<typename tDataType, int tN, template <typename > typename tTransformation, template <typename > typename tSource>
-// class ValidationRegionFixedPosPolicy<ModelSENPosVel<lie_groups::State<lie_groups::SE3,tDataType,tN>, tTransformation, tSource> > {
+template<typename tDataType, int tN, template <typename > typename tTransformation, MeasurementTypes tMeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename tS0, typename tS1, typename tS2, typename tS3, typename tS4>
+class ValidationRegionFixedPosPolicy<ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE3,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>>>{
 
-//     typedef ModelSENPosVel<lie_groups::State<lie_groups::SE3,tDataType,tN>, tTransformation, tSource> Model;
-// public:
-//     static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
+     typedef ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE3,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>> Model;
+public:
+    static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
 
-// #ifdef DEBUG_BUILD
-//        if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
-//         throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
-// #endif
+#ifdef DEBUG_BUILD
+       if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
+        throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
+#endif
 
-//         Eigen::MatrixXd err = track.state_.g_.t_ - meas.pose;
+        Meas<tDataType> m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
+        Eigen::MatrixXd err = m.pose - meas.pose;
 
-//         if(err.norm() <= sys.sources_[meas.source_index].params_.gate_threshold_ ) {
-//             return true;
-//         } else {
-//             return false;
-//         }
+        if(err.norm() <= sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
+            return true;
+        } else {
+            return false;
+        }
 
-// }
+}
 
 };
 

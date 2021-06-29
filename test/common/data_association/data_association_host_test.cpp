@@ -130,17 +130,26 @@ auto model_iter1 = std::next(model_iter0);
 
 
 // Setup measurements
+Eigen::Matrix3d transform_data;
+transform_data.setIdentity();
+bool transform_state = false;
+
+
 Meas<double> m0, m1;
 m0.type = source_params0.type_;
 m0.time_stamp = sys.current_time_;
 m0.source_index = 0;
 m0.probability = 0;
 m0.weight = 0;
+m0.transform_state = false;
+m0.transform_data_t_m = transform_data;
 m1.type = source_params1.type_;
 m1.time_stamp = sys.current_time_;
 m1.source_index = 1;
 m1.probability = 0;
 m1.weight = 0;
+m1.transform_state = false;
+m1.transform_data_t_m = transform_data*2;
 
 
 
@@ -181,7 +190,13 @@ for (int source_index =0; source_index < 2; ++source_index) {
 
 }
 
+const DataAssociationInfo& info = data_association_host.GetDataAssociationInfo();
 
+for (int ii =0; ii < sys.source_container_.num_sources_; ++ii) {
+    ASSERT_EQ(info.source_produced_measurements_[ii], true);
+    ASSERT_EQ(info.transform_state_[ii],false);
+    ASSERT_EQ(info.transform_data_t_m_[ii],transform_data*(ii+1));
+}
 
 
 }

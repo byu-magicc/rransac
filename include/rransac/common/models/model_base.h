@@ -88,15 +88,15 @@ void Reset() {
  * 
  */ 
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived> 
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
 class ModelBase
 {
 public:
     typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
     typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
+    typedef tDerived<tSourceContainer> DerivedModel;                   /**< The derived model. */
     typedef tSourceContainer SourceContainer;                                   /**< The object type of the source. @see SourceBase. */
     typedef typename tSourceContainer::Transformation Transformation;           /**< The object type of the measurement and track transformation. */
-    typedef tDerived Derived;                                                   /**< The object type of the derived class. */
     typedef Eigen::Matrix<DataType, Eigen::Dynamic, Eigen::Dynamic> MatXd;      
 
     static constexpr unsigned int g_dim_ = State::Group::dim_;                  /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */
@@ -126,6 +126,10 @@ public:
                                                      variable is reset to false after the update step in UpdateModel and the propagation step in PropagateModel since
                                                      the innovation covariances are no longer valid. The index of the vector corresponds to the source index. */
     Mat Q_;                            /**< Process noise covariance */
+
+
+    template<typename tDataType>
+    using ModelTemplate = tDerived<typename tSourceContainer::template SourceContainerTemplate<tDataType>>;
 
 #if RRANSAC_VIZ_HOOKS
     std::vector<Eigen::MatrixXd> S_validation_; /**< The innovation covariance used to compute the last validation region. */
@@ -169,7 +173,7 @@ public:
      * @return The Jacobian \f$ F_k\f$. 
      */ 
     static Mat GetLinTransFuncMatState(const State& state, const DataType dt) {
-        return tDerived::DerivedGetLinTransFuncMatState(state, dt);        
+        return DerivedModel::DerivedGetLinTransFuncMatState(state, dt);        
     }
 
     /**
@@ -179,7 +183,7 @@ public:
      * @return Returns the Jacobian \f$ G_k \f$
      */
     static Mat GetLinTransFuncMatNoise(const State& state, const DataType dt){
-        return tDerived::DerivedGetLinTransFuncMatNoise(state, dt);
+        return DerivedModel::DerivedGetLinTransFuncMatNoise(state, dt);
 
     }
 
@@ -202,7 +206,7 @@ public:
      * Performs the OPlus operation on the track's state using the state update provided.
      * @param[in] state_update The state update that will be added to the track's current state.
      */
-    void OPlusEQ(const VecCov& state_update){ static_cast<tDerived*>(this)->DerivedOPlusEq(state_update);}
+    void OPlusEQ(const VecCov& state_update){ static_cast<DerivedModel*>(this)->DerivedOPlusEq(state_update);}
 
 
     /**
@@ -286,15 +290,15 @@ public:
      * @param[in] track2 A track of this type.
      * @return Returns the geodesic distance between the track's state estimate.
      */ 
-    static VecCov OMinus(const tDerived& track1, const tDerived& track2) {
-        return tDerived::DerivedOMinus(track1, track2);
+    static VecCov OMinus(const DerivedModel& track1, const DerivedModel& track2) {
+        return DerivedModel::DerivedOMinus(track1, track2);
     }
 
     /**
      * Returns a Random State
      */ 
     static State GetRandomState(){
-        return tDerived::DerivedGetRandomState();
+        return DerivedModel::DerivedGetRandomState();
     }
 
     /**
@@ -339,7 +343,7 @@ Eigen::Matrix<DataType,tCovDim,1> PerformCentralizedMeasurementFusion(const Sour
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived> 
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
 void ModelBase<tSourceContainer, tCovDim, tDerived>::Init(const Parameters& params) {
 
     if (params.set_initial_error_covariance_to_id_) {
@@ -367,7 +371,7 @@ void ModelBase<tSourceContainer, tCovDim, tDerived>::Init(const Parameters& para
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived> 
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
 void ModelBase<tSourceContainer, tCovDim, tDerived>::PropagateModel(const DataType dt) {
 
     // Construct matrices to transform covariance.
@@ -388,7 +392,7 @@ void ModelBase<tSourceContainer, tCovDim, tDerived>::PropagateModel(const DataTy
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived> 
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
 void ModelBase<tSourceContainer, tCovDim, tDerived>::UpdateModel(const SourceContainer& source_container, const Parameters& params) {
 
     for(auto& source_meas : new_assoc_meas_) {
@@ -416,7 +420,7 @@ void ModelBase<tSourceContainer, tCovDim, tDerived>::UpdateModel(const SourceCon
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived> 
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
 Eigen::Matrix<typename tSourceContainer::State::DataType, tCovDim,1> ModelBase<tSourceContainer, tCovDim, tDerived>::PerformCentralizedMeasurementFusion(const tSourceContainer& source_container, const Parameters& params) {
 
 Eigen::Matrix<DataType,cov_dim_,1> state_update_sum;
@@ -459,7 +463,7 @@ return update;
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived>   
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived>   
 void ModelBase<tSourceContainer, tCovDim, tDerived>::GetStateUpdateAndCovariance(const tSourceContainer& source_container, const std::vector<Meas<DataType>>& meas, Eigen::Matrix<DataType,cov_dim_,1>& state_update, Mat& cov_update) {
 
 state_update.setZero();
@@ -506,7 +510,7 @@ state_update = K*nu;
 //---------------------------------------------------------------------------------------------------------
 
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived>  
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived>  
 Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSourceContainer, tCovDim, tDerived>::GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const MatXd& transform_data) const {
 
     // If the innovation covariance has been set this sensor scan return it. 
@@ -523,7 +527,7 @@ Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::D
 //---------------------------------------------------------------------------------------------------------
 
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived>  
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived>  
 Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSourceContainer, tCovDim, tDerived>::GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const MatXd& transform_data) {
 
 
@@ -540,7 +544,7 @@ Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::D
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  typename tDerived> 
+template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
 void ModelBase<tSourceContainer, tCovDim, tDerived>::AddNewMeasurement( const Meas<DataType>& meas) {
 
     

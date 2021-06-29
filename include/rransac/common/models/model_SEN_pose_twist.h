@@ -15,7 +15,7 @@ namespace rransac {
  * This model is designed to be used for target's whose configuration manifold is SEN and the measurement space is also SEN. See ModelBase for more detail.
  */ 
 template <typename tSourceContainer>
-class ModelSENPoseTwist : public ModelBase< tSourceContainer, tSourceContainer::State::Group::dim_*2, ModelSENPoseTwist<tSourceContainer>> {
+class ModelSENPoseTwist : public ModelBase< tSourceContainer, tSourceContainer::State::Group::dim_*2, ModelSENPoseTwist> {
 
 public:
 
@@ -23,10 +23,6 @@ typedef tSourceContainer SourceContainer;                                   /**<
 typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
 typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
 typedef typename SourceContainer::Transformation Transformation;            /**< The transformation data type. */
-
-template <typename tScalar, template<typename> typename tStateTemplate>
-using ModelTemplate = ModelSENPoseTwist<tSourceContainer>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
-                                                                                     nonlinear log maximum likelihood estimation problem by Ceres. */
 
 static constexpr unsigned int cov_dim_ = State::Group::dim_*2;                 /**< The dimension of the error covariance. */
 static constexpr unsigned int g_dim_ = State::Group::dim_;                      /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */

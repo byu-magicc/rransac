@@ -156,10 +156,10 @@ include_directories(../include
 # ../src/parameters.cpp)
 # target_link_libraries(data_association_host_test gtest_main )
 
-add_executable(validation_region_policy_tests 
-common/data_association/validation_region_policies/validation_region_policy_tests.cpp
-../src/parameters.cpp)
-target_link_libraries(validation_region_policy_tests gtest_main )
+# add_executable(validation_region_policy_tests 
+# common/data_association/validation_region_policies/validation_region_policy_tests.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(validation_region_policy_tests gtest_main )
 
 # add_executable(tli_ipdaf_policy_test 
 # common/data_association/track_likelihood_info_policies/tli_ipdaf_policy_test.cpp
@@ -183,8 +183,7 @@ target_link_libraries(validation_region_policy_tests gtest_main )
 # add_executable(nonlinear_lmle_policyTest 
 # track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
-# )
+# target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres)
 
 # add_executable(SE2_pos_policyTest 
 # track_initialization/seed_policies/SE2_pos_policy_test.cpp
@@ -192,10 +191,10 @@ target_link_libraries(validation_region_policy_tests gtest_main )
 # target_link_libraries(SE2_pos_policyTest gtest_main
 # )
 
-# add_executable(ransacTest 
-# track_initialization/ransac_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(ransacTest gtest_main )
+add_executable(ransacTest 
+track_initialization/ransac_test.cpp
+../src/parameters.cpp)
+target_link_libraries(ransacTest gtest_main )
 
 
 # add_executable(ransacTest2 

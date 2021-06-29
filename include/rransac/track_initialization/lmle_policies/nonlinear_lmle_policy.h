@@ -5,6 +5,7 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Dense>
 #include "ceres/ceres.h"
+#include <typeinfo>
 
 #include "rransac/data_containers/cluster.h"
 #include "rransac/system.h"
@@ -33,8 +34,13 @@ public:
 
 typedef typename tModel::State State;           /**< The state of the target. @see State. */
 typedef typename tModel::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
-typedef typename tModel::Source Source;         /**< The object type of the source. @see SourceBase. */
 typedef tModel Model;                           /**< The object type of the model. */
+// typedef typename tModel::template ModelTemplate<ceres::Jet<double,tModel::cov_dim_>> ModelT;
+// typedef typename ModelT::State StateT;
+// typedef typename ModelT::SourceContainer SourceContainerT;
+
+
+
 
 
 /**
@@ -63,6 +69,7 @@ private:
 static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
     NonLinearLMLEPolicy::GenerateSeedPolicy(meas_subset, sys, x, size);
 }
+
 
 
 
@@ -101,76 +108,85 @@ struct CostFunctor {
     template <typename T>
     bool operator() (const T* const x,  T* r)  const {
 
-    
-    // Since Ceres uses the data type Jet, we must create the model, state, and source
-    // using the data type Jet in order for the automatic differentiation to work properly.
-    typedef typename tModel::template ModelTemplate<T, State::template StateTemplate> ModelT;
-    typedef typename ModelT::State StateT;
-    typedef typename ModelT::Source SourceT;
-    typedef Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 
-    // Convert array to Eigen vector
-    Eigen::Map<const Eigen::Matrix<T,tModel::cov_dim_,1>> x_vector(x);
-
-
-
-    // Convert the measurement and time interval to type Jet.
-    Meas<T> tmp;
-    tmp.type = m_.type;
-    tmp.pose = m_.pose.template cast<T>();
-    tmp.twist = m_.twist.template cast<T>();
-    T dt = static_cast<T>(dt_);
-
-
-    // The parameter x is the local coordinate representation of the state. We must map it back to
-    // the manifold. 
-    StateT state;
-    state.g_.data_ =  StateT::Algebra::Exp(x_vector.block(0,0, tModel::g_dim_,1));
-    if (tModel::cov_dim_ != tModel::g_dim_*2) {
-        state.u_.data_.setZero();
-        state.u_.data_(0) = x_vector(tModel::g_dim_);
-        state.u_.data_.block(StateT::Algebra::dim_t_vel_,0,StateT::Algebra::dim_a_vel_,1) =  x_vector.block(tModel::g_dim_+1,0,StateT::Algebra::dim_a_vel_,1 );
-
-    } else {
-        state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
-    }
-    
-
-    // Propagate the state from the current time stamp to the time stamp of the measurement. 
-    state = ModelT::PropagateState(state,dt);
-
-    // Compute the error    
-    Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceT::OMinus(tmp, SourceT::GetEstMeas(state,m_.type));
-
-    // Compute the inverse innovation covariance and normalize the error. 
-    if (!sys_.params_.nonlinear_innov_cov_id_) {
-        // Construct innovation covariance
-        MatXd meas_cov = sys_.sources_[src_index_].params_.meas_cov_.template cast<T>();
-        MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
-        MatXd H = SourceT::GetLinObsMatState(state,m_.type);
-        MatXd V = SourceT::GetLinObsMatSensorNoise(state,m_.type);
-        MatXd F = ModelT::GetLinTransFuncMatState(state,dt);
-        MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
-        MatXd HF = H*F;
-        MatXd HG = H*G;
-        MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
+        // std::cout << "type id: " << typeid(T).name() << std::endl;
         
-        // Compute Normalized Error
-        e = S_inv_sqrt*e;
-    }
+        // Since Ceres uses the data type Jet, we must create the model, state, and source
+        // using the data type Jet in order for the automatic differentiation to work properly.
+        typedef typename tModel::template ModelTemplate<T> ModelT;
+        typedef typename ModelT::State StateT;
+        typedef typename ModelT::SourceContainer SourceContainerT;
+        static SourceContainerT source_container_t;
+        // typedef typename ModelT::Source SourceT;
+        typedef Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> MatXd;
+
+        // Convert array to Eigen vector
+        Eigen::Map<const Eigen::Matrix<T,tModel::cov_dim_,1>> x_vector(x);
 
 
-    // Extract the residual from the error. 
-    for (unsigned int ii = 0; ii < e.rows(); ++ii) {
-        r[ii] = e(ii);
 
-    }
+        // Convert the measurement and time interval to type Jet.
+        Meas<T> tmp;
+        tmp.type = m_.type;
+        tmp.pose = m_.pose.template cast<T>();
+        tmp.twist = m_.twist.template cast<T>();
+        tmp.transform_data_t_m = m_.transform_data_t_m.template cast<T>();
+        T dt = static_cast<T>(dt_);
+
+
+        // The parameter x is the local coordinate representation of the state. We must map it back to
+        // the manifold. 
+        StateT state;
+        state.g_.data_ =  StateT::Algebra::Exp(x_vector.block(0,0, tModel::g_dim_,1));
+        if (tModel::cov_dim_ != tModel::g_dim_*2) {
+            state.u_.data_.setZero();
+            state.u_.data_(0) = x_vector(tModel::g_dim_);
+            state.u_.data_.block(StateT::Algebra::dim_t_vel_,0,StateT::Algebra::dim_a_vel_,1) =  x_vector.block(tModel::g_dim_+1,0,StateT::Algebra::dim_a_vel_,1 );
+
+        } else {
+            state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
+        }
+        
+
+        // Propagate the state from the current time stamp to the time stamp of the measurement. 
+        state = ModelT::PropagateState(state,dt);
+
+        // Compute the error    
+        Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceContainerT::OMinus(src_index_,tmp, SourceContainerT::GetEstMeas(src_index_, state,m_.transform_state,tmp.transform_data_t_m));
+
+        // Compute the inverse innovation covariance and normalize the error. 
+        if (!sys_.params_.nonlinear_innov_cov_id_) {
+            // Construct innovation covariance
+            MatXd meas_cov = sys_.source_container_.GetParams(src_index_).meas_cov_.template cast<T>();
+            MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
+            MatXd H = source_container_t.GetLinObsMatState(src_index_,state,m_.transform_state,tmp.transform_data_t_m);
+            MatXd V = source_container_t.GetLinObsMatSensorNoise(src_index_,state,m_.transform_state,tmp.transform_data_t_m);
+            MatXd F = ModelT::GetLinTransFuncMatState(state,dt);
+            MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
+            MatXd HF = H*F;
+            MatXd HG = H*G;
+            MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
+            
+            // Compute Normalized Error
+            e = S_inv_sqrt*e;
+        }
+
+
+        // Extract the residual from the error. 
+        for (unsigned int ii = 0; ii < e.rows(); ++ii) {
+            r[ii] = e(ii);
+
+        }
 
 
 
     return true;
 
     }
+
+
+
+
 
     private:
     int src_index_;             /**< The source index of the measurement. */
@@ -199,8 +215,6 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
 
     success = false;
 
-    constexpr unsigned int meas_dim = tModel::Source::meas_space_dim_;
-
     double x[tModel::cov_dim_];
 
     // Construct the seed for the nonlinear optimization problem
@@ -209,14 +223,9 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     // Use Ceres to build the optimization problem
     ceres::Problem problem;
     for (auto iter = meas_subset.begin(); iter != meas_subset.end(); ++iter) {
-        if (sys.sources_[iter->inner_it->source_index].params_.has_twist) {
-            ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,meas_dim*2,tModel::cov_dim_>(new CostFunctor(*iter->inner_it, sys));
-            problem.AddResidualBlock(cost_function, nullptr, x);
-        } else {
-            ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,meas_dim,tModel::cov_dim_>(new CostFunctor(*iter->inner_it, sys));
-            problem.AddResidualBlock(cost_function, nullptr, x);
-        }
-        
+        const int meas_space_dim = sys.source_container_.GetParams(iter->inner_it->source_index).meas_space_dim_*sys.source_container_.GetParams(iter->inner_it->source_index).meas_space_dim_mult_;
+        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,ceres::DYNAMIC,tModel::cov_dim_>(new CostFunctor(*iter->inner_it, sys),meas_space_dim);
+            problem.AddResidualBlock(cost_function, nullptr, x);      
         
     }
 

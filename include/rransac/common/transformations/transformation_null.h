@@ -38,7 +38,7 @@ void DerivedSetData(const Mat3d data) {}
  * Doesn't transform the measurements.
  * @param meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(Meas<double>& meas) const {}
+void DerivedTransformMeasurement(Meas<DataType>& meas) const {}
 
 /** 
  * Doesn't transform the track.
@@ -70,7 +70,7 @@ static tState DerivedTransformState(const tState& state, const Mat3d& transform_
  * @param[in] transform_data The data used in the transformation
  */ 
 static MatXd DerivedGetTransformationJacobian(const tState& state, const Mat3d& transform_data) {
-   return Eigen::Matrix<double,1,1>::Zero();
+   return Eigen::Matrix<DataType,1,1>::Zero();
 }
 
 };

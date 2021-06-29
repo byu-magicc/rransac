@@ -22,7 +22,7 @@
 namespace rransac {
 
 template <typename tSourceContainer>
-class ModelRN : public ModelBase<tSourceContainer, tSourceContainer::State::Group::dim_*2, ModelRN<tSourceContainer>> {
+class ModelRN : public ModelBase<tSourceContainer, tSourceContainer::State::Group::dim_*2, ModelRN> {
 
 public:
 
@@ -30,10 +30,6 @@ typedef tSourceContainer SourceContainer;                                   /**<
 typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
 typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
 typedef typename SourceContainer::Transformation Transformation;            /**< The transformation data type. */
-
-template <typename tScalar, template<typename> typename tStateTemplate>
-using ModelTemplate = ModelRN<tSourceContainer>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
-                                                                                     nonlinear log maximum likelihood estimation problem by Ceres. */
 
 static constexpr unsigned int cov_dim_ = State::Group::dim_*2;                  /**< The dimension of the error covariance. */
 static constexpr unsigned int g_dim_ = State::Group::dim_;                      /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */

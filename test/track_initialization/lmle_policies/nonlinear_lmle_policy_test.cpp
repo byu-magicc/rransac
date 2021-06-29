@@ -20,11 +20,18 @@ using namespace lie_groups;
 
 TEST(NONLinearPolicyTest, SE3PoseTest) {
 
-typedef ModelSENPoseTwist<SE3_se3,TransformNULL> Model;
+
+
+typedef SourceSENPoseTwist<SE3_se3,MeasurementTypes::SEN_POSE,TransformNULL> SourceSE3Pose;
+typedef SourceSENPoseTwist<SE3_se3,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourceSE3PoseTwist;
+
+
+typedef SourceContainer<SourceSE3Pose,SourceSE3PoseTwist> SourceContainerSE3;
+
+typedef ModelSENPoseTwist<SourceContainerSE3> Model;
 
 // Setup sources
 double noise = 1e-3;
-typename Model::Source source1, source2;
 SourceParameters source_params1, source_params2;
 source_params1.meas_cov_ = Eigen::Matrix<double,6,6>::Identity()*noise;
 source_params1.source_index_ = 0;
@@ -32,8 +39,7 @@ source_params1.type_ = MeasurementTypes::SEN_POSE;
 source_params2.meas_cov_ = Eigen::Matrix<double,12,12>::Identity()*noise;
 source_params2.source_index_ = 1;
 source_params2.type_ = MeasurementTypes::SEN_POSE_TWIST;
-source1.Init(source_params1);
-source2.Init(source_params2);
+
 
 // Setup measurements
 Meas<double> m1, m2;
@@ -47,8 +53,8 @@ params.process_noise_covariance_ = Eigen::Matrix<double,12,12>::Identity()*noise
 // params.nonlinear_innov_cov_id_ = true;
 System<Model> sys;
 sys.params_ = params;
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
 
 // Get minimum subset;
 Model track;
@@ -62,7 +68,8 @@ std::list<Meas<double>> meas_time;
 std::vector<Cluster<double>::IteratorPair> meas_subset;
 Cluster<double>::IteratorPair iter_pair;
 
-
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 
 for (double ii = start_time; ii < end_time; ii += dt) {
 
@@ -71,14 +78,15 @@ for (double ii = start_time; ii < end_time; ii += dt) {
     }
     meas_time.clear();
 
-    tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
-    // tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
-    tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,12,12>::Identity()*sqrt(noise));
+    tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise),track.state_,transform_state,EmptyMat);
+    tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index,Eigen::Matrix<double,12,12>::Identity()*sqrt(noise),track.state_,transform_state,EmptyMat);
     m1.pose = tmp1.pose;
     m1.time_stamp = ii;
+    m1.transform_state = false;
     m2.pose = tmp2.pose;
     m2.twist = tmp2.twist;
     m2.time_stamp = ii;
+    m2.transform_state = false;
     meas_time.push_back(m1);
     meas_time.push_back(m2);
     measurements.push_back(meas_time);
@@ -129,8 +137,16 @@ TEST(NONLinearPolicyTest, SE2PosTest) {
 srand((unsigned int) time(0));
 
 typedef SE2_se2 State;
-typedef SourceSENPosVel<State> Source;
-typedef ModelSENPosVel<State,TransformNULL> Model;
+
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2Pos;
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE3PosVel;
+
+
+typedef SourceContainer<SourceSE2Pos,SourceSE3PosVel> SourceContainerSE2;
+
+typedef ModelSENPosVel<SourceContainerSE2> Model;
+
+
 
 System<Model> sys;
 
@@ -145,17 +161,14 @@ source_params2.source_index_ = 1;
 source_params2.type_ = MeasurementTypes::SEN_POS_VEL;
 source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 
-Source source1, source2;
-source1.Init(source_params1);
-source2.Init(source_params2);
 
 Parameters params;
 params.process_noise_covariance_ = Eigen::Matrix<double,5,5>::Identity()*noise;
 params.nonlinear_innov_cov_id_ = false;
 params.nonlinear_LMLE_Ceres_max_num_iters_ = 10;
 sys.params_ = params;
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
 
 Meas<double> m1,m2;
 m1.source_index = 0;
@@ -178,6 +191,9 @@ std::list<Meas<double>> meas_time;
 std::vector<Cluster<double>::IteratorPair> meas_subset;
 Cluster<double>::IteratorPair iter_pair;
 
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
+
 for (double ii = start_time; ii < end_time; ii += dt) {
 
     if (ii != start_time) {
@@ -185,9 +201,8 @@ for (double ii = start_time; ii < end_time; ii += dt) {
     }
     meas_time.clear();
 
-    tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,2,2>::Identity()*sqrt(noise));
-    // tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
-    tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+    tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index,Eigen::Matrix<double,2,2>::Identity()*sqrt(noise),track.state_,transform_state,EmptyMat);
+    tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),track.state_,transform_state,EmptyMat);
     m1.pose = tmp1.pose;
     m1.time_stamp = ii;
     m2.pose = tmp2.pose;

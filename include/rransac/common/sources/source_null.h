@@ -11,15 +11,16 @@
 namespace rransac {
 
 
-template<typename tState=lie_groups::R2_r2, MeasurementTypes tMeasurementType=MeasurementTypes::NUM_TYPES, typename tTransformation = TransformNULL<lie_groups::R2_r2>>
-class SourceNull : public SourceBase<tState,tMeasurementType,tTransformation,SourceNull<tState,tMeasurementType,tTransformation>> {
+template<typename tState=lie_groups::R2_r2, MeasurementTypes tMeasurementType=MeasurementTypes::NUM_TYPES, template <typename > typename tTransformation = TransformNULL>
+class SourceNull : public SourceBase<tState,tMeasurementType,tTransformation,0,SourceNull> {
 
 public:
 
 typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-typedef double DataType;
+typedef typename tState::DataType DataType;
 typedef utilities::CompatibleWithModelNull ModelCompatibility;              /**<Indicates which model this source is compatible with. */
 static constexpr MeasurementTypes measurement_type_ = tMeasurementType;     /**< The measurement type of the source. */
+static constexpr unsigned int meas_space_dim_ = 1;
 
 
 /** 
@@ -28,9 +29,10 @@ static constexpr MeasurementTypes measurement_type_ = tMeasurementType;     /**<
  * This is a good assumption when all of the sources have the same surveillance region.
  * @param[in] params The source parameters.
  */ 
-void Init(const SourceParameters& params) {
+void DerivedInit(const SourceParameters& params) {
     throw std::runtime_error("SourceNull::Init Function Not Implemented, and shouldn't be called. ");    
 }
+
 
 /** 
  * Returns the jacobian of the observation function w.r.t. the states. 
@@ -53,7 +55,7 @@ static MatXd DerivedGetLinObsMatSensorNoise(const tState& state)  {
  *  Implements the observation function and returns an estimated measurement based on the state. 
  * @param[in] state A state of the target.
  */
-static Meas<double> DerivedGetEstMeas(const tState& state)  {
+static Meas<DataType> DerivedGetEstMeas(const tState& state)  {
     throw std::runtime_error("SourceNull::DerivedGetEstMeas Function Not Implemented, and shouldn't be called. "); 
 
 } 
@@ -75,12 +77,27 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
  * @param[in] state    The state that serves as the mean of the Gaussian distribution.
  * @param[in] meas_std The measurement standard deviation.
  */ 
-Meas<double> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const {
+Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const {
     throw std::runtime_error("SourceNull::DerivedGenerateRandomMeasurement Function Not Implemented, and shouldn't be called. "); 
 
 }
 
 };
+
+
+//-----------------------------------------------------------------------------------------------------------------------------
+
+
+template<typename tSource>
+struct IsSourceNull {
+    static constexpr bool value = false;
+};
+
+template<typename tState, MeasurementTypes tMeasurementType, template<typename > typename tTransformation>
+struct IsSourceNull<SourceNull<tState,tMeasurementType,tTransformation>>{
+      static constexpr bool value = true; 
+};
+
 
 
 

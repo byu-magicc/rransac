@@ -61,6 +61,8 @@ struct SourceParameters {
     bool has_twist;                      /**< Indicates if the measurement has twist data in addition to pose. This is calculated from SourceParameters::type_. */
     double gate_threshold_sqrt_;         /**< The square root of the gate threshold. */    
     double vol_unit_hypershpere_;        /**< The volume of the unit hypershpere in the measurement space. This is determined by the dimension of the measurement source. */
+    unsigned int meas_space_dim_;        /**< The dimension of the measurement space. */
+    unsigned int meas_space_dim_mult_;   /**< Multiplier used on the measurement space incase the measurement space includes a derivative. */
 
     // Sets some parameters to default
     SourceParameters() {
@@ -105,22 +107,30 @@ struct SourceParameters {
 
 
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
 class SourceBase
 {
 
 public:
 
     typedef tState State;                                                       /**< The state of the target. @see State. */
-    typedef tTransformation Transformation;                                     /**< The transformation used to transform the measurements and tracks. */
+    typedef tTransformation<tState> Transformation;                             /**< The transformation used to transform the measurements and tracks. */
+    typedef tDerived<tState,tMeasurementType,tTransformation> DerivedSource;    /**< The derived source. */
     typedef typename tState::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
     typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
-    static constexpr unsigned int meas_space_dim_ = tDerived::meas_space_dim_;  /**< The Dimension of the measurement space. */
+    static constexpr unsigned int meas_space_dim_ = tMeasSpaceDim;              /**< The Dimension of the measurement space. */
     static constexpr MeasurementTypes meas_type_ = tMeasurementType;
+    static constexpr int meas_space_dim_mult_ = MeasDimMultiplier<tMeasurementType>::value; /**< a constant used when the measurement contains velocity. */
+    static constexpr int has_vel_ = MeasHasVelocity<tMeasurementType>::value;               /**< Indicates if the measurement contains velocity.  */
 
     std::function<bool(const State&)> state_in_surveillance_region_callback_;   /**< A pointer to the function which determines if a target's state is inside the source's surveillance region. */
                                                      /**< The source parameters @see SourceParameters. */
     
+
+    template <typename tDataType>
+    using SourceTemplate = tDerived<typename tState::template StateTemplate<tDataType>,tMeasurementType,tTransformation>; /**< Used to create a source of a different data type. */
+
+
 
     static MatXd H_;
     static MatXd V_;                                                                          
@@ -131,6 +141,15 @@ public:
     SourceBase(const SourceBase& other) : SourceBase() {
         params_ = other.params_;
         state_in_surveillance_region_callback_ = other.state_in_surveillance_region_callback_;
+    }
+
+    /**
+     * Assignment operator
+     */ 
+    SourceBase& operator = (const SourceBase& other) {
+        params_ = other.params_;
+        state_in_surveillance_region_callback_ = other.state_in_surveillance_region_callback_;
+        return *this;
     }
 
     /** 
@@ -203,7 +222,7 @@ public:
         throw std::runtime_error("SourceBase:: The measurements are not the right type.");
     }
 #endif
-        return tDerived::DerivedOMinus(m1, m2);
+        return DerivedSource::DerivedOMinus(m1, m2);
     } 
 
 
@@ -269,9 +288,9 @@ public:
 
 
 // private:
-     SourceBase();
+     SourceBase()=default;
     ~SourceBase();
-    friend tDerived; /**< The object that inherits this base class. */
+    friend DerivedSource; /**< The object that inherits this base class. */
 
 protected:
 
@@ -296,56 +315,52 @@ private:
         return true;
     }
 
+    bool source_init_ = false; /**< Indicates if the source has been initialized. */
+
     /**
      * This array of function pointers, holds pointers to the different methods of calculating the spatial distance
      * between two measurements. The index is determined by the measurement type. If two measurements are of different measurement
      * spaces, then their spatial distance cannot be calculated and a runtime error is thrown.
      */ 
-    typedef double (*GSDFuncPTR)(const Meas<DataType>&, const Meas<DataType>&, const Parameters&);
+    typedef DataType (*GSDFuncPTR)(const Meas<DataType>&, const Meas<DataType>&, const Parameters&);
 
     GSDFuncPTR **gsd_ptr_;
 
-    static double GSD_RN_RN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
-    static double GSD_SEN_SEN_POSE(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (State::Group::OMinus(meas1.pose,meas2.pose)).norm(); }
-    static double GSD_SEN_SEN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
-    static double GSD_NotImplemented(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
-    static double GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params);
+    static DataType GSD_RN_RN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) {return (meas1.pose - meas2.pose).norm();}
+    static DataType GSD_SEN_SEN_POSE(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (State::Group::OMinus(meas1.pose,meas2.pose)).norm(); }
+    static DataType GSD_SEN_SEN_POS(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){return (meas1.pose - meas2.pose).norm(); }
+    static DataType GSD_NotImplemented(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
+    static DataType GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params);
     
 
 };
 
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::H_;
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::H_;
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::V_;
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::V_;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-void SourceBase<tState,tMeasurementType,tTransformation,tDerived>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+void SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::Init(const SourceParameters& params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
     this->Init(params);
     this->state_in_surveillance_region_callback_ = state_in_surveillance_region_callback;
 }
 
 //-------------------------------------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-void SourceBase<tState,tMeasurementType,tTransformation,tDerived>::Init(const SourceParameters& params) {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+void SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::Init(const SourceParameters& params) {
 
     bool success = SetParameters(params); // Verifies the parameters. If there is an invalid parameter, an error will be thrown. Otherwise, the parameters are set.
     this->state_in_surveillance_region_callback_ = StateInsideSurveillanceRegionDefaultCallback;
-    static_cast<tDerived*>(this)->DerivedInit(params_);
-}   
+    static_cast<DerivedSource*>(this)->DerivedInit(params_);
 
-
-//-------------------------------------------------------------------------------
-
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SourceBase() {
 
     // Generate two dimensional array of function pointers.
     gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
@@ -377,37 +392,36 @@ SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SourceBase() {
     
 
 
+    bool source_init_ = true;
+}   
 
-}
+
 
 //---------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-SourceBase<tState,tMeasurementType,tTransformation,tDerived>::~SourceBase() {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::~SourceBase() {
 
-    for (int i = 0; i < MeasurementTypes::NUM_TYPES; i++) {
-        delete [] gsd_ptr_[i];
+    if(source_init_) {
+        for (int i = 0; i < MeasurementTypes::NUM_TYPES; i++) {
+            delete [] gsd_ptr_[i];
+        }
+        delete [] gsd_ptr_;
     }
-    delete [] gsd_ptr_;
 
 }
 
 //---------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::VerifySourceParameters(const SourceParameters& params) {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+bool SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::VerifySourceParameters(const SourceParameters& params) {
 
     bool success = true;
     unsigned int mult = 1;
 
  
 
-    if(params.type_ == MeasurementTypes::RN_POS_VEL || params.type_ == MeasurementTypes::SEN_POS_VEL || params.type_ == MeasurementTypes::SEN_POSE_TWIST) {
-        mult = 2;
-    }
-
-
-    if (params.meas_cov_.rows() != tDerived::meas_space_dim_*mult ) { // Make sure that it is not empty
+    if (params.meas_cov_.rows() != DerivedSource::meas_space_dim_*meas_space_dim_mult_ ) { // Make sure that it is not empty
         throw std::runtime_error("SourceBase::VerifySourceParameters: Measurement covariance is not the right dimension");
         success = false;
     } 
@@ -463,8 +477,8 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::VerifySourceP
 }
 
 //------------------------------------------------------------------------------------------------------------------------
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SetParameters(const SourceParameters& params) {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+bool SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::SetParameters(const SourceParameters& params) {
     bool success = VerifySourceParameters(params);
     if (success) {
         this->params_ = params;
@@ -485,14 +499,16 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::SetParameters
         }
     
         this->params_.gate_threshold_sqrt_ = sqrt(this->params_.gate_threshold_ ); 
+        this->params_.meas_space_dim_ = meas_space_dim_;
+        this->params_.meas_space_dim_mult_ = meas_space_dim_mult_;
     }
     return success;
 }
 
 //------------------------------------------------------------------------------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-Meas<typename tState::DataType> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data)  {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+Meas<typename tState::DataType> SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::GetEstMeas(const State& state, const bool transform_state, const MatXd& transform_data)  {
         
 #ifdef DEBUG_BUILD
     if(transform_state && Transformation::is_null_transform_) {
@@ -505,57 +521,57 @@ Meas<typename tState::DataType> SourceBase<tState,tMeasurementType,tTransformati
     
     if(transform_state && !Transformation::is_null_transform_) {
         State state_transformed = Transformation::TransformState(state,transform_data);
-        return tDerived::DerivedGetEstMeas(state_transformed);
+        return DerivedSource::DerivedGetEstMeas(state_transformed);
 
     } else {
-        return tDerived::DerivedGetEstMeas(state);
+        return DerivedSource::DerivedGetEstMeas(state);
     }
 } 
 
 
 //------------------------------------------------------------------------------------------------------------------------
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-Eigen::Matrix<typename tState::DataType, Eigen::Dynamic, Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data) {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+Eigen::Matrix<typename tState::DataType, Eigen::Dynamic, Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::GetLinObsMatState(const State& state, const bool transform_state, const MatXd& transform_data) {
     if(transform_state && !Transformation::is_null_transform_) {
         State state_transformed = Transformation::TransformState(state,transform_data);
         MatXd transform_jacobian = Transformation::GetTransformationJacobian(state,transform_data);
-        return tDerived::DerivedGetLinObsMatState(state_transformed)*transform_jacobian;
+        return DerivedSource::DerivedGetLinObsMatState(state_transformed)*transform_jacobian;
 
     } else {
-        return tDerived::DerivedGetLinObsMatState(state);
+        return DerivedSource::DerivedGetLinObsMatState(state);
     }        
 }    
 
 //------------------------------------------------------------------------------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-Eigen::Matrix<typename tState::DataType, Eigen::Dynamic, Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data) {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+Eigen::Matrix<typename tState::DataType, Eigen::Dynamic, Eigen::Dynamic> SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::GetLinObsMatSensorNoise(const State& state, const bool transform_state, const MatXd& transform_data) {
     if(transform_state && !Transformation::is_null_transform_) {
         State state_transformed = Transformation::TransformState(state,transform_data);
-        return tDerived::DerivedGetLinObsMatSensorNoise(state_transformed);
+        return DerivedSource::DerivedGetLinObsMatSensorNoise(state_transformed);
 
     } else {
-        return tDerived::DerivedGetLinObsMatSensorNoise(state);
+        return DerivedSource::DerivedGetLinObsMatSensorNoise(state);
     }
 }  
 
 //------------------------------------------------------------------------------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-Meas<typename tState::DataType> SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+Meas<typename tState::DataType> SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::GenerateRandomMeasurement(const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const {
     if(transform_state && !Transformation::is_null_transform_) {
         State state_transformed = Transformation::TransformState(state,transform_data);
-        return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state_transformed);
+        return static_cast<const DerivedSource*>(this)->DerivedGenerateRandomMeasurement(meas_std,state_transformed);
 
     } else {
-        return static_cast<const tDerived*>(this)->DerivedGenerateRandomMeasurement(meas_std,state);
+        return static_cast<const DerivedSource*>(this)->DerivedGenerateRandomMeasurement(meas_std,state);
     }
 }
 
 //------------------------------------------------------------------------------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) const {
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+bool SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::StateInsideSurveillanceRegion(const State& state, const bool transform_state, const MatXd& transform_data) const {
     
     if(transform_state && !Transformation::is_null_transform_) {
         State state_transformed = Transformation::TransformState(state,transform_data);
@@ -568,10 +584,10 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tDerived>::StateInsideSu
 
 //------------------------------------------------------------------------------------------------------------------------
 
-template<typename tState, MeasurementTypes tMeasurementType, typename tTransformation, typename tDerived>
-double SourceBase<tState,tMeasurementType,tTransformation,tDerived>::GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+typename tState::DataType SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::GSD_SE3_CamDepth_SE3_CamDepth(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params){
     
-    double d = 0;
+    DataType d = 0;
 
     if(meas1.transform_state && meas2.transform_state) {
 

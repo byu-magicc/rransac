@@ -27,8 +27,8 @@ public:
 
 typedef tState State;
 typedef typename tState::DataType DataType; /**< The scalar object for the data. Ex. float, double, etc. */
-typedef Eigen::Matrix<double,4,4> MatData;
-typedef Eigen::Matrix<double,10,10> MatCov;
+typedef Eigen::Matrix<DataType,4,4> MatData;
+typedef Eigen::Matrix<DataType,10,10> MatCov;
 typedef Eigen::Matrix<DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;  
 
 

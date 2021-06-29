@@ -19,7 +19,7 @@ namespace rransac {
  */ 
 
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-class SourceRN : public SourceBase<tState, tMeasurementType, tTransformation<tState>, SourceRN<tState,tMeasurementType,tTransformation>> {
+class SourceRN : public SourceBase<tState, tMeasurementType, tTransformation, tState::Group::dim_, SourceRN> {
 
 public:
 
@@ -27,31 +27,32 @@ typedef tState State;                                                       /**<
 typedef typename tState::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
 static constexpr unsigned int state_dim_ = tState::dim_;                    /**< The dimension of the state. */
-static constexpr unsigned int meas_space_dim_ = tState::Group::dim_;        /**< The dimension of the measurement space. */
 static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_;        /**< The number of rows in the pose measurement. */
 static constexpr unsigned int meas_pose_cols_ = 1;                          /**< The number of columns in the pose measurement. */
 static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;       /**< The number of rows in the twist measurement. */
 static constexpr unsigned int meas_twist_cols_ = 1;                         /**< The number of columns in the twist measurement. */
 static constexpr MeasurementTypes measurement_type_ = tMeasurementType;     /**< The measurement type of the source. */
 typedef utilities::CompatibleWithModelRN ModelCompatibility;                /**< Indicates which model this source is compatible with. */
-typedef SourceBase<tState, tMeasurementType, tTransformation<tState>, SourceRN<tState,tMeasurementType,tTransformation>> Base;                          /**< The source base class. */
+typedef SourceBase<tState, tMeasurementType, tTransformation, tState::Group::dim_, SourceRN>  Base;                          /**< The source base class. */
 
-static constexpr int dim_mult_ = MeasHasVelocity<tMeasurementType>::value ? 2 : 1; /**< a constant used when the measurement contains velocity. */
-static constexpr int has_vel_ = MeasHasVelocity<tMeasurementType>::value ? true : false; /**< Indicates if the measurement contains velocity.  */
+
 
 // Perform compatibility checks
 static_assert(lie_groups::utilities::StateIsRN_rN<tState>::value, "SourceRN: The state is not compatible with the model");
 static_assert( tMeasurementType == MeasurementTypes::RN_POS || tMeasurementType==MeasurementTypes::RN_POS_VEL, "SourceRN: The measurement type is not compatible with the source."    );
 
 
-SourceRN()=default;
+/**
+ * Initializes the Jacobians
+ */ 
+SourceRN();
 ~SourceRN()=default;
 
 /** 
- * Initializes the measurement source by initializing the Jacobians. 
+ * Initializes the measurement source. Currently it does nothing. 
  * @param[in] params The source parameters.
  */
-void DerivedInit(const SourceParameters& params);      
+void DerivedInit(const SourceParameters& params){}      
 
 
 /** 
@@ -103,12 +104,12 @@ Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tSt
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-void SourceRN<tState, tMeasurementType, tTransformation>::DerivedInit(const SourceParameters& params) {
+SourceRN<tState, tMeasurementType, tTransformation>::SourceRN() {
 
 
-    Base::H_ = Eigen::Matrix<DataType, meas_space_dim_*dim_mult_, state_dim_>::Zero();
-    Base::H_.block(0,0, meas_space_dim_*dim_mult_, meas_space_dim_*dim_mult_).setIdentity();
-    Base::V_ = Eigen::Matrix<DataType, meas_space_dim_*dim_mult_,meas_space_dim_*dim_mult_>::Identity();
+    Base::H_ = Eigen::Matrix<DataType, Base::meas_space_dim_*Base::meas_space_dim_mult_, state_dim_>::Zero();
+    Base::H_.block(0,0, Base::meas_space_dim_*Base::meas_space_dim_mult_, Base::meas_space_dim_*Base::meas_space_dim_mult_).setIdentity();
+    Base::V_ = Eigen::Matrix<DataType, Base::meas_space_dim_*Base::meas_space_dim_mult_,Base::meas_space_dim_*Base::meas_space_dim_mult_>::Identity();
     
 }
 
@@ -135,7 +136,7 @@ Meas<typename tState::DataType> SourceRN<tState,tMeasurementType, tTransformatio
     Meas<DataType> m;
     m.type = tMeasurementType;
     m.pose = state.g_.data_;
-    if (has_vel_) {
+    if (Base::has_vel_) {
         m.twist = state.u_.data_;
     }
     return m;
@@ -146,11 +147,11 @@ template <typename tState, MeasurementTypes tMeasurementType, template <typename
 Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceRN<tState,tMeasurementType, tTransformation>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
 
 
-    Eigen::Matrix<DataType, meas_space_dim_*dim_mult_,1> error;
-    error.block(0,0,meas_space_dim_,1) = m1.pose - m2.pose;
+    Eigen::Matrix<DataType, Base::meas_space_dim_*Base::meas_space_dim_mult_,1> error;
+    error.block(0,0,Base::meas_space_dim_,1) = m1.pose - m2.pose;
 
-    if(has_vel_) {
-        error.block(meas_space_dim_,0,meas_space_dim_,1) = m1.twist - m2.twist;
+    if(Base::has_vel_) {
+        error.block(Base::meas_space_dim_,0,Base::meas_space_dim_,1) = m1.twist - m2.twist;
     }
     
     return error;
@@ -166,10 +167,10 @@ Meas<typename tState::DataType> SourceRN<tState,tMeasurementType, tTransformatio
     m = DerivedGetEstMeas(state);
     m.source_index = this->params_.source_index_;
 
-    m.pose += deviation.block(0,0,meas_space_dim_,1);
+    m.pose += deviation.block(0,0,Base::meas_space_dim_,1);
 
-    if(has_vel_) {
-        m.twist += deviation.block(meas_space_dim_,0,meas_space_dim_,1);
+    if(Base::has_vel_) {
+        m.twist += deviation.block(Base::meas_space_dim_,0,Base::meas_space_dim_,1);
     }
 
     return m;
