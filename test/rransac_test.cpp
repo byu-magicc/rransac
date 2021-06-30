@@ -12,6 +12,7 @@
 #include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
 #include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
 #include "rransac/common/data_association/measurement_weight_policies/mw_ipdaf_policy.h"
+#include "rransac/common/sources/source_container.h"
 
 
 
@@ -29,15 +30,22 @@ bool func(const State& state) {
 }
 };
 
-typedef ModelRN<R2_r2,TransformHomography,SourceRN> Model;
-typedef RRANSACTemplateParameters<R2_r2,SourceRN,TransformHomography,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSACParams;
+
+// template<typename tSourceContainer, template<typename> typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
+
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformHomography> SourceR2PosHomography;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformHomography> SourceR2PosVelHomography;
+typedef SourceContainer<SourceR2PosHomography,SourceR2PosHomography,SourceR2PosVelHomography,SourceR2PosVelHomography> SC;
+
+typedef ModelRN<SC> Model;
+typedef RRANSACTemplateParameters<SC,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSACParams;
 typedef Eigen::Matrix<double,2,1> MatPose;
 
 TEST(RRANSACTest, AddSource_AddMeasurement) {
 
 RRANSAC<RANSACParams> rransac;
-const System<RANSACParams::Model>* sys = rransac.GetSystemInformation();
-CallbackClass<RANSACParams::State> call;
+const System<RANSACParams::TModel>* sys = rransac.GetSystemInformation();
+CallbackClass<RANSACParams::TState> call;
 
 //
 // Set System Parameters test
@@ -65,21 +73,19 @@ source_params4.type_ = MeasurementTypes::RN_POS_VEL;
 // Test invalid source index
 source_params1.source_index_ = -1;
 ASSERT_ANY_THROW(rransac.AddSource(source_params1));
-ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State>::func, call, std::placeholders::_1)));
-source_params1.source_index_ = 1;
-ASSERT_ANY_THROW(rransac.AddSource(source_params1));
-ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State>::func, call, std::placeholders::_1)));
+ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::TState>::func, call, std::placeholders::_1)));
+
 
 // Add valid source index
 source_params1.source_index_ = 0;
 ASSERT_NO_THROW(rransac.AddSource(source_params1));
 
 // Test invalid source index
-ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State>::func, call, std::placeholders::_1)));
+ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::TState>::func, call, std::placeholders::_1)));
 
 // Test valid source index
 source_params2.source_index_ = 1;
-ASSERT_NO_THROW(rransac.AddSource(source_params2,std::bind(&CallbackClass<RANSACParams::State>::func, call, std::placeholders::_1)));
+ASSERT_NO_THROW(rransac.AddSource(source_params2,std::bind(&CallbackClass<RANSACParams::TState>::func, call, std::placeholders::_1)));
 
 // Test invalid source index
 source_params3.source_index_ = 0;
@@ -100,18 +106,21 @@ ASSERT_NO_THROW(rransac.AddSource(source_params4));
 
 
 // Make sure the size is right.
-ASSERT_EQ(sys->sources_.size(),4);
+int tmp = sys->source_container_.num_sources_;
+ASSERT_EQ(tmp,4);
 
-typename RANSACParams::State state;
+typename RANSACParams::TState state;
 state.g_.data_ << 10,1;
 
 // Test that the callback was set properly.
-ASSERT_FALSE(sys->sources_[1].StateInsideSurveillanceRegion(state));
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
+ASSERT_FALSE(sys->source_container_.StateInsideSurveillanceRegion(1,state,transform_state, EmptyMat));
 
 // Test change parameters
 source_params1.source_index_ = -1;
 ASSERT_ANY_THROW(rransac.ChangeSourceParameters(source_params1));
-source_params1.source_index_ = sys->sources_.size();
+source_params1.source_index_ = sys->source_container_.num_sources_;
 ASSERT_ANY_THROW(rransac.ChangeSourceParameters(source_params1));
 source_params1.source_index_ = 0;
 source_params1.type_ = MeasurementTypes::RN_POS_VEL;
@@ -120,7 +129,7 @@ ASSERT_ANY_THROW(rransac.ChangeSourceParameters(source_params1));
 source_params1.type_ = MeasurementTypes::RN_POS;
 source_params1.gate_probability_ = 0.1234;
 ASSERT_NO_THROW(rransac.ChangeSourceParameters(source_params1));
-ASSERT_EQ(sys->sources_[0].params_.gate_probability_, source_params1.gate_probability_);
+ASSERT_EQ(sys->source_container_.GetParams(0).gate_probability_, source_params1.gate_probability_);
 
 //
 // Add Measurement test

@@ -144,7 +144,7 @@ TEST_F(SourceContainerTest, ADD_SOURCE) {
     for (int ii =0; ii < num_sources; ++ii) {
         meas_covs[ii]*=2;
         source_params[ii].meas_cov_*=2;
-        ASSERT_TRUE(source_container_full.ChangeSourceParameters(ii,source_params[ii]));
+        ASSERT_TRUE(source_container_full.ChangeSourceParameters(source_params[ii]));
         ASSERT_EQ(source_container_full.GetParams(ii).meas_cov_, meas_covs[ii]);
     }
 
@@ -254,6 +254,12 @@ TEST_F(SourceContainerTest, DistanceTests) {
     bool transform_state = false;
     Eigen::MatrixXd EmptyMat;
 
+    source_container_full.AddSource(source_params[0]);
+    source_container_full.AddSource(source_params[1]);
+    source_container_full.AddSource(source_params[2]);
+    source_container_full.AddSource(source_params[3]);
+    source_container_full.AddSource(source_params[4]);
+
     // Construct the measurements
     Meas<double> m1, m2;
     typename SC::Source4::State state;
@@ -267,8 +273,8 @@ TEST_F(SourceContainerTest, DistanceTests) {
     m2 = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
     m1.time_stamp = 0;
     m2.time_stamp = 1;
-    m1.type = SC::Source4::meas_type_;
-    m2.type = SC::Source4::meas_type_;
+    m1.type = SC::Source4::measurement_type_;
+    m2.type = SC::Source4::measurement_type_;
     m1.source_index = 4;
     m2.source_index = 4;
 

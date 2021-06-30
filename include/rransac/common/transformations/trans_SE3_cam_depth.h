@@ -104,6 +104,33 @@ static MatXd DerivedGetTransformationJacobian(const State& state, const MatData&
 }
 
 
+/**
+ * Verifies that the transform data provided by the user is in the requested from.
+ * @param transform_data The tranformation data to be tested. 
+ */
+static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+
+    bool correct;
+
+    // transform data should be a 3x3 matrix
+    if(transform_data.cols() != 4 || transform_data.rows() != 4) {
+        correct = false;
+    } else if (transform_data.determinant() !=1) { // The determinant should be 1
+        correct = false;
+    } else if(transform_data.block(0,0,3,3)*transform_data.block(0,0,3,3).transpose() != Eigen::Matrix3d::Identity()) { // Make sure it is a rotation matrix
+        correct = false;
+    } else if (transform_data.block(3,0,1,2).norm() != 0) { // These cells should be zero
+        correct = false;
+    } else {
+        correct = true;
+    }
+
+
+
+    return correct;
+} 
+
+
 };
 
 template<class tState>

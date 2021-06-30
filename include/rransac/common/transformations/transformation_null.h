@@ -73,6 +73,16 @@ static MatXd DerivedGetTransformationJacobian(const tState& state, const Mat3d& 
    return Eigen::Matrix<DataType,1,1>::Zero();
 }
 
+
+/**
+ * Verifies that the transform data provided by the user is in the requested from.
+ * @param transform_data The tranformation data to be tested. 
+ */
+static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+    return true;
+} 
+
+
 };
 
 

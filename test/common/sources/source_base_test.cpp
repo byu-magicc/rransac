@@ -66,6 +66,19 @@ static MatXd DerivedGetTransformationJacobian(const State& state, const Data& tr
    return J;
 }
 
+/**
+ * Verifies that the transform data provided by the user is in the requested from.
+ * @param transform_data The tranformation data to be tested. 
+ */
+static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+    if (transform_data.norm() != 0) {
+        return false;
+    } else {
+        return true;
+    }
+} 
+
+
 };
 
 
@@ -83,8 +96,12 @@ public:
     typedef typename tState::DataType DataType;
     typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
     static constexpr unsigned int meas_space_dim_ = tState::Group::dim_;
-    static constexpr MeasurementTypes meas_type_ = tMeasurementType;
+    static constexpr MeasurementTypes measurement_type_ = tMeasurementType;
     typedef SourceBase<tState, tMeasurementType, tTransformation, tState::Group::dim_, DummySource> Base;
+    static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_;        /**< The number of rows in the pose measurement. */
+    static constexpr unsigned int meas_pose_cols_ = 1;                          /**< The number of columns in the pose measurement. */
+    static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;       /**< The number of rows in the twist measurement. */
+    static constexpr unsigned int meas_twist_cols_ = 1;                         /**< The number of columns in the twist measurement. */
 
     static constexpr int dim_mult_ = MeasHasVelocity<tMeasurementType>::value ? 2 : 1;
 
@@ -137,6 +154,8 @@ public:
         return m;
 
     }
+
+
 
 };
 
@@ -264,6 +283,55 @@ source.Init(source_params);
 ASSERT_TRUE(source.StateInsideSurveillanceRegion(state, false, EmptyMat));
 
 
+// Verify Measurement
+
+Meas<double> m;
+source_params.type_ = MeasurementTypes::RN_POS;
+source_params.meas_cov_ = Eigen::Matrix2d::Identity();
+source_params.source_index_ = 0;
+source.Init(source_params);
+
+
+m.source_index = source_params.source_index_;
+m.type = source_params.type_;
+m.time_stamp = 0;
+m.pose = Eigen::Matrix<double,2,1>::Ones();
+m.transform_state = false;
+
+ASSERT_TRUE(source.IsAcceptableMeasurement(m));
+
+m.type = MeasurementTypes::SEN_POS_VEL;
+ASSERT_ANY_THROW(source.IsAcceptableMeasurement(m)); // Test that it verifies the measurement type
+m.type = source_params.type_;
+ASSERT_TRUE(source.IsAcceptableMeasurement(m));  // Reset the measurement
+m.pose=Eigen::Matrix<double,3,1>::Ones();    
+ASSERT_ANY_THROW(source.IsAcceptableMeasurement(m)); // Test that it verifies the measurement  pose 
+m.pose=Eigen::Matrix<double,2,2>::Ones();    
+ASSERT_ANY_THROW(source.IsAcceptableMeasurement(m)); // Test that it verifies the measurement  pose 
+
+source_params.type_ = MeasurementTypes::RN_POS_VEL;
+source_params.meas_cov_ = Eigen::Matrix4d::Identity();
+source2.Init(source_params);
+
+m.source_index = source_params.source_index_;
+m.type = source_params.type_;
+m.time_stamp = 0;
+m.pose = Eigen::Matrix<double,2,1>::Ones();
+m.twist = Eigen::Matrix<double,2,1>::Ones();
+m.transform_state = false;
+ASSERT_TRUE(source2.IsAcceptableMeasurement(m));
+m.twist=Eigen::Matrix<double,3,1>::Ones();    
+ASSERT_ANY_THROW(source2.IsAcceptableMeasurement(m)); // Test that it verifies the measurement  twist 
+m.twist=Eigen::Matrix<double,2,2>::Ones();    
+ASSERT_ANY_THROW(source2.IsAcceptableMeasurement(m)); // Test that it verifies the measurement  twist 
+m.twist = Eigen::Matrix<double,2,1>::Ones();
+ASSERT_TRUE(source2.IsAcceptableMeasurement(m));  // Reset the measurement
+m.transform_state = true;
+m.transform_data_t_m = Eigen::Matrix2d::Zero();
+ASSERT_TRUE(source2.IsAcceptableMeasurement(m));  // Test the verify transform
+m.transform_data_t_m = Eigen::Matrix2d::Identity()*2;
+ASSERT_ANY_THROW(source2.IsAcceptableMeasurement(m));  // Test the verify transform
+
 }
 
       
@@ -379,11 +447,16 @@ TEST(SOURCE_BASE, SpatialDistance_RN) {
 /* initialize random seed: */
 srand (time(NULL));
 Parameters params_;
+SourceParameters source_params;
+source_params.source_index_ = 0;
+source_params.type_ = MeasurementTypes::RN_POS;
+source_params.meas_cov_ = Eigen::Matrix4d::Identity();
 
 constexpr unsigned int max_iter = 20;
 for (unsigned int i; i <max_iter; ++i) {
 
 DummySource2 source1;
+source1.Init(source_params);
 Meas<double> m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
 m_R2_Pos_1.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_2.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
@@ -417,11 +490,15 @@ TEST(SOURCE_BASE, SpatialDistance_SEN_POS) {
 /* initialize random seed: */
 srand (time(NULL));
 Parameters params_;
-
+SourceParameters source_params;
+source_params.source_index_ = 0;
+source_params.type_ = MeasurementTypes::RN_POS;
+source_params.meas_cov_ = Eigen::Matrix4d::Identity();
 constexpr unsigned int max_iter = 20;
 for (unsigned int i; i <max_iter; ++i) {
 
 DummySource2 source1;
+source1.Init(source_params);
 Meas<double> m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
 m_R2_Pos_1.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_2.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
@@ -457,10 +534,16 @@ TEST(SOURCE_BASE, SpatialDistance_SEN_POSE) {
 srand (time(NULL));
 Parameters params_;
 
+SourceParameters source_params;
+source_params.source_index_ = 0;
+source_params.type_ = MeasurementTypes::SEN_POSE;
+source_params.meas_cov_ = Eigen::Matrix3d::Identity();
+
 
 // se2
 typedef lie_groups::SE2_se2 State_SE2;
 DummySource<lie_groups::SE2_se2, MeasurementTypes::SEN_POSE, TransformDummy> source1;
+source1.Init(source_params);
 Meas<double> m_SE2_Pose_1, m_SE2_Pose_2, m_SE2_Pose_Twist_1, m_SE2_Pose_Twist_2;
 m_SE2_Pose_1.pose  = State_SE2::Algebra::Exp(Eigen::Matrix<double,3,1>::Random());
 m_SE2_Pose_2.pose  = State_SE2::Algebra::Exp(Eigen::Matrix<double,3,1>::Random());
@@ -481,8 +564,13 @@ ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_Twis
 ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_SE2_Pose_Twist_1, m_SE2_Pose_1,params_),           (State_SE2::Group::OMinus(m_SE2_Pose_Twist_1.pose,m_SE2_Pose_1.pose)).norm());
 
 
+source_params.source_index_ = 0;
+source_params.type_ = MeasurementTypes::SEN_POSE;
+source_params.meas_cov_ = Eigen::Matrix<double,6,6>::Identity();
+
 typedef lie_groups::SE3_se3 State_SE3;
 DummySource<lie_groups::SE3_se3, MeasurementTypes::SEN_POSE, TransformDummy> source2;
+source2.Init(source_params);
 Meas<double> m_SE3_Pose_1, m_SE3_Pose_2, m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2;
 m_SE3_Pose_1.pose  = State_SE3::Algebra::Exp(Eigen::Matrix<double,6,1>::Random());
 m_SE3_Pose_2.pose  = State_SE3::Algebra::Exp(Eigen::Matrix<double,6,1>::Random());

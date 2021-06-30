@@ -113,13 +113,17 @@ class SourceBase
 
 public:
 
-    typedef tState State;                                                       /**< The state of the target. @see State. */
-    typedef tTransformation<tState> Transformation;                             /**< The transformation used to transform the measurements and tracks. */
-    typedef tDerived<tState,tMeasurementType,tTransformation> DerivedSource;    /**< The derived source. */
-    typedef typename tState::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
-    typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
-    static constexpr unsigned int meas_space_dim_ = tMeasSpaceDim;              /**< The Dimension of the measurement space. */
-    static constexpr MeasurementTypes meas_type_ = tMeasurementType;
+    typedef tState State;                                                                   /**< The state of the target. @see State. */
+    typedef tTransformation<tState> Transformation;                                         /**< The transformation used to transform the measurements and tracks. */
+    typedef tDerived<tState,tMeasurementType,tTransformation> DerivedSource;                /**< The derived source. */
+    typedef typename tState::DataType DataType;                                             /**< The scalar object for the data. Ex. float, double, etc. */
+    typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;                    /**< The object type of the Jacobians. */
+    static constexpr unsigned int meas_space_dim_ = tMeasSpaceDim;                          /**< The Dimension of the measurement space. */
+    static constexpr MeasurementTypes measurement_type_ = tMeasurementType;                 /**< The measurement type that the source can work with. */
+    static constexpr unsigned int meas_pose_rows_ = DerivedSource::meas_pose_rows_;         /**< The number of rows in the pose measurement. */
+    static constexpr unsigned int meas_pose_cols_ = DerivedSource::meas_pose_cols_;         /**< The number of columns in the pose measurement. */
+    static constexpr unsigned int meas_twist_rows_ = DerivedSource::meas_twist_rows_;       /**< The number of rows in the twist measurement. */
+    static constexpr unsigned int meas_twist_cols_ = DerivedSource::meas_twist_cols_;       /**< The number of columns in the twist measurement. */
     static constexpr int meas_space_dim_mult_ = MeasDimMultiplier<tMeasurementType>::value; /**< a constant used when the measurement contains velocity. */
     static constexpr int has_vel_ = MeasHasVelocity<tMeasurementType>::value;               /**< Indicates if the measurement contains velocity.  */
 
@@ -286,6 +290,12 @@ public:
      */ 
     const SourceParameters& GetParams() const {return params_;}
 
+    /**
+     * Verifies that the data in the measurement meets certain specifications.
+     * @param measurement The measurement to be verified. 
+     */ 
+    bool IsAcceptableMeasurement(const Meas<DataType>& measurement);
+
 
 // private:
      SourceBase()=default;
@@ -362,37 +372,40 @@ void SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>:
     static_cast<DerivedSource*>(this)->DerivedInit(params_);
 
 
-    // Generate two dimensional array of function pointers.
-    gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
-    for(int i = 0; i < MeasurementTypes::NUM_TYPES; ++i)
-    {
-        gsd_ptr_[i] = new GSDFuncPTR[MeasurementTypes::NUM_TYPES];
-    }
+    if (!source_init_) {
 
-    // Set each function pointer to null
-    for (int i = 0; i < MeasurementTypes::NUM_TYPES; ++i) {
-        for (int j = 0; j < MeasurementTypes::NUM_TYPES; ++j) {
-            gsd_ptr_[i][j] = &GSD_NotImplemented;
+        // Generate two dimensional array of function pointers.
+        gsd_ptr_ = new GSDFuncPTR *[MeasurementTypes::NUM_TYPES];
+        for(int i = 0; i < MeasurementTypes::NUM_TYPES; ++i)
+        {
+            gsd_ptr_[i] = new GSDFuncPTR[MeasurementTypes::NUM_TYPES];
         }
+
+        // Set each function pointer to null
+        for (int i = 0; i < MeasurementTypes::NUM_TYPES; ++i) {
+            for (int j = 0; j < MeasurementTypes::NUM_TYPES; ++j) {
+                gsd_ptr_[i][j] = &GSD_NotImplemented;
+            }
+        }
+    
+        gsd_ptr_[MeasurementTypes::RN_POS][MeasurementTypes::RN_POS]                 = &GSD_RN_RN_POS;
+        gsd_ptr_[MeasurementTypes::RN_POS][MeasurementTypes::RN_POS_VEL]             = &GSD_RN_RN_POS;
+        gsd_ptr_[MeasurementTypes::RN_POS_VEL][MeasurementTypes::RN_POS]             = &GSD_RN_RN_POS;
+        gsd_ptr_[MeasurementTypes::RN_POS_VEL][MeasurementTypes::RN_POS_VEL]         = &GSD_RN_RN_POS;
+        gsd_ptr_[MeasurementTypes::SEN_POSE][MeasurementTypes::SEN_POSE]             = &GSD_SEN_SEN_POSE;
+        gsd_ptr_[MeasurementTypes::SEN_POSE][MeasurementTypes::SEN_POSE_TWIST]       = &GSD_SEN_SEN_POSE;
+        gsd_ptr_[MeasurementTypes::SEN_POSE_TWIST][MeasurementTypes::SEN_POSE_TWIST] = &GSD_SEN_SEN_POSE;
+        gsd_ptr_[MeasurementTypes::SEN_POSE_TWIST][MeasurementTypes::SEN_POSE]       = &GSD_SEN_SEN_POSE;
+        gsd_ptr_[MeasurementTypes::SEN_POS][MeasurementTypes::SEN_POS]               = &GSD_SEN_SEN_POS;
+        gsd_ptr_[MeasurementTypes::SEN_POS][MeasurementTypes::SEN_POS_VEL]           = &GSD_SEN_SEN_POS;
+        gsd_ptr_[MeasurementTypes::SEN_POS_VEL][MeasurementTypes::SEN_POS_VEL]       = &GSD_SEN_SEN_POS;
+        gsd_ptr_[MeasurementTypes::SEN_POS_VEL][MeasurementTypes::SEN_POS]           = &GSD_SEN_SEN_POS;
+        gsd_ptr_[MeasurementTypes::SE3_CAM_DEPTH][MeasurementTypes::SE3_CAM_DEPTH]   = &GSD_SE3_CamDepth_SE3_CamDepth;
     }
-   
-    gsd_ptr_[MeasurementTypes::RN_POS][MeasurementTypes::RN_POS]                 = &GSD_RN_RN_POS;
-    gsd_ptr_[MeasurementTypes::RN_POS][MeasurementTypes::RN_POS_VEL]             = &GSD_RN_RN_POS;
-    gsd_ptr_[MeasurementTypes::RN_POS_VEL][MeasurementTypes::RN_POS]             = &GSD_RN_RN_POS;
-    gsd_ptr_[MeasurementTypes::RN_POS_VEL][MeasurementTypes::RN_POS_VEL]         = &GSD_RN_RN_POS;
-    gsd_ptr_[MeasurementTypes::SEN_POSE][MeasurementTypes::SEN_POSE]             = &GSD_SEN_SEN_POSE;
-    gsd_ptr_[MeasurementTypes::SEN_POSE][MeasurementTypes::SEN_POSE_TWIST]       = &GSD_SEN_SEN_POSE;
-    gsd_ptr_[MeasurementTypes::SEN_POSE_TWIST][MeasurementTypes::SEN_POSE_TWIST] = &GSD_SEN_SEN_POSE;
-    gsd_ptr_[MeasurementTypes::SEN_POSE_TWIST][MeasurementTypes::SEN_POSE]       = &GSD_SEN_SEN_POSE;
-    gsd_ptr_[MeasurementTypes::SEN_POS][MeasurementTypes::SEN_POS]               = &GSD_SEN_SEN_POS;
-    gsd_ptr_[MeasurementTypes::SEN_POS][MeasurementTypes::SEN_POS_VEL]           = &GSD_SEN_SEN_POS;
-    gsd_ptr_[MeasurementTypes::SEN_POS_VEL][MeasurementTypes::SEN_POS_VEL]       = &GSD_SEN_SEN_POS;
-    gsd_ptr_[MeasurementTypes::SEN_POS_VEL][MeasurementTypes::SEN_POS]           = &GSD_SEN_SEN_POS;
-    gsd_ptr_[MeasurementTypes::SE3_CAM_DEPTH][MeasurementTypes::SE3_CAM_DEPTH]   = &GSD_SE3_CamDepth_SE3_CamDepth;
     
 
 
-    bool source_init_ = true;
+    source_init_ = true;
 }   
 
 
@@ -450,7 +463,7 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>:
     }
 
     // Verify the number of measurement types
-    if(params.type_ != meas_type_) {
+    if(params.type_ != measurement_type_) {
         throw std::runtime_error("SourceBase::VerifySourceParameters: The measurement type doesn't match. ");
         success = false;
     }
@@ -580,6 +593,33 @@ bool SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>:
     } else {
         return state_in_surveillance_region_callback_(state);
     }
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation, int tMeasSpaceDim, template <typename , MeasurementTypes , template <typename > typename > typename tDerived>
+bool SourceBase<tState,tMeasurementType,tTransformation,tMeasSpaceDim,tDerived>::IsAcceptableMeasurement(const Meas<DataType>& measurement) {
+
+    bool success = true;
+
+        if (measurement.type != measurement_type_) {
+            throw std::runtime_error("SourceBase::IsAcceptableMeasurement Measurement type does not match the source's measurement type. Make sure the source index is correct.");
+            success = false;            
+        } else if (measurement.pose.rows() != meas_pose_rows_ || measurement.pose.cols() != meas_pose_cols_) {
+            throw std::runtime_error("SourceBase::IsAcceptableMeasurement The pose of the measurement is not the correct dimension.");
+            success = false;
+        } else if (has_vel_ && (measurement.twist.rows() != meas_twist_rows_ || measurement.twist.cols() != meas_twist_cols_)) {
+            throw std::runtime_error("SourceBase::IsAcceptableMeasurement The twist of the measurement is not the correct dimension.");
+            success = false;
+        } else if(measurement.transform_state) {
+            if(!Transformation::IsAcceptableTransformData(measurement.transform_data_t_m)) {
+                throw std::runtime_error("SourceBase::IsAcceptableMeasurement The transformation data is not correct.");
+                success = false;
+            }
+        } else {
+            success = true;
+        }
+    return success;
 }
 
 //------------------------------------------------------------------------------------------------------------------------

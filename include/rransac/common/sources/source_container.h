@@ -95,7 +95,7 @@ const SourceParameters& GetParams(const unsigned int source_index) const;
  * \param[in] source_index The index to the source whose parameters are to be changed.
  * \return If the parameters were successfully set (i.e. met all of the prescibed requirements), it returns true. Otherwise false.
  */
-bool ChangeSourceParameters(const unsigned int source_index, const SourceParameters &new_source_params);
+bool ChangeSourceParameters(const SourceParameters &new_source_params);
 
 /** 
  * Returns the jacobian of the observation function w.r.t. the states.
@@ -179,6 +179,12 @@ DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& m
  */
 DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return std::get<0>(sources_).GetVelocityDistance(meas1,meas2,params);}
 
+/**
+ * Verifies that the data in the measurement meets certain specifications.
+ * @param measurement The measurement to be verified. 
+ */ 
+bool IsAcceptableMeasurement(const Meas<DataType>& measurement);
+
 
 private:
 
@@ -193,7 +199,7 @@ std::vector<bool> source_initialized_;
  * @param source_index The index to the source being inquired
  * \return returns true if the parameters were set; otherwise, false.
  */
-bool SetParameters(const unsigned int source_index, const SourceParameters& params); 
+bool SetParameters(const SourceParameters& params); 
 
 };
 
@@ -324,9 +330,9 @@ const SourceParameters& SourceContainer<S0,S1,S2,S3,S4>::GetParams(const unsigne
 
 //-------------------------------------------------------------------------------
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainer<S0,S1,S2,S3,S4>::SetParameters(const unsigned int source_index, const SourceParameters& params) {
+bool SourceContainer<S0,S1,S2,S3,S4>::SetParameters(const SourceParameters& params) {
 
-    switch (source_index)
+    switch (params.source_index_)
     {
     case 0:
         return std::get<0>(sources_).SetParameters(params);
@@ -353,7 +359,7 @@ bool SourceContainer<S0,S1,S2,S3,S4>::SetParameters(const unsigned int source_in
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainer<S0,S1,S2,S3,S4>::ChangeSourceParameters(const unsigned int source_index, const SourceParameters &new_params) {
+bool SourceContainer<S0,S1,S2,S3,S4>::ChangeSourceParameters(const SourceParameters &new_params) {
     if (new_params.source_index_ < 0 || new_params.source_index_ >= num_sources_) {
         throw std::runtime_error("SourceContainer::ChangeSourceParameters The source index must be greater than 0 and less than " + std::to_string(num_sources_));
         return false;
@@ -362,7 +368,7 @@ bool SourceContainer<S0,S1,S2,S3,S4>::ChangeSourceParameters(const unsigned int 
         throw std::runtime_error("SourceContainer::ChangeSourceParameters Cannot change the source index.");
         return false;
     } else {
-        return SetParameters(new_params.source_index_, new_params);
+        return SetParameters(new_params);
     }
     
 }
@@ -530,9 +536,33 @@ bool SourceContainer<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsign
     }
 }
 
-// #ifdef DEBUG_BUILD
-//         std::cerr << "RRANSAC::AddSource Cannot add sources once measuremens have been added."
-// #endif
+//-------------------------------------------------------------------------------
+
+template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
+bool SourceContainer<S0,S1,S2,S3,S4>::IsAcceptableMeasurement(const Meas<DataType>& measurement) {
+    switch (measurement.source_index)
+    {
+    case 0:
+        return std::get<0>(sources_).IsAcceptableMeasurement(measurement);
+        break;
+    case 1:
+        return std::get<1>(sources_).IsAcceptableMeasurement(measurement);
+        break;
+    case 2:
+        return std::get<2>(sources_).IsAcceptableMeasurement(measurement);
+        break;
+    case 3:
+        return std::get<3>(sources_).IsAcceptableMeasurement(measurement);
+        break;
+    case 4:
+        return std::get<4>(sources_).IsAcceptableMeasurement(measurement);
+        break;      
+    default:
+        throw std::runtime_error("SourceContainer::IsAcceptableMeasurement The source index must be greater than 0 and less than " + std::to_string(num_sources_));
+        break;
+    }
+}
+
 
 } // rransac
 

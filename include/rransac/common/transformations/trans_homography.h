@@ -166,6 +166,27 @@ Mat2d TransformRotation(const Vec2d& vel_transformed) const {
 
 }
 
+
+/**
+ * Verifies that the transform data provided by the user is in the requested from.
+ * @param transform_data The tranformation data to be tested. 
+ */
+static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+
+    bool correct;
+
+    // transform data should be a 3x3 matrix
+    if(transform_data.cols() != 3 || transform_data.rows() != 3) {
+        correct = false;
+    } else {
+        correct = true;
+    }
+
+
+    return correct;
+} 
+
+
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////

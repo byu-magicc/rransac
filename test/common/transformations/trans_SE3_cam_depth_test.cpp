@@ -92,9 +92,26 @@ ASSERT_EQ(m1.transform_data_m_t, m3.transform_data_m_t);
 ASSERT_EQ(m1.transform_data_t_m, m3.transform_data_t_m);
 
 
+// Verify transformation data
+Eigen::MatrixXd transformation_data;
+transformation_data = Eigen::Matrix3d::Identity();
 
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Incorrect dimensions
 
+transformation_data = Eigen::Matrix4d::Identity();
 
+ASSERT_TRUE(trans.IsAcceptableTransformData(transformation_data)); 
+
+transformation_data(3,1) = 1;
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Incorrect dimensions
+
+transformation_data(3,1) = 0;
+transformation_data(1,0) = 1;
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Rotation matrix not correct.
+
+transformation_data(1,0) = 0;
+transformation_data(1,1) = 2;
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Determininat isn't one.
 
 
 }
