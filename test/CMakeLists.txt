@@ -191,16 +191,16 @@ include_directories(../include
 # target_link_libraries(SE2_pos_policyTest gtest_main
 # )
 
-add_executable(ransacTest 
-track_initialization/ransac_test.cpp
-../src/parameters.cpp)
-target_link_libraries(ransacTest gtest_main )
-
-
-# add_executable(ransacTest2 
-# track_initialization/ransac_test2.cpp
+# add_executable(ransacTest 
+# track_initialization/ransac_test.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
+# target_link_libraries(ransacTest gtest_main )
+
+
+add_executable(ransacTest2 
+track_initialization/ransac_test2.cpp
+../src/parameters.cpp)
+target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 
 
 #---------------------------------------

@@ -75,7 +75,7 @@ public:
 
 typedef typename tModel::State State;                                       /**< The state of the target. @see State. */
 typedef typename tModel::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
-typedef typename tModel::Source Source;                                     /**< The object type of the source. @see SourceBase. */
+typedef typename tModel::SourceContainer SourceContainer;                   /**< The object type of the source. @see SourceBase. */
 typedef tModel Model;                                                       /**< The object type of the model. @see ModelBase. */
 
 Ransac();
@@ -235,10 +235,10 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLike
 
     typename Cluster<DataType>::IteratorPair pair;
     tModel track;
-    track.Init(sys.params_,sys.sources_.size());
+    track.Init(sys.params_);
 
-    std::vector<bool> innov_cov_set(sys.sources_.size(),false);
-    std::vector<bool> src_contributed(sys.sources_.size(),false);
+    std::vector<bool> innov_cov_set(sys.source_container_.num_sources_,false);
+    std::vector<bool> src_contributed(sys.source_container_.num_sources_,false);
 
 
     // Find all of the inliers. The outer iterator passes through different time steps and the inner iterator passes through different measurements
@@ -274,19 +274,21 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLike
 template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
 tModel Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLikelihoodPolicy, tMeasurementWeightPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<typename Cluster<DataType>::IteratorPair>& inliers) {
 
-
+    Eigen::MatrixXd EmptyMat;
     DataAssociationInfo data_association_info;
-    data_association_info.source_produced_measurements_.resize(sys.sources_.size(),false);
+    data_association_info.source_produced_measurements_.resize(sys.source_container_.num_sources_,false);
+    data_association_info.transform_state_.resize(sys.source_container_.num_sources_,false);
+    data_association_info.transform_data_t_m_.resize(sys.source_container_.num_sources_,EmptyMat);
     // Create new track with state estimate at the same time step as the oldest inlier measurement
     tModel new_track;
-    new_track.Init(sys.params_,sys.sources_.size());
+    new_track.Init(sys.params_);
     double dt = inliers.begin()->inner_it->time_stamp - sys.current_time_;
     new_track.state_ = tModel::PropagateState(xh,dt); 
     double curr_time = 0;
     double propagate_time = inliers.begin()->inner_it->time_stamp;
 
     // Initialize objects
-    std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info(sys.sources_.size());                      
+    std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info(sys.source_container_.num_sources_);                      
 
 
     for (auto iter = inliers.begin(); iter != inliers.end(); ) {
@@ -294,6 +296,11 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackL
         dt = curr_time - propagate_time;
         propagate_time = curr_time;
         new_track.PropagateModel(dt);
+
+        // Reset the data associaiton for each timestep
+        std::fill(data_association_info.source_produced_measurements_.begin(),data_association_info.source_produced_measurements_.end(),false);
+        std::fill(data_association_info.transform_state_.begin(),data_association_info.transform_state_.end(),false);
+        std::fill(data_association_info.transform_data_t_m_.begin(),data_association_info.transform_data_t_m_.end(),EmptyMat);
 
 #ifdef DEBUG_BUILD
         if (isnan(new_track.state_.g_.data_(0.0))) {
@@ -306,13 +313,19 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackL
 
             new_track.AddNewMeasurement(*iter->inner_it);
 
+            if (data_association_info.source_produced_measurements_[iter->inner_it->source_index]==false) {
+                data_association_info.source_produced_measurements_[iter->inner_it->source_index]= true;
+                data_association_info.transform_state_[iter->inner_it->source_index] = iter->inner_it->transform_state;
+                data_association_info.transform_data_t_m_[iter->inner_it->source_index] = iter->inner_it->transform_data_t_m;
+            }
+
             iter++;
         }
         
         
         UpdateTrackLikelihoodSingle(sys,new_track,data_association_info,dt);
         CalculateMeasurementWeightSingle(sys,new_track,data_association_info);
-        new_track.UpdateModel(sys.sources_,sys.params_);
+        new_track.UpdateModel(sys.source_container_,sys.params_);
     }
 
     return new_track;

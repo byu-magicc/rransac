@@ -11,6 +11,7 @@
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_container.h"
 #include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
 #include "rransac/common/data_association/validation_region_policies/validation_region_innov_policy.h"
 #include "rransac/common/data_association/track_likelihood_info_policies/tli_ipdaf_policy.h"
@@ -18,6 +19,11 @@
 
 using namespace rransac;
 using namespace lie_groups;
+
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2PosNull;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVelNull;
+
+typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull> SourceContainerR2Null;
 
 template<typename tModel, template<typename > typename tSeed> 
 struct LMLEDummy : tSeed<tModel>{
@@ -46,7 +52,7 @@ struct SeedDummy {
 
 TEST(RANSAC_TEST, GenerateMinimumSubsetTest) {
 
-typedef ModelRN<R2_r2, TransformNULL> Model;
+typedef ModelRN<SourceContainerR2Null> Model;
 
 
 
@@ -130,8 +136,8 @@ for (unsigned int ii = 0; ii < meas_index.size(); ++ii) {
 
 TEST(RANSAC_TEST, ScoreHypotheticalStateEstimateTest) {
 
-// typedef ModelRN<R2_r2, TransformNULL> Model;
-typedef ModelRN<R2_r2, TransformNULL> Model;
+typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull,SourceR2PosVelNull> SC;
+typedef ModelRN<SC> Model;
 
 // Setup sources
 double noise = 1e-2;
@@ -152,18 +158,14 @@ source_params3.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 source_params3.gate_probability_ = 0.9;
 
 
-SourceR2 source1,source2, source3;
-source1.Init(source_params1);
-source2.Init(source_params2);
-source3.Init(source_params3);
 
 // Setup system
 Parameters params;
 params.process_noise_covariance_ = Eigen::Matrix4d::Identity()*noise;
 System<Model> sys;
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
-sys.sources_.push_back(source3);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
+sys.source_container_.AddSource(source_params3);
 sys.params_ = params;
 
 // Setup cluster 
@@ -171,7 +173,7 @@ Cluster<double> cluster;
 
 // Setup the model
 Model x;
-x.Init(params,sys.sources_.size());
+x.Init(params);
 x.state_.g_.data_.setRandom();
 x.state_.u_.data_.setRandom();
 
@@ -193,7 +195,8 @@ m4.source_index = 1;
 m4.type = MeasurementTypes::RN_POS_VEL;
 
 
-
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 // Propagate model and add in two true measurements and one false measurement per time step
 
 int steps = 10;
@@ -204,9 +207,9 @@ double start_time = 0;
 
 for (double ii = start_time; ii < steps*dt; ii += dt ) {
     x.PropagateModel(dt);
-    Meas<double> tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
-    Meas<double> tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
-    Meas<double> tmp4 = sys.sources_[m4.source_index].GenerateRandomMeasurement(x.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+    Meas<double> tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),x.state_,transform_state, EmptyMat);
+    Meas<double> tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),x.state_, transform_state, EmptyMat);
+    Meas<double> tmp4 = sys.source_container_.GenerateRandomMeasurement(m4.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),x.state_, transform_state, EmptyMat);
     m1.time_stamp = ii + dt;
     m1.pose = tmp1.pose;
 
@@ -274,8 +277,8 @@ ASSERT_LT(track.err_cov_.determinant(), x.err_cov_.determinant());
 
 TEST(RANSAC_TEST, RUN_TEST) {
 
-// typedef ModelRN<R2_r2, TransformNULL> Model;
-typedef ModelRN<R2_r2, TransformNULL> Model;
+typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull,SourceR2PosVelNull> SC;
+typedef ModelRN<SC> Model;
 
 // Setup sources
 double noise = 1e-2;
@@ -296,10 +299,6 @@ source_params3.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 source_params3.gate_probability_ = 0.9;
 
 
-SourceR2 source1,source2, source3;
-source1.Init(source_params1);
-source2.Init(source_params2);
-source3.Init(source_params3);
 
 // Setup system
 Parameters params;
@@ -315,9 +314,9 @@ params.cluster_position_threshold_ = 0.5;
 params.track_max_num_tracks_ = 5;
 
 System<Model> sys;
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
-sys.sources_.push_back(source3);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
+sys.source_container_.AddSource(source_params3);
 sys.params_ = params;
 
 // Setup Measurements
@@ -341,10 +340,10 @@ Ransac<Model, SeedDummy, LinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDA
 
 // Setup the models that will produce the measurements in the clusters
 std::vector<Model> tracks(4);
-tracks[0].Init(sys.params_,sys.sources_.size());
-tracks[1].Init(sys.params_,sys.sources_.size());
-tracks[2].Init(sys.params_,sys.sources_.size());
-tracks[3].Init(sys.params_,sys.sources_.size());
+tracks[0].Init(sys.params_);
+tracks[1].Init(sys.params_);
+tracks[2].Init(sys.params_);
+tracks[3].Init(sys.params_);
 
 double pos = 5;
 double vel = 0.1;
@@ -357,6 +356,9 @@ tracks[2].state_.g_.data_ << -pos, -pos;
 tracks[2].state_.u_.data_ << 0, vel;
 tracks[3].state_.g_.data_ << -pos, pos;
 tracks[3].state_.u_.data_ << vel,0;
+
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 
 // Create simulation data
 double dt = 0.1;
@@ -373,11 +375,11 @@ for (double ii =start_time; ii < end_time; ii += dt) {
             track.PropagateModel(dt);
         }
 
-        tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
-        tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+        Meas<double> tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),track.state_,transform_state, EmptyMat);
+        Meas<double> tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),track.state_, transform_state, EmptyMat);
+        Meas<double> tmp4 = sys.source_container_.GenerateRandomMeasurement(m4.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),track.state_, transform_state, EmptyMat);
         tmp3.pose = Eigen::Matrix<double,2,1>::Random()*fov;
         tmp3.twist = Eigen::Matrix<double,2,1>::Random();
-        tmp4 = sys.sources_[m4.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix2d::Identity()*sqrt(noise));
 
         m1.time_stamp = ii;
         m1.pose = tmp1.pose;
@@ -435,7 +437,7 @@ for (auto cluster_meas_inner = cluster_meas_outer->begin(); cluster_meas_inner !
     
     if (cluster_meas_inner->source_index == track_meas_inner->source_index && cluster_meas_inner->time_stamp == track_meas_inner->time_stamp) {
         
-        ASSERT_GT(sys.sources_[cluster_meas_inner->source_index].OMinus(*cluster_meas_inner, *track_meas_inner).norm(), 1e-8 );
+        ASSERT_GT(sys.source_container_.OMinus(cluster_meas_inner->source_index,*cluster_meas_inner, *track_meas_inner).norm(), 1e-8 );
         
     }
 
