@@ -15,6 +15,8 @@
 #include "rransac/common/sources/source_RN.h"
 #include "rransac/common/sources/source_SEN_pos_vel.h"
 #include "rransac/common/sources/source_SEN_pose_twist.h"
+#include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/sources/source_container.h"
 
 namespace rransac {
 
@@ -136,7 +138,7 @@ public:
 #endif
 
     // Default constructor
-    ModelBase()=default;
+    ModelBase() : err_cov_(Mat::Identity()) {}
 
     // Default destructor
     ~ModelBase()=default;
@@ -275,7 +277,7 @@ public:
      * @param[in] T The transformation object provided by the user. The object should already have the data it needs to transform the model.
      * @param[in] dt The time interval between the previous tracking frame and the current tracking frame. 
      */ 
-    void TransformModel(const Transformation& T){ T.TransformTrack(state_,this->err_cov_); }
+    void TransformModel(const Transformation& T){  T.TransformTrack(state_,this->err_cov_); }
 
     /**
      * Using the transformation data provided by the user, this function transforms the consensus set.
@@ -561,6 +563,8 @@ void ModelBase<tSourceContainer, tCovDim, tDerived>::AddNewMeasurement( const Me
     new_assoc_meas_[meas.source_index].push_back(meas);
 
 }
+
+
 
 
 

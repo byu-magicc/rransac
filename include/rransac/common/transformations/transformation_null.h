@@ -16,15 +16,16 @@ namespace rransac
 */
 
 template<class tState>
-class TransformNULL : public TransformBase<Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic>, tState, Eigen::Matrix<typename tState::DataType,tState::dim_,tState::dim_>, true, TransformNULL<tState>> {
+// class TransformNULL : public TransformBase<Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic>, tState, Eigen::Matrix<typename tState::DataType,tState::dim_,tState::dim_> , true, TransformNULL<tState>> {
+class TransformNULL : public TransformBase<Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic>, tState, Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic> , true, TransformNULL<tState>> {
 
 public:
 
 typedef typename tState::DataType DataType;  /**< The scalar object for the data. Ex. float, double, etc. */
-typedef Eigen::Matrix<DataType,3,3> Mat3d;
-typedef Mat3d MatData;
-typedef Eigen::Matrix<DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;
 
+typedef Eigen::Matrix<DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;
+typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic> MatCov;
+typedef MatXd MatData;
 
 void DerivedInit() {}
 
@@ -32,20 +33,20 @@ void DerivedInit() {}
  * Doesn't set the data. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void DerivedSetData(const Mat3d data) {}
+void DerivedSetData(const MatXd data) {}
 
 /** 
  * Doesn't transform the measurements.
  * @param meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(Meas<DataType>& meas) const {}
+void DerivedTransformMeasurement(const Meas<DataType>& meas) const {}
 
 /** 
  * Doesn't transform the track.
  * @param[in] state The track's state to be transformed.
  * @param[in] cov   The track's error covariance to be transformed.
  */ 
-void DerivedTransformTrack(tState& state, Eigen::Matrix<DataType,tState::dim_,tState::dim_>& cov) const {}
+void DerivedTransformTrack(const tState& state, const MatCov& cov) const {}
 
 /** 
  * Transforms the state and error covariance using user provided transform data.
@@ -54,7 +55,7 @@ void DerivedTransformTrack(tState& state, Eigen::Matrix<DataType,tState::dim_,tS
  * @param[in] cov   The track's error covariance to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static void DerivedTransformTrack(tState& state, MatData& cov, const Mat3d& transform_data) {}
+static void DerivedTransformTrack(const tState& state, const MatCov& cov, const MatXd& transform_data) {}
 
 /** 
  * Transforms the state using user provided transform data.
@@ -62,14 +63,14 @@ static void DerivedTransformTrack(tState& state, MatData& cov, const Mat3d& tran
  * @param[in] state The track's state to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static tState DerivedTransformState(const tState& state, const Mat3d& transform_data) { return state; }
+static tState DerivedTransformState(const tState& state, const MatXd& transform_data) { return state; }
 
 /** 
  * Returns the Jacobian of the transformation
  * @param[in] state The state of the target after it has been transformed using transform_data
  * @param[in] transform_data The data used in the transformation
  */ 
-static MatXd DerivedGetTransformationJacobian(const tState& state, const Mat3d& transform_data) {
+static MatXd DerivedGetTransformationJacobian(const tState& state, const MatXd& transform_data) {
    return Eigen::Matrix<DataType,1,1>::Zero();
 }
 

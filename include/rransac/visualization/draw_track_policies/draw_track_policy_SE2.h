@@ -94,16 +94,16 @@ void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mod
         if (draw_info.draw_validation_region) {
 
             unsigned int source_index = -1;
-            for (auto& source : sys->sources_) {
-                if (source.params_.type_ == MeasurementTypes::SEN_POS) {
-                    source_index = source.params_.source_index_;
+            for (unsigned int ii = 0; ii < sys->source_container_.num_sources; ++ii) {
+                if (sys->source_container_.GetParams(ii).type_ == MeasurementTypes::SEN_POS) {
+                    source_index = ii;
                     break;
                 }
             }
             if (source_index < 0);
                 source_index =0;
 
-            auto& source = sys->sources_[source_index];
+            // auto& source = sys->sources_[source_index];
 #if RRANSAC_VIZ_HOOKS
             Eigen::MatrixXd S;
             if (source_index > model.S_validation_.size()) {
@@ -113,13 +113,13 @@ void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mod
                 S = model.S_validation_[source_index];
             }
             else {
-                S = model.GetInnovationCovariance(sys->sources_,source_index);
+                S = model.GetInnovationCovariance(sys->source_container_,source_index);
             }
             
 #else
-            Eigen::MatrixXd S = model.GetInnovationCovariance(sys->sources_,source_index);
+            Eigen::MatrixXd S = model.GetInnovationCovariance(sys->source_container_,source_index);
 #endif
-            Eigen::Matrix2d S_pos = S.block(0,0,2,2)*source.params_.gate_threshold_;
+            Eigen::Matrix2d S_pos = S.block(0,0,2,2)*sys->source_container_.GetParams(source_index).gate_threshold_;
             Eigen::EigenSolver<Eigen::Matrix2d> eigen_solver;
             eigen_solver.compute(S_pos);
             Eigen::Vector2cd eigen_values = eigen_solver.eigenvalues();

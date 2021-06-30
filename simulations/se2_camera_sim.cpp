@@ -77,14 +77,16 @@ CameraSimR2::CameraSimR2(const CameraData& camera_data, double dt, double end_ti
     tracks_.resize(num_tracks);
     for (int ii = 0; ii < num_tracks; ++ii) {
         State_ state = GenerateRandomState();
-        tracks_[ii].Init(sys_->params_,sys_->sources_.size());
+        tracks_[ii].Init(sys_->params_);
         tracks_[ii].state_ = state;
     }
 
-    double th = 0.01;
-    t_data_ << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
-    noise_mat_.setZero();
-    noise_mat_(0,0) = 1;
+    if(transform_data_) {
+        double th = 0.01;
+        t_data_ << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
+        noise_mat_.setZero();
+        noise_mat_(0,0) = 1;
+    }
 
 }
 
@@ -130,6 +132,8 @@ void CameraSimR2::Propagate(double start_time, double end_time, Stats<Model_>& s
     Meas<double> tmp1, tmp2;
     std::list<Meas<double>> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
+    bool transform_state = false;
+    Eigen::MatrixXd EmptyMat;
 
     for (double ii =start_time; ii < end_time; ii += this->dt_) {
 
@@ -147,10 +151,10 @@ void CameraSimR2::Propagate(double start_time, double end_time, Stats<Model_>& s
 
             // std::cerr << "transform " << std::endl;
 
-            if (transform_data_) {
-                transformation_.SetData(t_data_);
-                transformation_.TransformTrack(track.state_, track.err_cov_);
-            }
+            // if (transform_data_) {
+            //     transformation_.SetData(t_data_);
+            //     transformation_.TransformTrack(track.state_, track.err_cov_);
+            // }
 
             // Generates measurements according to the probability of detection
             rand_num.setRandom();
@@ -160,9 +164,9 @@ void CameraSimR2::Propagate(double start_time, double end_time, Stats<Model_>& s
 
             // std::cerr << "meas " << std::endl;
 
-            if (fabs(rand_num(0,0)) < this->sources_[this->m_.source_index].params_.probability_of_detection_) {
+            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m_.source_index).probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m_.source_index].GenerateRandomMeasurement(track.state_,MatR_ ::Identity()*sqrt(this->meas_noise_));
+                tmp1 = this->sys_->source_container_.GenerateRandomMeasurement(this->m_.source_index, MatR_::Identity()*sqrt(this->meas_noise_),track.state_,transform_state,EmptyMat);
 
                 this->m_.time_stamp = ii;
                 this->m_.pose = tmp1.pose;
@@ -180,7 +184,7 @@ void CameraSimR2::Propagate(double start_time, double end_time, Stats<Model_>& s
         for (int jj =0; jj < this->camera_data_.num_false_meas; ++jj) {
 
             rand_state = GenerateRandomState();
-            tmp1 = this->sources_[this->m_.source_index].GenerateRandomMeasurement(rand_state,MatR_ ::Identity()*sqrt(this->meas_noise_));
+            tmp1 = this->sys_->source_container_.GenerateRandomMeasurement(this->m_.source_index, MatR_::Identity()*sqrt(this->meas_noise_),rand_state,transform_state,EmptyMat);
 
             this->m_.time_stamp = ii;
             this->m_.pose = tmp1.pose;

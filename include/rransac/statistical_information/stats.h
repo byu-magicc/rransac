@@ -280,14 +280,16 @@ void Stats<tModel>::CalculatePerformanceMeasures(const System<tModel>* sys, cons
 
     Eigen::MatrixXd err;
     Meas<double> meas;
-    meas.type = sys->sources_[source_index].params_.type_;
+    meas.type = sys->source_container_.GetParams(source_index).type_;
     meas.source_index = source_index;
+    bool transform_state = false;
+    Eigen::MatrixXd EmptyMat;
 
     for (int ii = 0; ii < targets.size(); ++ii) {
         for (int jj=0; jj < sys->good_models_.size(); ++jj) {
             if(C(ii,jj)==1) {
-                meas = sys->sources_[source_index].GetEstMeas(targets[ii].state_);
-                err = sys->sources_[source_index].OMinus(meas, sys->sources_[source_index].GetEstMeas(sys->good_models_[jj]->state_));
+                meas = sys->source_container_.GetEstMeas(source_index,targets[ii].state_,transform_state,EmptyMat);
+                err = sys->source_container_.OMinus(source_index, meas, sys->source_container_.GetEstMeas(source_index, sys->good_models_[jj]->state_,transform_state,EmptyMat));
                 errs(ii) = err.norm();
             }       
         }
@@ -320,7 +322,7 @@ void Stats<tModel>::CalculatePerformanceMeasures(const System<tModel>* sys, cons
 template<typename tModel>
 Eigen::MatrixXd Stats<tModel>::ComputeAssociationMatrix(const System<tModel>* sys, const std::vector<tModel>& targets, int source_index ) {
 
-    if (sys->sources_.size() == 0 || source_index >= sys->sources_.size()) {
+    if (sys->source_container_.num_sources_ == 0 || source_index >= sys->source_container_.num_sources_||source_index < 0) {
         throw std::runtime_error("Stats::ComputeAssociationMatrix: Source index out of bounds.");
     }
 
@@ -333,19 +335,21 @@ Eigen::MatrixXd Stats<tModel>::ComputeAssociationMatrix(const System<tModel>* sy
     double distance = 0; 
     double det_S = 0;
     Meas<double> meas;
-    meas.type = sys->sources_[source_index].params_.type_;
+    meas.type = sys->source_container_.GetParams(source_index).type_;
     meas.source_index = source_index;
+    bool transform_state = false;
+    Eigen::MatrixXd EmptyMat;
 
     // Associate targets to tracks using the validation region. If a track
     // is associated with a target, place the distance based on the validation
     // region in the association matrix.
     for (int ii = 0; ii < targets.size(); ++ii) {
-        meas = sys->sources_[source_index].GetEstMeas(targets[ii].state_);
+        meas = sys->source_container_.GetEstMeas(source_index, targets[ii].state_,transform_state,EmptyMat);
         for (int jj=0; jj < sys->good_models_.size(); ++jj) {
-            S = sys->good_models_[jj]->GetInnovationCovariance(sys->sources_, source_index);
-            err = sys->sources_[source_index].OMinus(meas, sys->sources_[source_index].GetEstMeas(sys->good_models_[jj]->state_));
+            S = sys->good_models_[jj]->GetInnovationCovariance(sys->source_container_, source_index,transform_state,EmptyMat);
+            err = sys->source_container_.OMinus(source_index,meas, sys->source_container_.GetEstMeas(source_index, sys->good_models_[jj]->state_,transform_state,EmptyMat));
             distance = (err.transpose()*S.inverse()*err)(0,0);
-            if (distance <= sys->sources_[source_index].params_.gate_threshold_) {
+            if (distance <= sys->source_container_.GetParams(source_index).gate_threshold_) {
                 Cd(ii,jj) = distance;
                 C(ii,jj) = 1;
             }         
