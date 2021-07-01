@@ -16,7 +16,7 @@ TEST(TransformationSE3CamDepthTest, AllFunctions) {
 
 // Setup source
 typedef typename lie_groups::SE3_se3 State;
-typedef SourceSE3CamDepth<State> Source;
+typedef SourceSE3CamDepth<State,MeasurementTypes::SE3_CAM_DEPTH,TransformSE3CamDepth> Source;
 
 SourceParameters params;
 params.type_ = MeasurementTypes::SE3_CAM_DEPTH;
@@ -41,18 +41,22 @@ target_c = target;
 Meas<double> m1, m2, m3;
 m1.source_index = 0;
 m2.source_index = 0;
-m1.state_transform_data = false;
-m2.state_transform_data = false;
+m1.transform_state = false;
+m2.transform_state = false;
 m1.type = MeasurementTypes::SE3_CAM_DEPTH;
 m2.type = MeasurementTypes::SE3_CAM_DEPTH;
 
-m1 = source.GetEstMeas(target);
+Eigen::MatrixXd EmptyMat;
+
+m1 = source.GetEstMeas(target,false,EmptyMat);
 target_transformed.g_.data_ = transform_data.g_.data_*target_transformed.g_.data_;
 m2 = m1;
-m2.trans_data = transform_data.g_.data_;
-m2.state_transform_data = true;
+m2.transform_data_m_t = transform_data.g_.data_;
+m2.transform_data_t_m = transform_data.g_.data_.inverse();
+m2.transform_state = true;
 m3 = m2;
-m3.trans_data = transform_data.g_.data_*m3.trans_data;
+m3.transform_data_m_t = transform_data.g_.data_*m3.transform_data_m_t;
+m3.transform_data_t_m = m3.transform_data_t_m * transform_data.g_.data_.inverse();
 
 
 // Setup transform
@@ -78,17 +82,36 @@ trans.SetData(transform_data.g_.data_);
 trans.TransformMeasurement(m1);
 ASSERT_EQ(m1.pose, m2.pose);
 ASSERT_EQ(m1.twist, m2.twist);
-ASSERT_EQ(m1.trans_data, m2.trans_data);
+ASSERT_EQ(m1.transform_data_m_t, m2.transform_data_m_t);
+ASSERT_EQ(m1.transform_data_t_m, m2.transform_data_t_m);
 
 trans.TransformMeasurement(m1);
 ASSERT_EQ(m1.pose, m3.pose);
 ASSERT_EQ(m1.twist, m3.twist);
-ASSERT_EQ(m1.trans_data, m3.trans_data);
+ASSERT_EQ(m1.transform_data_m_t, m3.transform_data_m_t);
+ASSERT_EQ(m1.transform_data_t_m, m3.transform_data_t_m);
 
 
+// Verify transformation data
+Eigen::MatrixXd transformation_data;
+transformation_data = Eigen::Matrix3d::Identity();
 
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Incorrect dimensions
 
+transformation_data = Eigen::Matrix4d::Identity();
 
+ASSERT_TRUE(trans.IsAcceptableTransformData(transformation_data)); 
+
+transformation_data(3,1) = 1;
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Incorrect dimensions
+
+transformation_data(3,1) = 0;
+transformation_data(1,0) = 1;
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Rotation matrix not correct.
+
+transformation_data(1,0) = 0;
+transformation_data(1,1) = 2;
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Determininat isn't one.
 
 
 }

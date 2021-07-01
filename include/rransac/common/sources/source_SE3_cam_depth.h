@@ -19,8 +19,8 @@ namespace rransac {
  * (R2)x(R1). The camera measurement is expressed on the normalized image sphere. This
  * source is compatible with MeasurementType::CamDepth
  */ 
-template<class tState>
-class SourceSE3CamDepth: public SourceBase<tState,SourceSE3CamDepth<tState>> {
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+class SourceSE3CamDepth: public SourceBase<tState,tMeasurementType, tTransformation, 7, SourceSE3CamDepth> {
 
 public:
 
@@ -29,63 +29,57 @@ typedef tState State;                                                           
 typedef typename tState::DataType DataType;                                      /**< The scalar object for the data. Ex. float, double, etc. */
 typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;             /**< The object type of the Jacobians. */
 static constexpr unsigned int meas_space_dim_ = 7;                               /**< The dimension of the measurement space. */
-// static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_pos_;         /**< The number of rows in the pose measurement. */
-// static constexpr unsigned int meas_pose_cols_ = 1;                               /**< The number of columns in the pose measurement. */
-// static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_pos_;        /**< The number of rows in the twist measurement. */
-// static constexpr unsigned int meas_twist_cols_ = 1;                              /**< The number of columns in the twist measurement. */
+static constexpr unsigned int meas_pose_rows_ = 4;                               /**< The number of rows in the pose measurement. */
+static constexpr unsigned int meas_pose_cols_ = 1;                               /**< The number of columns in the pose measurement. */
+static constexpr unsigned int meas_twist_rows_ = 3;                              /**< The number of rows in the twist measurement. */
+static constexpr unsigned int meas_twist_cols_ = 1;                              /**< The number of columns in the twist measurement. */
+static constexpr MeasurementTypes measurement_type_ = tMeasurementType;          /**< The measurement type of the source. */
 typedef utilities::CompatibleWithModelSENPosVel ModelCompatibility;              /**< Indicates which model this source is compatible with. */
-
+typedef SourceBase<tState,tMeasurementType, tTransformation, 7, SourceSE3CamDepth> Base;                          /**< The source base class. */
 
 
 // static constexpr unsigned int l_dim_ =  tState::Algebra::dim_a_vel_ + 1;         /**< The dimension of the angular velocity of the target plus one. */
 static constexpr unsigned int cov_dim_ = tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1; /**< The dimension of the state covariance. */
 
 
-static_assert(std::is_same<tState,lie_groups::SE3_se3>::value, "The state is not compatible with the source model");
+static_assert(std::is_same<tState,lie_groups::SE3_se3>::value, "SourceSE3CamDepth: The state is not compatible with the source model");
+static_assert( tMeasurementType == MeasurementTypes::SE3_CAM_DEPTH, "SourceSE3CamDepth: The measurement type is not compatible with the source."    );
 
 
+/**
+ * Initializes the Jacobians
+ */ 
+SourceSE3CamDepth();
 
 /** 
- * Initializes the measurement source by initializing the Jacobians. 
+ * Initializes the measurement source. Currently it does nothing. 
  * @param[in] params The source parameters.
  */
-void DerivedInit(const SourceParameters& params);      
+void DerivedInit(const SourceParameters& params){}   
+
 
 /** 
- * Returns the jacobian of the observation function w.r.t. the states. This is an optimized version. 
+ * Returns the jacobian of the observation function w.r.t. the states.
  * @param[in] state The state of a target at which the Jacobian is be evaluated.
  */
-MatXd DerivedGetLinObsMatState(tState const& state) const;  
+static MatXd DerivedGetLinObsMatState(const State& state);
+
+                      
 
 /** 
- * Returns the jacobian of the observation function w.r.t. the states. This method is not optimized. 
+ * Returns the jacobian of the observation function w.r.t. the sensor noise.
  * @param[in] state The state of a target at which the Jacobian is be evaluated.
  */
-static MatXd DerivedGetLinObsMatState(const State& state, const MeasurementTypes type);
+static MatXd DerivedGetLinObsMatSensorNoise(const State& state);
 
-/** 
- * Returns the jacobian of the observation function w.r.t. the sensor noise. This is an optimized version. 
- * @param[in] state The state of a target at which the Jacobian is be evaluated.
- */
-MatXd DerivedGetLinObsMatSensorNoise(const tState& state) const {return this->V_;}   
 
-/** 
- * Returns the jacobian of the observation function w.r.t. the sensor noise. This method is not optimized
- * @param[in] state The state of a target at which the Jacobian is be evaluated.
- */
-static MatXd DerivedGetLinObsMatSensorNoise(const State& state, const MeasurementTypes type);
-
-/** 
- * This is an optimized function that implements the observation function and returns an estimated measurement based on the state.
- * @param[in] state A state of the target.
- */
-Meas<DataType> DerivedGetEstMeas(const tState& state) const ;
 
 /**
  *  Implements the observation function and returns an estimated measurement based on the state. 
+ * Currently, the measurement is only given a pose, twist, and measurement type. 
  * @param[in] state A state of the target.
  */
-static Meas<DataType> DerivedGetEstMeas(const State& state, const MeasurementTypes type);
+static Meas<DataType> DerivedGetEstMeas(const State& state);
 
 /**
  * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
@@ -95,12 +89,14 @@ static Meas<DataType> DerivedGetEstMeas(const State& state, const MeasurementTyp
  */
 static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2);
 
+
+
 /**
- * Generates a random measurement from a Gaussian distribution with mean defined by the state and covariance defined by meas_cov
+ * Generates a random measurement from a Gaussian distribution with mean defined by the state and standard deviation of the measurement covariance
  * @param[in] state The state that serves as the mean in the Gaussian distribution
  * @param[in] meas_std The measurement standard deviation
  */ 
-Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std);
+Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const;
 
 
 };
@@ -110,17 +106,17 @@ Meas<DataType> DerivedGenerateRandomMeasurement(const tState& state, const MatXd
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-template<class tState>
-void SourceSE3CamDepth<tState>::DerivedInit(const SourceParameters& params) {
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::SourceSE3CamDepth() {
 
     // Verify measurement type
-    this->V_ = Eigen::Matrix<DataType,meas_space_dim_,meas_space_dim_>::Identity();
-    this->H_ = Eigen::Matrix<DataType, meas_space_dim_, this->cov_dim_>::Zero();
+    Base::V_ = Eigen::Matrix<DataType,Base::meas_space_dim_,Base::meas_space_dim_>::Identity();
+    Base::H_ = Eigen::Matrix<DataType, Base::meas_space_dim_, cov_dim_>::Zero();
 }
 
 //-----------------------------------------------------------------
-template<class tState>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3CamDepth<tState>::DerivedGetLinObsMatState(const tState& state) const {
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::DerivedGetLinObsMatState(const tState& state) {
 
     static constexpr unsigned int dim_pos =  tState::Group::dim_pos_;
     static constexpr unsigned int dim_rot =  tState::Group::dim_rot_;
@@ -128,7 +124,7 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3
     static constexpr unsigned int dim_a_vel =  tState::Algebra::dim_a_vel_;
 
 
-    MatXd H = this->H_;
+    MatXd H = Base::H_;
     const Eigen::Matrix<DataType,dim_pos,1>& t = state.g_.t_;
     const Eigen::Matrix<DataType,dim_t_vel,1>& p = state.u_.p_;
     const Eigen::Matrix<DataType,dim_rot,dim_rot>& R = state.g_.R_;
@@ -150,9 +146,18 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3
 
 }
 
+//-------------------------------------------------------------------------------------------------------------------------
+
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::DerivedGetLinObsMatSensorNoise(const tState& state) {
+
+    return Base::V_;
+
+}
+
 //-----------------------------------------------------------------
-template<class tState>
-Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGetEstMeas(const tState& state) const{
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Meas<typename tState::DataType> SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::DerivedGetEstMeas(const tState& state) {
     
     static constexpr unsigned int dim_pos =  tState::Group::dim_pos_;
     static constexpr unsigned int dim_rot =  tState::Group::dim_rot_;
@@ -164,8 +169,7 @@ Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGetEstMeas(con
     const Eigen::Matrix<DataType,dim_rot,dim_rot>& R = state.g_.R_;
 
     Meas<DataType> m;
-    m.type = this->params_.type_;
-    m.source_index = this->params_.source_index_;
+    m.type = tMeasurementType;
     m.pose = Eigen::Matrix<double,4,1>::Zero();
     m.twist = Eigen::Matrix<double,3,1>::Zero();
     double d = t.norm();
@@ -180,8 +184,8 @@ Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGetEstMeas(con
 } 
 
 //-----------------------------------------------------------------
-template<class tState>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3CamDepth<tState>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
 
     Eigen::Matrix<DataType, meas_space_dim_,1> error;
     error.block(0,0,4,1) = m1.pose - m2.pose;
@@ -193,12 +197,13 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3
 }
 
 //----------------------------------------------------------------------------------------
-template<class tState>
-Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGenerateRandomMeasurement(const tState& state, const MatXd& meas_std){
+template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
+Meas<typename tState::DataType> SourceSE3CamDepth<tState,tMeasurementType,tTransformation>::DerivedGenerateRandomMeasurement(const MatXd& meas_std,const tState& state) const {
     Meas<DataType> m = this->DerivedGetEstMeas(state);
     m.source_index = this->params_.source_index_;
+    m.type = tMeasurementType;
 
-    MatXd deviation = meas_std*this->GaussianRandomGenerator(meas_std.rows());
+    MatXd deviation = meas_std*utilities::GaussianRandomGenerator(meas_std.rows());
 
     m.pose += deviation.block(0,0,4,1);
     m.pose.block(1,0,3,1)/= m.pose.block(1,0,3,1).norm();
@@ -208,86 +213,7 @@ Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGenerateRandom
     return m;
 }
 
-//----------------------------------------------------------------------------------------
 
-template<class tState>
-Meas<typename tState::DataType> SourceSE3CamDepth<tState>::DerivedGetEstMeas(const tState& state, const MeasurementTypes type) {
-
-    static constexpr unsigned int dim_pos =  tState::Group::dim_pos_;
-    static constexpr unsigned int dim_rot =  tState::Group::dim_rot_;
-    static constexpr unsigned int dim_t_vel =  tState::Algebra::dim_t_vel_;
-    static constexpr unsigned int dim_a_vel =  tState::Algebra::dim_a_vel_;
-
-    const Eigen::Matrix<DataType,dim_pos,1>& t = state.g_.t_;
-    const Eigen::Matrix<DataType,dim_t_vel,1>& p = state.u_.p_;
-    const Eigen::Matrix<DataType,dim_rot,dim_rot>& R = state.g_.R_;
-
-    Meas<DataType> m;
-    m.type = type;
-    m.pose = Eigen::Matrix<double,4,1>::Zero();
-    m.twist = Eigen::Matrix<double,3,1>::Zero();
-    double d = t.norm();
-    m.pose(0,0) = d;
-    if (d != 0) {
-        m.pose.block(1,0,3,1) = state.g_.t_/d;
-        m.twist = R*p/d - t*t.transpose()*R*p/pow(d,3);
-    }
-
-    return m;
-
-
-}
-
-//-------------------------------------------------------------------------------------------------------------------------
-
-template<class tState>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3CamDepth<tState>::DerivedGetLinObsMatState(const tState& state, const MeasurementTypes type) {
-
-    static constexpr unsigned int dim_pos =  tState::Group::dim_pos_;
-    static constexpr unsigned int dim_rot =  tState::Group::dim_rot_;
-    static constexpr unsigned int dim_t_vel =  tState::Algebra::dim_t_vel_;
-    static constexpr unsigned int dim_a_vel =  tState::Algebra::dim_a_vel_;
-
-    MatXd H = Eigen::Matrix<double,meas_space_dim_, cov_dim_>::Zero();
-    
-    const Eigen::Matrix<DataType,dim_pos,1>& t = state.g_.t_;
-    const Eigen::Matrix<DataType,dim_t_vel,1>& p = state.u_.p_;
-    const Eigen::Matrix<DataType,dim_rot,dim_rot>& R = state.g_.R_;
-    double d = t.norm();
-    double d3 = pow(d,3);
-    double d5 = pow(d,5);
-    Eigen::Matrix<DataType,3,3> ttR = t*t.transpose()*R;
-    Eigen::Matrix<DataType,3,3> tmp = R/d - ttR/d3;
-
-    H.block(0,0,1,3) = t.transpose()*R/d;
-    H.block(1,0,3,3) = R/d - ttR/d3;
-
-    H.block(4,0,3,3) = 3*ttR*(p*t.transpose())*R/d5 - (R*(p*t.transpose())*R + t*p.transpose() + R*(t.transpose()*R*p))/d3;
-    H.block(4,3,3,3) = -tmp*lie_groups::se3<DataType>::SSM(p);
-    H.block(4,6,3,1) = tmp.block(0,0,3,1);
-   
-    return H;
-
-}
-
-//-------------------------------------------------------------------------------------------------------------------------
-
-template<class tState>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSE3CamDepth<tState>::DerivedGetLinObsMatSensorNoise(const tState& state, const MeasurementTypes type) {
-
-    const unsigned int sizeg = tState::Group::dim_;
-    const unsigned int sizeu = tState::Algebra::dim_;
-
-    MatXd V= Eigen::Matrix<DataType,meas_space_dim_,meas_space_dim_>::Identity();
-
-
-    return V;
-
-}
-
-// Common Sources
-typedef SourceSE3CamDepth<lie_groups::SE2_se2> SourceSE2PosVel;
-typedef SourceSE3CamDepth<lie_groups::SE3_se3> SourceSE3PosVel;
 
 } // namespace rransac
 

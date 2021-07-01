@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "rransac/common/sources/source_SE3_cam_depth.h"
 #include "lie_groups/state.h"
+#include "rransac/common/transformations/transformation_null.h"
 
 namespace rransac {
 
@@ -9,7 +10,7 @@ using namespace lie_groups;
 TEST(SOURCE_SE3_CAM_DEPTH, EstimatedMeasurementAndOMinus) {
 
 using State = SE3_se3;
-using Source = SourceSE3CamDepth<State>;
+using Source = SourceSE3CamDepth<State,MeasurementTypes::SE3_CAM_DEPTH,TransformNULL>;
 
 
 SourceParameters params;
@@ -25,6 +26,8 @@ State state;
 state = state.Random();
 
 Meas<double> m1,m2;
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 
 
 double d = state.g_.t_.norm();
@@ -38,13 +41,10 @@ m2.twist = ds;
 
 
 // Test the Get Est Meas
-m1 = source.GetEstMeas(state);
+m1 = source.GetEstMeas(state, transform_state, EmptyMat);
 ASSERT_EQ(m1.pose, m2.pose);
 ASSERT_EQ(m1.twist, m2.twist);
 
-m1 = source.GetEstMeas(state,MeasurementTypes::SE3_CAM_DEPTH);
-ASSERT_EQ(m1.pose, m2.pose);
-ASSERT_EQ(m1.twist, m2.twist);
 
 // std::cout << "m1 pose: " << m1.pose << std::endl;
 // std::cout << "m1 twist: " << m1.twist << std::endl;
@@ -61,7 +61,7 @@ ASSERT_DOUBLE_EQ(error.norm(),0);
 
 error.setZero();
 
-m2 = source.GenerateRandomMeasurement(state,Rstd*0);
+m2 = source.GenerateRandomMeasurement(Rstd*0, state, transform_state, EmptyMat);
 error = source.OMinus(m1,m2);
 ASSERT_DOUBLE_EQ(error.norm(),0);
 
@@ -69,7 +69,7 @@ ASSERT_DOUBLE_EQ(error.norm(),0);
 // with the specified covariance. 
 unsigned int num_iters = 1e4;
 for (unsigned int ii = 0; ii < num_iters; ++ii) {
-    m2 = source.GenerateRandomMeasurement(state,Rstd);
+    m2 = source.GenerateRandomMeasurement(Rstd, state, transform_state, EmptyMat);
     error = source.OMinus(m1,m2);
     cov +=error*error.transpose();
 }
@@ -98,8 +98,8 @@ for (int ii =0; ii < 12; ++ii) {
 for (int ii=0; ii < 12; ++ii) {
 
     dstate = state.OPlus(dx[ii]);
-    m1 = source.GetEstMeas(dstate);
-    m2 = source.GetEstMeas(state);
+    m1 = source.GetEstMeas(dstate,transform_state, EmptyMat);
+    m2 = source.GetEstMeas(state,transform_state, EmptyMat);
 
     Hn.block(0,ii,7,1) = source.OMinus(m1,m2)/dt;
 }
@@ -110,12 +110,12 @@ Proj.block(0,0,7,7).setIdentity();
 Proj.block(7,9,3,3).setIdentity();
 
 // Get the analytical Jacobian
-Eigen::MatrixXd Ha = source.GetLinObsMatState(state);
+Eigen::MatrixXd Ha = source.GetLinObsMatState(state,transform_state, EmptyMat);
 
 
 ASSERT_LT( (Ha-Hn*Proj.transpose()).norm(),1e-6);
 
-Ha = source.GetLinObsMatState(state,MeasurementTypes::SE3_CAM_DEPTH);
+Ha = source.GetLinObsMatState(state,transform_state, EmptyMat);
 
 ASSERT_LT( (Ha-Hn*Proj.transpose()).norm(),1e-6);
 }
@@ -126,7 +126,9 @@ TEST(SOURCE_SE3_CAM_DEPTH, SpatialDistanceTest) {
 
 
 using State = SE3_se3;
-using Source = SourceSE3CamDepth<State>;
+using Source = SourceSE3CamDepth<State,MeasurementTypes::SE3_CAM_DEPTH,TransformNULL>;
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 
 Parameters rransac_params;
 
@@ -153,10 +155,10 @@ m1.source_index = 0;
 m1.type = MeasurementTypes::SE3_CAM_DEPTH;
 m2.source_index= 0;
 m2.type = MeasurementTypes::SE3_CAM_DEPTH;
-m1 = source.GetEstMeas(state);
-m1.state_transform_data = false;
-m2 = source.GetEstMeas(state);
-m2.state_transform_data = false;
+m1 = source.GetEstMeas(state,transform_state, EmptyMat);
+m1.transform_state = false;
+m2 = source.GetEstMeas(state,transform_state, EmptyMat);
+m2.transform_state = false;
 
 double d0, d1, d2, d3;
 
@@ -164,9 +166,9 @@ d0 = source.GetSpatialDistance(m1,m2,rransac_params);
 
 ASSERT_EQ(d0, 0);
 
-m1.state_transform_data = true;
-m1.trans_data = transform1.g_.data_;
-m2 = source.GetEstMeas(state_t1);
+m1.transform_state = true;
+m1.transform_data_m_t = transform1.g_.data_;
+m2 = source.GetEstMeas(state_t1,transform_state, EmptyMat);
 d1 = source.GetSpatialDistance(m1,m2,rransac_params);
 
 ASSERT_LT(d1,1e-12);

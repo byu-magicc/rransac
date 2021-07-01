@@ -105,7 +105,7 @@ void DataTreeClusters<tDataType>::DerivedAddMeasurement(const tSystem& sys, cons
     for(auto iter = this->data_.begin(); iter != this->data_.end(); ++iter) {
 
         // see if the measurement is a neighbor
-        if (iter->IsNeighboringMeasurement(sys.sources_.front(), sys.params_, meas)) {
+        if (iter->IsNeighboringMeasurement(sys.source_container_,0, sys.params_, meas)) {
             neighbor_clusters.push_back(iter);
         }
     }

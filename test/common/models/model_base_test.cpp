@@ -16,6 +16,7 @@
 #include "rransac/common/transformations/transformation_base.h"
 #include "rransac/common/transformations/trans_homography.h"
 #include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/sources/source_container.h"
 
 
 namespace rransac
@@ -23,12 +24,41 @@ namespace rransac
 
 using namespace lie_groups;
 
-typedef ModelRN<R2_r2, TransformNULL, SourceRN> Model1;
-// typedef ModelRN<R3_r3, TransformNULL, SourceRN> Model2;
-// typedef ModelSENPosVel<SE2_se2, TransformNULL, SourceSENPosVel> Model3;
-// typedef ModelSENPoseTwist<SE2_se2, TransformNULL, SourceSENPoseTwist> Model4;
-// typedef ModelSENPosVel<SE3_se3, TransformNULL, SourceSENPosVel> Model5;
-// typedef ModelSENPoseTwist<SE3_se3, TransformNULL, SourceSENPoseTwist> Model6;
+// Create types
+
+typedef SourceRN<R2_r2, MeasurementTypes::RN_POS, TransformNULL> SourceR2Pos;
+typedef SourceRN<R2_r2, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR2PosVel;
+typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
+
+typedef SourceRN<R3_r3, MeasurementTypes::RN_POS, TransformNULL> SourceR3Pos;
+typedef SourceRN<R3_r3, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR3PosVel;
+typedef SourceContainer<SourceR3Pos,SourceR3PosVel> SourceContainerR3;
+
+typedef SourceSENPosVel<SE2_se2, MeasurementTypes::SEN_POS, TransformNULL> SourceSE2Pos;
+typedef SourceSENPosVel<SE2_se2, MeasurementTypes::SEN_POS_VEL, TransformNULL> SourceSE2PosVel;
+typedef SourceContainer<SourceSE2Pos,SourceSE2PosVel> SourceContainerSE2Pos;
+
+typedef SourceSENPosVel<SE3_se3, MeasurementTypes::SEN_POS, TransformNULL> SourceSE3Pos;
+typedef SourceSENPosVel<SE3_se3, MeasurementTypes::SEN_POS_VEL, TransformNULL> SourceSE3PosVel;
+typedef SourceContainer<SourceSE3Pos,SourceSE3PosVel> SourceContainerSE3Pos;
+
+typedef SourceSENPoseTwist<SE2_se2, MeasurementTypes::SEN_POSE, TransformNULL> SourceSE2Pose;
+typedef SourceSENPoseTwist<SE2_se2, MeasurementTypes::SEN_POSE_TWIST, TransformNULL> SourceSE2PoseTwist;
+typedef SourceContainer<SourceSE2Pose,SourceSE2PoseTwist> SourceContainerSE2Pose;
+
+typedef SourceSENPoseTwist<SE3_se3, MeasurementTypes::SEN_POSE, TransformNULL> SourceSE3Pose;
+typedef SourceSENPoseTwist<SE3_se3, MeasurementTypes::SEN_POSE_TWIST, TransformNULL> SourceSE3PoseTwist;
+typedef SourceContainer<SourceSE3Pose,SourceSE3PoseTwist> SourceContainerSE3Pose;
+
+
+
+
+typedef ModelRN<SourceContainerR2> Model1;
+typedef ModelRN<SourceContainerR3> Model2;
+typedef ModelSENPosVel<SourceContainerSE2Pos> Model3;
+typedef ModelSENPoseTwist<SourceContainerSE2Pose> Model4;
+typedef ModelSENPosVel<SourceContainerSE3Pos> Model5;
+typedef ModelSENPoseTwist<SourceContainerSE3Pose> Model6;
 
 
 
@@ -40,16 +70,16 @@ struct ModelHelper {
 };
 
 typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
-// typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
-// typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
-// typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
-// typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
-// typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
+typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
+typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
+typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
+typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
+typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-// using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
 // using MyTypes = ::testing::Types<ModelHelper3, ModelHelper5 >;
-using MyTypes = ::testing::Types< ModelHelper1>;
+// using MyTypes = ::testing::Types< ModelHelper2>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -61,7 +91,7 @@ protected:
 
 typedef Meas<double> Measurement;
 
-static constexpr unsigned int meas_dim = Model::Model::Source::meas_space_dim_;
+static constexpr unsigned int meas_dim = Model::Model::SourceContainer::Source0::meas_space_dim_;
 static constexpr unsigned int state_dim = Model::Model::State::g_type_::dim_*2;
 static constexpr unsigned int cov_dim = Model::Model::cov_dim_;
 static constexpr unsigned int a_vel_dim = Model::Model::cov_dim_ - Model::Model::State::g_type_::dim_-1;
@@ -111,14 +141,8 @@ meas_std2.setIdentity();
 meas_std2 *= sqrt(meas_cov_scale);
 
 // std::cerr << "here0" << std::endl;
-typename Model::Model::Source source1;
-typename Model::Model::Source source2;
-source1.Init(source_params1);
-source2.Init(source_params2);
-// std::cerr << "here00" << std::endl;
-
-sources.push_back(source1);
-sources.push_back(source2);
+source_container.AddSource(source_params1);
+source_container.AddSource(source_params2);
 // std::cerr << source1.gsd_ptr_ << std::endl;
 // std::cerr << sources.front().gsd_ptr_ << std::endl;
 params.process_noise_covariance_ = Eigen::Matrix<double,cov_dim,cov_dim>::Identity()*system_cov_scale;
@@ -134,7 +158,8 @@ std::vector<Measurement> meas2(num_meas);
 
 state = Model::Model::GetRandomState();
 
-
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 
 state0 = state;                           // Initial state
 states.push_back(state);                
@@ -151,8 +176,8 @@ for (unsigned int ii = 0; ii < num_iters; ++ii) {
     // Get measurements
     for (unsigned int jj=0; jj < num_meas; ++jj) {
 
-        m1 = source1.GenerateRandomMeasurement(state, meas_std1);
-        m2 = source2.GenerateRandomMeasurement(state, meas_std2);
+        m1 = source_container.GenerateRandomMeasurement(source_params1.source_index_, meas_std1, state, transform_state, EmptyMat);
+        m2 = source_container.GenerateRandomMeasurement(source_params2.source_index_, meas_std2, state, transform_state, EmptyMat);
         // m2.meas_cov = meas_cov2;
         m1.weight = 1.0/(num_meas+1);
         m2.weight = 1.0/(num_meas+1);
@@ -202,7 +227,7 @@ typename Model::Model::State state;
 typename Model::Model::State state0;
 std::vector<typename Model::Model::State> states;
 
-std::vector<typename Model::Model::Source> sources;
+typename Model::Model::SourceContainer source_container;
 
 std::vector<std::vector<std::vector<Measurement>>> new_meas; // time, source, measurements
 
@@ -229,16 +254,16 @@ TYPED_TEST_SUITE(ModelTest, MyTypes);
 TYPED_TEST(ModelTest, AllFunctions) {
 
 // Test init function and set parameters function
-this->track.Init(this->params,this->sources.size());
+this->track.Init(this->params);
 ASSERT_EQ(this->track.Q_, this->params.process_noise_covariance_);
 ASSERT_EQ(this->track.err_cov_, TypeParam::Model::Mat::Identity());
 ASSERT_EQ(this->track.newest_measurement_time_stamp, 0);
 ASSERT_EQ(this->track.model_likelihood_, 0.5);
 ASSERT_EQ(this->track.label_, -1);
-ASSERT_EQ(this->track.innov_cov_set_.size(), this->sources.size());
-ASSERT_EQ(this->track.innovation_covariances_.size(), this->sources.size());
-ASSERT_EQ(this->track.new_assoc_meas_.size(), this->sources.size());
-ASSERT_EQ(this->track.model_likelihood_update_info_.size(), this->sources.size());
+ASSERT_EQ(this->track.innov_cov_set_.size(), 2);
+ASSERT_EQ(this->track.innovation_covariances_.size(), 2);
+ASSERT_EQ(this->track.new_assoc_meas_.size(), 2);
+ASSERT_EQ(this->track.model_likelihood_update_info_.size(), 2);
 
 
 
@@ -278,30 +303,32 @@ ASSERT_LE( (this->track.err_cov_ - this->F*this->F.transpose() - this->G*this->t
 
 // Test the innovation covariance function.
 ////////////////////////////////////////////////
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 Eigen::MatrixXd H0, H1, V0, V1, S0, S1, S0_e, S1_e; // Observation function jacobians w.r.t. the state and noise for both sources and innovation covariances.
-H0 = this->track.GetLinObsMatState(this->sources,this->track.state_,0);
-V0 = this->track.GetLinObsMatSensorNoise(this->sources,this->track.state_,0);
-H1 = this->track.GetLinObsMatState(this->sources,this->track.state_,1);
-V1 = this->track.GetLinObsMatSensorNoise(this->sources,this->track.state_,1);
-S0 = H0*this->track.err_cov_*H0.transpose() + V0*this->sources[0].params_.meas_cov_*V0.transpose();
-S1 = H1*this->track.err_cov_*H1.transpose() + V1*this->sources[1].params_.meas_cov_*V1.transpose();
-S0_e = this->track.GetInnovationCovariance(this->sources,0);
-ASSERT_EQ(this->track.innov_cov_set_.size(),this->sources.size());
-ASSERT_EQ(this->track.innovation_covariances_.size(),this->sources.size());
+H0 = this->source_container.GetLinObsMatState(0, this->track.state_, transform_state, EmptyMat);
+V0 = this->source_container.GetLinObsMatSensorNoise(0, this->track.state_, transform_state, EmptyMat);
+H1 = this->source_container.GetLinObsMatState(1, this->track.state_, transform_state, EmptyMat);
+V1 = this->source_container.GetLinObsMatSensorNoise(1, this->track.state_, transform_state, EmptyMat);
+S0 = H0*this->track.err_cov_*H0.transpose() + V0*this->source_container.GetParams(0).meas_cov_*V0.transpose();
+S1 = H1*this->track.err_cov_*H1.transpose() + V1*this->source_container.GetParams(1).meas_cov_*V1.transpose();
+S0_e = this->track.GetInnovationCovariance(this->source_container,0, transform_state, EmptyMat);
+ASSERT_EQ(this->track.innov_cov_set_.size(),2);
+ASSERT_EQ(this->track.innovation_covariances_.size(),2);
 ASSERT_TRUE(this->track.innov_cov_set_[0]);  // Make sure the innovation covariance for the first source was set and none other.
 ASSERT_GT(this->track.innovation_covariances_[0].rows(),0);
-for(int ii = 1; ii < this->sources.size(); ++ii) {
+for(int ii = 1; ii < 2; ++ii) {
     ASSERT_FALSE(this->track.innov_cov_set_[ii]);
     ASSERT_EQ(this->track.innovation_covariances_[ii].rows(),0);
 }
 ASSERT_LE( (S0- S0_e).norm(), 1e-12  );
 
-S1_e = this->track.GetInnovationCovariance(this->sources,1);
+S1_e = this->track.GetInnovationCovariance(this->source_container,1, transform_state, EmptyMat);
 ASSERT_TRUE(this->track.innov_cov_set_[1]);  // Make sure the innovation covariance for the first source was set and none other.
 ASSERT_GT(this->track.innovation_covariances_[1].rows(),0);
 ASSERT_LE( (S1- S1_e).norm(), 1e-12  );
 
-this->track.UpdateModel(this->sources, this->params); // Make sure that the update model resets the innov_cov_set to false
+this->track.UpdateModel(this->source_container, this->params); // Make sure that the update model resets the innov_cov_set to false
 for (auto val : this->track.innov_cov_set_) {
     ASSERT_FALSE(val);
 }
@@ -327,7 +354,7 @@ for (unsigned long int ii=0; ii < this->num_iters; ++ii) {
     this->track.new_assoc_meas_ = this->new_meas[ii];
     model_likelihood_prev = this->track.model_likelihood_;
 
-    this->track.UpdateModel(this->sources, this->params);
+    this->track.UpdateModel(this->source_container, this->params);
 
 
     
@@ -348,7 +375,7 @@ if (TypeParam::MeasType1 == MeasurementTypes::SEN_POS|| TypeParam::MeasType1 == 
     // std::cerr << "norm error: " << error.norm() << std::endl;
     // std::cerr << " cov inverse: " << this->meas_cov2.inverse() << std::endl;
     // std::cerr << " blah er: " << (*this->track.sources_)[1].OMinus( this->new_meas.back().back().back(),(*this->track.sources_)[1].GetEstMeas(this->track.state_))<< std::endl;
-    Eigen::MatrixXd error = this->meas_cov2.inverse().sqrt()*this->sources[1].OMinus( this->new_meas.back().back().back(),this->sources[1].GetEstMeas(this->track.state_));
+    Eigen::MatrixXd error = this->meas_cov2.inverse().sqrt()*this->source_container.OMinus(1, this->new_meas.back().back().back(),this->source_container.GetEstMeas(1,this->track.state_,transform_state,EmptyMat));
     EXPECT_LE( error.norm(),  5) << "This result might not always be true since updating the track is not deterministic";
 
 

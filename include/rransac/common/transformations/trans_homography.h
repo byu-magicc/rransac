@@ -23,7 +23,7 @@ constexpr int TransformHomographyCovDim(int state_dim) {
 */
 
 template<class tState>
-class TransformHomography : public TransformBase<Eigen::Matrix<typename tState::DataType,3,3>, tState, Eigen::Matrix<typename tState::DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, TransformHomography<tState>> {
+class TransformHomography : public TransformBase<Eigen::Matrix<typename tState::DataType,3,3>, tState, Eigen::Matrix<typename tState::DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, false, TransformHomography<tState>> {
 
 public:
 typedef typename tState::DataType DataType; /**< The scalar object for the data. Ex. float, double, etc. */
@@ -33,6 +33,7 @@ typedef Eigen::Matrix<DataType,3,3> Mat3d;  /**< The data type of the homography
 typedef Eigen::Matrix<DataType,4,4> Mat4d;
 typedef Eigen::Matrix<DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov; /**< The object type of the track's error covariance. */
 typedef Mat3d MatData;
+typedef Eigen::Matrix<DataType, Eigen::Dynamic,Eigen::Dynamic> MatXd; /**< Dynamic Eigen Matrix */
 
 // Components of the Homograpy H = [H1, h2; h3_T^T, h4] where T stands for transpose.
 Eigen::Matrix<DataType,2,2> H1_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
@@ -83,6 +84,39 @@ void DerivedTransformTrack(tState& state, MatCov& cov) const {
     throw std::runtime_error("TransformHomography::DerivedTransformTrack The state is not supported.");
 }
 
+/** 
+ * Transforms the state and error covariance using user provided transform data.
+ * This function is useful when you need to transform a track to a measurement frame. 
+ * @param[in] state The track's state to be transformed.
+ * @param[in] cov   The track's error covariance to be transformed.
+ * @param[in] transform_data The data used to transform the state and error covariance
+ */ 
+static void DerivedTransformTrack(tState& state, MatCov& cov, const MatData& transform_data) {
+   throw std::runtime_error("TransformHomography::DerivedTransformTrack This method is not implemented.");
+}
+
+/** 
+ * Transforms the state using user provided transform data.
+ * This function is useful when you need to transform a track to a measurement frame. 
+ * @param[in] state The track's state to be transformed.
+ * @param[in] transform_data The data used to transform the state and error covariance
+ */ 
+static tState DerivedTransformState(const tState& state, const MatData& transform_data) {
+    throw std::runtime_error("TransformHomography::DerivedTransformState This method is not implemented.");
+}
+
+/** 
+ * Returns the Jacobian of the transformation
+ * @param[in] state The state of the target after it has been transformed using transform_data
+ * @param[in] transform_data The data used in the transformation
+ */ 
+static MatXd DerivedGetTransformationJacobian(const tState& state, const MatData& transform_data) {
+   throw std::runtime_error("TransformHomography::DerivedTransformState This method is not implemented.");
+}
+
+
+// private: 
+
 /**
  * Transforms the position of the pixel from the previous frame to the current frame
  * @param[in] pos The pixel location
@@ -131,6 +165,27 @@ Mat2d TransformRotation(const Vec2d& vel_transformed) const {
     return R_transformed;
 
 }
+
+
+/**
+ * Verifies that the transform data provided by the user is in the requested from.
+ * @param transform_data The tranformation data to be tested. 
+ */
+static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+
+    bool correct;
+
+    // transform data should be a 3x3 matrix
+    if(transform_data.cols() != 3 || transform_data.rows() != 3) {
+        correct = false;
+    } else {
+        correct = true;
+    }
+
+
+    return correct;
+} 
+
 
 };
 

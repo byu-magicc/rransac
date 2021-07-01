@@ -2,6 +2,7 @@
 // #include "data_containers/data_tree/data_tree_cluster.h"
 #include "rransac/system.h"
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_container.h"
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/transformations/trans_homography.h"
 
@@ -13,9 +14,10 @@ class DataTreeClustersTestObject : public ::testing::Test {
 public:
 
 typedef R2_r2 State;
-typedef SourceR2 Source;
+typedef SourceRN<State,MeasurementTypes::RN_POS,TransformHomography> Source;
 typedef TransformHomography<State> Transform;
-typedef ModelRN<State, TransformHomography> Model;
+typedef SourceContainer<Source> SC;
+typedef ModelRN<SC> Model;
 typedef Eigen::Matrix<double,2,1> MatData;
 typedef Meas<double> Measurement;
 
@@ -29,7 +31,8 @@ source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.8;
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.type_ = MeasurementTypes::RN_POS;
-source.Init(source_params);
+source_params.source_index_ = 0;
+// source.Init(source_params);
 
 Parameters params;
 params.cluster_time_threshold_ = 2;
@@ -39,16 +42,17 @@ params.RANSAC_minimum_subset_ = 5;
 params.process_noise_covariance_ = Eigen::Matrix4d::Identity();
 params.track_good_model_threshold_ = 0.8;
 
-Transform trans;
+// Transform trans;
 Eigen::Matrix3d homography;
 homography.setZero();
 homography.block(2,2,1,1)<< 1;
-trans.Init();
-trans.SetData(homography);
+// trans.Init();
+// trans.SetData(homography);
 
-sys_.sources_.push_back(source);
+sys_.source_container_.AddSource(source_params);
 sys_.params_ = params;
-sys_.transformaion_ = trans;
+sys_.transformaion_.Init();
+sys_.transformaion_.SetData(homography);
 
 // setup measurement
 m_.type = MeasurementTypes::RN_POS;

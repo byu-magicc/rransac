@@ -26,7 +26,6 @@ public:
 
 typedef typename tModel::State State;           /**< The state of the target. @see State. */
 typedef typename tModel::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
-typedef typename tModel::Source Source;         /**< The object type of the source. @see SourceBase. */
 typedef tModel Model;                           /**< The object type of the model. */
 
 
@@ -78,8 +77,8 @@ typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStat
 
         int src_index = iter->inner_it->source_index;
         double dt = iter->inner_it->time_stamp - sys.current_time_;
-        H = tModel::GetLinObsMatState(sys.sources_,x,src_index);
-        V = tModel::GetLinObsMatSensorNoise(sys.sources_,x,src_index);
+        H = tModel::GetLinObsMatState(sys.source_container_,src_index,x,iter->inner_it->transform_state, iter->inner_it->transform_data_t_m);
+        V = tModel::GetLinObsMatSensorNoise(sys.source_container_,src_index,x,iter->inner_it->transform_state, iter->inner_it->transform_data_t_m);
         F = tModel::GetLinTransFuncMatState(x,dt);
         G = tModel::GetLinTransFuncMatNoise(x,dt);
         HF = H*F;
@@ -87,7 +86,7 @@ typename tModel::State LinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStat
         
 
         // Builds the inverse innovation covariance 
-        S_inv = (V*sys.sources_[src_index].params_.meas_cov_*V.transpose() + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
+        S_inv = (V*sys.source_container_.GetParams(src_index).meas_cov_*V.transpose() + HG*sys.params_.process_noise_covariance_ *HG.transpose()).inverse();
         
         
         if (iter->inner_it->type == MeasurementTypes::RN_POS)

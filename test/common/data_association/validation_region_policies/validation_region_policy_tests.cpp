@@ -8,6 +8,7 @@
 #include "rransac/common/sources/source_RN.h"
 #include "rransac/common/sources/source_SEN_pos_vel.h"
 #include "rransac/common/sources/source_SEN_pose_twist.h"
+#include "rransac/common/sources/source_container.h"
 #include "rransac/parameters.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/system.h"
@@ -19,10 +20,27 @@
 using namespace lie_groups;
 using namespace rransac;
 
-typedef ModelRN<R2_r2, TransformNULL, SourceRN> Model1;
-typedef ModelRN<R3_r3, TransformNULL, SourceRN> Model2;
-typedef ModelSENPosVel<SE2_se2, TransformNULL, SourceSENPosVel> Model3;
-typedef ModelSENPosVel<SE3_se3, TransformNULL, SourceSENPosVel> Model4;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVel;
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNULL> SourceR3Pos;
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR3PosVel;
+
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2Pos;
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVel;
+typedef SourceSENPosVel<SE3_se3,MeasurementTypes::SEN_POS,TransformNULL> SourceSE3Pos;
+typedef SourceSENPosVel<SE3_se3,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE3PosVel;
+
+typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
+typedef SourceContainer<SourceR3Pos,SourceR3PosVel> SourceContainerR3;
+typedef SourceContainer<SourceSE2Pos,SourceSE2PosVel> SourceContainerSE2;
+typedef SourceContainer<SourceSE3Pos,SourceSE3PosVel> SourceContainerSE3;
+
+
+
+typedef ModelRN<SourceContainerR2> Model1;
+typedef ModelRN<SourceContainerR3> Model2;
+typedef ModelSENPosVel<SourceContainerSE2> Model3;
+typedef ModelSENPosVel<SourceContainerSE3> Model4;
 
 // N is the dimension of the position
 template<class M, MeasurementTypes MT1, MeasurementTypes MT2, int N>
@@ -35,8 +53,10 @@ struct ModelHelper {
         return meas.pose.block(0,0,N,1) - track.state_.g_.data_.block(0,track.state_.g_.data_.cols()-1,N,1);
     }
 
-    static Eigen::MatrixXd GetError(const M& track, const Meas<typename M::DataType>& meas, const std::vector<typename M::Source>& sources) {
-        return sources[meas.source_index].OMinus(meas, sources[meas.source_index].GetEstMeas(track.state_));
+    static Eigen::MatrixXd GetError(const M& track, const Meas<typename M::DataType>& meas, const typename M::SourceContainer& source_container) {
+        bool transform_state = false;
+        Eigen::MatrixXd EmptyMat;
+        return source_container.OMinus(meas.source_index, meas, source_container.GetEstMeas(meas.source_index, track.state_, transform_state, EmptyMat));
     }
 };
 
@@ -51,7 +71,7 @@ typedef ModelHelper<Model4, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS
 
 
 using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4>;
-// using MyTypes = ::testing::Types<ModelHelper1>;
+// using MyTypes = ::testing::Types<ModelHelper3>;
 
 template<class ModelHelper>
 class ValidationRegionTest : public ::testing::Test {
@@ -60,7 +80,7 @@ protected:
 
 typedef Meas<double> Measurement;
 
-static constexpr unsigned int meas_dim = ModelHelper::Model::Source::meas_space_dim_;
+static constexpr unsigned int meas_dim = ModelHelper::Model::SourceContainer::Source0::meas_space_dim_;
 static constexpr unsigned int state_dim = ModelHelper::Model::State::g_type_::dim_*2;
 static constexpr unsigned int cov_dim = ModelHelper::Model::cov_dim_;
 static constexpr unsigned int a_vel_dim = ModelHelper::Model::cov_dim_ - ModelHelper::Model::State::g_type_::dim_-1;
@@ -102,31 +122,28 @@ source_params1.gate_threshold_ = 1;
 meas_std2.setIdentity();
 meas_std2 *= sqrt(meas_cov_scale);
 
-// std::cerr << "here0" << std::endl;
-typename ModelHelper::Model::Source source1;
-typename ModelHelper::Model::Source source2;
-source1.Init(source_params1);
-source2.Init(source_params2);
+
 // std::cerr << "here00" << std::endl;
 
 
 
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,cov_dim,cov_dim>::Identity()*system_cov_scale;
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
 // std::cerr << "here 1" << std::endl;
 
 // Generate Trajectory and measurements
 Measurement m1;
 Measurement m2;
 
-track.Init(sys.params_,sys.sources_.size());
+track.Init(sys.params_);
 track.state_ = ModelHelper::Model::State::Random();
 
 
 
 
-
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 
 
 
@@ -134,8 +151,8 @@ track.state_ = ModelHelper::Model::State::Random();
 for (unsigned int ii = 0; ii < num_meas; ++ii) {
 
 
-    m1 = source1.GenerateRandomMeasurement(track.state_, meas_std1);
-    m2 = source2.GenerateRandomMeasurement(track.state_, meas_std2);
+    m1 = sys.source_container_.GenerateRandomMeasurement(0,meas_std1,track.state_,transform_state,EmptyMat);
+    m2 = sys.source_container_.GenerateRandomMeasurement(1,meas_std2,track.state_,transform_state,EmptyMat);
     m1.time_stamp = 0;
     m1.source_index = 0;
     m1.type = ModelHelper::MeasType1;
@@ -182,6 +199,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPolicy ) {
 
     bool in_validation_region = false;
     Eigen::MatrixXd err;
+    int num_true = 0;
 
 
 
@@ -189,10 +207,11 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPolicy ) {
     for (auto& meas: this->sys.new_meas_) {
 
 
-        err = TypeParam::ModelHelper::GetError(this->track,meas,this->sys.sources_);
+        err = TypeParam::ModelHelper::GetError(this->track,meas,this->sys.source_container_);
 
-        if(err.norm() <= this->sys.sources_[meas.source_index].params_.gate_threshold_) {
+        if(err.norm() <= this->sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
             in_validation_region = true;
+            num_true++;
         } else {
             in_validation_region = false;
             // std::cout << "err: " << std::endl <<  err << std::endl;
@@ -202,6 +221,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPolicy ) {
         }
 
         ASSERT_EQ(in_validation_region, validation_region.PolicyInValidationRegion(this->sys,meas,this->track));
+        EXPECT_GT(num_true,0) << "Try running the test case again" << std::endl;
 
 
     }
@@ -218,7 +238,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPosPolicy ) {
     bool in_validation_region = false;
     Eigen::MatrixXd err;
 
-
+    int num_true = 0;
 
 
     for (auto& meas: this->sys.new_meas_) {
@@ -226,8 +246,9 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPosPolicy ) {
 
         err = TypeParam::ModelHelper::GetPosError(this->track,meas);
 
-        if(err.norm() <= this->sys.sources_[meas.source_index].params_.gate_threshold_) {
+        if(err.norm() <= this->sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
             in_validation_region = true;
+            num_true++;
         } else {
             in_validation_region = false;
             // std::cout << "err: " << std::endl <<  err << std::endl;
@@ -237,7 +258,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionFixedPosPolicy ) {
         }
 
         ASSERT_EQ(in_validation_region, validation_region.PolicyInValidationRegion(this->sys,meas,this->track));
-
+        EXPECT_GT(num_true,0) << "Try running the test case again" << std::endl;
 
     }
 }
@@ -253,6 +274,11 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionInnovPolicy ) {
     bool in_validation_region = false;
     Eigen::MatrixXd err;
     Eigen::MatrixXd S;
+    bool transform_state = false;
+    Eigen::MatrixXd EmptyMat;
+
+    int num_true = 0;
+
 
 
 
@@ -260,14 +286,15 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionInnovPolicy ) {
     for (auto& meas: this->sys.new_meas_) {
 
 
-        err = TypeParam::ModelHelper::GetError(this->track,meas, this->sys.sources_);
-        S = this->track.GetInnovationCovariance(this->sys.sources_, meas.source_index);
+        err = TypeParam::ModelHelper::GetError(this->track,meas, this->sys.source_container_);
+        S = this->track.GetInnovationCovariance(this->sys.source_container_, meas.source_index, transform_state, EmptyMat);
 
         // std::cout << "err: " << std::endl << err << std::endl;
         // std::cout << "S: " << std::endl << S << std::endl;
 
-        if((err.transpose()*S.inverse()*err)(0,0) <= this->sys.sources_[meas.source_index].params_.gate_threshold_) {
+        if((err.transpose()*S.inverse()*err)(0,0) <= this->sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
             in_validation_region = true;
+            num_true++;
         } else {
             in_validation_region = false;
             // std::cout << "err: " << std::endl <<  err << std::endl;
@@ -277,6 +304,7 @@ TYPED_TEST(ValidationRegionTest,ValidationRegionInnovPolicy ) {
         }
 
         ASSERT_EQ(in_validation_region, validation_region.PolicyInValidationRegion(this->sys,meas,this->track));
+        EXPECT_GT(num_true,0) << "Try running the test case again" << std::endl;
 
 
     }

@@ -37,14 +37,19 @@ using namespace rransac;
 
 struct Test1 {
     public:
-    typedef ModelRN<R2_r2, TransformNULL,SourceRN> Model_;
+
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVEL;
+    typedef SourceContainer<SourceR2Pos,SourceR2PosVEL,SourceR2PosVEL> SC;
+
+
+    typedef ModelRN<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
-    typedef typename RRANSACParameters::tRansac RANSAC_;
+    typedef RRANSACTemplateParameters<SC,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef typename RRANSACParameters::TRansac RANSAC_;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     typedef Eigen::Matrix<double,2,2> MatR_;
     typedef Eigen::Matrix<double,4,4> MatR2_;
@@ -89,15 +94,19 @@ struct Test1 {
 
 struct Test2 {
     public:
-    typedef ModelRN<R3_r3, TransformNULL,SourceRN> Model_;
+
+    typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNULL> SourceRnPos;
+    typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceRnPosVEL;
+    typedef SourceContainer<SourceRnPos,SourceRnPosVEL,SourceRnPosVEL> SC;
+
+    typedef ModelRN<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef RRANSACTemplateParameters<State_,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<SC,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::tRansac RANSAC_;
+    typedef typename RRANSACParameters::TRansac RANSAC_;
     typedef Eigen::Matrix<double,3,3> MatR_;
     typedef Eigen::Matrix<double,6,6> MatR2_;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
@@ -142,15 +151,19 @@ struct Test2 {
 
 struct Test3 {
     public:
-    typedef ModelSENPoseTwist<SE2_se2, TransformNULL,SourceSENPoseTwist> Model_;
+
+    typedef SourceSENPoseTwist<SE2_se2,MeasurementTypes::SEN_POSE,TransformNULL> SourceSE2Pose;
+    typedef SourceSENPoseTwist<SE2_se2,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourceSE2PoseTwist;
+    typedef SourceContainer<SourceSE2Pose,SourceSE2PoseTwist,SourceSE2PoseTwist> SC;
+
+    typedef ModelSENPoseTwist<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<SC,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::tRansac RANSAC_;
+    typedef typename RRANSACParameters::TRansac RANSAC_;
     typedef Eigen::Matrix<double,3,3> MatR_;
     typedef Eigen::Matrix<double,6,6> MatR2_;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
@@ -203,15 +216,19 @@ struct Test3 {
 
 struct Test4 {
     public:
-    typedef ModelSENPoseTwist<SE3_se3, TransformNULL,SourceSENPoseTwist> Model_;
+
+    typedef SourceSENPoseTwist<SE3_se3,MeasurementTypes::SEN_POSE,TransformNULL> SourceSE3Pose;
+    typedef SourceSENPoseTwist<SE3_se3,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourceSE3PoseTwist;
+    typedef SourceContainer<SourceSE3Pose,SourceSE3PoseTwist,SourceSE3PoseTwist> SC;
+
+    typedef ModelSENPoseTwist<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef RRANSACTemplateParameters<State_,SourceSENPoseTwist,TransformNULL,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<SC,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::tRansac RANSAC_;
+    typedef typename RRANSACParameters::TRansac RANSAC_;
     typedef Eigen::Matrix<double,6,6> MatR_;
     typedef Eigen::Matrix<double,12,12> MatR2_;
     static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
@@ -268,15 +285,19 @@ struct Test4 {
 struct Test5 {
     public:
 
-    typedef ModelSENPosVel<SE2_se2, TransformHomography,SourceSENPosVel> Model_;
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2Pos;
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVel;
+    typedef SourceContainer<SourceSE2Pos,SourceSE2PosVel,SourceSE2PosVel> SC;
+
+
+    typedef ModelSENPosVel<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
     typedef typename Model_::Transformation::MatData TransformMatData_;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
-    typedef typename Model_::Source Source_;
-    typedef RRANSACTemplateParameters<State_,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef RRANSACTemplateParameters<SC,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::tRansac RANSAC_;
+    typedef typename RRANSACParameters::TRansac RANSAC_;
     TransformMatData_ transform_data;
     static constexpr bool transform_data_ = true;
     // static constexpr bool transform_data_ = false;
@@ -348,7 +369,6 @@ public:
 
 typedef typename T::Model_ Model_;
 typedef typename T::State_ State_;
-typedef typename T::Source_ Source_;
 typedef typename T::RANSAC_ RANSAC_;
 typedef typename T::RRANSAC_ RRANSAC_;
 typedef typename T::Transformation_ Transformation_;
@@ -376,13 +396,13 @@ void SetUp() override {
     source_params3.meas_cov_ = T::MatR2_::Identity()*noise_;
     source_params3.gate_probability_ = 0.9;
 
-    Source_ source1, source2, source3;
-    source1.Init(source_params1);
-    source2.Init(source_params2);
-    source3.Init(source_params3);
-    sources_.push_back(source1);
-    sources_.push_back(source2);
-    sources_.push_back(source3);
+    // Source_ source1, source2, source3;
+    // source1.Init(source_params1);
+    // source2.Init(source_params2);
+    // source3.Init(source_params3);
+    // sources_.push_back(source1);
+    // sources_.push_back(source2);
+    // sources_.push_back(source3);
 
     rransac_.AddSource(source_params1);
     rransac_.AddSource(source_params2);
@@ -425,7 +445,7 @@ void SetUp() override {
     // Setup tracks
     tracks_.resize(4);
     for (int ii = 0; ii < 4; ++ii) {
-        tracks_[ii].Init(sys_->params_,sys_->sources_.size());
+        tracks_[ii].Init(sys_->params_);
         tracks_[ii].state_ = test_data_.states[ii];
     }
 
@@ -440,6 +460,8 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
     Meas<double> tmp1, tmp2, tmp3, tmp4;
     std::list<Meas<double>> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
+    bool transform_state = 0;
+    Eigen::MatrixXd EmptyMat;
 
     for (double ii =start_time; ii < end_time; ii += this->dt_) {
 
@@ -475,9 +497,9 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "meas " << std::endl;
 
-            if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
+            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m1_.source_index).probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.1));
+                tmp1 = this->sys_->source_container_.GenerateRandomMeasurement(this->m1_.source_index,T::MatR_ ::Identity()*sqrt(this->noise_*0.1),track.state_,transform_state,EmptyMat);
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
@@ -489,9 +511,9 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             rand_num.setRandom();
             if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
                 rand_num << 0;
-            if (fabs(rand_num(0,0)) < this->sources_[this->m2_.source_index].params_.probability_of_detection_) {
+            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m2_.source_index).probability_of_detection_) {
 
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(track.state_,T::MatR2_::Identity()*sqrt(this->noise_*0.1));
+                tmp2 = this->sys_->source_container_.GenerateRandomMeasurement(this->m2_.source_index,T::MatR2_ ::Identity()*sqrt(this->noise_*0.1),track.state_,transform_state,EmptyMat);
 
                 this->m2_.time_stamp = ii;
                 this->m2_.pose = tmp2.pose;
@@ -504,9 +526,9 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             rand_num.setRandom();
             if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
                 rand_num << 0;
-            if (fabs(rand_num(0,0)) < this->sources_[this->m4_.source_index].params_.probability_of_detection_) {
+            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m4_.source_index).probability_of_detection_) {
 
-                tmp4 = this->sources_[this->m4_.source_index].GenerateRandomMeasurement(track.state_,T::MatR_ ::Identity()*sqrt(this->noise_*0.1));
+                tmp4 = this->sys_->source_container_.GenerateRandomMeasurement(this->m4_.source_index,T::MatR2_ ::Identity()*sqrt(this->noise_*0.1),track.state_,transform_state,EmptyMat);
 
                 this->m4_.time_stamp = ii;
                 this->m4_.pose = tmp4.pose;
@@ -517,7 +539,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
             // std::cerr << "tmp3 " << std::endl;
 
             State_ rand_state = T::GenerateRandomState(this->fov_);
-            tmp3 = this->sources_[this->m3_.source_index].GenerateRandomMeasurement(rand_state,T::MatR2_::Identity()*sqrt(this->noise_*0.5));
+            tmp3 = this->sys_->source_container_.GenerateRandomMeasurement(this->m3_.source_index,T::MatR2_ ::Identity()*sqrt(this->noise_*0.5),track.state_,transform_state,EmptyMat);
             this->m3_.time_stamp = ii;
             this->m3_.pose = tmp3.pose;
             this->m3_.twist = tmp3.twist;
@@ -549,7 +571,7 @@ T test_data_;
 std::vector<Model_> tracks_;
 RRANSAC_ rransac_;
 const System<Model_>* sys_;
-std::vector<Source_> sources_;
+// std::vector<Source_> sources_;
 Transformation_ transformation_;
 
 // Simulation Parameters

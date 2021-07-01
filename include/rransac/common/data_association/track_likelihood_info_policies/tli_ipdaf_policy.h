@@ -32,7 +32,7 @@ class TLI_IPDAFPolicy {
 
 public:
 
-static constexpr double decay_rate_ = 0.02;
+static constexpr double decay_rate_ = 0.01;
 
 /**
 * Update the track likelihood for all of the tracks. 
@@ -86,7 +86,7 @@ void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihood(System<tModel>& sys, D
 //---------------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel>
-void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info, const double dt ) {
+void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info, const double dt) {
 
     double alpha = decay_rate_ * dt;
     if (alpha > 0.5) {
@@ -94,10 +94,10 @@ void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihoodSingle(const System<tMo
     }
     track.model_likelihood_ *= (1.0 - alpha);
 
-    for (int source_index = 0; source_index < sys.sources_.size(); ++ source_index) {
-        const double& PD = sys.sources_[source_index].params_.probability_of_detection_;
-        const double& PG = sys.sources_[source_index].params_.gate_probability_;
-        const double& lambda = sys.sources_[source_index].params_.spacial_density_of_false_meas_;
+    for (int source_index = 0; source_index < sys.source_container_.num_sources_; ++ source_index) {
+        const double& PD = sys.source_container_.GetParams(source_index).probability_of_detection_;
+        const double& PG = sys.source_container_.GetParams(source_index).gate_probability_;
+        const double& lambda = sys.source_container_.GetParams(source_index).spacial_density_of_false_meas_;
 
         // If a measurement from a source was associated, it is assumed that the track is inside the surveillance region of the source
         // and that the source produced measurements this sensor scan.
@@ -119,12 +119,13 @@ void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihoodSingle(const System<tMo
 
 
 #ifdef DEBUG_BUILD
-        if (!sys.sources_[source_index].StateInsideSurveillanceRegion(track.state_)) 
-            std::cerr << "TLI_IPDAFPolicy::Single A source produced a measurement for a track that is not in its surveillance region. ";
+            if (!sys.source_container_.StateInsideSurveillanceRegion(source_index,track.state_,info.transform_state_[source_index],info.transform_data_t_m_[source_index])) {
+                std::cerr << "TLI_IPDAFPolicy::Single A source produced a measurement for a track that is not in its surveillance region. ";
+            }
 #endif
 
-        // If the source produced measurements, the track was inside the sources surveillance region, and source didn't observe the track
-        } else if (sys.sources_[source_index].StateInsideSurveillanceRegion(track.state_) && info.source_produced_measurements_[source_index]) {
+        // If the source produced measurements, the track was inside the sources surveillance region, and source didn't observe the track        
+        } else if (sys.source_container_.StateInsideSurveillanceRegion(source_index,track.state_,info.transform_state_[source_index],info.transform_data_t_m_[source_index]) && info.source_produced_measurements_[source_index]) {
             track.model_likelihood_update_info_[source_index].in_lsr_and_produced_meas = true;
             track.model_likelihood_update_info_[source_index].num_assoc_meas = 0;
             track.model_likelihood_update_info_[source_index].delta = PD*PG;
@@ -150,8 +151,8 @@ void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihoodSingle(const System<tMo
 template<typename tModel>
 double TLI_IPDAFPolicy<tModel>::CalculateMeasurementLikelihood(const System<tModel>& sys, tModel& track, const Meas<typename tModel::DataType>& meas) {
 
-    Eigen::MatrixXd err = sys.sources_[meas.source_index].OMinus(meas, sys.sources_[meas.source_index].GetEstMeas(track.state_));
-    Eigen::MatrixXd S = track.GetInnovationCovariance(sys.sources_,meas.source_index);
+    Eigen::MatrixXd err = sys.source_container_.OMinus(meas.source_index, meas, sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m));;
+    Eigen::MatrixXd S = track.GetInnovationCovariance(sys.source_container_,meas.source_index, meas.transform_state, meas.transform_data_t_m);
     double det_inn_cov_sqrt = sqrt(S.determinant());
 
     return exp( - (err.transpose()*S.inverse()*err)(0,0)/2.0)   /(pow(2.0*M_PI,S.cols()/2.0)*det_inn_cov_sqrt) ;

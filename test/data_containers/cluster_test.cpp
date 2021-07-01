@@ -6,8 +6,10 @@
 #include "lie_groups/state.h"
 #include "rransac/data_containers/cluster.h"
 #include "rransac/common/transformations/trans_homography.h"
+#include "rransac/common/transformations/transformation_null.h"
 #include "rransac/parameters.h"
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_container.h"
 
 using namespace rransac;
 using namespace lie_groups;
@@ -239,14 +241,17 @@ params.cluster_time_threshold_ = 2;
 
 Cluster<double> cluster;
 
-SourceR2 source; // We need the source for calculating distances
+typedef SourceRN<lie_groups::R2_r2,MeasurementTypes::RN_POS,TransformNULL> Source; // We need the source for calculating distances
 SourceParameters source_params;
 source_params.spacial_density_of_false_meas_ = 0.1;
 source_params.gate_probability_ = 0.8;
 source_params.probability_of_detection_ = 0.8;
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.type_ = MeasurementTypes::RN_POS;
-source.Init(source_params);
+source_params.source_index_ = 0;
+SourceContainer<Source> source_container;
+source_container.AddSource(source_params);
+
 
 Meas<double> m, new_meas;
 unsigned int num_meas = 10;
@@ -258,7 +263,7 @@ new_meas.type = MeasurementTypes::RN_POS;
 ///////////////////////////////////////////////////////
 
 new_meas.time_stamp = 0;
-ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 
 ////////////////////////////////////////////////////////
@@ -275,11 +280,11 @@ for (int ii = 0; ii < num_meas; ++ii) {
 new_meas.time_stamp = m.time_stamp + params.cluster_time_threshold_ +0.1;
 new_meas.pose = m.pose;
 
-ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 new_meas.time_stamp = m.time_stamp - params.cluster_time_threshold_ - 0.1;
 
-ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 
 ////////////////////////////////////////////////////////
@@ -287,7 +292,7 @@ ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
 ///////////////////////////////////////////////////////
 
 new_meas.time_stamp =  m.time_stamp - params.cluster_time_threshold_;
-ASSERT_TRUE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_TRUE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 // add more measurements
 for (int ii = 0; ii < num_meas; ++ii) {
@@ -305,14 +310,14 @@ for (int ii = 0; ii < num_meas; ++ii) {
 }
 
 // It should no longer be a neighbor due to recent time measurement
-ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 // Update time stamp so it is a neighbor
 new_meas.time_stamp = 1;
-ASSERT_TRUE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_TRUE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 new_meas.pose = m.pose;
-ASSERT_TRUE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_TRUE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 // Add more measurements so that the new measurement is no longer a neighbor
 
@@ -323,7 +328,7 @@ for (int ii = 0; ii < num_meas; ++ii) {
     cluster.AddMeasurement(m);
 }
 
-ASSERT_FALSE(cluster.IsNeighboringMeasurement(source,params,new_meas));
+ASSERT_FALSE(cluster.IsNeighboringMeasurement(source_container,0,params,new_meas));
 
 
 }

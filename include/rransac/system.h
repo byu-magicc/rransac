@@ -10,22 +10,7 @@
 #include "rransac/data_containers/cluster.h"
 #include "rransac/data_containers/data_tree/data_tree_cluster.h"
 
-// // Sources
-// #include "common/sources/source_base.h"
-// #include "common/sources/source_RN.h"
-// #include "common/sources/source_SEN_pos_vel.h"
-// #include "common/sources/source_SEN_pose_twist.h"
 
-// // Models
-// #include "common/models/model_base.h"
-// #include "common/models/model_RN.h"
-// #include "common/models/model_SEN_pos_vel.h"
-// #include "common/models/model_SEN_pose_twist.h"
-
-// // Transformations
-// #include "common/transformations/transformation_base.h"
-// #include "common/transformations/transformation_null.h"
-// #include "common/transformations/trans_homography.h"
 
 namespace rransac {
 
@@ -41,14 +26,15 @@ class System {
 typedef tModel Model;
 typedef typename tModel::State State; 
 typedef typename State::DataType DataType;
-typedef typename tModel::Source Source; 
+typedef typename tModel::SourceContainer SourceContainer; 
+typedef typename tModel::Transformation Transformation;
 
 public:
 
     Parameters params_;                                        /** < System parameters */
-    std::vector<typename tModel::Source> sources_;             /** < Contains all of the instantiated sources. */
+    SourceContainer source_container_;                         /** < Contains all of the instantiated sources. */
     std::list<Meas<DataType>> new_meas_;                       /** < Contains all of the new measurements. */
-    typename tModel::Transformation transformaion_;            /** < The transformation for the measurements and tracks */
+    Transformation transformaion_;                             /** < The transformation for the measurements and tracks */
     std::list<tModel> models_;                                 /** < The models created by rransac */
     std::vector<tModel*> good_models_;                         /** < A list of pointers to the good models */
     long int model_label_ =0;                                  /** < The label incrementer for good models */

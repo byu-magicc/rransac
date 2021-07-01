@@ -8,6 +8,7 @@
 
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_container.h"
 #include "rransac/parameters.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/system.h"
@@ -19,7 +20,12 @@
 using namespace lie_groups;
 using namespace rransac;
 
-typedef ModelRN<R2_r2, TransformNULL, SourceRN> Model;
+
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
+typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVel;
+typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
+typedef ModelRN<SourceContainerR2> Model;
+
 
 static bool StateInsideSurveillanceRegionFalseCallback(const R2_r2& state) {
     return false;
@@ -27,8 +33,8 @@ static bool StateInsideSurveillanceRegionFalseCallback(const R2_r2& state) {
 
 double CalculateMeasurementLikelihood(const System<Model>& sys, Model& track, const Meas<typename Model::DataType>& meas) {
 
-    Eigen::MatrixXd err = sys.sources_[meas.source_index].OMinus(meas, sys.sources_[meas.source_index].GetEstMeas(track.state_));
-    Eigen::MatrixXd S = track.GetInnovationCovariance(sys.sources_,meas.source_index);
+    Eigen::MatrixXd err = sys.source_container_.OMinus(meas.source_index, meas, sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m));
+    Eigen::MatrixXd S = track.GetInnovationCovariance(sys.source_container_,meas.source_index, meas.transform_state, meas.transform_data_t_m);
     double det_inn_cov_sqrt = sqrt(S.determinant());
 
     return exp( - (err.transpose()*S.inverse()*err)(0,0)/2.0)   /(pow(2.0*M_PI,S.cols()/2.0)*det_inn_cov_sqrt) ;
@@ -62,9 +68,7 @@ source_params1.source_index_ = 1;
 source_params1.type_ = MeasurementTypes::RN_POS_VEL;
 source_params1.meas_cov_ = Eigen::Matrix<double,4,4>::Identity()*meas_noise1;
 
-Model::Source source0, source1;
-source0.Init(source_params0);
-source1.Init(source_params1,StateInsideSurveillanceRegionFalseCallback);
+
 
 // Setup parameters
 Parameters params;
@@ -75,13 +79,13 @@ params.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity()*process
 Model track0, track1;
 double track0_init_model_likelihood = 0.5;
 double track1_init_model_likelihood = 0.7;
-track0.Init(params,2);
+track0.Init(params);
 track0.state_.g_.data_ << 0,0;
 track0.state_.u_.data_ << 0,0;
 track0.err_cov_ = Eigen::Matrix<double,4,4>::Identity()*2;
 track0.model_likelihood_ = track0_init_model_likelihood;
 track0.newest_measurement_time_stamp = 0;
-track1.Init(params,2);
+track1.Init(params);
 track1.state_.g_.data_ << 1,-1;
 track1.state_.u_.data_ <<-1, 1;
 track1.err_cov_ = Eigen::Matrix<double,4,4>::Identity()*2;
@@ -91,8 +95,8 @@ track1.newest_measurement_time_stamp = 0;
 
 // Setup system
 System<Model> sys;
-sys.sources_.push_back(source0);
-sys.sources_.push_back(source1);
+sys.source_container_.AddSource(source_params0);
+sys.source_container_.AddSource(source_params1,StateInsideSurveillanceRegionFalseCallback);
 sys.models_.push_back(track0);
 sys.models_.push_back(track1);
 sys.current_time_ = 0.1;
@@ -112,15 +116,21 @@ m1.source_index = 1;
 
 // Setup data association info
 DataAssociationInfo info;
-info.source_produced_measurements_.push_back(false);
-info.source_produced_measurements_.push_back(false);
+Eigen::MatrixXd EmptyMat;
+int num_sources = SourceContainerR2::num_sources_;
+for (int ii = 0; ii < num_sources; ++ii) {
+    info.source_produced_measurements_.push_back(false);
+    info.transform_state_.push_back(false);
+    info.transform_data_t_m_.push_back(EmptyMat);
+}
+
 
 
 // Verify that the model parameters are set up
-ASSERT_EQ(sys.models_.front().innov_cov_set_.size(), sys.sources_.size()  ) << "The size of innov_cov_set_ should always be the size of sys.sources_";
-ASSERT_EQ(sys.models_.front().innovation_covariances_.size(), sys.sources_.size()  )<< "The size of innovation_covariances_ should always be the size of sys.sources_";
-ASSERT_EQ(sys.models_.front().new_assoc_meas_.size(), sys.sources_.size()  )<< "The size of new_assoc_meas_ should always be the size of sys.sources_";
-ASSERT_EQ(sys.models_.front().model_likelihood_update_info_.size(), sys.sources_.size()  )<< "The size of model_likelihood_update_info_ should always be the size of sys.sources_";
+ASSERT_EQ(sys.models_.front().innov_cov_set_.size(), num_sources) << "The size of innov_cov_set_ should always be the size of sys.sources_";
+ASSERT_EQ(sys.models_.front().innovation_covariances_.size(), num_sources)<< "The size of innovation_covariances_ should always be the size of sys.sources_";
+ASSERT_EQ(sys.models_.front().new_assoc_meas_.size(), num_sources)<< "The size of new_assoc_meas_ should always be the size of sys.sources_";
+ASSERT_EQ(sys.models_.front().model_likelihood_update_info_.size(),num_sources)<< "The size of model_likelihood_update_info_ should always be the size of sys.sources_";
 
 TLI_IPDAFPolicy<Model> tli_policy;
 
@@ -169,7 +179,9 @@ ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].num_assoc_meas,0)
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,0);
 
 // Change the source1 so that both models are in its surveillance region. However, specify that only the first produced measurements
-sys.sources_.back().Init(source_params1);
+sys.source_container_ = SourceContainerR2();
+sys.source_container_.AddSource(source_params0);
+sys.source_container_.AddSource(source_params1);
 info.source_produced_measurements_[0] = true;
 info.source_produced_measurements_[1] = false;
 tli_policy.PolicyUpdateTrackLikelihood(sys,info);
@@ -194,7 +206,9 @@ ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].num_assoc_meas,0)
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,0);
 
 // Specify that both produced measurements
-sys.sources_.back().Init(source_params1);
+sys.source_container_ = SourceContainerR2();
+sys.source_container_.AddSource(source_params0);
+sys.source_container_.AddSource(source_params1);
 info.source_produced_measurements_[0] = true;
 info.source_produced_measurements_[1] = true;
 tli_policy.PolicyUpdateTrackLikelihood(sys,info);
@@ -240,8 +254,8 @@ Eigen::Matrix<double,4,4> S01, S11;
 double p00, p10,p01,p11;
 double delta00, delta10, delta01, delta11;
 
-S00 = model_iter0->err_cov_.block(0,0,2,2) + sys.sources_[0].params_.meas_cov_;
-S10 = model_iter1->err_cov_.block(0,0,2,2) + sys.sources_[0].params_.meas_cov_;
+S00 = model_iter0->err_cov_.block(0,0,2,2) + sys.source_container_.GetParams(0).meas_cov_;
+S10 = model_iter1->err_cov_.block(0,0,2,2) + sys.source_container_.GetParams(0).meas_cov_;
 p00 = pow(2*M_PI, -1)*pow(S00.determinant(),-0.5);
 p10 = pow(2*M_PI,-1)*pow(S10.determinant(),-0.5);
 

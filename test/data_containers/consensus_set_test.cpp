@@ -23,7 +23,7 @@ void Print(const ConsensusSet<M>& cs) {
 
 // --------------------------------------------------------------------------------------------
 
-class TransformScalar : public TransformBase<double, lie_groups::R2_r2, Eigen::Matrix4d, TransformScalar> {
+class TransformScalar : public TransformBase<double, lie_groups::R2_r2, Eigen::Matrix4d, false, TransformScalar> {
 public:
 void DerivedSetData(double data){ data_ = data;}
 

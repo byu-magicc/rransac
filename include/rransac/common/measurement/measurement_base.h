@@ -47,9 +47,10 @@ struct Meas
     MeasurementTypes type;      /**< The measurement type. @see MeasurementTypes */
     MatX pose;                  /**< The part of the measurement corresponding to the pose of the target. (position, attitude, or both). */
     MatX twist;                 /**< The part of the measurement corresponding to the derivative of the pose. (velocity, angular rates, or both). */
-    bool state_transform_data=false;  /**< Sometimes the measurement cannot be transformed into the tracking frame, but the tracks can be transformed into the measurement frame. If the tracks
+    bool transform_state=false;  /**< Sometimes the measurement cannot be transformed into the tracking frame, but the tracks can be transformed into the measurement frame. If the tracks
                                      need to be transformed into the measurement frame, set this value to true. */
-    MatX trans_data;            /**< The data used by the transform manager to transform the track from the tracking frame to the measurement frame. */                                
+    MatX transform_data_m_t;            /**< The transform data used to transform objects from the measurement frame to the tracking frame. */                                
+    MatX transform_data_t_m;            /**< The transform data used to transform objects from the tracking frame to the measurement frame. */                                
 
 
     // These member variables are reserved
@@ -57,6 +58,60 @@ struct Meas
                                       association process.*/
     double weight=0;              /**< The weight assigned to the measurement when updating the track. This value is set during the data association process. */
 };
+
+///////////////////////////////////
+//////// Measurement Type Utilities
+///////////////////////////////////
+/**
+ * \class MeasHasVelocity
+ * Determines the the measurement type contains velocity information
+ */ 
+template <MeasurementTypes tMeasurementType> 
+struct MeasHasVelocity : std::false_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::RN_POS_VEL> : std::true_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::SEN_POSE_TWIST> : std::true_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::SEN_POS_VEL> : std::true_type {};
+
+template<>
+struct MeasHasVelocity<MeasurementTypes::SE3_CAM_DEPTH> : std::true_type {};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * \class MeasDimMultiplier
+ * Determines the measurement dimension multiplier
+ */ 
+template <MeasurementTypes tMeasurementType> 
+struct MeasDimMultiplier {
+    public:
+    static constexpr unsigned int value = 1;
+};
+
+template<>
+struct MeasDimMultiplier<MeasurementTypes::RN_POS_VEL> {
+    public:
+    static constexpr unsigned int value = 2;
+};
+
+template<>
+struct MeasDimMultiplier<MeasurementTypes::SEN_POSE_TWIST> {
+    public:
+    static constexpr unsigned int value = 2;
+};
+
+template<>
+struct MeasDimMultiplier<MeasurementTypes::SEN_POS_VEL> {
+    public:
+    static constexpr unsigned int value = 2;
+};
+
+
 
 
 } // namespace rransac

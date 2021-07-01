@@ -28,6 +28,7 @@
 #include "rransac/visualization/draw_meas_policies/draw_meas_R2_SE2_pos_policy.h"
 #include "rransac/visualization/draw_track_policies/draw_track_policy_SE2.h"
 #include "rransac/statistical_information/stats.h"
+#include "rransac/common/sources/source_container.h"
 
 
 
@@ -91,15 +92,18 @@ class CameraSimR2 {
 
 public:
 
-typedef ModelSENPosVel<SE2_se2, TransformHomography,SourceSENPosVel> Model_;
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVelNull;
+typedef SourceContainer<SourceSE2PosVelNull> SourceContainerSE2PosVelNull;
+
+typedef ModelSENPosVel<SourceContainerSE2PosVelNull> Model_;
 typedef typename Model_::Transformation Transformation_;
 typedef typename Model_::Transformation::MatData TransformMatData_;
 typedef typename Model_::State State_;
 typedef typename State_::Algebra Algebra_;
-typedef typename Model_::Source Source_;
-typedef RRANSACTemplateParameters<SE2_se2,SourceSENPosVel,TransformHomography,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+typedef SourceSE2PosVelNull Source_;
+typedef RRANSACTemplateParameters<SourceContainerSE2PosVelNull,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
 typedef RRANSAC<RRANSACParameters> RRANSAC_;
-typedef typename RRANSACParameters::tRansac RANSAC_;
+typedef typename RRANSACParameters::TRansac RANSAC_;
 typedef Eigen::Matrix<double,4,4> MatR_;
 // typedef Eigen::Matrix<double,2,2> MatR_;
 // static constexpr MeasurementTypes MeasurementType= MeasurementTypes::SEN_POS;
@@ -121,7 +125,7 @@ Transformation_ transformation_;
 static constexpr bool transform_data_ = false;
 RRANSAC_ rransac_;
 const System<Model_>* sys_;
-std::vector<Source_> sources_;
+std::vector<SourceSE2PosVelNull> sources_;
 Meas<double> m_;
 Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat_;
 double process_noise_;

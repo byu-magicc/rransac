@@ -5,6 +5,7 @@
 #include <list>
 
 #include "rransac/common/measurement/measurement_base.h"
+#include "rransac/common/sources/source_container.h"
 
 namespace rransac
 {
@@ -148,8 +149,8 @@ unsigned int Size() const {return size_;};
  * @param[in] meas The measurement that is tested to see if it is a neighboring measurement.
  * @see SourceBase
  */ 
-template<typename tSource>
-bool IsNeighboringMeasurement(const tSource& source, const Parameters& param, const Meas<DataType>& meas) const;
+template<typename tSourceContainer>
+bool IsNeighboringMeasurement(const tSourceContainer& source_container, const unsigned int source_index, const Parameters& params, const Meas<DataType>& meas) const;
 
 
 std::list<std::list<Meas<DataType>>> data_; /**< Contains all of the measurements. The outer container organizes the measurements in chronological order. */
@@ -237,13 +238,13 @@ void Cluster<tDataType>::TransformMeasurements(const tTransform& transform) {
 
 //---------------------------------------------------------------------------------------------
 template<typename tDataType> 
-template<typename tSource>
-bool Cluster<tDataType>::IsNeighboringMeasurement(const tSource& source, const Parameters& params, const Meas<DataType>& meas) const {
+template<typename tSourceContainer>
+bool Cluster<tDataType>::IsNeighboringMeasurement(const tSourceContainer& source_container, const unsigned int source_index, const Parameters& params, const Meas<DataType>& meas) const {
 
     for (auto outer_iter = std::prev(data_.end()); outer_iter != data_.end(); --outer_iter) {
 
         // New measurement is too far away from any recent measurement
-        if( source.GetTemporalDistance(meas, outer_iter->front(), params) > params.cluster_time_threshold_) {
+        if( source_container.GetTemporalDistance(meas, outer_iter->front(), params) > params.cluster_time_threshold_) {
             return false;
         }
 
@@ -251,11 +252,11 @@ bool Cluster<tDataType>::IsNeighboringMeasurement(const tSource& source, const P
 
             // If same time stamp, use the position distance
             if(inner_iter->time_stamp == meas.time_stamp) {
-                if(source.GetSpatialDistance(*inner_iter, meas, params) <= params.cluster_position_threshold_) {
+                if(source_container.GetSpatialDistance(*inner_iter, meas, params) <= params.cluster_position_threshold_) {
                     return true;
                 }
             } else { // Else use the velocity distance
-                if(source.GetVelocityDistance(*inner_iter,meas,params) <= params.cluster_velocity_threshold_) {
+                if(source_container.GetVelocityDistance(*inner_iter,meas,params) <= params.cluster_velocity_threshold_) {
                     return true;
                 }
             }

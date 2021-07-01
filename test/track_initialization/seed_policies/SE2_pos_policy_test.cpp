@@ -19,9 +19,21 @@ TEST(SE2_pos_policy_test, SE3PoseTest) {
 
 srand((unsigned int) time(0));
 
+
+
+
 typedef SE2_se2 State;
-typedef SourceSENPosVel<State> Source;
-typedef ModelSENPosVel<State,TransformNULL> Model;
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2Pos;
+typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVel;
+
+
+typedef SourceContainer<SourceSE2Pos,SourceSE2PosVel> SourceContainerSE2;
+
+
+
+
+typedef ModelSENPosVel<SourceContainerSE2> Model;
+
 
 SE2PosSeedPolicy<Model> seed;
 System<Model> sys;
@@ -37,15 +49,11 @@ source_params2.source_index_ = 1;
 source_params2.type_ = MeasurementTypes::SEN_POS_VEL;
 source_params2.meas_cov_ = Eigen::Matrix4d::Identity()*noise;
 
-Source source1, source2;
-source1.Init(source_params1);
-source2.Init(source_params2);
-
 Parameters params;
 params.process_noise_covariance_ = Eigen::Matrix<double,5,5>::Identity();
 sys.params_ = params;
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
 
 Meas<double> m1,m2;
 m1.source_index = 0;
@@ -73,6 +81,8 @@ std::list<Meas<double>> meas_time1,meas_time2;
 std::vector<Cluster<double>::IteratorPair> meas_subset1;
 std::vector<Cluster<double>::IteratorPair> meas_subset2;
 Cluster<double>::IteratorPair iter_pair;
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 
 for (double ii = start_time; ii < end_time; ii += dt) {
 
@@ -82,9 +92,9 @@ for (double ii = start_time; ii < end_time; ii += dt) {
     meas_time1.clear();
     meas_time2.clear();
 
-    tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,2,2>::Identity()*sqrt(noise));
-    // tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,6,6>::Identity()*sqrt(noise));
-    tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise));
+    tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index,Eigen::Matrix<double,2,2>::Identity()*sqrt(noise),track.state_,transform_state,EmptyMat);
+    tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index,Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),track.state_,transform_state,EmptyMat);
+
     m1.pose = tmp1.pose;
     m1.time_stamp = ii;
     m2.pose = tmp2.pose;

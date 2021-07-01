@@ -7,6 +7,7 @@
 #include "rransac/common/transformations/trans_homography.h"
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/sources/source_RN.h"
+#include "rransac/common/sources/source_container.h"
 
 namespace rransac
 {
@@ -20,7 +21,9 @@ using namespace lie_groups;
 TEST(ModelManagerTest, AddModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL,SourceRN> Model;
+typedef SourceRN<State,MeasurementTypes::RN_POS,TransformNULL> Source;
+typedef SourceContainer<Source> SourceContainer;
+typedef ModelRN<SourceContainer> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
@@ -40,7 +43,9 @@ ASSERT_EQ(sys.models_.size(), 1);
 TEST(ModelManagerTest, PropagateModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL,SourceRN> Model;
+typedef SourceRN<State,MeasurementTypes::RN_POS,TransformNULL> Source;
+typedef SourceContainer<Source> SourceContainer;
+typedef ModelRN<SourceContainer> Model;
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
@@ -72,7 +77,9 @@ ASSERT_LE( (sys.models_.back().state_.g_.data_ - model.state_.g_.data_ -model.st
 TEST(ModelManagerTest, ManageModels) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL,SourceRN> Model;
+typedef SourceRN<State,MeasurementTypes::RN_POS,TransformNULL> Source;
+typedef SourceContainer<Source> SourceContainer;
+typedef ModelRN<SourceContainer> Model;
 typedef Meas<double> Measurement;
 
 System<Model> sys;
@@ -250,13 +257,15 @@ ASSERT_EQ(sys.good_models_[5]->model_likelihood_, 12);
 TEST(ModelManagerTest, UpdateModel ) {
 
 typedef lie_groups::R3_r3 State;
-typedef ModelRN<State, TransformNULL,SourceRN> Model;
+typedef SourceRN<State,MeasurementTypes::RN_POS,TransformNULL> Source;
+typedef SourceContainer<Source> SourceContainer;
+typedef ModelRN<SourceContainer> Model;
 typedef Meas<double> Measurement;
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
 
-SourceR3 source;
+Source source;
 SourceParameters source_params;
 source_params.meas_cov_ = Eigen::Matrix3d::Identity();
 source_params.spacial_density_of_false_meas_ = 0.1;
@@ -264,9 +273,9 @@ source_params.type_ = MeasurementTypes::RN_POS;
 source_params.probability_of_detection_ = 0.9;
 source_params.gate_probability_ = 0.8;
 source_params.source_index_ = 0;
-source.Init(source_params);
 
-sys.sources_.push_back(source);
+
+sys.source_container_.AddSource(source_params);
 
 sys.params_.track_max_num_tracks_ = 2;
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity();
@@ -281,7 +290,7 @@ m.pose = Eigen::Matrix<double,3,1>::Random();
 
 
 Model model;
-model.Init(sys.params_,sys.sources_.size());
+model.Init(sys.params_);
 model.state_.g_.data_ << 1,1,1;
 model.state_.u_.data_ << 2,3,4;
 
@@ -311,22 +320,24 @@ ASSERT_EQ(sys.models_.back().newest_measurement_time_stamp, 0.1);
 TEST(ModelManagerTest, TransformModelTest ) {
 
 typedef lie_groups::R2_r2 State;
-typedef ModelRN<State, TransformHomography,SourceRN> Model;
+typedef SourceRN<State,MeasurementTypes::RN_POS,TransformHomography> Source;
+typedef SourceContainer<Source> SourceContainer;
+typedef ModelRN<SourceContainer> Model;
 typedef Meas<double> Measurement;
 
-TransformHomography<State> trans;
+// TransformHomography<State> trans;
 
 // The homography data is set so that the state and the measurements will all be transformed to zero
 Eigen::Matrix3d homography;
 homography.setZero();
 homography.block(2,2,1,1)<< 1;
-trans.Init();
-trans.SetData(homography);
+// trans.Init();
+// trans.SetData(homography);
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
 
-SourceR2 source;
+Source source;
 SourceParameters source_params;
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.spacial_density_of_false_meas_ = 0.1;
@@ -334,14 +345,14 @@ source_params.type_ = MeasurementTypes::RN_POS;
 source_params.probability_of_detection_ = 0.9;
 source_params.gate_probability_ = 0.8;
 source_params.source_index_ = 0;
-source.Init(source_params);
 
-sys.sources_.push_back(source);
 
+sys.source_container_.AddSource(source_params);
 sys.params_.track_max_num_tracks_ = 2;
 sys.params_.process_noise_covariance_ = Eigen::Matrix<double,4,4>::Identity();
 sys.params_.transform_consensus_set_ = true;
-sys.transformaion_ = trans;
+sys.transformaion_.Init();
+sys.transformaion_.SetData(homography);
 
 Measurement m;
 m.source_index = 0;
@@ -353,7 +364,7 @@ m.pose = Eigen::Matrix<double,2,1>::Random();
 
 
 Model model;
-model.Init(sys.params_,sys.sources_.size());
+model.Init(sys.params_);
 model.state_.g_.data_ << 1,1;
 model.state_.u_.data_ << 2,3;
 model.err_cov_ == Eigen::Matrix4d::Identity();

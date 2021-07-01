@@ -166,17 +166,17 @@ ASSERT_EQ(error_cov, error_cov_transformed);
 
 // // Test
 
-// Eigen::Matrix2d G =  trans.ConstructTranslationalVelTransform(state1.g_.data_);
-// Eigen::Matrix2d M =  trans.ConstructCovTrans12(state1.g_.data_,state1.u_.data_);
-// Eigen::Matrix2d W;
-// W << 0, -2, 2, 0;
-// Eigen::Matrix2d Wn = M*G.inverse() + G*W*G.inverse();
-// Eigen::Matrix2d Wa = (Wn-Wn.transpose())/2.0;
-
-// std::cout << Wn*G*state1.u_.data_ << std::endl;
-// std::cout << Wa*G*state1.u_.data_ << std::endl;
 
 
+// Verify transformation data
+Eigen::MatrixXd transform_data;
+transform_data = Eigen::Matrix3d::Identity();
+
+ASSERT_TRUE(trans.IsAcceptableTransformData(transform_data));
+
+transform_data = Eigen::Matrix2d::Identity();
+
+ASSERT_FALSE(trans.IsAcceptableTransformData(transform_data));
 
 }
 

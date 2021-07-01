@@ -32,10 +32,15 @@ using namespace rransac;
 
 struct Test1 {
     public:
-    typedef ModelRN<R2_r2, TransformNULL,SourceRN> Model;
+
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVEL;
+    typedef SourceContainer<SourceR2Pos,SourceR2PosVEL,SourceR2PosVEL> SC;
+
+
+    typedef ModelRN<SC> Model;
     typedef typename Model::State State;
-    typedef typename State::Algebra Algebra;
-    typedef typename Model::Source Source;
+    typedef typename State::Algebra Algebra;  
     typedef Ransac<Model, NULLSeedPolicy, LinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,2,2> MatR;
     typedef Eigen::Matrix<double,4,4> MatR2;
@@ -74,10 +79,14 @@ struct Test1 {
 
 struct Test2 {
     public:
-    typedef ModelRN<R3_r3, TransformNULL,SourceRN> Model;
+
+    typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNULL> SourceRnPos;
+    typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceRnPosVEL;
+    typedef SourceContainer<SourceRnPos,SourceRnPosVEL,SourceRnPosVEL> SC;
+
+    typedef ModelRN<SC> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
-    typedef typename Model::Source Source;
     typedef Ransac<Model, NULLSeedPolicy, LinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,3,3> MatR;
     typedef Eigen::Matrix<double,6,6> MatR2;
@@ -116,10 +125,14 @@ struct Test2 {
 
 struct Test3 {
     public:
-    typedef ModelSENPoseTwist<SE2_se2, TransformNULL,SourceSENPoseTwist> Model;
+
+    typedef SourceSENPoseTwist<SE2_se2,MeasurementTypes::SEN_POSE,TransformNULL> SourceSE2Pose;
+    typedef SourceSENPoseTwist<SE2_se2,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourceSE2PoseTwist;
+    typedef SourceContainer<SourceSE2Pose,SourceSE2PoseTwist,SourceSE2PoseTwist> SC;
+
+    typedef ModelSENPoseTwist<SC> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
-    typedef typename Model::Source Source;
     typedef Ransac<Model, NULLSeedPolicy, NonLinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,3,3> MatR;
     typedef Eigen::Matrix<double,6,6> MatR2;
@@ -167,10 +180,13 @@ struct Test3 {
 
 struct Test4 {
     public:
-    typedef ModelSENPoseTwist<SE3_se3, TransformNULL,SourceSENPoseTwist> Model;
+    typedef SourceSENPoseTwist<SE3_se3,MeasurementTypes::SEN_POSE,TransformNULL> SourceSE3Pose;
+    typedef SourceSENPoseTwist<SE3_se3,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourceSE3PoseTwist;
+    typedef SourceContainer<SourceSE3Pose,SourceSE3PoseTwist,SourceSE3PoseTwist> SC;
+
+    typedef ModelSENPoseTwist<SC> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
-    typedef typename Model::Source Source;
     typedef Ransac<Model, NULLSeedPolicy, NonLinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,6,6> MatR;
     typedef Eigen::Matrix<double,12,12> MatR2;
@@ -220,10 +236,13 @@ struct Test4 {
 
 struct Test5 {
     public:
-    typedef ModelSENPosVel<SE2_se2, TransformNULL,SourceSENPosVel> Model;
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2Pos;
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVel;
+    typedef SourceContainer<SourceSE2Pos,SourceSE2PosVel,SourceSE2PosVel> SC;
+
+    typedef ModelSENPosVel<SC> Model;
     typedef typename Model::State State;
     typedef typename State::Algebra Algebra;
-    typedef typename Model::Source Source;
     typedef Ransac<Model, SE2PosSeedPolicy, NonLinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
     typedef Eigen::Matrix<double,2,2> MatR;
     typedef Eigen::Matrix<double,4,4> MatR2;
@@ -323,7 +342,6 @@ public:
 
 typedef typename T::Model Model;
 typedef typename T::State State;
-typedef typename T::Source Source;
 typedef typename T::RANSAC RANSAC;
 
 void SetUp() override {
@@ -349,10 +367,6 @@ source_params3.gate_probability_ = 0.9;
 source_params3.probability_of_detection_ = 0.85;
 
 
-Source source1,source2, source3;
-source1.Init(source_params1);
-source2.Init(source_params2);
-source3.Init(source_params3);
 
 // Setup system
 Parameters params;
@@ -368,9 +382,9 @@ params.cluster_position_threshold_ = 0.5;
 params.track_max_num_tracks_ = 5;
 // params.nonlinear_innov_cov_id_ = true;
 
-sys.sources_.push_back(source1);
-sys.sources_.push_back(source2);
-sys.sources_.push_back(source3);
+sys.source_container_.AddSource(source_params1);
+sys.source_container_.AddSource(source_params2);
+sys.source_container_.AddSource(source_params3);
 sys.params_ = params;
 
 // Setup Measurements
@@ -392,11 +406,13 @@ m4.type =source_params1.type_ ;
 // Setup tracks
 tracks.resize(test_data.states.size());
 for (int ii = 0; ii < test_data.states.size(); ++ii) {
-    tracks[ii].Init(sys.params_,sys.sources_.size());
+    tracks[ii].Init(sys.params_);
     tracks[ii].state_ = test_data.states[ii];
 }
 
 // Create simulation data
+bool transform_state = false;
+Eigen::MatrixXd EmptyMat;
 double dt = 0.1;
 double end_time = 5; // seconds;
 double start_time = 0; // seconds;
@@ -413,10 +429,10 @@ for (double ii =start_time; ii < end_time; ii += dt) {
 
         State rand_state = T::GenerateRandomState(fov);
 
-        tmp1 = sys.sources_[m1.source_index].GenerateRandomMeasurement(track.state_,T::MatR::Identity()*sqrt(noise)*0);
-        tmp2 = sys.sources_[m2.source_index].GenerateRandomMeasurement(track.state_,T::MatR2::Identity()*sqrt(noise)*0);
-        tmp3 = sys.sources_[m3.source_index].GenerateRandomMeasurement(rand_state,T::MatR2::Identity()*sqrt(noise)*0);
-        tmp4 = sys.sources_[m4.source_index].GenerateRandomMeasurement(track.state_,T::MatR::Identity()*sqrt(noise)*0);
+        tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index,T::MatR::Identity()*sqrt(noise)*0,  track.state_,transform_state, EmptyMat);
+        tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index,T::MatR2::Identity()*sqrt(noise)*0, track.state_,transform_state, EmptyMat);
+        tmp3 = sys.source_container_.GenerateRandomMeasurement(m3.source_index,T::MatR2::Identity()*sqrt(noise)*0, rand_state,  transform_state, EmptyMat);
+        tmp4 = sys.source_container_.GenerateRandomMeasurement(m4.source_index,T::MatR::Identity()*sqrt(noise)*0,  track.state_,transform_state, EmptyMat);
 
         m1.time_stamp = ii;
         m1.pose = tmp1.pose;
@@ -456,8 +472,8 @@ RANSAC ransac;
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
-using MyTypes = ::testing::Types<Test1>;
+using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
+// using MyTypes = ::testing::Types<Test1>;
 TYPED_TEST_SUITE(RANSACTest, MyTypes);
 
 TYPED_TEST(RANSACTest, FullTest) {
@@ -517,7 +533,7 @@ for (auto cluster_meas_inner = cluster_meas_outer->begin(); cluster_meas_inner !
     
     if (cluster_meas_inner->source_index == track_meas_inner->source_index && cluster_meas_inner->time_stamp == track_meas_inner->time_stamp) {
         
-        ASSERT_GT(this->sys.sources_[cluster_meas_inner->source_index].OMinus(*cluster_meas_inner, *track_meas_inner).norm(), 1e-8 );
+        ASSERT_GT(this->sys.source_container_.OMinus(cluster_meas_inner->source_index,*cluster_meas_inner, *track_meas_inner).norm(), 1e-8 );
         
     }
 

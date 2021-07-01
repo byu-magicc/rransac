@@ -83,11 +83,17 @@ include_directories(../include
 # target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
 
-# add_executable(source_SE3_CamDepth
+# add_executable(source_SE3_CamDepthTest
 # common/sources/source_SE3_cam_depth_test.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(source_SE3_CamDepth gtest_main )
-# add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SE3_CamDepth)
+# target_link_libraries(source_SE3_CamDepthTest gtest_main )
+# add_test(NAME AllTestsInSourceSE3CamDepthTest COMMAND source_SE3_CamDepthTest)
+
+# add_executable(source_containerTest
+# common/sources/source_container_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_containerTest gtest_main )
+# add_test(NAME AllTestsInSourceContainerTest COMMAND source_containerTest)
 
 #---------------------------------------
 # Consensus Set Test
@@ -101,15 +107,15 @@ include_directories(../include
 # Transformations
 #---------------------------------------
 
-# add_executable(trans_homographyTest
-# common/transformations/transformation_homography_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(trans_homographyTest gtest_main )
+add_executable(trans_homographyTest
+common/transformations/transformation_homography_test.cpp
+../src/parameters.cpp)
+target_link_libraries(trans_homographyTest gtest_main )
 
-# add_executable(trans_SE3_cam_depthTest
-# common/transformations/trans_SE3_cam_depth_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(trans_SE3_cam_depthTest gtest_main )
+add_executable(trans_SE3_cam_depthTest
+common/transformations/trans_SE3_cam_depth_test.cpp
+../src/parameters.cpp)
+target_link_libraries(trans_SE3_cam_depthTest gtest_main )
 
 #---------------------------------------
 # Model
@@ -177,8 +183,7 @@ include_directories(../include
 # add_executable(nonlinear_lmle_policyTest 
 # track_initialization/lmle_policies/nonlinear_lmle_policy_test.cpp
 # ../src/parameters.cpp)
-# target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres
-# )
+# target_link_libraries(nonlinear_lmle_policyTest gtest_main Ceres::ceres)
 
 # add_executable(SE2_pos_policyTest 
 # track_initialization/seed_policies/SE2_pos_policy_test.cpp

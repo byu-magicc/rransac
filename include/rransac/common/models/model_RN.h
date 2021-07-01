@@ -21,27 +21,25 @@
 
 namespace rransac {
 
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource = SourceRN>
-class ModelRN : public ModelBase<tSource<tState>, tTransformation<tState>, tState::Group::dim_*2, ModelRN<tState, tTransformation,tSource>> {
+template <typename tSourceContainer>
+class ModelRN : public ModelBase<tSourceContainer, tSourceContainer::State::Group::dim_*2, ModelRN> {
 
 public:
 
-typedef tState State;                                                       /**< The state of the target. @see State. */
+typedef tSourceContainer SourceContainer;                                   /**< The Source container. */
+typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
 typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
-typedef tSource<tState> Source;                                             /**< The object type of the source. @see SourceBase. */
-typedef tTransformation<tState> Transformation;                             /**< The object type of the measurement and track transformation. */
-
-template <typename tScalar, template<typename> typename tStateTemplate>
-using ModelTemplate = ModelRN<tStateTemplate<tScalar>,tTransformation,tSource>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
-                                                                                     nonlinear log maximum likelihood estimation problem by Ceres. */
+typedef typename SourceContainer::Transformation Transformation;            /**< The transformation data type. */
 
 static constexpr unsigned int cov_dim_ = State::Group::dim_*2;                  /**< The dimension of the error covariance. */
 static constexpr unsigned int g_dim_ = State::Group::dim_;                      /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */
 typedef Eigen::Matrix<DataType,2*g_dim_,2*g_dim_> Mat;                          /**< The object type of the error covariance, Jacobians, and others. */
 
 
-static_assert(std::is_same<typename tSource<tState>::ModelCompatibility, rransac::utilities::CompatibleWithModelRN>::value, "The source is not compatible with the model");
-static_assert(lie_groups::utilities::StateIsRN_rN<tState>::value, "The state is not compatible with the model");
+
+
+static_assert(std::is_same<typename SourceContainer::ModelCompatibility, typename rransac::utilities::CompatibleWithModelRN>::value, "ModelRN: The source is not compatible with the model");
+static_assert(lie_groups::utilities::StateIsRN_rN<State>::value, "ModelRN: The state is not compatible with the model");
 
 /**
  * Computes the Jacobian of the state transition function with respect to the state evaluated at the current state estimate.
@@ -86,8 +84,8 @@ static State DerivedGetRandomState(){ return State::Random();}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
-typename ModelRN<tState,tTransformation,tSource>::Mat ModelRN<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {   
+template <typename tSourceContainer>
+typename ModelRN<tSourceContainer>::Mat ModelRN<tSourceContainer>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {   
     
     Mat F = Mat::Identity();
     F.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<DataType,g_dim_,g_dim_>::Identity()*dt;
@@ -96,8 +94,8 @@ typename ModelRN<tState,tTransformation,tSource>::Mat ModelRN<tState,tTransforma
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
-typename ModelRN<tState,tTransformation,tSource>::Mat ModelRN<tState,tTransformation,tSource>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt) {
+template <typename tSourceContainer>
+typename ModelRN<tSourceContainer>::Mat ModelRN<tSourceContainer>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt) {
     
     Mat G;
     G.block(g_dim_,0,g_dim_,g_dim_).setZero();
@@ -110,8 +108,8 @@ typename ModelRN<tState,tTransformation,tSource>::Mat ModelRN<tState,tTransforma
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-template <typename tState, template <typename > typename tTransformation, template <typename > typename tSource>
-void ModelRN<tState,tTransformation,tSource>::DerivedOPlusEq(const Eigen::Matrix<DataType,2*g_dim_,1>& state_update) {
+template <typename tSourceContainer>
+void ModelRN<tSourceContainer>::DerivedOPlusEq(const Eigen::Matrix<DataType,2*g_dim_,1>& state_update) {
     this->state_.g_.OPlusEq(state_update.block(0,0,g_dim_,1));
     this->state_.u_.data_ += state_update.block(g_dim_,0,g_dim_,1);
 }

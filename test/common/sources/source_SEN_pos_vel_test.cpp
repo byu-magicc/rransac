@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #include "rransac/common/sources/source_SEN_pos_vel.h"
+#include "rransac/common/measurement/measurement_base.h"
+#include "rransac/common/transformations/transformation_null.h"
 
 
 namespace rransac
@@ -25,35 +27,37 @@ typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,1> Mat_p;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,1> Mat_pv;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,  TypeParam::Group::dim_pos_> Mat_p_c;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,TypeParam::Group::dim_pos_*2> Mat_pv_c;
-typedef SourceSENPosVel<TypeParam> Source;
+typedef SourceSENPosVel<TypeParam,MeasurementTypes::SEN_POS,TransformNULL> SourcePos;
+typedef SourceSENPosVel<TypeParam,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourcePosVel;
 
 SourceParameters params;
 params.spacial_density_of_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
-Source source;
+SourcePos source_pos;
+SourcePosVel source_pos_vel;
 
 // Valid state type
 if (typeid(TypeParam).name() == typeid(SE2_se2).name() || typeid(TypeParam).name() == typeid(SE3_se3).name()) {
 
 // Valid measurement types
 params.type_ = MeasurementTypes::SEN_POS;
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_>::Identity();
-ASSERT_NO_THROW(source.Init(params));
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2>::Identity();
+params.meas_cov_ = Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_>::Identity();
+ASSERT_NO_THROW(source_pos.Init(params));
+params.meas_cov_ = Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2>::Identity();
 params.type_ = MeasurementTypes::SEN_POS_VEL;
-ASSERT_NO_THROW(source.Init(params));
+ASSERT_NO_THROW(source_pos_vel.Init(params));
 
 // Invalid measurements
 params.type_ = MeasurementTypes::RN_POS;
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos.Init(params));
 params.type_ = MeasurementTypes::RN_POS_VEL;
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos.Init(params));
 params.type_ = MeasurementTypes::SEN_POSE;
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos.Init(params));
 params.type_ = MeasurementTypes::SEN_POSE_TWIST;
-ASSERT_ANY_THROW(source.Init(params));
+ASSERT_ANY_THROW(source_pos.Init(params));
 
 
 }
@@ -63,7 +67,7 @@ else {
 
     // Valid measurement types
     params.type_ = MeasurementTypes::SEN_POS;
-    ASSERT_ANY_THROW(source.Init(params));
+    ASSERT_ANY_THROW(source_pos.Init(params));
 
 }
 
@@ -79,7 +83,8 @@ typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,1> Mat_p;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,1> Mat_pv;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_,  TypeParam::Group::dim_pos_> Mat_p_c;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_pos_*2,TypeParam::Group::dim_pos_*2> Mat_pv_c;
-typedef SourceSENPosVel<TypeParam> Source;
+typedef SourceSENPosVel<TypeParam,MeasurementTypes::SEN_POS,TransformNULL> SourcePos;
+typedef SourceSENPosVel<TypeParam,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourcePosVel;
 
 
 SourceParameters params;
@@ -87,7 +92,10 @@ params.spacial_density_of_false_meas_ = 0.1;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 
-Source source;
+SourcePos source_pos;
+SourcePosVel source_pos_vel;
+Eigen::MatrixXd EmptyMat;
+bool transform_state = false;
 
 // Construct a state
 TypeParam state = TypeParam::Random();
@@ -120,10 +128,10 @@ Eigen::Matrix<double,TypeParam::Group::dim_pos_,TypeParam::Group::dim_pos_> V_po
 V_pos.setIdentity();
 Eigen::MatrixXd V_pos_vel = Eigen::Matrix<double,S::Group::dim_pos_ + S::Algebra::dim_t_vel_,S::Group::dim_pos_+ S::Algebra::dim_t_vel_>::Identity();
 
-Eigen::MatrixXd H_pos = Eigen::Matrix<double, S::Group::dim_pos_, SourceSENPosVel<TypeParam>::cov_dim_>::Zero();
+Eigen::MatrixXd H_pos = Eigen::Matrix<double, S::Group::dim_pos_, SourcePos::cov_dim_>::Zero();
 H_pos.block(0,0,S::Group::dim_pos_, S::Group::dim_pos_) = state.g_.R_;
 
-Eigen::MatrixXd H_pos_vel = Eigen::Matrix<double,S::Group::dim_pos_+S::Algebra::dim_t_vel_, SourceSENPosVel<TypeParam>::cov_dim_>::Zero();
+Eigen::MatrixXd H_pos_vel = Eigen::Matrix<double,S::Group::dim_pos_+S::Algebra::dim_t_vel_, SourcePosVel::cov_dim_>::Zero();
 H_pos_vel.block(0,0,S::Group::dim_pos_, S::Group::dim_pos_) = state.g_.R_;
 H_pos_vel.block(S::Group::dim_pos_, S::Group::dim_, S::Algebra::dim_t_vel_,1) = state.g_.R_.block(0,0,S::Algebra::dim_t_vel_,1);
 
@@ -145,29 +153,22 @@ H_pos_vel.block(S::Group::dim_pos_,S::Group::dim_pos_, S::Algebra::dim_t_vel_, S
 
 // Tests
 params.type_ = MeasurementTypes::SEN_POS;
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_>::Identity();
-ASSERT_NO_THROW(source.Init(params));
+params.meas_cov_ = Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_>::Identity();
+ASSERT_NO_THROW(source_pos.Init(params));
 
-ASSERT_EQ(source.GetLinObsMatState(state),H_pos);
-ASSERT_EQ(source.GetLinObsMatState(state,params.type_),H_pos);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state),V_pos);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state,params.type_),V_pos);
-ASSERT_EQ(source.GetEstMeas(state).pose,m.pose);
-ASSERT_EQ(source.GetEstMeas(state,params.type_).pose,m.pose);
+ASSERT_EQ(source_pos.GetLinObsMatState(state, transform_state, EmptyMat),H_pos);
+ASSERT_EQ(source_pos.GetLinObsMatSensorNoise(state, transform_state, EmptyMat),V_pos);
+ASSERT_EQ(source_pos.GetEstMeas(state, transform_state, EmptyMat).pose,m.pose);
 // ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
 
 params.type_ = MeasurementTypes::SEN_POS_VEL;
-params.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2>::Identity();
-ASSERT_NO_THROW(source.Init(params));
+params.meas_cov_ = Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2>::Identity();
+ASSERT_NO_THROW(source_pos_vel.Init(params));
 
-ASSERT_EQ(source.GetLinObsMatState(state),H_pos_vel);
-ASSERT_EQ(source.GetLinObsMatState(state,params.type_),H_pos_vel);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state),V_pos_vel);
-ASSERT_EQ(source.GetLinObsMatSensorNoise(state,params.type_),V_pos_vel);
-ASSERT_EQ(source.GetEstMeas(state).pose,m.pose);
-ASSERT_EQ(source.GetEstMeas(state,params.type_).pose,m.pose);
-ASSERT_EQ(source.GetEstMeas(state).twist,m.twist);
-ASSERT_EQ(source.GetEstMeas(state,params.type_).twist,m.twist);
+ASSERT_EQ(source_pos_vel.GetLinObsMatState(state, transform_state, EmptyMat),H_pos_vel);
+ASSERT_EQ(source_pos_vel.GetLinObsMatSensorNoise(state, transform_state, EmptyMat),V_pos_vel);
+ASSERT_EQ(source_pos_vel.GetEstMeas(state, transform_state, EmptyMat).pose,m.pose);
+ASSERT_EQ(source_pos_vel.GetEstMeas(state, transform_state, EmptyMat).twist,m.twist);
 
 
 // Test ToEuclidean
@@ -186,13 +187,13 @@ params2.probability_of_detection_ = 0.9;
 
 
 params1.type_ = MeasurementTypes::SEN_POS;
-params1.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_,Source::meas_space_dim_>::Identity();
+params1.meas_cov_ = Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_>::Identity();
 params2.type_ = MeasurementTypes::SEN_POS_VEL;
-params2.meas_cov_ = Eigen::Matrix<double,Source::meas_space_dim_*2,Source::meas_space_dim_*2>::Identity();
+params2.meas_cov_ = Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2>::Identity();
 
-Source source1, source2;
-source1.Init(params1);
-source2.Init(params2);
+
+source_pos.Init(params1);
+source_pos_vel.Init(params2);
 
 Meas<double> m3, m4;
 m3.type = params1.type_;
@@ -207,10 +208,10 @@ error2.block(0,0,TypeParam::Group::dim_pos_,1) = m3.pose - m4.pose;
 error2.block(TypeParam::Group::dim_pos_,0,TypeParam::Group::dim_pos_,1) = m3.twist - m4.twist;
 
 m4.type = params1.type_;
-ASSERT_EQ( source1.OMinus(m3,m4), m3.pose - m4.pose);
+ASSERT_EQ( source_pos.OMinus(m3,m4), m3.pose - m4.pose);
 m3.type = params2.type_;
 m4.type = params2.type_;
-ASSERT_EQ( source2.OMinus(m3,m4), error2);
+ASSERT_EQ( source_pos_vel.OMinus(m3,m4), error2);
 
 
 // Test Random Measurements
@@ -232,13 +233,13 @@ error_mean2.setZero();
 // Generate the random measurement, calculate the error between the state and measurement, and get the mean of the error
 for (unsigned long int ii = 0; ii < num_rand; ++ii) {
 
-    rand_meas1[ii].type = source1.params_.type_;
-    rand_meas1[ii] = source1.GenerateRandomMeasurement(state,std1);
-    rand_meas2[ii].type = source2.params_.type_;
-    rand_meas2[ii] = source2.GenerateRandomMeasurement(state,std2);
+    rand_meas1[ii].type = source_pos.GetParams().type_;
+    rand_meas1[ii] = source_pos.GenerateRandomMeasurement(std1,state,transform_state,EmptyMat);
+    rand_meas2[ii].type = source_pos_vel.GetParams().type_;
+    rand_meas2[ii] = source_pos_vel.GenerateRandomMeasurement(std2, state,transform_state,EmptyMat);
 
-    error_1[ii] = source1.OMinus(rand_meas1[ii], source1.GetEstMeas(state));
-    error_2[ii] = source2.OMinus(rand_meas2[ii], source2.GetEstMeas(state));
+    error_1[ii] = source_pos.OMinus(rand_meas1[ii], source_pos.GetEstMeas(state,transform_state,EmptyMat));
+    error_2[ii] = source_pos_vel.OMinus(rand_meas2[ii], source_pos_vel.GetEstMeas(state,transform_state,EmptyMat));
     error_mean1+=error_1[ii];
     error_mean2+=error_2[ii];
 

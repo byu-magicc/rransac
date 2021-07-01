@@ -28,6 +28,7 @@
 #include "rransac/visualization/draw_meas_policies/draw_meas_R2_SE2_pos_policy.h"
 #include "rransac/visualization/draw_track_policies/draw_track_policy_SE2.h"
 #include "rransac/visualization/draw_track_policies/draw_track_policy_R2.h"
+#include "rransac/common/sources/source_container.h"
 
 
 using namespace lie_groups;
@@ -37,20 +38,31 @@ using namespace rransac;
 struct Scenario1 {
     public:
 
-    typedef ModelSENPosVel<SE2_se2, TransformNULL> TargetModel_;
+
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2PosNull;
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVelNull;
+    typedef SourceContainer<SourceSE2PosNull,SourceSE2PosVelNull> SourceContainerSE2PosVelNull;
+
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2PosNull;
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVelNull;
+    typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull> SourceContainerR2PosVelNull;
+
+
+    typedef ModelSENPosVel<SourceContainerSE2PosVelNull> TargetModel_;
     typedef typename TargetModel_::State TargetState_;
-    typedef typename TargetModel_::Source TargetSource_;
+    typedef SourceSE2PosVelNull TargetSource_;
     typedef typename TargetState_::Algebra TargetAlgebra_;
 
-    typedef ModelRN<R2_r2,TransformNULL,SourceRN> TrackingModel_;
+    typedef ModelRN<SourceContainerR2PosVelNull> TrackingModel_;
     typedef typename TrackingModel_::Transformation Transformation_;
     typedef typename TrackingModel_::Transformation::MatData TransformMatData_;
     typedef typename TrackingModel_::State TrackingState_;
     typedef typename TrackingState_::Algebra TrackingAlgebra_;
-    typedef typename TrackingModel_::Source TrackingSource_;
-    typedef RRANSACTemplateParameters<R2_r2,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef SourceR2PosNull TrackingSource1_;
+    typedef SourceR2PosVelNull TrackingSource2_;
+    typedef RRANSACTemplateParameters<SourceContainerR2PosVelNull,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSAC_::tRansac RANSAC_;
+    typedef typename RRANSAC_::TRansac RANSAC_;
     TransformMatData_ transform_data;
     // static constexpr bool transform_data_ = true;
     static constexpr bool transform_data_ = false;
@@ -98,7 +110,9 @@ struct Scenario1 {
         target_states[3].g_.data_ = TargetState_::Algebra::Exp(pose);
         target_states[3].u_.data_ << t_vel,0,-a_vel;
         // states[3].u_.data_ << t_vel,0,0;
-        transform_data << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
+        if (transform_data_) {
+            transform_data << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
+        }
         target_noise_mat.setZero();
         target_noise_mat(0,0) = 1;
         track_noise_mat.setIdentity();
@@ -117,7 +131,8 @@ public:
 
 typedef typename T::TrackingModel_ TrackingModel_;
 typedef typename T::TrackingState_  TrackingState_;
-typedef typename T::TrackingSource_ TrackingSource_;
+typedef typename T::TrackingSource1_ TrackingSource1_;
+typedef typename T::TrackingSource2_ TrackingSource2_;
 typedef typename T::TargetModel_ TargetModel_;
 typedef typename T::TargetState_  TargetState_;
 typedef typename T::TargetSource_ TargetSource_;
@@ -143,20 +158,16 @@ void SetUp() {
     source_params1.source_index_ = 0;
     source_params1.meas_cov_ = T::MatR_::Identity()*noise_;
     source_params1.gate_probability_ = 0.95;
-    source_params1.spacial_density_of_false_meas_ = 0.03125;
+    source_params1.spacial_density_of_false_meas_ = 0.01;
 
     source_params2.type_ = T::MeasurementType2;
     source_params2.source_index_ = 1;
     source_params2.meas_cov_ = T::MatR2_::Identity()*noise_;
     source_params2.gate_probability_ = 0.95;
-    source_params2.spacial_density_of_false_meas_ = 0.03125;
+    source_params2.spacial_density_of_false_meas_ = 0.01;
 
 
-    TrackingSource_ source1, source2;
-    source1.Init(source_params1);
-    source2.Init(source_params2);
-    sources_.push_back(source1);
-    sources_.push_back(source2);
+
 
     rransac_.AddSource(source_params1);
     rransac_.AddSource(source_params2);
@@ -198,7 +209,7 @@ void SetUp() {
     // Setup tracks
     tracks_.resize(4);
     for (int ii = 0; ii < 4; ++ii) {
-        tracks_[ii].Init(target_params,sys_->sources_.size());
+        tracks_[ii].Init(target_params);
         tracks_[ii].state_ = test_data_.target_states[ii];
     }
 
@@ -213,6 +224,8 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
     Meas<double> tmp1, tmp2;
     std::list<Meas<double>> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
+    bool transform_data = false;
+    Eigen::MatrixXd EmptyMat;
 
     for (double ii =start_time; ii < end_time; ii += this->dt_) {
 
@@ -251,10 +264,10 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "meas " << std::endl;
 
-            if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
+            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m1_.source_index).probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR_ ::Identity()*sqrt(this->noise_));
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR2_::Identity()*sqrt(this->noise_));
+                tmp1 = this->sys_->source_container_.GenerateRandomMeasurement(this->m1_.source_index, T::MatR_ ::Identity()*sqrt(this->noise_),tmp_track_.state_,transform_data,EmptyMat);
+                tmp2 = this->sys_->source_container_.GenerateRandomMeasurement(this->m2_.source_index, T::MatR2_::Identity()*sqrt(this->noise_),tmp_track_.state_,transform_data,EmptyMat);
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;
@@ -331,7 +344,7 @@ T test_data_;
 std::vector<TargetModel_> tracks_;
 RRANSAC_ rransac_;
 const System<TrackingModel_>* sys_;
-std::vector<TrackingSource_> sources_;
+// std::vector<TrackingSource_> sources_;
 Transformation_ transformation_;
 TrackingModel_ tmp_track_;
 
