@@ -110,7 +110,7 @@ static MatXd GetTransformationJacobian(const State& state, const Data& transform
  * Verifies that the transform data provided by the user is in the requested from.
  * @param transform_data The tranformation data to be tested. 
  */
-static bool IsAcceptableTransformData(const Data& transform_data) {
+static bool IsAcceptableTransformData(const MatXd& transform_data) {
     return tDerived::DerivedIsAcceptableTransformData(transform_data);
 } 
 

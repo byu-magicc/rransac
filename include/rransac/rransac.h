@@ -42,12 +42,28 @@ struct RRANSACTemplateParameters {
 /**
  * \class RRANSAC
  * This class serves as the user interface. The program that implements RRANSAC is designed to be very modular: to work with different models, measurement
- * sources, data association policies, etc. So the first step is to properly set up RRANSAC. The template parameters for RRANSAC are specified by the class RRANSACTemplateParameters.
- * It requires the type of state, source, transformaiton, model, model data association policy, cluster and data tree association policy, seed for the log maximum likelihood estimation 
- * optimization, and the log maximum likelihood estimation. For those familiar with RRANSAC, we use a policy method where each template parameter is a policy.
+ * sources, data association policies, etc. So the first step is to properly set up RRANSAC for your system by specifying the template parameters.
+ * The template parameters for RRANSAC are specified by the class RRANSACTemplateParameters.
+ * The template parameters are the source container, model, model data association policy, cluster and data tree association policy, seed for the log maximum likelihood estimation 
+ * optimization, and the log maximum likelihood estimation. 
  * 
- * The type of state is the configuration manifold of the target which is a Lie group. The type of source is the measurement source that models observation function of the system model.
- * The source must be compatible with the state type. The transformation type specifies how to transform measurements and tracks in the case that the tracking frame changes. The type of model
+ * The source container template parameter is a specified SourceContainer type. The class SourceContainer holds up to five different sources. To create the SourceContainer type, lets
+ * suppose that our system uses two different sources of type Source1 and Source2, then I can create the SourceContainer type as 
+ *    typedef SourceContainer<Source1,Source2> MySourceContainer;
+ * For more information on the source container, @see SourceContainer. 
+ * 
+ * The sources are templated classes that require the template parameters of the target's state, the measurement type, and the transformation used. Each source must have the same state type and
+ * transformation template class, and the measurement types can be different. The target's state is assumed to be a Lie group. The current possible states are RN, SO(2), SO(3), SE(2), and SE(3).
+ * For more information on the states @see State. The source has to be compatible with the state. Fortunately, there are built in compatibility checks that will cause the program not to compile
+ * if the state is not compatible with the source, and the checks will tell you the issue. There are different measurement types that a source can use. For the list of possible measurement types, 
+ * @see MeasurementTypes. Once again, the source has to be compatible with the measurement type, so we have implaced compatibility checks to ensure the compatible measurement type is selected. 
+ * The transformation class is used to transform measurements and tracks in different frames. It is mainly used in two ways, to transform the tracks and measurements into the current tracking
+ * frame if the tracking frame moves, or to transform the track into the measurement frame when calculating the innovation term. In order to create a source type, let State denote the state type,
+ * MeasurementType denote the measurement type, Transform denote the transform class, and Source denote the source template you wish to use, then the source type would be
+ *     typedef Source<State,MeasurementType,Transform> Source0;
+ * For more information on the sources @see SourceBase.
+ * 
+ * The type of model
  * describes the full system model: propagate, update, etc. The model must be compatible with the type of state and source. The type of data association policy determines how new measurements
  * will associated to existing tracks. There is only one current implementation which is the probabilistic data association filter. This policy is compatible with all models. The cluster
  * and data tree association policy determins how new measurements that were not associated to an existing track are to be associated with clusters and the data tree. There is only currently 

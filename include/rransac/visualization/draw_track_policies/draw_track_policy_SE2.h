@@ -97,7 +97,7 @@ void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mod
         if (draw_info.draw_validation_region) {
 
             unsigned int source_index = -1;
-            for (unsigned int ii = 0; ii < sys->source_container_.num_sources; ++ii) {
+            for (unsigned int ii = 0; ii < sys->source_container_.num_sources_; ++ii) {
                 if (sys->source_container_.GetParams(ii).type_ == MeasurementTypes::SEN_POS) {
                     source_index = ii;
                     break;

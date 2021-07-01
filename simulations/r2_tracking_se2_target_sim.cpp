@@ -58,7 +58,8 @@ struct Scenario1 {
     typedef typename TrackingModel_::Transformation::MatData TransformMatData_;
     typedef typename TrackingModel_::State TrackingState_;
     typedef typename TrackingState_::Algebra TrackingAlgebra_;
-    typedef SourceR2PosVelNull TrackingSource_;
+    typedef SourceR2PosNull TrackingSource1_;
+    typedef SourceR2PosVelNull TrackingSource2_;
     typedef RRANSACTemplateParameters<SourceContainerR2PosVelNull,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
     typedef typename RRANSAC_::TRansac RANSAC_;
@@ -109,7 +110,9 @@ struct Scenario1 {
         target_states[3].g_.data_ = TargetState_::Algebra::Exp(pose);
         target_states[3].u_.data_ << t_vel,0,-a_vel;
         // states[3].u_.data_ << t_vel,0,0;
-        transform_data << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
+        if (transform_data_) {
+            transform_data << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
+        }
         target_noise_mat.setZero();
         target_noise_mat(0,0) = 1;
         track_noise_mat.setIdentity();
@@ -128,7 +131,8 @@ public:
 
 typedef typename T::TrackingModel_ TrackingModel_;
 typedef typename T::TrackingState_  TrackingState_;
-typedef typename T::TrackingSource_ TrackingSource_;
+typedef typename T::TrackingSource1_ TrackingSource1_;
+typedef typename T::TrackingSource2_ TrackingSource2_;
 typedef typename T::TargetModel_ TargetModel_;
 typedef typename T::TargetState_  TargetState_;
 typedef typename T::TargetSource_ TargetSource_;
@@ -154,20 +158,16 @@ void SetUp() {
     source_params1.source_index_ = 0;
     source_params1.meas_cov_ = T::MatR_::Identity()*noise_;
     source_params1.gate_probability_ = 0.95;
-    source_params1.spacial_density_of_false_meas_ = 0.03125;
+    source_params1.spacial_density_of_false_meas_ = 0.01;
 
     source_params2.type_ = T::MeasurementType2;
     source_params2.source_index_ = 1;
     source_params2.meas_cov_ = T::MatR2_::Identity()*noise_;
     source_params2.gate_probability_ = 0.95;
-    source_params2.spacial_density_of_false_meas_ = 0.03125;
+    source_params2.spacial_density_of_false_meas_ = 0.01;
 
 
-    TrackingSource_ source1, source2;
-    source1.Init(source_params1);
-    source2.Init(source_params2);
-    sources_.push_back(source1);
-    sources_.push_back(source2);
+
 
     rransac_.AddSource(source_params1);
     rransac_.AddSource(source_params2);
@@ -344,7 +344,7 @@ T test_data_;
 std::vector<TargetModel_> tracks_;
 RRANSAC_ rransac_;
 const System<TrackingModel_>* sys_;
-std::vector<TrackingSource_> sources_;
+// std::vector<TrackingSource_> sources_;
 Transformation_ transformation_;
 TrackingModel_ tmp_track_;
 

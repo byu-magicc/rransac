@@ -32,7 +32,7 @@ class TLI_IPDAFPolicy {
 
 public:
 
-static constexpr double decay_rate_ = 0.02;
+static constexpr double decay_rate_ = 0.01;
 
 /**
 * Update the track likelihood for all of the tracks. 
