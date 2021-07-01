@@ -28,6 +28,7 @@
 #include "rransac/visualization/draw_meas_policies/draw_meas_R2_SE2_pos_policy.h"
 #include "rransac/visualization/draw_track_policies/draw_track_policy_SE2.h"
 #include "rransac/visualization/draw_track_policies/draw_track_policy_R2.h"
+#include "rransac/common/sources/source_container.h"
 
 
 using namespace lie_groups;
@@ -37,20 +38,30 @@ using namespace rransac;
 struct Scenario1 {
     public:
 
-    typedef ModelSENPosVel<SE2_se2, TransformNULL> TargetModel_;
+
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2PosNull;
+    typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVelNull;
+    typedef SourceContainer<SourceSE2PosNull,SourceSE2PosVelNull> SourceContainerSE2PosVelNull;
+
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2PosNull;
+    typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVelNull;
+    typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull> SourceContainerR2PosVelNull;
+
+
+    typedef ModelSENPosVel<SourceContainerSE2PosVelNull> TargetModel_;
     typedef typename TargetModel_::State TargetState_;
-    typedef typename TargetModel_::Source TargetSource_;
+    typedef SourceSE2PosVelNull TargetSource_;
     typedef typename TargetState_::Algebra TargetAlgebra_;
 
-    typedef ModelRN<R2_r2,TransformNULL,SourceRN> TrackingModel_;
+    typedef ModelRN<SourceContainerR2PosVelNull> TrackingModel_;
     typedef typename TrackingModel_::Transformation Transformation_;
     typedef typename TrackingModel_::Transformation::MatData TransformMatData_;
     typedef typename TrackingModel_::State TrackingState_;
     typedef typename TrackingState_::Algebra TrackingAlgebra_;
-    typedef typename TrackingModel_::Source TrackingSource_;
-    typedef RRANSACTemplateParameters<R2_r2,SourceRN,TransformNULL,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef SourceR2PosVelNull TrackingSource_;
+    typedef RRANSACTemplateParameters<SourceContainerR2PosVelNull,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSAC_::tRansac RANSAC_;
+    typedef typename RRANSAC_::TRansac RANSAC_;
     TransformMatData_ transform_data;
     // static constexpr bool transform_data_ = true;
     static constexpr bool transform_data_ = false;
@@ -198,7 +209,7 @@ void SetUp() {
     // Setup tracks
     tracks_.resize(4);
     for (int ii = 0; ii < 4; ++ii) {
-        tracks_[ii].Init(target_params,sys_->sources_.size());
+        tracks_[ii].Init(target_params);
         tracks_[ii].state_ = test_data_.target_states[ii];
     }
 
@@ -213,6 +224,8 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
     Meas<double> tmp1, tmp2;
     std::list<Meas<double>> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
+    bool transform_data = false;
+    Eigen::MatrixXd EmptyMat;
 
     for (double ii =start_time; ii < end_time; ii += this->dt_) {
 
@@ -251,10 +264,10 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "meas " << std::endl;
 
-            if (fabs(rand_num(0,0)) < this->sources_[this->m1_.source_index].params_.probability_of_detection_) {
+            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m1_.source_index).probability_of_detection_) {
 
-                tmp1 = this->sources_[this->m1_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR_ ::Identity()*sqrt(this->noise_));
-                tmp2 = this->sources_[this->m2_.source_index].GenerateRandomMeasurement(tmp_track_.state_,T::MatR2_::Identity()*sqrt(this->noise_));
+                tmp1 = this->sys_->source_container_.GenerateRandomMeasurement(this->m1_.source_index, T::MatR_ ::Identity()*sqrt(this->noise_),tmp_track_.state_,transform_data,EmptyMat);
+                tmp2 = this->sys_->source_container_.GenerateRandomMeasurement(this->m2_.source_index, T::MatR2_::Identity()*sqrt(this->noise_),tmp_track_.state_,transform_data,EmptyMat);
 
                 this->m1_.time_stamp = ii;
                 this->m1_.pose = tmp1.pose;

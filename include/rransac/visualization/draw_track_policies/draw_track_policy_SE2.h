@@ -33,6 +33,9 @@ static void DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tMod
 template <typename tModel>
 void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& model, const System<tModel>* sys, const DrawInfo& draw_info) {
 
+    bool transform_state = false;
+    Eigen::MatrixXd EmptyMat;
+
     // The negations on some values are need in order to transform the tracking frame to the frame for drawing the image.
     
     int num_points = 4;
@@ -117,7 +120,7 @@ void DrawTrackPolicySE2<tModel>::DrawTrackPolicy(cv::Mat& img, const tModel& mod
             }
             
 #else
-            Eigen::MatrixXd S = model.GetInnovationCovariance(sys->source_container_,source_index);
+            Eigen::MatrixXd S = model.GetInnovationCovariance(sys->source_container_,source_index,transform_state,EmptyMat);
 #endif
             Eigen::Matrix2d S_pos = S.block(0,0,2,2)*sys->source_container_.GetParams(source_index).gate_threshold_;
             Eigen::EigenSolver<Eigen::Matrix2d> eigen_solver;
