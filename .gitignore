@@ -1,3 +1,7 @@
+# Generated Data
+*.csv
+*.pdf
+
 # Prerequisites
 *.d
 
@@ -34,4 +38,6 @@
 # Folders
 documentation/*
 build/*
+.vscode/*
 !documentation/README.md 
+
