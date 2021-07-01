@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(rransac VERSION 2.0.0 LANGUAGES C CXX)
 
 # set(CMAKE_CXX_CLANG_TIDY clang-tidy; -header-filter=include/rransac/.; -checks=-*,google-*)
-# set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
 # set(CMAKE_BUILD_TYPE RELEASE)
 # set(CMAKE_BUILD_TYPE DEBUG)
 
@@ -143,18 +143,18 @@ install(FILES
 #############
 ## Testing ##
 #############
-# include_directories(
-#   liegroups/include
-#   ${EIGEN3_INCLUDE_DIR}
-# )
+include_directories(
+  liegroups/include
+  ${EIGEN3_INCLUDE_DIR}
+)
 
-# add_executable(main src/main.cpp src/parameters.cpp)
-# target_include_directories(main PUBLIC
-#           include
-# 					liegroups/include
-# 					${EIGEN3_INCLUDE_DIR}
-# 					${Boost_INCLUDE_DIRS}
-# 					${OpenCV_INCLUDE_DIRS})
+add_executable(main src/main.cpp src/parameters.cpp)
+target_include_directories(main PUBLIC
+          include
+					liegroups/include
+					${EIGEN3_INCLUDE_DIR}
+					${Boost_INCLUDE_DIRS}
+					${OpenCV_INCLUDE_DIRS})
 
 
 
@@ -162,7 +162,7 @@ install(FILES
 
 # option(BUILD_TESTS "Build the Params GTests" OFF)
 # if(BUILD_TESTS)
-  add_subdirectory(test)
+  # add_subdirectory(test)
 # endif()
 
 
