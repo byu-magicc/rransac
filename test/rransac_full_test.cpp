@@ -45,46 +45,41 @@ struct Test1 {
 
     typedef ModelRN<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
+    typedef typename Model_::Transformation::TransformDataType TransformDataType;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef RRANSACTemplateParameters<SC,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
-    typedef typename RRANSACParameters::TRansac RANSAC_;
+    typedef typename RRANSACParameters::_Ransac RANSAC_;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef Eigen::Matrix<double,2,2> MatR_;
-    typedef Eigen::Matrix<double,4,4> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
-    static constexpr bool transform_data_ = false;
-    typedef Eigen::Matrix<double,4,4> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,2,1> VecU_;
-    std::string test_name = "R2 Test";
-    Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+    std::vector<State_> states_;
+    std::string test_name_ = "R2 Test";
 
-    static State_ GenerateRandomState(const double fov) {
-        State_ rand_state;
-        rand_state.g_.data_ = State_::Algebra::Exp(Eigen::Matrix<double,State_::Group::dim_,1>::Random()*fov);
-        rand_state.u_.data_ = VecU_::Random()*2;
-        return rand_state;
-    }
 
-    TransformMatData_ transform_data;
 
-    Test1() {
+    bool transform_tracking_frame_ = false;
+    std::vector<bool> transform_state_;
+    std::vector<bool> transform_meas_;
+    TransformDataType transform_tracking_frame_data_;
+    std::vector<TransformDataType> transform_data_t_m_;
+    std::vector<TransformDataType> transform_data_m_t_;
+
+    Test1() : transform_state_(SC::num_sources_,false), transform_meas_(SC::num_sources_,false) {
         double pos = 5;
         double vel = 0.5;
-        states.resize(4);
-        states[0].g_.data_ << pos,pos;
-        states[0].u_.data_ << 0, -vel;
-        states[1].g_.data_ << pos, -pos;
-        states[1].u_.data_ << -vel,0;
-        states[2].g_.data_ << -pos, -pos;
-        states[2].u_.data_ << 0, vel;
-        states[3].g_.data_ << -pos, pos;
-        states[3].u_.data_ << vel,0;
-        transform_data.setIdentity();
-        noise_mat.setIdentity();
+        states_.resize(4);
+        states_[0].g_.data_ << pos,pos;
+        states_[0].u_.data_ << 0, -vel;
+        states_[1].g_.data_ << pos, -pos;
+        states_[1].u_.data_ << -vel,0;
+        states_[2].g_.data_ << -pos, -pos;
+        states_[2].u_.data_ << 0, vel;
+        states_[3].g_.data_ << -pos, pos;
+        states_[3].u_.data_ << vel,0;
+
+        transform_data_t_m_.resize(SC::num_sources_);
+        transform_data_m_t_.resize(SC::num_sources_);
+
+        
     }
 
   
@@ -101,47 +96,38 @@ struct Test2 {
 
     typedef ModelRN<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
+    typedef typename Model_::Transformation::TransformDataType TransformDataType;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef RRANSACTemplateParameters<SC,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::TRansac RANSAC_;
-    typedef Eigen::Matrix<double,3,3> MatR_;
-    typedef Eigen::Matrix<double,6,6> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::RN_POS;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::RN_POS_VEL;
-    static constexpr bool transform_data_ = false;
-    typedef Eigen::Matrix<double,6,6> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,3,1> VecU_;
-    std::string test_name = "R3 Test";
-    Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+    typedef typename RRANSACParameters::_Ransac RANSAC_;
+    std::vector<State_> states_;
+    std::string test_name_ = "R3 Test";
 
 
-    TransformMatData_ transform_data;
+    bool transform_tracking_frame_ = false;
+    std::vector<bool> transform_state_;
+    std::vector<bool> transform_meas_;
+    TransformDataType transform_tracking_frame_data_;
+    std::vector<TransformDataType> transform_data_t_m_;
+    std::vector<TransformDataType> transform_data_m_t_;
 
-    static State_ GenerateRandomState(const double fov) {
-        State_ rand_state;
-        rand_state.g_.data_ = State_::Algebra::Exp(Eigen::Matrix<double,State_::Group::dim_,1>::Random()*fov);
-        rand_state.u_.data_ = VecU_::Random();
-        return rand_state;
-    }
-
-    Test2() {
-        double pos = 5;
+    Test2() : transform_state_(SC::num_sources_,false), transform_meas_(SC::num_sources_,false) {
+        double pos = 20;
         double vel = 0.5;
-        states.resize(4);
-        states[0].g_.data_ << pos,pos, pos;
-        states[0].u_.data_ << 0, -vel, 0;
-        states[1].g_.data_ << pos, -pos, -pos;
-        states[1].u_.data_ << -vel,0,-vel;
-        states[2].g_.data_ << -pos, -pos, -pos;
-        states[2].u_.data_ << 0, vel, vel;
-        states[3].g_.data_ << -pos, pos, pos;
-        states[3].u_.data_ << vel,0,0;
-        transform_data.setIdentity();
-        noise_mat.setIdentity();
+        states_.resize(4);
+        states_[0].g_.data_ << pos,pos, pos;
+        states_[0].u_.data_ << 0, -vel, 0;
+        states_[1].g_.data_ << pos, -pos, -pos;
+        states_[1].u_.data_ << -vel,0,-vel;
+        states_[2].g_.data_ << -pos, -pos, -pos;
+        states_[2].u_.data_ << 0, vel, vel;
+        states_[3].g_.data_ << -pos, pos, pos;
+        states_[3].u_.data_ << vel,0,0;
+
+        transform_data_t_m_.resize(SC::num_sources_);
+        transform_data_m_t_.resize(SC::num_sources_);
     }
 
   
@@ -158,55 +144,44 @@ struct Test3 {
 
     typedef ModelSENPoseTwist<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
+    typedef typename Model_::Transformation::TransformDataType TransformDataType;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef RRANSACTemplateParameters<SC,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::TRansac RANSAC_;
-    typedef Eigen::Matrix<double,3,3> MatR_;
-    typedef Eigen::Matrix<double,6,6> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
-    typedef Eigen::Matrix<double,6,6> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,3,1> VecU_;
-    std::string test_name = "SE2 Pose Test";
-    TransformMatData_ transform_data;
-    static constexpr bool transform_data_ = false;
-    Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+    typedef typename RRANSACParameters::_Ransac RANSAC_;
+    std::vector<State_> states_;
+    std::string test_name_ = "SE2 Pose Test";
 
-    static State_ GenerateRandomState(const double fov) {
+    bool transform_tracking_frame_ = false;
+    std::vector<bool> transform_state_;
+    std::vector<bool> transform_meas_;
+    TransformDataType transform_tracking_frame_data_;
+    std::vector<TransformDataType> transform_data_t_m_;
+    std::vector<TransformDataType> transform_data_m_t_;
 
-        State_ rand_state;
-        rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
-        rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
-        rand_state.u_.data_ = VecU_::Random();
-        return rand_state;
-    }
-
-
-    Test3() {
+    Test3() : transform_state_(SC::num_sources_,false), transform_meas_(SC::num_sources_,false) {
         double pos = 5;
         double rot = 0.1;
         double t_vel = 0.5;
         double a_vel = 0.1;
         Eigen::Matrix<double,3,1> pose;
-        states.resize(4);
+        states_.resize(4);
         pose << pos, pos, 0;
-        states[0].g_.data_ = State_::Algebra::Exp(pose);
-        states[0].u_.data_ << t_vel, t_vel,0;
+        states_[0].g_.data_ = State_::Algebra::Exp(pose);
+        states_[0].u_.data_ << t_vel, t_vel,0;
         pose << pos, -pos, 0;
-        states[1].g_.data_ = State_::Algebra::Exp(pose);
-        states[1].u_.data_ << -t_vel,-t_vel,0;
+        states_[1].g_.data_ = State_::Algebra::Exp(pose);
+        states_[1].u_.data_ << -t_vel,-t_vel,0;
         pose << -pos, -pos, rot;
-        states[2].g_.data_ = State_::Algebra::Exp(pose);
-        states[2].u_.data_ << t_vel, 0, a_vel;
+        states_[2].g_.data_ = State_::Algebra::Exp(pose);
+        states_[2].u_.data_ << t_vel, 0, a_vel;
         pose << -pos, pos, -rot;
-        states[3].g_.data_ = State_::Algebra::Exp(pose);
-        states[3].u_.data_ << t_vel,0,-a_vel;
-        transform_data.setIdentity();
-        noise_mat.setIdentity();
+        states_[3].g_.data_ = State_::Algebra::Exp(pose);
+        states_[3].u_.data_ << t_vel,0,-a_vel;
+
+        transform_data_t_m_.resize(SC::num_sources_);
+        transform_data_m_t_.resize(SC::num_sources_);
     }
 
   
@@ -223,36 +198,25 @@ struct Test4 {
 
     typedef ModelSENPoseTwist<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
+    typedef typename Model_::Transformation::TransformDataType TransformDataType;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef RRANSACTemplateParameters<SC,ModelSENPoseTwist,NULLSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::TRansac RANSAC_;
-    typedef Eigen::Matrix<double,6,6> MatR_;
-    typedef Eigen::Matrix<double,12,12> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POSE;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POSE_TWIST;
-    typedef Eigen::Matrix<double,12,12> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,6,1> VecU_;
-    TransformMatData_ transform_data;
-    static constexpr bool transform_data_ = false;
-    Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+    typedef typename RRANSACParameters::_Ransac RANSAC_;
+    std::vector<State_> states_;
 
-    std::string test_name = "SE3 Pose Test";
+    std::string test_name_ = "SE3 Pose Test";
 
 
-    static State_ GenerateRandomState(const double fov) {
+    bool transform_tracking_frame_ = false;
+    std::vector<bool> transform_state_;
+    std::vector<bool> transform_meas_;
+    TransformDataType transform_tracking_frame_data_;
+    std::vector<TransformDataType> transform_data_t_m_;
+    std::vector<TransformDataType> transform_data_m_t_;
 
-        State_ rand_state;
-        rand_state.g_.R_ = so3<double>::Exp(Eigen::Matrix<double,3,1>::Random()*3);
-        rand_state.g_.t_ = Eigen::Matrix<double,3,1>::Random()*fov;
-        rand_state.u_.data_ = VecU_::Random()*2;
-        return rand_state;
-    }
-
-    Test4() {
+    Test4() : transform_state_(SC::num_sources_,false), transform_meas_(SC::num_sources_,false) {
         double pos = 10;
         double rot1 = 0.2;
         double rot2 = -0.2;
@@ -260,21 +224,22 @@ struct Test4 {
         double t_vel = 0.5;
         double a_vel = 0.1;
         Eigen::Matrix<double,6,1> pose;
-        states.resize(4);
+        states_.resize(4);
         pose << pos, pos, pos, rot1, rot2, rot3;
-        states[0].g_.data_ = State_::Algebra::Exp(pose);
-        states[0].u_.data_ << t_vel, t_vel, t_vel, 0, 0, 0;
+        states_[0].g_.data_ = State_::Algebra::Exp(pose);
+        states_[0].u_.data_ << t_vel, t_vel, t_vel, 0, 0, 0;
         pose << -pos, pos, -pos, rot1, -rot2, rot3;
-        states[1].g_.data_ = State_::Algebra::Exp(pose);
-        states[1].u_.data_ << -t_vel, t_vel, t_vel, a_vel, -a_vel, a_vel;
+        states_[1].g_.data_ = State_::Algebra::Exp(pose);
+        states_[1].u_.data_ << -t_vel, t_vel, t_vel, a_vel, -a_vel, a_vel;
         pose << pos, -pos, pos, -rot1, rot2, -rot3;
-        states[2].g_.data_ = State_::Algebra::Exp(pose);
-        states[2].u_.data_ << t_vel, -t_vel, t_vel, -a_vel, a_vel, -a_vel;
+        states_[2].g_.data_ = State_::Algebra::Exp(pose);
+        states_[2].u_.data_ << t_vel, -t_vel, t_vel, -a_vel, a_vel, -a_vel;
         pose << -pos, -pos, -pos, -rot1, -rot2, -rot3;
-        states[3].g_.data_ = State_::Algebra::Exp(pose);
-        states[3].u_.data_ << -t_vel, -t_vel, -t_vel, 0, 0, 0;
-        transform_data.setIdentity();
-        noise_mat.setIdentity();
+        states_[3].g_.data_ = State_::Algebra::Exp(pose);
+        states_[3].u_.data_ << -t_vel, -t_vel, -t_vel, 0, 0, 0;
+
+        transform_data_t_m_.resize(SC::num_sources_);
+        transform_data_m_t_.resize(SC::num_sources_);
     }
 
   
@@ -292,39 +257,23 @@ struct Test5 {
 
     typedef ModelSENPosVel<SC> Model_;
     typedef typename Model_::Transformation Transformation_;
-    typedef typename Model_::Transformation::MatData TransformMatData_;
+    typedef typename Model_::Transformation::TransformDataType TransformDataType;
     typedef typename Model_::State State_;
     typedef typename State_::Algebra Algebra_;
     typedef RRANSACTemplateParameters<SC,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSACParameters::TRansac RANSAC_;
-    TransformMatData_ transform_data;
-    static constexpr bool transform_data_ = true;
-    // static constexpr bool transform_data_ = false;
-
-
-
-    typedef Eigen::Matrix<double,2,2> MatR_;
-    typedef Eigen::Matrix<double,4,4> MatR2_;
-    static constexpr MeasurementTypes MeasurementType1= MeasurementTypes::SEN_POS;
-    static constexpr MeasurementTypes MeasurementType2= MeasurementTypes::SEN_POS_VEL;
-    typedef Eigen::Matrix<double,5,5> ProcessNoiseCov_;
-    std::vector<State_> states;
-    typedef Eigen::Matrix<double,3,1> VecU_;
-    std::string test_name = "SE2 Pos Test";
-    Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat;
+    typedef typename RRANSACParameters::_Ransac RANSAC_;
+    std::vector<State_> states_;
+    std::string test_name_ = "SE2 Pos Test";
     
+    bool transform_tracking_frame_ = false;
+    std::vector<bool> transform_state_;
+    std::vector<bool> transform_meas_;
+    TransformDataType transform_tracking_frame_data_;
+    std::vector<TransformDataType> transform_data_t_m_;
+    std::vector<TransformDataType> transform_data_m_t_;
 
-    static State_ GenerateRandomState(const double fov) {
-
-        State_ rand_state;
-        rand_state.g_.R_ = so2<double>::Exp(Eigen::Matrix<double,1,1>::Random()*3);
-        rand_state.g_.t_ = Eigen::Matrix<double,2,1>::Random()*fov;
-        rand_state.u_.data_ = VecU_::Random()*2;
-        return rand_state;
-    }
-
-    Test5() {
+    Test5() : transform_state_(SC::num_sources_,false), transform_meas_(SC::num_sources_,false) {
         double pos = 5;
         double rot = 0.1;
         double t_vel = 0.5;
@@ -333,26 +282,26 @@ struct Test5 {
         State_ state;
         Eigen::Matrix<double,3,1> pose;
         for (int ii = 0; ii < 4; ++ii)
-            states.push_back(state);
+            states_.push_back(state);
         pose << pos, pos, 0;
-        states[0].g_.data_ = State_::Algebra::Exp(pose);
-        states[0].u_.data_ << t_vel, 0,0;
+        states_[0].g_.data_ = State_::Algebra::Exp(pose);
+        states_[0].u_.data_ << t_vel, 0,0;
         pose << pos, -pos, 0;
-        states[1].g_.data_ = State_::Algebra::Exp(pose);
-        states[1].u_.data_ << t_vel,0,0;
+        states_[1].g_.data_ = State_::Algebra::Exp(pose);
+        states_[1].u_.data_ << t_vel,0,0;
         pose << -pos, -pos, rot;
         // pose << -pos, -pos, 0;
-        states[2].g_.data_ = State_::Algebra::Exp(pose);
-        states[2].u_.data_ << t_vel, 0, a_vel;
+        states_[2].g_.data_ = State_::Algebra::Exp(pose);
+        states_[2].u_.data_ << t_vel, 0, a_vel;
         // states[2].u_.data_ << t_vel, 0, 0;
         pose << -pos, pos, -rot;
         // pose << -pos, pos, 0;
-        states[3].g_.data_ = State_::Algebra::Exp(pose);
-        states[3].u_.data_ << t_vel,0,-a_vel;
-        // states[3].u_.data_ << t_vel,0,0;
-        transform_data << cos(th), -sin(th), 0, sin(th), cos(th), 0, 0, 0, 1;
-        noise_mat.setZero();
-        noise_mat(0,0) = 1;
+        states_[3].g_.data_ = State_::Algebra::Exp(pose);
+        states_[3].u_.data_ << t_vel,0,-a_vel;
+
+        transform_data_t_m_.resize(SC::num_sources_);
+        transform_data_m_t_.resize(SC::num_sources_);
+
     }
 
   
@@ -372,7 +321,11 @@ typedef typename T::State_ State_;
 typedef typename T::RANSAC_ RANSAC_;
 typedef typename T::RRANSAC_ RRANSAC_;
 typedef typename T::Transformation_ Transformation_;
-static constexpr bool transform_data_ = T::transform_data_;
+typedef typename T::SC::Source0 Source0_;
+typedef typename T::SC::Source1 Source1_;
+typedef typename T::SC::Source2 Source2_;
+typedef typename T::Model_::Measurement Measurement_;
+typedef typename Transformation_::TransformDataType TransformDataType_;
 
 void SetUp() override {
 
@@ -380,21 +333,23 @@ void SetUp() override {
     transformation_.Init();
 
     // Setup sources
-    SourceParameters source_params1, source_params2, source_params3;
-    source_params1.type_ = T::MeasurementType1;
-    source_params1.source_index_ = 0;
-    source_params1.meas_cov_ = T::MatR_::Identity()*noise_;
-    source_params1.gate_probability_ = 0.9;
+    std::vector<SourceParameters> source_params;
+    source_params.resize(T::SC::num_sources_);
+    
+    source_params[0].type_ = Source0_::measurement_type_;
+    source_params[0].source_index_ = 0;
+    source_params[0].meas_cov_ = Source0_::MatMeasCov::Identity()*noise_;
+    source_params[0].gate_probability_ = 0.9;
 
-    source_params2.type_ = T::MeasurementType2;
-    source_params2.source_index_ = 1;
-    source_params2.meas_cov_ = T::MatR2_::Identity()*noise_;
-    source_params2.gate_probability_ = 0.9;
+    source_params[1].type_ = Source1_::measurement_type_;
+    source_params[1].source_index_ = 1;
+    source_params[1].meas_cov_ = Source1_::MatMeasCov::Identity()*noise_;
+    source_params[1].gate_probability_ = 0.9;
 
-    source_params3.type_ = T::MeasurementType2;
-    source_params3.source_index_ = 2;
-    source_params3.meas_cov_ = T::MatR2_::Identity()*noise_;
-    source_params3.gate_probability_ = 0.9;
+    source_params[2].type_ = Source2_::measurement_type_;
+    source_params[2].source_index_ = 2;
+    source_params[2].meas_cov_ = Source2_::MatMeasCov::Identity()*noise_;
+    source_params[2].gate_probability_ = 0.9;
 
     // Source_ source1, source2, source3;
     // source1.Init(source_params1);
@@ -403,14 +358,14 @@ void SetUp() override {
     // sources_.push_back(source1);
     // sources_.push_back(source2);
     // sources_.push_back(source3);
+    for (int ii = 0; ii < T::SC::num_sources_; ++ii){
+        rransac_.AddSource(source_params[ii]);
+    }
 
-    rransac_.AddSource(source_params1);
-    rransac_.AddSource(source_params2);
-    rransac_.AddSource(source_params3);
 
     // Setup system
     Parameters params;
-    params.process_noise_covariance_ = T::ProcessNoiseCov_::Identity()*noise_;
+    params.process_noise_covariance_ = Model_::MatModelCov::Identity()*noise_;
     params.RANSAC_max_iters_ = 5;
     params.RANSAC_minimum_subset_ = 3;
     params.RANSAC_score_stopping_criteria_ = 15;
@@ -427,26 +382,24 @@ void SetUp() override {
     rransac_.SetSystemParameters(params);
 
 
+
     // Setup Measurements
-    m1_.source_index = 0;
-    m1_.type = source_params1.type_ ;
+    meas_.resize(T::SC::num_sources_);
+    for (int ii = 0; ii < T::SC::num_sources_;++ii) {
+        meas_[ii].source_index = source_params[ii].source_index_;
+        meas_[ii].type = source_params[ii].type_;
+        meas_[ii].transform_state = test_data_.transform_state_[ii];
+        meas_[ii].transform_meas = test_data_.transform_meas_[ii];
+        meas_[ii].transform_data_t_m = test_data_.transform_data_t_m_[ii];
+        meas_[ii].transform_data_m_t = test_data_.transform_data_m_t_[ii];
+    }
 
-
-    m2_.source_index = 1;
-    m2_.type = source_params2.type_;
-
-    // This measurement is noise
-    m3_.source_index = 2;
-    m3_.type = source_params3.type_;
-
-    m4_.source_index = 0;
-    m4_.type =source_params1.type_ ;
 
     // Setup tracks
     tracks_.resize(4);
     for (int ii = 0; ii < 4; ++ii) {
         tracks_[ii].Init(sys_->params_);
-        tracks_[ii].state_ = test_data_.states[ii];
+        tracks_[ii].state_ = test_data_.states_[ii];
     }
 
 
@@ -457,11 +410,11 @@ void SetUp() override {
 void Propagate(double start_time, double end_time, std::vector<int>& track_indices) {
 
 
-    Meas<double> tmp1, tmp2, tmp3, tmp4;
-    std::list<Meas<double>> new_measurements;
+    Measurement_ tmp;
+    std::list<Measurement_> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
     bool transform_state = 0;
-    Eigen::MatrixXd EmptyMat;
+    TransformDataType_ EmptyMat;
 
     for (double ii =start_time; ii < end_time; ii += this->dt_) {
 
@@ -478,81 +431,62 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "propagate " << std::endl;
             if (ii !=this->start_time_) {
-                track.state_.u_.data_ += test_data_.noise_mat*sqrt(this->noise_)*rransac::utilities::GaussianRandomGenerator(T::Algebra_::dim_)*this->dt_;
+                Model_::OPlus(track.state_, rransac::utilities::GaussianRandomGenerator(Model_::cov_dim_)*this->dt_*this->noise_ );
                 track.PropagateModel(this->dt_);
             }
 
             // std::cerr << "transform " << std::endl;
 
-            if (T::transform_data_) {
-                transformation_.SetData(test_data_.transform_data);
+            if (test_data_.transform_tracking_frame_) {
+                transformation_.SetData(test_data_.transform_tracking_frame_data_);
                 transformation_.TransformTrack(track.state_, track.err_cov_);
             }
 
-            // Generates measurements according to the probability of detection
-            rand_num.setRandom();
-            if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
-                rand_num << 0;
+            for (int jj = 0; jj < T::SC::num_sources_; ++jj) {
 
+                // Get true measurement
+                rand_num.setRandom();
+                if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
+                    rand_num << 0;
 
-            // std::cerr << "meas " << std::endl;
+                // Generate true measurement
+                if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(jj).probability_of_detection_) {
 
-            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m1_.source_index).probability_of_detection_) {
+                    tmp = this->sys_->source_container_.GenerateRandomMeasurement(this->meas_[jj].source_index,this->sys_->source_container_.GetParams(jj).meas_cov_.sqrt()*0.1,track.state_,meas_[jj].transform_state,meas_[jj].transform_data_t_m);
 
-                tmp1 = this->sys_->source_container_.GenerateRandomMeasurement(this->m1_.source_index,T::MatR_ ::Identity()*sqrt(this->noise_*0.1),track.state_,transform_state,EmptyMat);
+                    meas_[jj].time_stamp= ii;
+                    meas_[jj].pose= tmp.pose;
+                    meas_[jj].twist = tmp.twist;
 
-                this->m1_.time_stamp = ii;
-                this->m1_.pose = tmp1.pose;
+                    new_measurements.push_back(meas_[jj]);
+                }
 
-                new_measurements.push_back(this->m1_);
+                // Generate False measurement
+                rand_num.setRandom();
+                if (fabs(rand_num(0,0)) < prob_false_meas_) {
+                    State_ rand_state = Model_::GetRandomState(this->fov_);
+                    tmp = this->sys_->source_container_.GenerateRandomMeasurement(this->meas_[jj].source_index,this->sys_->source_container_.GetParams(jj).meas_cov_.sqrt()*0.1,rand_state,meas_[jj].transform_state,meas_[jj].transform_data_t_m);
+
+                    meas_[jj].time_stamp= ii;
+                    meas_[jj].pose= tmp.pose;
+                    meas_[jj].twist = tmp.twist;
+
+                    new_measurements.push_back(meas_[jj]);
+                }
+
             }
-
             // Generates measurements according to the probability of detection
-            rand_num.setRandom();
-            if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
-                rand_num << 0;
-            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m2_.source_index).probability_of_detection_) {
 
-                tmp2 = this->sys_->source_container_.GenerateRandomMeasurement(this->m2_.source_index,T::MatR2_ ::Identity()*sqrt(this->noise_*0.1),track.state_,transform_state,EmptyMat);
 
-                this->m2_.time_stamp = ii;
-                this->m2_.pose = tmp2.pose;
-                this->m2_.twist = tmp2.twist;
-
-                new_measurements.push_back(this->m2_);
-            }
-
-            // Generates measurements according to the probability of detection
-            rand_num.setRandom();
-            if ( ii + dt_+1 >= end_time) // Ensure there is a measurement at the last time step
-                rand_num << 0;
-            if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(this->m4_.source_index).probability_of_detection_) {
-
-                tmp4 = this->sys_->source_container_.GenerateRandomMeasurement(this->m4_.source_index,T::MatR2_ ::Identity()*sqrt(this->noise_*0.1),track.state_,transform_state,EmptyMat);
-
-                this->m4_.time_stamp = ii;
-                this->m4_.pose = tmp4.pose;
-
-                new_measurements.push_back(this->m4_);
-            }
-
-            // std::cerr << "tmp3 " << std::endl;
-
-            State_ rand_state = T::GenerateRandomState(this->fov_);
-            tmp3 = this->sys_->source_container_.GenerateRandomMeasurement(this->m3_.source_index,T::MatR2_ ::Identity()*sqrt(this->noise_*0.5),track.state_,transform_state,EmptyMat);
-            this->m3_.time_stamp = ii;
-            this->m3_.pose = tmp3.pose;
-            this->m3_.twist = tmp3.twist;
-            new_measurements.push_back(this->m3_);
 
         }
 
         // std::cerr << "here0 " << std::endl;
 
-        if (T::transform_data_) {
-            this->rransac_.AddMeasurements(new_measurements,this->m1_.time_stamp,test_data_.transform_data);
+        if (test_data_.transform_tracking_frame_) {
+            this->rransac_.AddMeasurements(new_measurements,this->meas_[0].time_stamp,test_data_.transform_tracking_frame_data_);
         } else {
-            this->rransac_.AddMeasurements(new_measurements,this->m1_.time_stamp);
+            this->rransac_.AddMeasurements(new_measurements,this->meas_[0].time_stamp);
         }
         this->rransac_.RunTrackInitialization();
 
@@ -565,7 +499,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 //---------------------------------------------------------------------------------------------
 
 
-Meas<double> m1_, m2_, m3_, m4_;
+std::vector<Measurement_> meas_;
 double noise_ = 1e-2;
 T test_data_;
 std::vector<Model_> tracks_;
@@ -579,7 +513,7 @@ double dt_ = 0.1;
 double end_time_ = 5; // seconds;
 double start_time_ = 0; // seconds;
 double fov_ = 50;  // The surveillance region is a square centered at zero with side length 20
-
+double prob_false_meas_ = 0.1;
 
 
 };
@@ -587,9 +521,9 @@ double fov_ = 50;  // The surveillance region is a square centered at zero with 
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
-using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4>;
-// using MyTypes = ::testing::Types< Test5>;
+using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
+// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4>;
+// using MyTypes = ::testing::Types< Test1>;
 TYPED_TEST_SUITE(RRANSACTest, MyTypes);
 
 

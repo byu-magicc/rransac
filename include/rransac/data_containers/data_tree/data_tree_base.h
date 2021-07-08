@@ -20,13 +20,15 @@ namespace rransac
  * 
  */
 
-template <typename tData, template<typename> typename tDerived, typename tDataType=double>
+template <typename _TreeDataType, typename tDataType, typename _TransformDataType, template<typename, typename> typename tDerived>
 class DataTreeBase {
 
-typedef tData Data;                    /**< The object type of the data. */
-typedef tDerived<tDataType> Derived;   /**< The derived class. */
+typedef _TreeDataType TreeDataType;    /**< The object type of the data. */
+typedef tDerived<tDataType,_TransformDataType> Derived;   /**< The derived class. */
 typedef tDataType DataType;            /**< The scalar object for the data. Ex. float, double, etc. */
-   
+typedef _TransformDataType TransformDataType;
+typedef Meas<DataType,TransformDataType> Measurement;
+
 public:
 
 /**
@@ -35,7 +37,7 @@ public:
  * @param[in] meas The measurement to be added.
  */
 template <typename tSystem>
-void AddMeasurement(const tSystem& sys, const Meas<DataType>& meas) {
+void AddMeasurement(const tSystem& sys, const Measurement& meas) {
     static_cast<Derived*>(this)->DerivedAddMeasurement(sys, meas);
 } 
 
@@ -110,7 +112,7 @@ void TransformMeasurements(const tTransform& transform) {
 
 unsigned int Size() const {return size_;}; /**< The number of measurements in the data tree. */
 
-tData data_; /**< The data that contains all of the measurements on the data tree. */
+TreeDataType data_; /**< The data that contains all of the measurements on the data tree. */
 
 private:
 DataTreeBase()=default;

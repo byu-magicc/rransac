@@ -22,6 +22,9 @@ typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourcePos;
 typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourcePosVel;
 typedef SourceContainer<SourcePos,SourcePosVel> SC;
 typedef ModelRN<SC> Model;
+typedef typename Model::Base::Measurement Measurement;
+typedef typename Model::TransformDataType TransformDataType;
+typedef DataAssociationInfo<TransformDataType> DataAssociationInfoT;
 
 const int knum_assoc =100;
 const double kdelta = 0.6;
@@ -32,15 +35,19 @@ const double kmeas_weight = 0.1;
 template<typename tModel>
 class ValidationRegionDummyPolicy {
 public:
-static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track)  {return true;}
+static bool PolicyInValidationRegion(const System<tModel>& sys, const Measurement& meas, tModel& track)  {return true;}
 };
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template<typename tModel>
+template<typename _Model>
 class TLI_DummyPolicy {
 public:
-static void PolicyUpdateTrackLikelihood(System<tModel>& sys,DataAssociationInfo& info )  {
+typedef _Model Model;
+typedef System<Model> Sys;
+typedef typename Sys::TransformDataType TransformDataType;
+typedef DataAssociationInfo<TransformDataType> DataAssociationInfoT;
+static void PolicyUpdateTrackLikelihood(Sys& sys,DataAssociationInfoT& info )  {
     
     for (auto& track : sys.models_) {
 
@@ -66,7 +73,7 @@ template<typename tModel>
 class MW_DummyPolicy {
 
 public:
-    static void PolicyCalculateMeasurementWeight(System<tModel>& sys, DataAssociationInfo& info) {
+    static void PolicyCalculateMeasurementWeight(System<tModel>& sys, DataAssociationInfoT& info) {
 
         for (auto& track: sys.models_) {
             for (int source_index =0; source_index < sys.source_container_.num_sources_; ++source_index) {
@@ -135,7 +142,7 @@ transform_data.setIdentity();
 bool transform_state = false;
 
 
-Meas<double> m0, m1;
+Measurement m0, m1;
 m0.type = source_params0.type_;
 m0.time_stamp = sys.current_time_;
 m0.source_index = 0;
@@ -190,7 +197,7 @@ for (int source_index =0; source_index < 2; ++source_index) {
 
 }
 
-const DataAssociationInfo& info = data_association_host.GetDataAssociationInfo();
+const DataAssociationInfoT& info = data_association_host.GetDataAssociationInfo();
 
 for (int ii =0; ii < sys.source_container_.num_sources_; ++ii) {
     ASSERT_EQ(info.source_produced_measurements_[ii], true);

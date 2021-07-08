@@ -21,20 +21,20 @@ namespace rransac {
  * \class RRANSACTemplateParameters
  * Contains all of the template parameters for RRANSAC that used to initialize RRANSAC. See RRANSAC for more information
  */ 
-template<typename tSourceContainer, template<typename> typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
+template<typename _SourceContainer, template<typename> typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
 struct RRANSACTemplateParameters {
 
     
-    typedef tSourceContainer TSourceContainer;                                                       /**< The container of all of the sources. */
-    typedef typename tSourceContainer::State TState;                                                 /**< The state of the target. @see State. */
-    typedef typename TState::DataType TDataType;                                                     /**< The scalar object for the data. Ex. float, double, etc. */ 
-    typedef typename tSourceContainer::Transformation TTransformation;                               /**< The object type of the measurement and track transformation. @see TransformBase*/
-    typedef typename TTransformation::Data TTransformationData;                                      /**< The object type of the transformation data. @see TransformBase*/
-    typedef tModel<TSourceContainer> TModel;                                                         /**< The object type of the model. @see ModelBase. */                          
-    typedef ModelManager<TModel> TModelManager;                                                      /**< The object type of the model manager. @see ModelManager. */
-    typedef Meas<TDataType> TMeas;                                                                   /**< The object type of the measurement. @see Meas */
-    typedef Ransac<TModel,tSeed,tLMLEPolicy,tValidationRegionPolicy,tUpdateTrackLikelihoodPolicy,tMeasurementWeightPolicy> TRansac;               /**< The object type of Ransac or the track initializer. @see Ransac */
-    typedef DataAssociationHost<TModel,tValidationRegionPolicy,tUpdateTrackLikelihoodPolicy,tMeasurementWeightPolicy> TDataAssociation;           /**< The object type of the data association method. @see DataAssociationHost */
+    typedef _SourceContainer SourceContainer;                                                      /**< The container of all of the sources. */
+    typedef typename _SourceContainer::State State;                                                /**< The state of the target. @see State. */
+    typedef typename State::DataType DataType;                                                     /**< The scalar object for the data. Ex. float, double, etc. */ 
+    typedef typename _SourceContainer::Transformation Transformation;                              /**< The object type of the measurement and track transformation. @see TransformBase*/
+    typedef typename Transformation::TransformDataType TransformDataType;                          /**< The object type of the transformation data. @see TransformBase*/
+    typedef _Model<SourceContainer> Model;                                                         /**< The object type of the model. @see ModelBase. */                          
+    typedef ModelManager<Model> _ModelManager;                                                     /**< The object type of the model manager. @see ModelManager. */
+    typedef Meas<DataType,TransformDataType> Measurement;                                          /**< The object type of the measurement. @see Meas */
+    typedef Ransac<Model,_Seed,_LMLEPolicy,_ValidationRegionPolicy,_UpdateTrackLikelihoodPolicy,_MeasurementWeightPolicy> _Ransac;              /**< The object type of Ransac or the track initializer. @see Ransac */
+    typedef DataAssociationHost<Model,_ValidationRegionPolicy,_UpdateTrackLikelihoodPolicy,_MeasurementWeightPolicy> DataAssociation;           /**< The object type of the data association method. @see DataAssociationHost */
 
 
 };
@@ -128,23 +128,23 @@ struct RRANSACTemplateParameters {
  */ 
 
 
-template<typename tRRANSACTemplateParameters>
+template<typename _RRANSACTemplateParameters>
 class RRANSAC {
 
 public:
 
 
-    typedef typename tRRANSACTemplateParameters::TSourceContainer TSourceContainer;           /**< The container of all of the sources. */
-    typedef typename tRRANSACTemplateParameters::TState TState;                               /**< The state of the target. @see State. */
-    typedef typename tRRANSACTemplateParameters::TDataType TDataType;                         /**< The scalar object for the data. Ex. float, double, etc. */ 
-    typedef typename tRRANSACTemplateParameters::TTransformation TTransformation;             /**< The object type of the measurement and track transformation. @see TransformBase*/
-    typedef typename tRRANSACTemplateParameters::TTransformationData TTransformationData;     /**< The object type of the transformation data. @see TransformBase*/
-    typedef typename tRRANSACTemplateParameters::TModel TModel;                               /**< The object type of the model. @see ModelBase. */                          
-    typedef typename tRRANSACTemplateParameters::TModelManager TModelManager;                 /**< The object type of the model manager. @see ModelManager. */
-    typedef typename tRRANSACTemplateParameters::TMeas TMeas;                                 /**< The object type of the measurement. @see Meas */
-    typedef typename tRRANSACTemplateParameters::TRansac TRansac;                             /**< The object type of Ransac or the track initializer. @see Ransac */
-    typedef typename tRRANSACTemplateParameters::TDataAssociation TDataAssociation;           /**< The object type of the data association method. @see DataAssociationHost */
-
+    typedef typename _RRANSACTemplateParameters::SourceContainer SourceContainer;           /**< The container of all of the sources. */
+    typedef typename _RRANSACTemplateParameters::State State;                               /**< The state of the target. @see State. */
+    typedef typename _RRANSACTemplateParameters::DataType DataType;                         /**< The scalar object for the data. Ex. float, double, etc. */ 
+    typedef typename _RRANSACTemplateParameters::Transformation Transformation;             /**< The object type of the measurement and track transformation. @see TransformBase*/
+    typedef typename _RRANSACTemplateParameters::TransformDataType TransformDataType;       /**< The object type of the transformation data. @see TransformBase*/
+    typedef typename _RRANSACTemplateParameters::Model Model;                               /**< The object type of the model. @see ModelBase. */                          
+    typedef typename _RRANSACTemplateParameters::_ModelManager _ModelManager;               /**< The object type of the model manager. @see ModelManager. */
+    typedef typename _RRANSACTemplateParameters::Measurement Measurement;                   /**< The object type of the measurement. @see Meas */
+    typedef typename _RRANSACTemplateParameters::_Ransac _Ransac;                           /**< The object type of Ransac or the track initializer. @see Ransac */
+    typedef typename _RRANSACTemplateParameters::DataAssociation DataAssociation;           /**< The object type of the data association method. @see DataAssociationHost */
+    typedef System<Model>   Sys;                                                            /**< The system model type. */
 
 
 
@@ -166,7 +166,7 @@ public:
      * @param[in] state_in_surveillance_region_callback The callback function used to verify that a track's state in the in surveillance region of a source.
      * @return Returns true if the source was added.
      */
-    bool AddSource(const SourceParameters& source_params, std::function<bool(const TState&)> state_in_surveillance_region_callback);
+    bool AddSource(const SourceParameters& source_params, std::function<bool(const State&)> state_in_surveillance_region_callback);
 
     /**
      * Sets all of the system parameters that are not source parameters. If the process noise covariance changes, then the model manager is used to
@@ -182,7 +182,7 @@ public:
         system_parameters_set_ = sys_.params_.SetParameters(new_params);
 
         if (update_track_params)
-            TModelManager::SetModelParameters(sys_);
+            _ModelManager::SetModelParameters(sys_);
 
         return  system_parameters_set_; 
         }
@@ -205,7 +205,7 @@ public:
      *                         measurements cannot be used to get the current time; thus this parameter is needed. 
      * a unique source. 
      */
-    void AddMeasurements(const std::list<TMeas>& new_measurements, const double current_time);
+    void AddMeasurements(const std::list<Measurement>& new_measurements, const double current_time);
 
     /**
      * \detail Performes data management by first propagating the tracks to the current time stamp, transforming the tracks,
@@ -218,7 +218,7 @@ public:
      * @param[in] transformation_data The data required to transform the tracks and measurements.
      * a unique source. 
      */
-    void AddMeasurements(const std::list<TMeas>& new_measurements, const double current_time, const TTransformationData& transformation_data);
+    void AddMeasurements(const std::list<Measurement>& new_measurements, const double current_time, const TransformDataType& transformation_data);
 
 
     /**
@@ -233,22 +233,22 @@ public:
         if (!system_parameters_set_)
             throw std::runtime_error("System parameters are not set. ");
         
-        TModelManager::ManageModels(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
+        _ModelManager::ManageModels(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
         }
         
 
     /**
      * Returns a constant pointer to the system which contains all of the R-RANSAC data. 
      */ 
-    const System<TModel>* GetSystemInformation() {return &sys_;};
+    const Sys* GetSystemInformation() {return &sys_;};
 
 private:
 
-    System<TModel> sys_;                      /**< Contains all of the data for R-RANSAC. */
-    TRansac ransac_;                          /**< The track initializer. */
-    TDataAssociation data_association_host_;  /**< The data association host. Responsible for associating new measurements to tracks and the data tree. */
-    bool transform_data_ = false;             /**< A flag used to indicate if the measurements and tracks should be transformed. */
-    bool system_parameters_set_ = false;      /**< A flag used to indicate if the system parameters have been set. true indicates that they have been set. */
+    Sys sys_;                                /**< Contains all of the data for R-RANSAC. */
+    _Ransac ransac_;                          /**< The track initializer. */
+    DataAssociation data_association_host_;  /**< The data association host. Responsible for associating new measurements to tracks and the data tree. */
+    bool transform_data_ = false;            /**< A flag used to indicate if the measurements and tracks should be transformed. */
+    bool system_parameters_set_ = false;     /**< A flag used to indicate if the system parameters have been set. true indicates that they have been set. */
 
     /**
      * When the build type is Debug, checks will be done on the measurements to verify 
@@ -257,7 +257,7 @@ private:
      * \param[in] new_measurements The list of new measurements that will be verified.
      * \return Returns true if all of the measurements pass the test; otherwise, false. 
      */
-    bool VerifyMeasurements(const std::list<TMeas>& new_measurements);
+    bool VerifyMeasurements(const std::list<Measurement>& new_measurements);
 
 };
 
@@ -266,8 +266,8 @@ private:
 //                                                           Definitions
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tRRANSACTemplateParameters>
-bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& source_params) {
+template<typename _RRANSACTemplateParameters>
+bool RRANSAC<_RRANSACTemplateParameters>::AddSource(const SourceParameters& source_params) {
 
     return sys_.source_container_.AddSource(source_params);
 
@@ -275,8 +275,8 @@ bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& sour
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tRRANSACTemplateParameters>
-bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& source_params, std::function<bool(const TState&)> state_in_surveillance_region_callback) {
+template<typename _RRANSACTemplateParameters>
+bool RRANSAC<_RRANSACTemplateParameters>::AddSource(const SourceParameters& source_params, std::function<bool(const State&)> state_in_surveillance_region_callback) {
 
     return sys_.source_container_.AddSource(source_params,state_in_surveillance_region_callback);
 
@@ -284,8 +284,8 @@ bool RRANSAC<tRRANSACTemplateParameters>::AddSource(const SourceParameters& sour
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tRRANSACTemplateParameters>
-bool RRANSAC<tRRANSACTemplateParameters>::ChangeSourceParameters(const SourceParameters &new_params) {
+template<typename _RRANSACTemplateParameters>
+bool RRANSAC<_RRANSACTemplateParameters>::ChangeSourceParameters(const SourceParameters &new_params) {
     if (new_params.source_index_ < 0 || new_params.source_index_ >= sys_.source_container_.num_sources_) {
         throw std::runtime_error("RANSAC::ChangeSourceParameters The source index must be greater than 0 and less than " + std::to_string(sys_.source_container_.num_sources_));
         return false;
@@ -301,8 +301,8 @@ bool RRANSAC<tRRANSACTemplateParameters>::ChangeSourceParameters(const SourcePar
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tRRANSACTemplateParameters>
-bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<TMeas>& new_measurements) {
+template<typename _RRANSACTemplateParameters>
+bool RRANSAC<_RRANSACTemplateParameters>::VerifyMeasurements(const std::list<Measurement>& new_measurements) {
 
      double time_stamp = new_measurements.begin()->time_stamp;
      bool success = true;
@@ -332,8 +332,8 @@ bool RRANSAC<tRRANSACTemplateParameters>::VerifyMeasurements(const std::list<TMe
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tRRANSACTemplateParameters>
-void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<TMeas>& new_measurements, const double current_time) {
+template<typename _RRANSACTemplateParameters>
+void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measurement>& new_measurements, const double current_time) {
 
     if (!system_parameters_set_)
         throw std::runtime_error("System parameters are not set. ");
@@ -356,7 +356,7 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<TMeas>
         sys_.new_meas_ = new_measurements;
 
         if (sys_.dt_ > 0) {
-            TModelManager::PropagateModels(sys_,sys_.dt_);
+            _ModelManager::PropagateModels(sys_,sys_.dt_);
         }
 
 // Calculate the innovation covariances used to compute the validation region. This is only for visualization purposes. 
@@ -371,13 +371,13 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<TMeas>
 
         if (transform_data_) {
             sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
-            TModelManager::TransformModels(sys_);
+            _ModelManager::TransformModels(sys_);
             transform_data_ = false;
         }
 
         data_association_host_.AssociateNewMeasurements(sys_);
 
-        TModelManager::UpdateModels(sys_);
+        _ModelManager::UpdateModels(sys_);
 
         sys_.data_tree_.ConstructClusters(sys_);
 
@@ -389,7 +389,7 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<TMeas>
     } else {
         if (transform_data_) {
             sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
-            TModelManager::TransformModels(sys_);
+            _ModelManager::TransformModels(sys_);
             transform_data_ = false;
         }
         sys_.current_time_ = current_time;
@@ -399,8 +399,8 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<TMeas>
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tRRANSACTemplateParameters>
-void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<TMeas>& new_measurements, const double current_time, const TTransformationData& transformation_data) {
+template<typename _RRANSACTemplateParameters>
+void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measurement>& new_measurements, const double current_time, const TransformDataType& transformation_data) {
 
     sys_.transformaion_.SetData(transformation_data);
     transform_data_ = true;
@@ -410,8 +410,8 @@ void RRANSAC<tRRANSACTemplateParameters>::AddMeasurements(const std::list<TMeas>
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tRRANSACTemplateParameters>
-void RRANSAC<tRRANSACTemplateParameters>::RunTrackInitialization() {
+template<typename _RRANSACTemplateParameters>
+void RRANSAC<_RRANSACTemplateParameters>::RunTrackInitialization() {
 
     if (!system_parameters_set_)
         throw std::runtime_error("System parameters are not set. ");

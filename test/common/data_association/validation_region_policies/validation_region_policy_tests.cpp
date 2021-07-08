@@ -48,12 +48,13 @@ struct ModelHelper {
     typedef M Model;
     static constexpr MeasurementTypes MeasType1 = MT1;
     static constexpr MeasurementTypes MeasType2 = MT2;
+    typedef typename Model::Measurement Measurement;
 
-    static Eigen::MatrixXd GetPosError(const M& track, const Meas<typename M::DataType>& meas) {
+    static Eigen::MatrixXd GetPosError(const M& track, const Measurement& meas) {
         return meas.pose.block(0,0,N,1) - track.state_.g_.data_.block(0,track.state_.g_.data_.cols()-1,N,1);
     }
 
-    static Eigen::MatrixXd GetError(const M& track, const Meas<typename M::DataType>& meas, const typename M::SourceContainer& source_container) {
+    static Eigen::MatrixXd GetError(const M& track, const Measurement& meas, const typename M::SourceContainer& source_container) {
         bool transform_state = false;
         Eigen::MatrixXd EmptyMat;
         return source_container.OMinus(meas.source_index, meas, source_container.GetEstMeas(meas.source_index, track.state_, transform_state, EmptyMat));
@@ -78,13 +79,16 @@ class ValidationRegionTest : public ::testing::Test {
 
 protected:
 
-typedef Meas<double> Measurement;
 
-static constexpr unsigned int meas_dim = ModelHelper::Model::SourceContainer::Source0::meas_space_dim_;
+
+static constexpr unsigned int meas_dim = ModelHelper::Model::SourceContainer::Source0::meas_pose_dim_;
 static constexpr unsigned int state_dim = ModelHelper::Model::State::g_type_::dim_*2;
 static constexpr unsigned int cov_dim = ModelHelper::Model::cov_dim_;
 static constexpr unsigned int a_vel_dim = ModelHelper::Model::cov_dim_ - ModelHelper::Model::State::g_type_::dim_-1;
 static constexpr unsigned int t_vel_dim = state_dim - ModelHelper::Model::State::g_type_::dim_ - a_vel_dim;
+
+
+typedef typename ModelHelper::Model::Base::Measurement Measurement;
 
 void SetUp() override {
 

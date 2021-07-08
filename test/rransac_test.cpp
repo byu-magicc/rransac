@@ -40,12 +40,14 @@ typedef SourceContainer<SourceR2PosHomography,SourceR2PosHomography,SourceR2PosV
 typedef ModelRN<SC> Model;
 typedef RRANSACTemplateParameters<SC,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSACParams;
 typedef Eigen::Matrix<double,2,1> MatPose;
+typedef typename Model::Measurement Measurement;
+typedef typename Model::TransformDataType TransformDataType;
 
 TEST(RRANSACTest, AddSource_AddMeasurement) {
 
 RRANSAC<RANSACParams> rransac;
-const System<RANSACParams::TModel>* sys = rransac.GetSystemInformation();
-CallbackClass<RANSACParams::TState> call;
+const System<RANSACParams::Model>* sys = rransac.GetSystemInformation();
+CallbackClass<RANSACParams::State> call;
 
 //
 // Set System Parameters test
@@ -73,7 +75,7 @@ source_params4.type_ = MeasurementTypes::RN_POS_VEL;
 // Test invalid source index
 source_params1.source_index_ = -1;
 ASSERT_ANY_THROW(rransac.AddSource(source_params1));
-ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::TState>::func, call, std::placeholders::_1)));
+ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State>::func, call, std::placeholders::_1)));
 
 
 // Add valid source index
@@ -81,11 +83,11 @@ source_params1.source_index_ = 0;
 ASSERT_NO_THROW(rransac.AddSource(source_params1));
 
 // Test invalid source index
-ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::TState>::func, call, std::placeholders::_1)));
+ASSERT_ANY_THROW(rransac.AddSource(source_params1,std::bind(&CallbackClass<RANSACParams::State>::func, call, std::placeholders::_1)));
 
 // Test valid source index
 source_params2.source_index_ = 1;
-ASSERT_NO_THROW(rransac.AddSource(source_params2,std::bind(&CallbackClass<RANSACParams::TState>::func, call, std::placeholders::_1)));
+ASSERT_NO_THROW(rransac.AddSource(source_params2,std::bind(&CallbackClass<RANSACParams::State>::func, call, std::placeholders::_1)));
 
 // Test invalid source index
 source_params3.source_index_ = 0;
@@ -109,12 +111,12 @@ ASSERT_NO_THROW(rransac.AddSource(source_params4));
 int tmp = sys->source_container_.num_sources_;
 ASSERT_EQ(tmp,4);
 
-typename RANSACParams::TState state;
+typename RANSACParams::State state;
 state.g_.data_ << 10,1;
 
 // Test that the callback was set properly.
 bool transform_state = false;
-Eigen::MatrixXd EmptyMat;
+TransformDataType EmptyMat;
 ASSERT_FALSE(sys->source_container_.StateInsideSurveillanceRegion(1,state,transform_state, EmptyMat));
 
 // Test change parameters
@@ -134,9 +136,9 @@ ASSERT_EQ(sys->source_container_.GetParams(0).gate_probability_, source_params1.
 //
 // Add Measurement test
 //
-std::list<Meas<double>> new_measurements, empty_measurements;
+std::list<Measurement> new_measurements, empty_measurements;
 double time = 1;
-Meas<double> m1,m2,m3,m4,m5;
+Measurement m1,m2,m3,m4,m5;
 m1.type = source_params1.type_;
 m1.source_index = source_params1.source_index_;
 m1.time_stamp = time;
@@ -222,7 +224,7 @@ for (auto iter = new_measurements.begin(); iter != new_measurements.end(); ++ite
 
 ASSERT_NO_THROW(rransac.AddMeasurements(new_measurements,time));
 
-Eigen::Matrix3d transform_data; // Should transform all measurements to the zero vector
+TransformDataType transform_data; // Should transform all measurements to the zero vector
 transform_data << 0, 0, 0, 0, 0, 0, 0, 0, 1;
 rransac.AddMeasurements(empty_measurements,time,transform_data);
 ASSERT_EQ(sys->new_meas_.size(), 0);

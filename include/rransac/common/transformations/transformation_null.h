@@ -15,17 +15,17 @@ namespace rransac
  * None of it's member functions does anything so it should be optimized out. @see TransformBase
 */
 
-template<class tState>
-// class TransformNULL : public TransformBase<Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic>, tState, Eigen::Matrix<typename tState::DataType,tState::dim_,tState::dim_> , true, TransformNULL<tState>> {
-class TransformNULL : public TransformBase<Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic>, tState, Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic> , true, TransformNULL<tState>> {
+template<class _State>
+class TransformNULL : public TransformBase< TransformDerivedTraits<_State,Eigen::Matrix<typename _State::DataType,Eigen::Dynamic, Eigen::Dynamic>,Eigen::Matrix<typename _State::DataType,Eigen::Dynamic, Eigen::Dynamic>,true>, TransformNULL> {
 
 public:
 
-typedef typename tState::DataType DataType;  /**< The scalar object for the data. Ex. float, double, etc. */
-
-typedef Eigen::Matrix<DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;
-typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic> MatCov;
-typedef MatXd MatData;
+typedef TransformBase< TransformDerivedTraits<_State,Eigen::Matrix<typename _State::DataType,Eigen::Dynamic, Eigen::Dynamic>,Eigen::Matrix<typename _State::DataType,Eigen::Dynamic, Eigen::Dynamic>,true>, TransformNULL> Base;
+typedef typename Base::State State;                                      /**< The State type being used. */
+typedef typename Base::DataType DataType;                                /**< The scalar data type. */
+typedef typename Base::TransformDataType TransformDataType;              /**< The transform data type being used. It is either an element of SE2 for R2 or SE3 for R3. */
+typedef typename Base::MatCov MatCov;                                    /**< The covariance type of the track, and the transform jacobian type. */
+typedef typename Base::Measurement Measurement;                          /**< The measurement type. */
 
 void DerivedInit() {}
 
@@ -33,20 +33,26 @@ void DerivedInit() {}
  * Doesn't set the data. 
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void DerivedSetData(const MatXd data) {}
+void DerivedSetData(const TransformDataType data) {}
 
 /** 
  * Doesn't transform the measurements.
  * @param meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(const Meas<DataType>& meas) const {}
+void DerivedTransformMeasurement(const Measurement& meas) const {}
+
+/** 
+ * Doesn't transform the measurements.
+ * @param meas The measurement to be transformed.
+ */ 
+static void DerivedTransformMeasurement(const Measurement& meas, const TransformDataType& transform_data) {}
 
 /** 
  * Doesn't transform the track.
  * @param[in] state The track's state to be transformed.
  * @param[in] cov   The track's error covariance to be transformed.
  */ 
-void DerivedTransformTrack(const tState& state, const MatCov& cov) const {}
+void DerivedTransformTrack(const State& state, const MatCov& cov) const {}
 
 /** 
  * Transforms the state and error covariance using user provided transform data.
@@ -55,7 +61,7 @@ void DerivedTransformTrack(const tState& state, const MatCov& cov) const {}
  * @param[in] cov   The track's error covariance to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static void DerivedTransformTrack(const tState& state, const MatCov& cov, const MatXd& transform_data) {}
+static void DerivedTransformTrack(const State& state, const MatCov& cov, const TransformDataType& transform_data) {}
 
 /** 
  * Transforms the state using user provided transform data.
@@ -63,15 +69,16 @@ static void DerivedTransformTrack(const tState& state, const MatCov& cov, const 
  * @param[in] state The track's state to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static tState DerivedTransformState(const tState& state, const MatXd& transform_data) { return state; }
+static State DerivedTransformState(const State& state, const TransformDataType& transform_data) { return state; }
 
 /** 
  * Returns the Jacobian of the transformation
  * @param[in] state The state of the target after it has been transformed using transform_data
  * @param[in] transform_data The data used in the transformation
  */ 
-static MatXd DerivedGetTransformationJacobian(const tState& state, const MatXd& transform_data) {
-   return Eigen::Matrix<DataType,1,1>::Zero();
+static MatCov DerivedGetTransformationJacobian(const State& state, const TransformDataType& transform_data) {
+   
+     return MatCov::Identity();
 }
 
 
@@ -79,9 +86,18 @@ static MatXd DerivedGetTransformationJacobian(const tState& state, const MatXd& 
  * Verifies that the transform data provided by the user is in the requested from.
  * @param transform_data The tranformation data to be tested. 
  */
-static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+static bool DerivedIsAcceptableTransformData(const TransformDataType& transform_data) {
     return true;
 } 
+
+/**
+ * Generates random transform data. The function can use the parameter scalar in order to 
+ * generate a larger distribution of random transformations.
+ * @param scalar A scalar used to generate a larger distribution. 
+ */ 
+static TransformDataType DerivedGetRandomTransform(const DataType scalar = static_cast<DataType>(1.0)){
+    return TransformDataType::Zero();
+}
 
 
 };

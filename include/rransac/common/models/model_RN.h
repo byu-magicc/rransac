@@ -8,9 +8,9 @@
 #include "rransac/common/models/model_base.h"
 #include "rransac/common/sources/source_RN.h"
 #include "rransac/common/utilities.h"
+#include "rransac/common/models/model_RN_jacobian.h"
 
-
-
+namespace rransac {
 
 
 
@@ -19,27 +19,51 @@
  * This model is designed to be used for target's whose configuration manifold is RN and measurement space is RN. See ModelBase for more detail.
  */ 
 
-namespace rransac {
 
-template <typename tSourceContainer>
-class ModelRN : public ModelBase<tSourceContainer, tSourceContainer::State::Group::dim_*2, ModelRN> {
+
+template <typename _SourceContainer>
+class ModelRN : public ModelBase<_SourceContainer, _SourceContainer::State::dim_, ModelRN> {
 
 public:
 
-typedef tSourceContainer SourceContainer;                                   /**< The Source container. */
-typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
-typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
-typedef typename SourceContainer::Transformation Transformation;            /**< The transformation data type. */
+    typedef ModelBase<_SourceContainer, _SourceContainer::State::dim_, ModelRN> Base;
+    typedef typename Base::State State;                             /**< The state of the target. @see State. */
+    typedef typename Base::DataType DataType;                       /**< The scalar object for the data. Ex. float, double, etc. */
+    typedef typename Base::SourceContainer SourceContainer;         /**< The object type of the source. @see SourceBase. */
+    typedef typename Base::Transformation Transformation;           /**< The object type of the measurement and track transformation. */
+    typedef typename Base::TransformDataType TransformDataType;     /**< The data type of the transformation data. */
+    typedef typename Base::Measurement Measurement;                 /**< The measurement type. */
+    typedef typename Base::MatModelCov MatModelCov;                 /**< The object type of the error covariance, Jacobians, and others. */
+    typedef typename Base::VecCov VecCov;                           /**< The object type of state update. */
+    typedef typename Base::MatS MatS;                               /**< The object type of the innovation covariance. */
+    typedef typename Base::MatH MatH;                               /**< The object type of the Jacobian of the observation function w.r.t. to the state. */
+    typedef typename Base::MatV MatV;                               /**< The object type of the Jacobian of the observation function w.r.t. the measurement noise. */
+    static constexpr unsigned int cov_dim_ = Base::cov_dim_;        /**< The dimension of the error covariance. */
 
-static constexpr unsigned int cov_dim_ = State::Group::dim_*2;                  /**< The dimension of the error covariance. */
-static constexpr unsigned int g_dim_ = State::Group::dim_;                      /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */
-typedef Eigen::Matrix<DataType,2*g_dim_,2*g_dim_> Mat;                          /**< The object type of the error covariance, Jacobians, and others. */
+
+    static constexpr unsigned int num_tangent_spaces_ = State::NumTangentSpaces;    /**< The number of tangent spaces in the group. Ex 1 tangent space is velocity and 2 is velocity and acceleration. */
+    static constexpr unsigned int g_dim_ = State::Group::dim_;                      /**< The dimension of the group element of the state. */
+    static constexpr unsigned int u_dim_ = g_dim_*num_tangent_spaces_;              /**< The dimension of the total tangent space. */
+    typedef ConstructF<DataType,g_dim_,num_tangent_spaces_> FConstructor;           /**< A functor used to construct the Jacobian F. For certain states, this construction is optimized. @see ConstructF. */
 
 
 
+    static_assert(std::is_same<typename SourceContainer::ModelCompatibility, typename rransac::utilities::CompatibleWithModelRN>::value, "ModelRN: The source is not compatible with the model");
+    static_assert(lie_groups::utilities::StateIsRN_rN<State>::value, "ModelRN: The state is not compatible with the model");
 
-static_assert(std::is_same<typename SourceContainer::ModelCompatibility, typename rransac::utilities::CompatibleWithModelRN>::value, "ModelRN: The source is not compatible with the model");
-static_assert(lie_groups::utilities::StateIsRN_rN<State>::value, "ModelRN: The state is not compatible with the model");
+
+
+    /**
+ * Propagates the state estimate forward or backwards in time according to the time interval dt
+ * @param[in] dt  The amount of time the state needs to be propagated. The value of dt can be positive or negative. 
+ *                a positive value would indicate forward propagation and a negative value would indicate backward propagation.
+ * @return Returns the propagated state.
+ */ 
+static void DerivedPropagateState(State& state, const DataType dt) { 
+    MatModelCov F =  FConstructor::GetF(dt);     
+    state.g_.data_ += F.block(0,g_dim_,g_dim_,u_dim_)*state.u_.data_;
+    state.u_.data_ = F.block(g_dim_,g_dim_,u_dim_,u_dim_)*state.u_.data_;
+}
 
 /**
  * Computes the Jacobian of the state transition function with respect to the state evaluated at the current state estimate.
@@ -47,7 +71,7 @@ static_assert(lie_groups::utilities::StateIsRN_rN<State>::value, "ModelRN: The s
  * @param[in] dt A time interval
  * @return The Jacobian \f$ F_k\f$. 
  */ 
-static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt);
+static MatModelCov DerivedGetLinTransFuncMatState(const State& state, const DataType dt);
 
 /**
  * Computes the Jacobian of the state transition function with respect to the noise evaluated at the current state estimate.
@@ -55,18 +79,19 @@ static Mat DerivedGetLinTransFuncMatState(const State& state, const DataType dt)
  * @param[in] dt  A time interval
  * @return Returns the Jacobian \f$ G_k \f$
  */
-static Mat DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt);
+static MatModelCov DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt);
+
 
 /**
 * Update the state of the model using the provided state_update
 * @param[in] state_update An element of the lie algebra of the state used to update the state. 
 */
-void DerivedOPlusEq(const Eigen::Matrix<DataType,2*g_dim_,1>& state_update);
+static void DerivedOPlus(State& state, const VecCov& state_update);
 
 /**
  * Returns a Random State
  */ 
-static State DerivedGetRandomState(){ return State::Random();}
+static State DerivedGetRandomState(const DataType scalar = static_cast<DataType>(1.0)){ return State::Random(scalar);}
 
 /**
  * Computes the OMinus operation for the state. In other words, it computes the geodesic distance between the two track's state estimate.
@@ -75,9 +100,13 @@ static State DerivedGetRandomState(){ return State::Random();}
  * @param[in] track2 A track of this type.
  * @return Returns the geodesic distance between the track's state estimate.
  */ 
- static Eigen::Matrix<DataType,cov_dim_,1> DerivedOMinus(const ModelRN & model1, const ModelRN& model2 ) {
+ static VecCov DerivedOMinus(const ModelRN & model1, const ModelRN& model2 ) {
      return model1.state_.OMinus(model1.state_, model2.state_);
  }
+
+ private:
+
+ 
 
 };
 
@@ -85,34 +114,38 @@ static State DerivedGetRandomState(){ return State::Random();}
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename tSourceContainer>
-typename ModelRN<tSourceContainer>::Mat ModelRN<tSourceContainer>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {   
+typename ModelRN<tSourceContainer>::MatModelCov ModelRN<tSourceContainer>::DerivedGetLinTransFuncMatState(const State& state, const DataType dt) {   
     
-    Mat F = Mat::Identity();
-    F.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<DataType,g_dim_,g_dim_>::Identity()*dt;
-    return F;
+
+    return FConstructor::GetF(dt);
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
 
 template <typename tSourceContainer>
-typename ModelRN<tSourceContainer>::Mat ModelRN<tSourceContainer>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt) {
+typename ModelRN<tSourceContainer>::MatModelCov ModelRN<tSourceContainer>::DerivedGetLinTransFuncMatNoise(const State& state, const DataType dt) {
     
-    Mat G;
-    G.block(g_dim_,0,g_dim_,g_dim_).setZero();
-    G.block(0,0,g_dim_, g_dim_) = Eigen::Matrix<DataType,g_dim_,g_dim_>::Identity();
-    G.block(0,g_dim_,g_dim_,g_dim_) = Eigen::Matrix<DataType,g_dim_,g_dim_>::Identity()/2.0;
-    G.block(g_dim_,g_dim_,g_dim_,g_dim_)= Eigen::Matrix<DataType,g_dim_,g_dim_>::Identity();
-    return G;
+    return MatModelCov::Identity();
 
 }
 
-//--------------------------------------------------------------------------------------------------------------------------
-
+//---------------------------------------------------------------------------------------------------------------------------
 template <typename tSourceContainer>
-void ModelRN<tSourceContainer>::DerivedOPlusEq(const Eigen::Matrix<DataType,2*g_dim_,1>& state_update) {
-    this->state_.g_.OPlusEq(state_update.block(0,0,g_dim_,1));
-    this->state_.u_.data_ += state_update.block(g_dim_,0,g_dim_,1);
+void ModelRN<tSourceContainer>::DerivedOPlus(State& state, const VecCov& state_update) {
+    state.g_.data_ += state_update.block(0,0,g_dim_,1);
+    state.u_.data_ += state_update.block(g_dim_,0,u_dim_,1);
 }
+
+
+
+
+
+
+
+
+
+
+
 
 } // rransac
 

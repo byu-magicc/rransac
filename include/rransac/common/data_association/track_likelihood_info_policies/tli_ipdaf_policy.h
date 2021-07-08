@@ -26,20 +26,25 @@ namespace rransac
  * This policy should also assume that if there is a measurement from a source, then the track is inside the source's surveillance region.
  * 
  */ 
-template<typename tModel>
+template<typename _Model>
 class TLI_IPDAFPolicy {
 
 
 public:
 
 static constexpr double decay_rate_ = 0.01;
+typedef _Model Model;
+typedef System<Model> Sys;
+typedef typename Model::Base::Measurement Measurement;
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef DataAssociationInfo<TransformDataType> DataAssociationT;
 
 /**
 * Update the track likelihood for all of the tracks. 
 * @param[in] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
 * @param[in] info The data association info. It contains which source produced measurements at this sensor scan.
 */ 
-static void PolicyUpdateTrackLikelihood(System<tModel>& sys, DataAssociationInfo& info );
+static void PolicyUpdateTrackLikelihood(Sys& sys, DataAssociationT& info );
 
 /**
  * Updates the track likelihood of a track. 
@@ -49,7 +54,7 @@ static void PolicyUpdateTrackLikelihood(System<tModel>& sys, DataAssociationInfo
  * @param[in] info The data association info. It contains which source produced measurements at this sensor scan.
  * @param[in] dt The time interval from the previous update step to the current update step
  */ 
-static void PolicyUpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info, const double dt );
+static void PolicyUpdateTrackLikelihoodSingle(const Sys& sys, Model& track, DataAssociationT& info, const double dt );
 
 
 private: 
@@ -60,7 +65,7 @@ private:
  * @param[in] meas The measurement
  * @param[in] track The track   
  */     
-static double CalculateMeasurementLikelihood(const System<tModel>& sys, tModel& track, const Meas<typename tModel::DataType>& meas);
+static double CalculateMeasurementLikelihood(const Sys& sys, Model& track, const Measurement& meas);
 
 
 
@@ -71,8 +76,8 @@ static double CalculateMeasurementLikelihood(const System<tModel>& sys, tModel& 
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename tModel>
-void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihood(System<tModel>& sys, DataAssociationInfo& info )  {
+template<typename _Model>
+void TLI_IPDAFPolicy<_Model>::PolicyUpdateTrackLikelihood(Sys& sys, DataAssociationT& info )  {
 
     for (auto& track : sys.models_) {
 
@@ -85,8 +90,8 @@ void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihood(System<tModel>& sys, D
 
 //---------------------------------------------------------------------------------------------------------------------------
 
-template<typename tModel>
-void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info, const double dt) {
+template<typename _Model>
+void TLI_IPDAFPolicy<_Model>::PolicyUpdateTrackLikelihoodSingle(const Sys& sys, Model& track, DataAssociationT& info, const double dt) {
 
     double alpha = decay_rate_ * dt;
     if (alpha > 0.5) {
@@ -148,11 +153,11 @@ void TLI_IPDAFPolicy<tModel>::PolicyUpdateTrackLikelihoodSingle(const System<tMo
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tModel>
-double TLI_IPDAFPolicy<tModel>::CalculateMeasurementLikelihood(const System<tModel>& sys, tModel& track, const Meas<typename tModel::DataType>& meas) {
+template<typename _Model>
+double TLI_IPDAFPolicy<_Model>::CalculateMeasurementLikelihood(const Sys& sys, Model& track, const Measurement& meas) {
 
     Eigen::MatrixXd err = sys.source_container_.OMinus(meas.source_index, meas, sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m));;
-    Eigen::MatrixXd S = track.GetInnovationCovariance(sys.source_container_,meas.source_index, meas.transform_state, meas.transform_data_t_m);
+    typename Model::MatS S = track.GetInnovationCovariance(sys.source_container_,meas.source_index, meas.transform_state, meas.transform_data_t_m);
     double det_inn_cov_sqrt = sqrt(S.determinant());
 
     return exp( - (err.transpose()*S.inverse()*err)(0,0)/2.0)   /(pow(2.0*M_PI,S.cols()/2.0)*det_inn_cov_sqrt) ;

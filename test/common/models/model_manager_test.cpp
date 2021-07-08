@@ -80,7 +80,7 @@ typedef lie_groups::R3_r3 State;
 typedef SourceRN<State,MeasurementTypes::RN_POS,TransformNULL> Source;
 typedef SourceContainer<Source> SourceContainer;
 typedef ModelRN<SourceContainer> Model;
-typedef Meas<double> Measurement;
+typedef typename Model::Base::Measurement Measurement;
 
 System<Model> sys;
 ModelManager<Model> model_manager;
@@ -260,7 +260,7 @@ typedef lie_groups::R3_r3 State;
 typedef SourceRN<State,MeasurementTypes::RN_POS,TransformNULL> Source;
 typedef SourceContainer<Source> SourceContainer;
 typedef ModelRN<SourceContainer> Model;
-typedef Meas<double> Measurement;
+typedef typename Model::Base::Measurement Measurement;
 
 System<Model> sys;
 ModelManager<Model> model_manager;  
@@ -323,7 +323,7 @@ typedef lie_groups::R2_r2 State;
 typedef SourceRN<State,MeasurementTypes::RN_POS,TransformHomography> Source;
 typedef SourceContainer<Source> SourceContainer;
 typedef ModelRN<SourceContainer> Model;
-typedef Meas<double> Measurement;
+typedef typename Model::Base::Measurement Measurement;
 
 // TransformHomography<State> trans;
 

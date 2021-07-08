@@ -26,17 +26,15 @@ typedef SE2_se2 State;
 typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS,TransformNULL> SourceSE2Pos;
 typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> SourceSE2PosVel;
 
-
 typedef SourceContainer<SourceSE2Pos,SourceSE2PosVel> SourceContainerSE2;
 
-
-
-
 typedef ModelSENPosVel<SourceContainerSE2> Model;
+typedef typename SourceSE2Pos::Measurement Measurement;
 
 
 SE2PosSeedPolicy<Model> seed;
 System<Model> sys;
+typedef typename System<Model>::ClusterT ClusterT;
 
 
 double noise = 1e-4;
@@ -55,7 +53,7 @@ sys.params_ = params;
 sys.source_container_.AddSource(source_params1);
 sys.source_container_.AddSource(source_params2);
 
-Meas<double> m1,m2;
+Measurement m1,m2;
 m1.source_index = 0;
 m1.type = MeasurementTypes::SEN_POS;
 m2.source_index = 1;
@@ -75,12 +73,12 @@ track.state_.u_.data_(1) = 0;
 double start_time = 0;
 double end_time = 1;
 double dt = 0.1;
-Meas<double> tmp1, tmp2;
-std::list<std::list<Meas<double>>> measurements1, measurements2;
-std::list<Meas<double>> meas_time1,meas_time2;
-std::vector<Cluster<double>::IteratorPair> meas_subset1;
-std::vector<Cluster<double>::IteratorPair> meas_subset2;
-Cluster<double>::IteratorPair iter_pair;
+Measurement tmp1, tmp2;
+std::list<std::list<Measurement>> measurements1, measurements2;
+std::list<Measurement> meas_time1,meas_time2;
+std::vector<typename ClusterT::IteratorPair> meas_subset1;
+std::vector<typename ClusterT::IteratorPair> meas_subset2;
+typename ClusterT::IteratorPair iter_pair;
 bool transform_state = false;
 Eigen::MatrixXd EmptyMat;
 

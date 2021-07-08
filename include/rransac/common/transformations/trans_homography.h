@@ -7,6 +7,7 @@
 #include "rransac/common/measurement/measurement_base.h"
 #include "rransac/common/transformations/transformation_base.h"
 #include "lie_groups/state.h"
+#include "lie_groups/lie_groups/SE2.h"
 
 namespace rransac
 {
@@ -22,18 +23,24 @@ constexpr int TransformHomographyCovDim(int state_dim) {
  * the target's configuration manifold is R2 and the measurement space is R2. 
 */
 
-template<class tState>
-class TransformHomography : public TransformBase<Eigen::Matrix<typename tState::DataType,3,3>, tState, Eigen::Matrix<typename tState::DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)>, false, TransformHomography<tState>> {
+template<class _State>
+class TransformHomography : public TransformBase<TransformDerivedTraits<_State,Eigen::Matrix<typename _State::DataType,3,3>,Eigen::Matrix<typename _State::DataType,TransformHomographyCovDim(_State::Group::dim_),TransformHomographyCovDim(_State::Group::dim_)>,false> ,TransformHomography> {
 
 public:
-typedef typename tState::DataType DataType; /**< The scalar object for the data. Ex. float, double, etc. */
+
+typedef TransformBase<TransformDerivedTraits<_State,Eigen::Matrix<typename _State::DataType,3,3>,Eigen::Matrix<typename _State::DataType,TransformHomographyCovDim(_State::Group::dim_),TransformHomographyCovDim(_State::Group::dim_)>,false> ,TransformHomography> Base;
+typedef typename Base::State State;                                      /**< The State type being used. */
+typedef typename Base::DataType DataType;                                /**< The scalar data type. */
+typedef typename Base::TransformDataType TransformDataType;              /**< The transform data type being used. It is either an element of SE2 for R2 or SE3 for R3. */
+typedef typename Base::MatCov MatCov;                                    /**< The covariance type of the track, and the transform jacobian type. */
+typedef typename Base::Measurement Measurement;                          /**< The measurement type. */
+
+
+
 typedef Eigen::Matrix<DataType,2,1> Vec2d;  /**< The object type of the measurement. */
 typedef Eigen::Matrix<DataType,2,2> Mat2d;  
-typedef Eigen::Matrix<DataType,3,3> Mat3d;  /**< The data type of the homography. */
 typedef Eigen::Matrix<DataType,4,4> Mat4d;
-typedef Eigen::Matrix<DataType,TransformHomographyCovDim(tState::g_type_::dim_),TransformHomographyCovDim(tState::g_type_::dim_)> MatCov; /**< The object type of the track's error covariance. */
-typedef Mat3d MatData;
-typedef Eigen::Matrix<DataType, Eigen::Dynamic,Eigen::Dynamic> MatXd; /**< Dynamic Eigen Matrix */
+
 
 // Components of the Homograpy H = [H1, h2; h3_T^T, h4] where T stands for transpose.
 Eigen::Matrix<DataType,2,2> H1_;               /**< The homography is represented as a 3x3 matrix and can be segmented as H = [H1, h2; h3_T^T, h4]. */  
@@ -53,7 +60,7 @@ void DerivedInit() {};
  * Sets the data and the block components of the homography.
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
-void DerivedSetData(const Mat3d data) {
+void DerivedSetData(const TransformDataType data) {
     this->data_ = data;
     H1_ = data.block(0,0,2,2);
     h2_ = data.block(0,2,2,1);
@@ -65,7 +72,7 @@ void DerivedSetData(const Mat3d data) {
  * Transforms the measurement from the previous tracking frame to the current one.
  * @param[in] meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(Meas<DataType>& meas) const {
+void DerivedTransformMeasurement(Measurement& meas) const {
 
     if (meas.twist.rows() != 0) {
         Mat2d&& tmp = ConstructTranslationalVelTransform(meas.pose);
@@ -75,13 +82,17 @@ void DerivedTransformMeasurement(Meas<DataType>& meas) const {
     meas.pose = TransformPosition(meas.pose);
 }
 
+static Measurement DerivedTransformMeasurement(const Measurement& meas, const TransformDataType& transform_data) {
+    throw std::runtime_error("TransformHomography::DerivedTransformMeasurement The method is not implemented.");
+}
+
 /** 
  * Transforms the track provided that the state is SE2_se2 or R2_r2.
  * @param[in] state The track's state to be transformed.
  * @param[in] cov   The track's error covariance to be transformed.
  */ 
-void DerivedTransformTrack(tState& state, MatCov& cov) const {
-    throw std::runtime_error("TransformHomography::DerivedTransformTrack The state is not supported.");
+void DerivedTransformTrack(State& state, MatCov& cov) const {
+    throw std::runtime_error("TransformHomography::DerivedTransformTrack The method is not implemented.");
 }
 
 /** 
@@ -91,7 +102,7 @@ void DerivedTransformTrack(tState& state, MatCov& cov) const {
  * @param[in] cov   The track's error covariance to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static void DerivedTransformTrack(tState& state, MatCov& cov, const MatData& transform_data) {
+static void DerivedTransformTrack(State& state, MatCov& cov, const TransformDataType& transform_data) {
    throw std::runtime_error("TransformHomography::DerivedTransformTrack This method is not implemented.");
 }
 
@@ -101,7 +112,7 @@ static void DerivedTransformTrack(tState& state, MatCov& cov, const MatData& tra
  * @param[in] state The track's state to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static tState DerivedTransformState(const tState& state, const MatData& transform_data) {
+static State DerivedTransformState(const State& state, const TransformDataType& transform_data) {
     throw std::runtime_error("TransformHomography::DerivedTransformState This method is not implemented.");
 }
 
@@ -110,10 +121,24 @@ static tState DerivedTransformState(const tState& state, const MatData& transfor
  * @param[in] state The state of the target after it has been transformed using transform_data
  * @param[in] transform_data The data used in the transformation
  */ 
-static MatXd DerivedGetTransformationJacobian(const tState& state, const MatData& transform_data) {
+static MatCov DerivedGetTransformationJacobian(const State& state, const TransformDataType& transform_data) {
    throw std::runtime_error("TransformHomography::DerivedTransformState This method is not implemented.");
 }
 
+/**
+ * Generates random transform data. The function can use the parameter scalar in order to 
+ * generate a larger distribution of random transformations.
+ * @param scalar A scalar used to generate a larger distribution. 
+ */ 
+static TransformDataType DerivedGetRandomTransform(const DataType scalar = static_cast<DataType>(1.0)){
+    lie_groups::SE3<DataType> relative_pose(lie_groups::SE3<DataType>::Random(scalar));
+    TransformDataType random_transform;
+    Eigen::Matrix<DataType,3,1> normal_vec;
+    normal_vec << 0,0,1;
+    random_transform = relative_pose.R_ + relative_pose.t_*normal_vec.transpose()/ (normal_vec.transpose()*relative_pose.t_);
+
+    return random_transform.normalized();
+}
 
 // private: 
 
@@ -171,7 +196,7 @@ Mat2d TransformRotation(const Vec2d& vel_transformed) const {
  * Verifies that the transform data provided by the user is in the requested from.
  * @param transform_data The tranformation data to be tested. 
  */
-static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+static bool DerivedIsAcceptableTransformData(const TransformDataType& transform_data) {
 
     bool correct;
 
@@ -185,6 +210,7 @@ static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_da
 
     return correct;
 } 
+
 
 
 };
@@ -229,7 +255,7 @@ inline void TransformHomography<lie_groups::R2_r2>::DerivedTransformTrack(lie_gr
  * @param data The data required to transform the measurements, states, and error covariance
  */ 
 template<>
-inline void TransformHomography<lie_groups::SE2_se2>::DerivedSetData(const Mat3d data) {
+inline void TransformHomography<lie_groups::SE2_se2>::DerivedSetData(const TransformDataType data) {
     this->data_ = data;
     H1_ = data.block(0,0,2,2);
     h2_ = data.block(0,2,2,1);

@@ -19,7 +19,10 @@ typedef TransformHomography<State> Transform;
 typedef SourceContainer<Source> SC;
 typedef ModelRN<SC> Model;
 typedef Eigen::Matrix<double,2,1> MatData;
-typedef Meas<double> Measurement;
+typedef double DataType;
+typedef typename Transform::TransformDataType TransformDataType;
+typedef Meas<DataType,TransformDataType> Measurement;
+typedef DataTreeClusters<DataType,TransformDataType> DataTreeClusters_;
 
 void SetUp() override {
 
@@ -69,7 +72,7 @@ Measurement m_;
 // This tests the AddMeasurement, AddMeasurrement, MergeClusters and TransformMeasurements functions
 TEST_F(DataTreeClustersTestObject, AddMeasurementsTest) {
 
-typedef Meas<double> Measurement;
+
 
 double size = 0;
 ASSERT_EQ(sys_.data_tree_.Size(), size);  // Make sure size is initialized to zero
@@ -84,15 +87,15 @@ ASSERT_EQ(sys_.data_tree_.Size(), size);
 ASSERT_EQ(sys_.data_tree_.data_.front().data_.front().front().pose,m_.pose);
 
 // Create three clusters of 10 measurements that are disjoint by a spacial distance of three;
-Meas<double> m1 = m_;
+Measurement m1 = m_;
 m1.pose << 0,0;
 
-Meas<double> m2 = m_;
+Measurement m2 = m_;
 m2.pose << 3,0;
 sys_.data_tree_.AddMeasurement(sys_, m2);
 ++size;
 
-Meas<double> m3 = m_;
+Measurement m3 = m_;
 m3.pose << sqrt(9- pow(1.5,2)), sqrt(9- pow(1.5,2));
 sys_.data_tree_.AddMeasurement(sys_, m3);
 ++size;
@@ -210,8 +213,8 @@ for (unsigned int ii; ii < num_measurements; ++ii) {
 }
 
 // Get random measurements to remove until all of them are removed
-DataTreeClusters<double>::MeasurementLocationInfo measurement_location;
-std::vector<DataTreeClusters<double>::MeasurementLocationInfo> measurements_location;
+typename DataTreeClusters_::MeasurementLocationInfo measurement_location;
+std::vector<typename DataTreeClusters_::MeasurementLocationInfo> measurements_location;
 
 while (sys_.data_tree_.Size() != 0) {
 

@@ -22,12 +22,15 @@ namespace rransac
  * merging similar tracks, pruning tracks, and ranking the tracks. 
  * 
  */ 
-template <typename tModel>
+template <typename _Model>
 class ModelManager {
+
+
 
 public:
 
-typedef tModel Model; /**< The object type of the track. */
+typedef _Model Model;
+typedef System<Model> Sys;
 
 /**
 * Add a new model. If the number of models is greater than the max number of models, then
@@ -35,7 +38,7 @@ typedef tModel Model; /**< The object type of the track. */
 * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
 * @param[in] model The model to be added.
 */
-static void AddModel(System<tModel>& sys, const tModel& model);
+static void AddModel(Sys& sys, const Model& model);
 
 /**
 * Propagates every track by calling ModelBase::PropagateModel method on each 
@@ -43,20 +46,20 @@ static void AddModel(System<tModel>& sys, const tModel& model);
 * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
 * @param[in] dt The amount of time the track needs to be propagated. 
 */
-static void PropagateModels(System<tModel>& sys, const double dt);
+static void PropagateModels(Sys& sys, const double dt);
 
 /**
 * Updates every track by calling ModelBase::UpdateModel method on each track.
 * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
 */
-static void UpdateModels(System<tModel>& sys);
+static void UpdateModels(Sys& sys);
 
 
 /**
 * Updates the parameters of every track. 
 * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks and the system parameters 
 */
-static void SetModelParameters(System<tModel>& sys){ 
+static void SetModelParameters(Sys& sys){ 
     for (auto iter = sys.models_.begin(); iter!=sys.models_.end(); ++iter) {
         iter->SetParameters(sys.params_);
     }
@@ -67,7 +70,7 @@ static void SetModelParameters(System<tModel>& sys){
  * The consensus sets are only transformed if the flag Parameters::transform_consensus_set_ is set to true.
  * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
  */ 
-static void TransformModels(System<tModel>& sys){
+static void TransformModels(Sys& sys){
     for (auto iter = sys.models_.begin(); iter!=sys.models_.end(); ++iter) {
         iter->TransformModel(sys.transformaion_);
         if (sys.params_.transform_consensus_set_)
@@ -82,7 +85,7 @@ static void TransformModels(System<tModel>& sys){
  * @param[in] expiration_time The expiration time of the measurements in the consensus sets. All measurements with a time stamp before the expiration 
  * time are removed.
  */
-static void ManageModels(System<tModel>& sys, const double expiration_time) {
+static void ManageModels(Sys& sys, const double expiration_time) {
     PruneConsensusSets(sys, expiration_time);
     MergeModels(sys);
     PruneModels(sys);
@@ -100,7 +103,7 @@ private:
 * @param[in] expiration_time The expiration time of the measurements in the consensus sets. All measurements with a time stamp before the expiration 
 * time are removed.
 */
-static void PruneConsensusSets(System<tModel>& sys, const double expiration_time);
+static void PruneConsensusSets(Sys& sys, const double expiration_time);
 
 
 /**
@@ -108,7 +111,7 @@ static void PruneConsensusSets(System<tModel>& sys, const double expiration_time
 * Tracking and Data Fusion by Bar-Shalom 2011.
 * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
 */
-static void MergeModels(System<tModel>& sys);
+static void MergeModels(Sys& sys);
 
 /**
  * Ranks the models according to their model likelihood. If the model likelihood is above the threshold Parameters::track_good_model_threshold_, then
@@ -116,14 +119,14 @@ static void MergeModels(System<tModel>& sys);
  * the lowest model likelihood are removed until there are only Parameters::track_max_num_tracks_ number of tracks. 
  * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks. 
  */
-static void RankModels(System<tModel>& sys); 
+static void RankModels(Sys& sys); 
 
 /**
 * If there are more tracks than Parameters::track_max_num_tracks_, the tracks with
 * the lowest model likelihood are removed until there are only Parameters::track_max_num_tracks_ number of tracks.
 * @param[in,out] sys The object that contains all of the data of RRANSAC. Thus it contains all of the tracks.  
 */
-static void PruneModels(System<tModel>& sys);
+static void PruneModels(Sys& sys);
 
 /**
 * Tests to see if two tracks are similar by weighing the geodesic distance between the track's states by their error covariances.
@@ -132,7 +135,7 @@ static void PruneModels(System<tModel>& sys);
 * @param[in] model2 One of the two tracks that will be compared.
 * @return Returns true if the tracks are similar
 */
-static bool SimilarModels(const System<tModel>& sys, const tModel& model1, const tModel& model2);
+static bool SimilarModels(const Sys& sys, const Model& model1, const Model& model2);
 
 /**
  * Fuse two tracks together using the sampled covariance intersection method. The method is described in "A no-loss covariance intersection algorithm
@@ -143,7 +146,7 @@ static bool SimilarModels(const System<tModel>& sys, const tModel& model1, const
  * @param[in,out] model1 One of the two tracks that will be fused together. model1 will become the merged track.
  * @param[in] model2 One of the two tracks that will be fused together.
  */ 
-static void FuseModels(tModel& model1, const tModel& model2);
+static void FuseModels(Model& model1, const Model& model2);
 
 
 
@@ -153,8 +156,8 @@ static void FuseModels(tModel& model1, const tModel& model2);
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tModel>
-void ModelManager<tModel>::AddModel(System<tModel>& sys, const tModel& model) {
+template <typename _Model>
+void ModelManager<_Model>::AddModel(Sys& sys, const Model& model) {
 
     sys.models_.push_back(model);
     sys.accumulative_number_of_tracks_++;
@@ -163,8 +166,8 @@ void ModelManager<tModel>::AddModel(System<tModel>& sys, const tModel& model) {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
+template <typename _Model>
+void ModelManager<_Model>::PruneModels(Sys& sys) {
 
     //
     // IDEA:: WE MIGHT WANT TO PRUNE MODELS WHOSE LIKELIHOOD FALL BELOW A THRESHOLD
@@ -210,8 +213,8 @@ void ModelManager<tModel>::PruneModels(System<tModel>& sys) {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-void ModelManager<tModel>::PruneConsensusSets(System<tModel>& sys, const double expiration_time) {
+template <typename _Model>
+void ModelManager<_Model>::PruneConsensusSets(Sys& sys, const double expiration_time) {
 
     for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
         it->PruneConsensusSet(expiration_time);
@@ -220,8 +223,8 @@ void ModelManager<tModel>::PruneConsensusSets(System<tModel>& sys, const double 
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-void ModelManager<tModel>::PropagateModels(System<tModel>& sys, const double dt) {
+template <typename _Model>
+void ModelManager<_Model>::PropagateModels(Sys& sys, const double dt) {
     for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
         it->PropagateModel(dt);
     }
@@ -229,8 +232,8 @@ void ModelManager<tModel>::PropagateModels(System<tModel>& sys, const double dt)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-void ModelManager<tModel>::UpdateModels(System<tModel>& sys) {
+template <typename _Model>
+void ModelManager<_Model>::UpdateModels(Sys& sys) {
     for(auto it = sys.models_.begin(); it != sys.models_.end(); ++it) {
         it->UpdateModel(sys.source_container_, sys.params_);
     }
@@ -238,8 +241,8 @@ void ModelManager<tModel>::UpdateModels(System<tModel>& sys) {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-void ModelManager<tModel>::MergeModels(System<tModel>& sys) {
+template <typename _Model>
+void ModelManager<_Model>::MergeModels(Sys& sys) {
 
 for (auto iter1 = sys.models_.begin(); iter1 != sys.models_.end(); ++iter1) {
     
@@ -259,8 +262,8 @@ for (auto iter1 = sys.models_.begin(); iter1 != sys.models_.end(); ++iter1) {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-void ModelManager<tModel>::RankModels(System<tModel>& sys) {
+template <typename _Model>
+void ModelManager<_Model>::RankModels(Sys& sys) {
 
     sys.good_models_.clear();
 
@@ -286,14 +289,14 @@ void ModelManager<tModel>::RankModels(System<tModel>& sys) {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-bool ModelManager<tModel>::SimilarModels(const System<tModel>& sys, const tModel& model1, const tModel& model2) {
+template <typename _Model>
+bool ModelManager<_Model>::SimilarModels(const Sys& sys, const Model& model1, const Model& model2) {
 
     bool similar = false;
 
-    Eigen::Matrix<double,tModel::cov_dim_,1> err = tModel::OMinus(model1, model2);
+    Eigen::Matrix<double,Model::cov_dim_,1> err = Model::OMinus(model1, model2);
 
-    typename tModel::Mat T = model1.err_cov_ + model2.err_cov_;
+    typename Model::MatModelCov T = model1.err_cov_ + model2.err_cov_;
     double d = err.transpose()*T.inverse()*err;
 
     if(sys.params_.track_similar_tracks_threshold_ > d) {
@@ -305,25 +308,25 @@ bool ModelManager<tModel>::SimilarModels(const System<tModel>& sys, const tModel
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tModel>
-void ModelManager<tModel>::FuseModels(tModel& model1, const tModel& model2) {
+template <typename _Model>
+void ModelManager<_Model>::FuseModels(Model& model1, const Model& model2) {
 
 
 
 //////////////////////
 // Error covariance
 //////////////////////
-typename tModel::Mat P1_inv = model1.err_cov_.inverse();
-typename tModel::Mat P2_inv = model2.err_cov_.inverse();
-typename tModel::Mat P_inv = P1_inv + P2_inv;
-typename tModel::Mat P = P_inv.inverse();
-const typename tModel::Mat P_sqrt = P.sqrt();
+typename Model::MatModelCov P1_inv = model1.err_cov_.inverse();
+typename Model::MatModelCov P2_inv = model2.err_cov_.inverse();
+typename Model::MatModelCov P_inv = P1_inv + P2_inv;
+typename Model::MatModelCov P = P_inv.inverse();
+const typename Model::MatModelCov P_sqrt = P.sqrt();
 
 
 // The sample covariance intersection method needs 100 samples
-std::vector<Eigen::Matrix<double,tModel::cov_dim_,1>> samples(100);
+std::vector<Eigen::Matrix<double,Model::cov_dim_,1>> samples(100);
 for (auto& sample : samples) {
-    sample = P_sqrt*utilities::GaussianRandomGenerator(tModel::cov_dim_);
+    sample = P_sqrt*utilities::GaussianRandomGenerator(Model::cov_dim_);
 }
 
 double r_max = -1;
@@ -354,7 +357,7 @@ for (auto& sample : samples) {
 // Scale the error covariance
 P = P/(0.5*(r_min + r_max));
 
-model1.OPlusEQ(P*P2_inv*tModel::OMinus(model2, model1));
+model1.OPlusEQ(P*P2_inv*Model::OMinus(model2, model1));
 
 
 model1.err_cov_ = P;

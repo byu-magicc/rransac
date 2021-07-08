@@ -12,90 +12,134 @@
 #include "rransac/data_containers/cluster.h"
 #include "rransac/track_initialization/lmle_policies/linear_lmle_policy.h"
 #include "rransac/track_initialization/seed_policies/null_seed_policy.h"
+#include "rransac/common/transformations/trans_radar_R2_R3_with_SE2_SE3.h"
+#include "rransac/common/sources/source_R2_R3_radar.h"
 
 using namespace rransac;
 using namespace lie_groups;
 
+typedef State<Rn,double,2,2> StateR2_2;
+typedef State<Rn,double,2,3> StateR2_3;
+typedef State<Rn,double,3,2> StateR3_2;
+typedef State<Rn,double,3,3> StateR3_3;
 
-TEST(LINEAR_LMLE_POLICY_TEST, MainTest){
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNULL> SourceR3_1Pos;
+typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR3_1PosVel;
 
-typedef SourceRN<R3_r3,MeasurementTypes::RN_POS,TransformNULL> SourceR3Pos;
-typedef SourceRN<R3_r3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR3PosVel;
+typedef SourceRN<StateR2_2,MeasurementTypes::RN_POS,TransformNULL> SourceR2_2Pos;
+typedef SourceRN<StateR2_2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2_2PosVel;
+
+typedef SourceRN<StateR2_3,MeasurementTypes::RN_POS,TransformNULL> SourceR2_3Pos;
+typedef SourceRN<StateR2_3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2_3PosVel;
+
+typedef SourceRN<StateR3_2,MeasurementTypes::RN_POS,TransformNULL> SourceR3_2Pos;
+typedef SourceRN<StateR3_2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR3_2PosVel;
+
+typedef SourceRN<StateR3_3,MeasurementTypes::RN_POS,TransformNULL> SourceR3_3Pos;
+typedef SourceRN<StateR3_3,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR3_3PosVel;
+
+typedef SourceContainer<SourceR3_1Pos,SourceR3_1PosVel> SourceContainerR3_1;
+typedef SourceContainer<SourceR2_2Pos,SourceR2_2PosVel> SourceContainerR2_2;
+typedef SourceContainer<SourceR2_3Pos,SourceR2_3PosVel> SourceContainerR2_3;
+typedef SourceContainer<SourceR3_2Pos,SourceR3_2PosVel> SourceContainerR3_2;
+typedef SourceContainer<SourceR3_3Pos,SourceR3_3PosVel> SourceContainerR3_3;
+
+using MyTypes = ::testing::Types<SourceContainerR3_1,SourceContainerR2_2,SourceContainerR2_3,SourceContainerR3_2,SourceContainerR3_3>;
+// using MyTypes = ::testing::Types<SourceContainerR2_3>;
 
 
-typedef SourceContainer<SourceR3Pos,SourceR3PosVel> SourceContainerR3;
+template<typename _SourceContainer>
+class LinearLmlePolicyTest : public ::testing::Test {
 
+public:
 
+typedef _SourceContainer SC;
+typedef typename SC::Source0 Source0;
+typedef typename SC::Source1 Source1;
+typedef ModelRN<SC> Model;
+typedef typename Source0::Measurement Measurement;
+typedef typename Source0::Base::DataType DataType;
+typedef typename Source0::Base::TransformDataType TransformDataType;
+typedef Cluster<DataType,TransformDataType> ClusterT;
 
-typedef ModelRN<SourceContainerR3> Model;
+protected:
 
+void SetUp() override {
 
+}
 
-typedef Meas<double> Measurement;
+};
+
+TYPED_TEST_SUITE(LinearLmlePolicyTest, MyTypes);
+
+TYPED_TEST(LinearLmlePolicyTest, MainTest){
+
+typedef LinearLmlePolicyTest<TypeParam> TestType;
+typedef typename TestType::Measurement Measurement;
 
 // Setup sources
+SourceParameters source_params0;
 SourceParameters source_params1;
-SourceParameters source_params2;
 
-double noise = 1e-3;
+double noise = 1e-4;
 
-source_params1.meas_cov_ = Eigen::Matrix3d::Identity()*noise;
-source_params1.type_ = MeasurementTypes::RN_POS;
-source_params1.source_index_ = 0;
+source_params0.meas_cov_ = TestType::Source0::MatMeasCov::Identity()*noise;
+source_params0.type_ = TestType::Source0::measurement_type_;
+source_params0.source_index_ = 0;
+source_params0.spacial_density_of_false_meas_ = 0.8;
+source_params0.probability_of_detection_ = 0.8;
+source_params0.gate_probability_ = 0.8;
+
+source_params1.type_ = TestType::Source1::measurement_type_;
+source_params1.meas_cov_ = TestType::Source1::MatMeasCov::Identity()*noise;
+source_params1.source_index_ = 1;
 source_params1.spacial_density_of_false_meas_ = 0.8;
 source_params1.probability_of_detection_ = 0.8;
 source_params1.gate_probability_ = 0.8;
-
-source_params2.type_ = MeasurementTypes::RN_POS_VEL;
-source_params2.meas_cov_ = Eigen::Matrix<double,6,6>::Identity()*noise;
-source_params2.source_index_ = 1;
-source_params2.spacial_density_of_false_meas_ = 0.8;
-source_params2.probability_of_detection_ = 0.8;
-source_params2.gate_probability_ = 0.8;
 
 
 
 // Setup system parameters
 Parameters params;
-params.process_noise_covariance_ = Eigen::Matrix<double,6,6>::Identity()*noise;
+params.process_noise_covariance_ = TestType::Model::MatModelCov::Identity()*noise;
 
 // Setup system
-System<Model> sys;
+System<typename TestType::Model> sys;
+sys.source_container_.AddSource(source_params0);
 sys.source_container_.AddSource(source_params1);
-sys.source_container_.AddSource(source_params2);
 sys.params_ = params;
 
 // Setup Measurements
-Measurement m1, m2;
+typename TestType::Measurement m1, m2;
 m1.source_index = 0;
-m1.type = MeasurementTypes::RN_POS;
+m1.type = TestType::Source0::measurement_type_;
 
 
 m2.source_index = 1;
-m2.type = MeasurementTypes::RN_POS_VEL;
+m2.type = TestType::Source1::measurement_type_;
 
 
 std::list<std::list<Measurement>> measurements;
 std::list<Measurement> meas_time;
-std::vector<Cluster<double>::IteratorPair> meas_subset;
-Cluster<double>::IteratorPair iter_pair;
+std::vector<typename TestType::ClusterT::IteratorPair> meas_subset;
+typename TestType::ClusterT::IteratorPair iter_pair;
 
 // Generate Measurements
-Model x;
-x.state_ = Model::State::Random();
+typename TestType::Model x;
+x.state_ = TestType::Model::State::Random();
 
-int steps = 3;
+int steps = 5;
 double dt = 0.1;
 double start_time = 0;
 
 bool transform_state = false;
-Eigen::MatrixXd EmptyMat;
+typename TestType::Source0::TransformDataType EmptyMat;
 
 for (double ii = start_time; ii < steps*dt; ii += dt ) {
     x.PropagateModel(dt);
     meas_time.clear();
-    Measurement tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix3d::Identity()*sqrt(noise), x.state_,transform_state,EmptyMat);
-    Measurement tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,6,6>::Identity()*sqrt(noise),x.state_,transform_state,EmptyMat);
+    Measurement tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, TestType::Source0::MatMeasCov::Identity()*sqrt(noise)*0, x.state_,transform_state,EmptyMat);
+    Measurement tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, TestType::Source1::MatMeasCov::Identity()*sqrt(noise)*0,x.state_,transform_state,EmptyMat);
     m1.time_stamp = ii + dt;
     m1.pose = tmp1.pose;
     m2.time_stamp = ii +dt;
@@ -104,6 +148,10 @@ for (double ii = start_time; ii < steps*dt; ii += dt ) {
     meas_time.push_back(m1);
     meas_time.push_back(m2);
     measurements.push_back(meas_time);
+
+    // std::cout << "m1 pose: " << std::endl << m1.pose << std::endl;
+    // std::cout << "m2 pose: " << std::endl << m2.pose << std::endl;
+    // std::cout << "m2 twist: " << std::endl << m2.twist << std::endl;
 }
 
 for (auto outer_iter = measurements.begin(); outer_iter != measurements.end(); ++outer_iter) {
@@ -119,10 +167,9 @@ for (auto outer_iter = measurements.begin(); outer_iter != measurements.end(); +
 sys.current_time_ = start_time + steps*dt;
 
 // Generate Current state estimate
-LinearLMLEPolicy<Model, NULLSeedPolicy> policy;
+LinearLMLEPolicy<typename TestType::Model, NULLSeedPolicy> policy;
 bool success = false;
-typename Model::State state = policy.GenerateHypotheticalStateEstimatePolicy(meas_subset,sys,success);
-
-ASSERT_LT( state.OMinus(x.state_).norm(), 1e-1 );
+typename TestType::Model::State state = policy.GenerateHypotheticalStateEstimatePolicy(meas_subset,sys,success);
+ASSERT_LT( state.OMinus(x.state_).norm(), 1e-10 );
 
 }

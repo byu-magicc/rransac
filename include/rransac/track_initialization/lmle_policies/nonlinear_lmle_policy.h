@@ -27,14 +27,19 @@ namespace rransac
  * the LMLE optimization. 
  */ 
 
-template<typename tModel, template<typename > typename tSeed>    
-class NonLinearLMLEPolicy : public tSeed<tModel> {
+template<typename _Model, template<typename > typename _Seed>    
+class NonLinearLMLEPolicy : public _Seed<_Model> {
 
 public:
 
-typedef typename tModel::State State;           /**< The state of the target. @see State. */
-typedef typename tModel::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
-typedef tModel Model;                           /**< The object type of the model. */
+typedef typename _Model::State State;           /**< The state of the target. @see State. */
+typedef typename _Model::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
+typedef _Model Model;                           /**< The object type of the model. */
+typedef typename Model::Base::Measurement Measurement;
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef Cluster<DataType,TransformDataType> ClusterT;
+typedef System<Model> Sys;
+static constexpr unsigned int cov_dim_ = Model::Base::cov_dim_;
 // typedef typename tModel::template ModelTemplate<ceres::Jet<double,tModel::cov_dim_>> ModelT;
 // typedef typename ModelT::State StateT;
 // typedef typename ModelT::SourceContainer SourceContainerT;
@@ -53,7 +58,7 @@ typedef tModel Model;                           /**< The object type of the mode
  * @param[in,out] success A flag to indicate if the optimization converged to a solution. If and only if the optimization converged will success have a value of true.
  * @return The hypothetical state estimate of the track.
  */ 
-static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
+static State GenerateHypotheticalStateEstimatePolicy(const std::vector<typename ClusterT::IteratorPair>& meas_subset, const Sys& sys, bool& success);
 
 private:
 
@@ -66,7 +71,7 @@ private:
  * @param[in] x The initial conditions of the optimization problem. The initial conditions will change according to the seed policy. 
  * @param[in] size The number parameters the optimization solver is optimizing over which is the size of the input x.
  */ 
-static void GenerateSeed(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
+static void GenerateSeed(const std::vector<typename ClusterT::IteratorPair>& meas_subset, const Sys& sys, double x[cov_dim_], const int size) {
     NonLinearLMLEPolicy::GenerateSeedPolicy(meas_subset, sys, x, size);
 }
 
@@ -88,7 +93,7 @@ struct CostFunctor {
      * @param m The measurement to be used to compute the error.
      * @param sys The object that contains the R-RANSAC data. This includes the current time. 
      */ 
-    CostFunctor(Meas<DataType> m, const System<tModel>& sys) : m_(m), sys_(sys) {
+    CostFunctor(Measurement m, const Sys& sys) : m_(m), sys_(sys) {
         dt_ = m.time_stamp - sys_.current_time_;
         src_index_ = m_.source_index;
     }
@@ -113,7 +118,7 @@ struct CostFunctor {
         
         // Since Ceres uses the data type Jet, we must create the model, state, and source
         // using the data type Jet in order for the automatic differentiation to work properly.
-        typedef typename tModel::template ModelTemplate<T> ModelT;
+        typedef typename Model::template ModelTemplate<T> ModelT;
         typedef typename ModelT::State StateT;
         typedef typename ModelT::SourceContainer SourceContainerT;
         static SourceContainerT source_container_t;
@@ -121,12 +126,12 @@ struct CostFunctor {
         typedef Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> MatXd;
 
         // Convert array to Eigen vector
-        Eigen::Map<const Eigen::Matrix<T,tModel::cov_dim_,1>> x_vector(x);
+        Eigen::Map<const Eigen::Matrix<T,cov_dim_,1>> x_vector(x);
 
-
+        // std::cout << "x vec; " << std::endl << x_vector << std::endl;
 
         // Convert the measurement and time interval to type Jet.
-        Meas<T> tmp;
+        Meas<T,typename ModelT::Base::TransformDataType> tmp;
         tmp.type = m_.type;
         tmp.pose = m_.pose.template cast<T>();
         tmp.twist = m_.twist.template cast<T>();
@@ -136,20 +141,13 @@ struct CostFunctor {
 
         // The parameter x is the local coordinate representation of the state. We must map it back to
         // the manifold. 
-        StateT state;
-        state.g_.data_ =  StateT::Algebra::Exp(x_vector.block(0,0, tModel::g_dim_,1));
-        if (tModel::cov_dim_ != tModel::g_dim_*2) {
-            state.u_.data_.setZero();
-            state.u_.data_(0) = x_vector(tModel::g_dim_);
-            state.u_.data_.block(StateT::Algebra::dim_t_vel_,0,StateT::Algebra::dim_a_vel_,1) =  x_vector.block(tModel::g_dim_+1,0,StateT::Algebra::dim_a_vel_,1 );
+        StateT state = StateT::Identity(); // State is at identity.    
+        ModelT::OPlus(state,x_vector);       
 
-        } else {
-            state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
-        }
-        
+        // std::cout << "state twist: " << std::endl << state.u_.data_ << std::endl;
 
         // Propagate the state from the current time stamp to the time stamp of the measurement. 
-        state = ModelT::PropagateState(state,dt);
+        ModelT::PropagateState(state,dt);
 
         // Compute the error    
         Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceContainerT::OMinus(src_index_,tmp, SourceContainerT::GetEstMeas(src_index_, state,m_.transform_state,tmp.transform_data_t_m));
@@ -158,18 +156,19 @@ struct CostFunctor {
         if (!sys_.params_.nonlinear_innov_cov_id_) {
             // Construct innovation covariance
             MatXd meas_cov = sys_.source_container_.GetParams(src_index_).meas_cov_.template cast<T>();
-            MatXd process_cov = sys_.params_.process_noise_covariance_.template cast<T>();
             MatXd H = source_container_t.GetLinObsMatState(src_index_,state,m_.transform_state,tmp.transform_data_t_m);
             MatXd V = source_container_t.GetLinObsMatSensorNoise(src_index_,state,m_.transform_state,tmp.transform_data_t_m);
+
             MatXd F = ModelT::GetLinTransFuncMatState(state,dt);
-            MatXd G = ModelT::GetLinTransFuncMatNoise(state,dt);
             MatXd HF = H*F;
-            MatXd HG = H*G;
-            MatXd S_inv_sqrt = (V*meas_cov*V.transpose() + HG*process_cov *HG.transpose()).inverse();
+            MatXd S_inv_sqrt = (V*meas_cov*V.transpose()).inverse();
+
             
             // Compute Normalized Error
             e = S_inv_sqrt*e;
         }
+
+        // std::cout << "error: " << std::endl << e << std::endl;
 
 
         // Extract the residual from the error. 
@@ -177,6 +176,7 @@ struct CostFunctor {
             r[ii] = e(ii);
 
         }
+
 
 
 
@@ -190,9 +190,9 @@ struct CostFunctor {
 
     private:
     int src_index_;             /**< The source index of the measurement. */
-    Meas<DataType> m_;          /**< Measurement */
+    Measurement m_;          /**< Measurement */
     double dt_;                 /**< Time interval between the current time and the measurement time. */
-    const System<tModel>& sys_; /**< A reference to the object containing all of R-RANSAC data. */
+    const Sys& sys_; /**< A reference to the object containing all of R-RANSAC data. */
 
 
 
@@ -210,21 +210,21 @@ struct CostFunctor {
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename tModel, template<typename > typename tSeed>     
-typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success) {
+template<typename _Model, template<typename > typename _Seed>     
+typename NonLinearLMLEPolicy<_Model, _Seed>::State NonLinearLMLEPolicy<_Model, _Seed>::GenerateHypotheticalStateEstimatePolicy(const std::vector<typename ClusterT::IteratorPair>& meas_subset, const Sys& sys, bool& success) {
 
     success = false;
 
-    double x[tModel::cov_dim_];
+    double x[cov_dim_];
 
     // Construct the seed for the nonlinear optimization problem
-    GenerateSeed(meas_subset, sys, x, tModel::cov_dim_);
+    GenerateSeed(meas_subset, sys, x, cov_dim_);
 
     // Use Ceres to build the optimization problem
     ceres::Problem problem;
     for (auto iter = meas_subset.begin(); iter != meas_subset.end(); ++iter) {
-        const int meas_space_dim = sys.source_container_.GetParams(iter->inner_it->source_index).meas_space_dim_*sys.source_container_.GetParams(iter->inner_it->source_index).meas_space_dim_mult_;
-        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,ceres::DYNAMIC,tModel::cov_dim_>(new CostFunctor(*iter->inner_it, sys),meas_space_dim);
+        const int total_meas_dim_ = sys.source_container_.GetParams(iter->inner_it->source_index).total_meas_dim_;
+        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctor,ceres::DYNAMIC,cov_dim_>(new CostFunctor(*iter->inner_it, sys),total_meas_dim_);
             problem.AddResidualBlock(cost_function, nullptr, x);      
         
     }
@@ -245,22 +245,13 @@ typename tModel::State NonLinearLMLEPolicy<tModel, tSeed>::GenerateHypotheticalS
     if (summary.termination_type == ceres::TerminationType::CONVERGENCE || summary.termination_type == ceres::TerminationType::USER_SUCCESS || summary.termination_type == ceres::TerminationType::NO_CONVERGENCE)
         success = true;
 
-    Eigen::Matrix<double, tModel::cov_dim_, 1> x_vector;
-    typename tModel::State state;
+    Eigen::Matrix<double, cov_dim_, 1> x_vector;
+    State state;
 
     // Convert array to Eigen vector
-    x_vector = Eigen::Map<Eigen::Matrix<double,tModel::cov_dim_,1>>(x);
+    x_vector = Eigen::Map<Eigen::Matrix<double,cov_dim_,1>>(x);
 
-    // Map the local coordinate representation of the state back to the manifold.
-    state.g_.data_ =  state.u_.Exp(x_vector.block(0,0, tModel::State::g_type_::dim_,1));
-    if (tModel::cov_dim_ != tModel::g_dim_*2) {
-        state.u_.data_.setZero();
-        state.u_.data_(0) = x_vector(tModel::g_dim_);
-        state.u_.data_.block(tModel::State::Algebra::dim_t_vel_,0,tModel::State::Algebra::dim_a_vel_,1) =  x_vector.block(tModel::g_dim_+1,0,tModel::State::Algebra::dim_a_vel_,1 );
-
-    } else {
-        state.u_.data_ = x_vector.block(tModel::g_dim_,0, tModel::State::u_type_::dim_,1);
-    }
+    Model::OPlus(state,x_vector);
 
 
 

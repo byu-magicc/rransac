@@ -7,6 +7,7 @@
 #include "rransac/common/measurement/measurement_base.h"
 #include "rransac/common/transformations/transformation_base.h"
 #include "lie_groups/state.h"
+#include "lie_groups/lie_groups/SE3.h"
 
 namespace rransac
 {
@@ -20,19 +21,18 @@ namespace rransac
  * body frame, so when the tracking frame moves, we only need to transform the pose of the target and not the velocity.
 */
 
-template<class tState>
-class TransformSE3CamDepth : public TransformBase<Eigen::Matrix<typename tState::DataType,4,4>, tState, Eigen::Matrix<typename tState::DataType, 10,10>, false, TransformSE3CamDepth<tState>> {
+template<typename _State>
+class TransformSE3CamDepth : public TransformBase<TransformDerivedTraits<_State,Eigen::Matrix<typename _State::DataType,4,4>,Eigen::Matrix<typename _State::DataType,10,10>,false>, TransformSE3CamDepth> {
 
 public:
 
-typedef tState State;
-typedef typename tState::DataType DataType; /**< The scalar object for the data. Ex. float, double, etc. */
-typedef Eigen::Matrix<DataType,4,4> MatData;
-typedef Eigen::Matrix<DataType,10,10> MatCov;
-typedef Eigen::Matrix<DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;  
-
-
-static_assert(std::is_same<tState,lie_groups::State< lie_groups::SE3,typename tState::DataType,tState::N>>::value, "TransformSE3CamDepth: The state is not supported");
+typedef TransformBase<TransformDerivedTraits<_State,Eigen::Matrix<typename _State::DataType,4,4>,Eigen::Matrix<typename _State::DataType,10,10>,false>, TransformSE3CamDepth> Base;
+typedef typename Base::State State;                                      /**< The State type being used. */
+typedef typename Base::DataType DataType;                                /**< The scalar data type. */
+typedef typename Base::TransformDataType TransformDataType;              /**< The transform data type being used. It is either an element of SE2 for R2 or SE3 for R3. */
+typedef typename Base::MatCov MatCov;                                    /**< The covariance type of the track, and the transform jacobian type. */
+typedef typename Base::Measurement Measurement;                          /**< The measurement type. */
+static_assert(std::is_same<_State,lie_groups::State< lie_groups::SE3,typename _State::DataType,_State::N>>::value, "TransformSE3CamDepth: The state is not supported");
 
 /**
  * Used to initialize the object, but it doesn't need to initialize anyting.
@@ -44,7 +44,7 @@ void DerivedInit() {};
  * @param data The data required to transform the measurements, states, and error covariance. This should be a transformation on SE(3) from the previous tracking
  * frame to the current tracking frame.
  */ 
-void DerivedSetData(const MatData data) {
+void DerivedSetData(const TransformDataType data) {
     this->data_ = data;
 }
 
@@ -52,7 +52,25 @@ void DerivedSetData(const MatData data) {
  * Transforms the measurement from the previous tracking frame to the current one.
  * @param[in,out] meas The measurement to be transformed.
  */ 
-void DerivedTransformMeasurement(Meas<DataType>& meas) const ;
+void DerivedTransformMeasurement(Measurement& meas) const ;
+
+/** 
+ * Transforms the measurement into a different frame. It does this by
+ * converting it to cartesian coordinants and then transforming it using the
+ * data into another frame. The measurement is left in cartesian coordinates, 
+ * and only the pose is transformed. 
+ * This method should only be used to compare two measurements in a common frame. 
+ * This is used to compare measurements from different radar frames.
+ * @param[in] meas The measurement to be transformed.
+ */ 
+static Measurement DerivedTransformMeasurement(const Measurement& meas, const TransformDataType& transform_data) {
+    Measurement m;
+    const Eigen::Matrix<DataType,3,3>& rotation = transform_data.block(0,0,3,3);
+    const Eigen::Matrix<DataType,3,1>& position_offset = transform_data.block(0,3,3,1);
+    m.pose =rotation*meas.pose(0,0)*meas.pose.block(1,0,3,1) + position_offset;
+    return m;
+}
+
 
 /** 
  * Transforms the track provided that the state is SE3_se3.
@@ -61,7 +79,7 @@ void DerivedTransformMeasurement(Meas<DataType>& meas) const ;
  * @param[in,out] state The track's state to be transformed.
  * @param[in,out] cov   The track's error covariance.
  */ 
-void DerivedTransformTrack(tState& state, MatCov& cov) const {
+void DerivedTransformTrack(State& state, MatCov& cov) const {
     state.g_.data_ = this->data_*state.g_.data_;
 }
 
@@ -74,7 +92,7 @@ void DerivedTransformTrack(tState& state, MatCov& cov) const {
  * @param[in] cov   The track's error covariance to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static void DerivedTransformTrack(State& state, MatCov& cov, const MatData& transform_data) {
+static void DerivedTransformTrack(State& state, MatCov& cov, const TransformDataType& transform_data) {
    state.g_.data_ = transform_data*state.g_.data_;
 }
 
@@ -85,7 +103,7 @@ static void DerivedTransformTrack(State& state, MatCov& cov, const MatData& tran
  * @param[in] state The track's state to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static State DerivedTransformState(const State& state, const MatData& transform_data) {
+static State DerivedTransformState(const State& state, const TransformDataType& transform_data) {
     State transformed_state;
     transformed_state.u_.data_= state.u_.data_;
     transformed_state.g_.data_ = transform_data*state.g_.data_;
@@ -99,8 +117,8 @@ static State DerivedTransformState(const State& state, const MatData& transform_
  * @param[in] state The state of the target after it has been transformed using transform_data
  * @param[in] transform_data The data used in the transformation
  */ 
-static MatXd DerivedGetTransformationJacobian(const State& state, const MatData& transform_data) {
-   return Eigen::Matrix<DataType,4,4>::Identity();
+static MatCov DerivedGetTransformationJacobian(const State& state, const TransformDataType& transform_data) {
+   return MatCov::Identity();
 }
 
 
@@ -108,33 +126,16 @@ static MatXd DerivedGetTransformationJacobian(const State& state, const MatData&
  * Verifies that the transform data provided by the user is in the requested from.
  * @param transform_data The tranformation data to be tested. 
  */
-static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_data) {
+static bool DerivedIsAcceptableTransformData(const TransformDataType& transform_data) {
 
-    bool correct;
-
-    // transform data should be a 3x3 matrix
-    if(transform_data.cols() != 4 || transform_data.rows() != 4) {
-        correct = false;
-    } else if (transform_data.determinant() !=1) { // The determinant should be 1
-        correct = false;
-    } else if(transform_data.block(0,0,3,3)*transform_data.block(0,0,3,3).transpose() != Eigen::Matrix3d::Identity()) { // Make sure it is a rotation matrix
-        correct = false;
-    } else if (transform_data.block(3,0,1,2).norm() != 0) { // These cells should be zero
-        correct = false;
-    } else {
-        correct = true;
-    }
-
-
-
-    return correct;
+    return lie_groups::SE3<DataType>::isElement(transform_data);
 } 
 
 
 };
 
-template<class tState>
-void TransformSE3CamDepth<tState>::DerivedTransformMeasurement(Meas<DataType>& meas) const {
+template<class _State>
+void TransformSE3CamDepth<_State>::DerivedTransformMeasurement(Measurement& meas) const {
 
     if(!meas.transform_state) {
         meas.transform_state = true;
