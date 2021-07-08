@@ -14,8 +14,8 @@ namespace rransac {
 
 template<typename... Ts> struct CountSources;
 
-template<typename tSource, typename... Ts>
-struct CountSources<tSource, Ts...> { static constexpr int value = std::is_same<tSource,SourceNull<>>::value ? 0 :1 + CountSources<Ts...>::value; };
+template<typename _Source, typename... Ts>
+struct CountSources<_Source, Ts...> { static constexpr int value = std::is_same<_Source,SourceNull<>>::value ? 0 :1 + CountSources<Ts...>::value; };
 
 template <>
 struct CountSources<> { static constexpr int value = 0;};
@@ -29,10 +29,10 @@ class SourceContainer {
 public:
 
 typedef S0 Source0;
-typedef typename std::conditional<IsSourceNull<S1>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S1>::type Source1;
-typedef typename std::conditional<IsSourceNull<S2>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S2>::type Source2;
-typedef typename std::conditional<IsSourceNull<S3>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S3>::type Source3;
-typedef typename std::conditional<IsSourceNull<S4>::value,SourceNull<typename S0::State, S0::measurement_type_, TransformNULL>,S4>::type Source4;
+typedef typename std::conditional<IsSourceNull<S1>::value,SourceNull<typename S0::State, S0::measurement_type_, S0::Base::DerivedTraits::template Transformation>,S1>::type Source1;
+typedef typename std::conditional<IsSourceNull<S2>::value,SourceNull<typename S0::State, S0::measurement_type_, S0::Base::DerivedTraits::template Transformation>,S2>::type Source2;
+typedef typename std::conditional<IsSourceNull<S3>::value,SourceNull<typename S0::State, S0::measurement_type_, S0::Base::DerivedTraits::template Transformation>,S3>::type Source3;
+typedef typename std::conditional<IsSourceNull<S4>::value,SourceNull<typename S0::State, S0::measurement_type_, S0::Base::DerivedTraits::template Transformation>,S4>::type Source4;
 // typedef S2 Source2;
 // typedef S3 Source3;
 // typedef S4 Source4;
@@ -40,9 +40,14 @@ typedef typename std::conditional<IsSourceNull<S4>::value,SourceNull<typename S0
 typedef typename S0::State State;                                           /**< The state of the target. @see State. */
 typedef typename S0::DataType DataType;                                     /**< The scalar object for the data. Ex. float, double, etc. */
 typedef typename S0::Transformation Transformation;                         /**< The transformation data type. */
-typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;        /**< The object type of the Jacobians. */
-static constexpr int num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;
+typedef typename S0::MatH MatH;                                             /**< The object type of the Jacobian of the observation function w.r.t. the states. */
+typedef typename S0::MatV MatV;                                             /**< The object type of the Jacobian of the observation function w.r.t. the measurement noise. */
+static constexpr int num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;    /**< The number of user defined sources. */
 typedef typename S0::ModelCompatibility ModelCompatibility;                 /**< Indicates which model this source is compatible with. */
+typedef typename S0::TransformDataType TransformDataType;                   /**< The transform data type. */
+typedef typename S0::Measurement Measurement;                               /**< The object type of the measurement. */
+typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;         
+
 
 // Ensure that all sources have the same model compatibility
 static_assert( std::is_same<typename S0::ModelCompatibility, typename S1::ModelCompatibility>::value || IsSourceNull<S1>::value, "The sources are not compatible with the same model" );
@@ -56,8 +61,8 @@ static_assert( std::is_same<typename S0::ModelCompatibility, typename S4::ModelC
 // using ModelTemplate = ModelRN<tSourceContainer>; /**< Used to create a model of the state, source and transformation, but with a different DataType. This is needed to solve the 
 //                                                                                      nonlinear log maximum likelihood estimation problem by Ceres. */
 
-template<typename tDataType>
-using SourceContainerTemplate = SourceContainer<typename Source0::template SourceTemplate<tDataType>, typename Source1::template SourceTemplate<tDataType>, typename Source2::template SourceTemplate<tDataType>, typename Source3::template SourceTemplate<tDataType>, typename Source4::template SourceTemplate<tDataType>>;
+template<typename _DataType>
+using SourceContainerTemplate = SourceContainer<typename Source0::template SourceTemplate<_DataType>, typename Source1::template SourceTemplate<_DataType>, typename Source2::template SourceTemplate<_DataType>, typename Source3::template SourceTemplate<_DataType>, typename Source4::template SourceTemplate<_DataType>>;
 
 
 
@@ -104,7 +109,7 @@ bool ChangeSourceParameters(const SourceParameters &new_source_params);
  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
  * @param[in] transform_data The data needed to transform the state
 */
-static MatXd GetLinObsMatState(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data);  
+static MatH GetLinObsMatState(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data);  
 
 /** 
  * Returns the jacobian of the observation function w.r.t. the sensor noise.
@@ -113,7 +118,7 @@ static MatXd GetLinObsMatState(const unsigned int source_index, const State& sta
  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
  * @param[in] transform_data The data needed to transform the state
  */
-static MatXd GetLinObsMatSensorNoise(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data); 
+static MatV GetLinObsMatSensorNoise(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data); 
 
 /**
  *  Implements the observation function and returns an estimated measurement based on the state. 
@@ -122,7 +127,7 @@ static MatXd GetLinObsMatSensorNoise(const unsigned int source_index, const Stat
  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
  * @param[in] transform_data The data needed to transform the state
  */
-static Meas<DataType> GetEstMeas(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data);
+static Measurement GetEstMeas(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data);
 
 /**
  * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
@@ -131,7 +136,7 @@ static Meas<DataType> GetEstMeas(const unsigned int source_index, const State& s
  * @param[in] m1 a measurement
  * @param[in] m2 a measurement
  */
-static MatXd OMinus(const unsigned int source_index, const Meas<DataType>& m1, const Meas<DataType>& m2); 
+static MatXd OMinus(const unsigned int source_index, const Measurement& m1, const Measurement& m2); 
 
 /**
  * Generates a random measurement from a Gaussian distribution with mean defined by the state and standard deviation defined by meas_std. This
@@ -141,7 +146,7 @@ static MatXd OMinus(const unsigned int source_index, const Meas<DataType>& m1, c
  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
  * @param[in] transform_data The data needed to transform the state
  */ 
-Meas<DataType> GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const;
+Measurement GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const TransformDataType& transform_data) const;
 
 /**
  * Returns true if the state is inside the source's surveillance region. Note that the state is given in the global frame.  
@@ -150,7 +155,7 @@ Meas<DataType> GenerateRandomMeasurement(const unsigned int source_index, const 
  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
  * @param[in] transform_data The data needed to transform the state
  */
-bool StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) const ;
+bool StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data) const ;
 
 /**
  * Calculates the temporal distance between two measurements.
@@ -159,7 +164,7 @@ bool StateInsideSurveillanceRegion(const unsigned int source_index, const State&
  * @param[in] params The system parameters.
  * \return Returns temporal distance between two measurements
  */
-DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return std::get<0>(sources_).GetTemporalDistance(meas1,meas2,params); }
+DataType GetTemporalDistance(const Measurement& meas1, const Measurement& meas2, const Parameters& params) const { return std::get<0>(sources_).GetTemporalDistance(meas1,meas2,params); }
 
 /**
  * Calculates the geodesic distance between the pose of two measurements that have the same measurement space.
@@ -168,7 +173,7 @@ DataType GetTemporalDistance(const Meas<DataType>& meas1, const Meas<DataType>& 
  * @param[in] params The system parameters.
  * \return Returns geodesic distance between pose of two measurements
  */
-DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const {return std::get<0>(sources_).GetSpatialDistance(meas1,meas2,params);}
+DataType GetSpatialDistance(const Measurement& meas1, const Measurement& meas2, const Parameters& params) const {return std::get<0>(sources_).GetSpatialDistance(meas1,meas2,params);}
 
 /**
  * Finds the geodesic distance between the pose of two measurements of different time stamps normalized by the temporal distance. The measurements must have the same measurement space.
@@ -177,13 +182,13 @@ DataType GetSpatialDistance(const Meas<DataType>& meas1, const Meas<DataType>& m
  * @param[in] params The system parameters.
  * \return Returns geodesic distance between two measurements
  */
-DataType GetVelocityDistance(const Meas<DataType>& meas1, const Meas<DataType>& meas2, const Parameters& params) const { return std::get<0>(sources_).GetVelocityDistance(meas1,meas2,params);}
+DataType GetVelocityDistance(const Measurement& meas1, const Measurement& meas2, const Parameters& params) const { return std::get<0>(sources_).GetVelocityDistance(meas1,meas2,params);}
 
 /**
  * Verifies that the data in the measurement meets certain specifications.
  * @param measurement The measurement to be verified. 
  */ 
-bool IsAcceptableMeasurement(const Meas<DataType>& measurement);
+bool IsAcceptableMeasurement(const Measurement& measurement);
 
 
 private:
@@ -211,8 +216,8 @@ bool SourceContainer<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_p
 
     bool added = false;
 
-    if (source_params.source_index_ >= num_sources_) {
-        throw std::runtime_error("SourceContainer::AddSource The source index must be less than the number of sources, i.e. in the range [0,num_sources).");
+    if (source_params.source_index_ >= num_sources_ || source_params.source_index_ < 0) {
+        throw std::runtime_error("SourceContainer::AddSource The source index must be less than the number of sources, and greater than or equal to zero; i.e. in the range [0,num_sources).");
     } else if (source_initialized_[source_params.source_index_]) {
         throw std::runtime_error("SourceContainer::AddSource The source has already been initialized. ");
     } else {
@@ -258,8 +263,8 @@ bool SourceContainer<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_p
 
     bool added = false;
 
-    if (source_params.source_index_ >= num_sources_) {
-        throw std::runtime_error("SourceContainer::AddSource The source index must be less than the number of sources, i.e. in the range [0,num_sources).");
+    if (source_params.source_index_ >= num_sources_ || source_params.source_index_ < 0) {
+        throw std::runtime_error("SourceContainer::AddSource The source index must be less than the number of sources, and greater than or equal to zero; i.e. in the range [0,num_sources).");
     } else if (source_initialized_[source_params.source_index_]) {
         throw std::runtime_error("SourceContainer::AddSource The source has already been initialized. ");
     } else {
@@ -376,7 +381,7 @@ bool SourceContainer<S0,S1,S2,S3,S4>::ChangeSourceParameters(const SourceParamet
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainer<S0,S1,S2,S3,S4>::GetLinObsMatState(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
+typename SourceContainer<S0,S1,S2,S3,S4>::MatH SourceContainer<S0,S1,S2,S3,S4>::GetLinObsMatState(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data) {
 
     switch (source_index)
     {
@@ -405,7 +410,7 @@ Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContain
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainer<S0,S1,S2,S3,S4>::GetLinObsMatSensorNoise(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
+typename SourceContainer<S0,S1,S2,S3,S4>::MatV SourceContainer<S0,S1,S2,S3,S4>::GetLinObsMatSensorNoise(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data) {
     switch (source_index)
     {
     case 0:
@@ -432,7 +437,7 @@ Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContain
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Meas<typename S0::DataType> SourceContainer<S0,S1,S2,S3,S4>::GetEstMeas(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) {
+typename SourceContainer<S0,S1,S2,S3,S4>::Measurement SourceContainer<S0,S1,S2,S3,S4>::GetEstMeas(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data) {
     switch (source_index)
     {
     case 0:
@@ -459,23 +464,23 @@ Meas<typename S0::DataType> SourceContainer<S0,S1,S2,S3,S4>::GetEstMeas(const un
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContainer<S0,S1,S2,S3,S4>::OMinus(const unsigned int source_index, const Meas<DataType>& m1, const Meas<DataType>& m2) {
+typename SourceContainer<S0,S1,S2,S3,S4>::MatXd SourceContainer<S0,S1,S2,S3,S4>::OMinus(const unsigned int source_index, const Measurement& m1, const Measurement& m2) {
     switch (source_index)
     {
     case 0:
-        return S0::OMinus(m1,m2);
+        return Source0::OMinus(m1,m2);
         break;
     case 1:
-        return S1::OMinus(m1,m2);
+        return Source1::OMinus(m1,m2);
         break;
     case 2:
-        return S2::OMinus(m1,m2);
+        return Source2::OMinus(m1,m2);
         break;
     case 3:
-        return S3::OMinus(m1,m2);
+        return Source3::OMinus(m1,m2);
         break;
     case 4:
-        return S4::OMinus(m1,m2);
+        return Source4::OMinus(m1,m2);
         break;      
     default:
         throw std::runtime_error("SourceContainer::OMinus The source index must be greater than 0 and less than " + std::to_string(num_sources_));
@@ -485,7 +490,7 @@ Eigen::Matrix<typename S0::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceContain
 
 //-------------------------------------------------------------------------------
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-Meas<typename S0::DataType> SourceContainer<S0,S1,S2,S3,S4>::GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const MatXd& transform_data) const {
+typename SourceContainer<S0,S1,S2,S3,S4>::Measurement SourceContainer<S0,S1,S2,S3,S4>::GenerateRandomMeasurement(const unsigned int source_index, const MatXd& meas_std, const State& state, const bool transform_state, const TransformDataType& transform_data) const {
     switch (source_index)
     {
     case 0:
@@ -512,7 +517,7 @@ Meas<typename S0::DataType> SourceContainer<S0,S1,S2,S3,S4>::GenerateRandomMeasu
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainer<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data) const {
+bool SourceContainer<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data) const {
     switch (source_index)
     {
     case 0:
@@ -539,7 +544,7 @@ bool SourceContainer<S0,S1,S2,S3,S4>::StateInsideSurveillanceRegion(const unsign
 //-------------------------------------------------------------------------------
 
 template <typename S0, typename S1 , typename S2, typename S3 , typename S4 >
-bool SourceContainer<S0,S1,S2,S3,S4>::IsAcceptableMeasurement(const Meas<DataType>& measurement) {
+bool SourceContainer<S0,S1,S2,S3,S4>::IsAcceptableMeasurement(const Measurement& measurement) {
     switch (measurement.source_index)
     {
     case 0:

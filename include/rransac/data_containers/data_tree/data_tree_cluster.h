@@ -14,12 +14,16 @@ namespace rransac
  * Since track initialization works on clusters to improve speed performance, one technique to organize the measurements is in clusters. Since the measurements are already 
  * in clusters, we do not have to construct clusters which saves times. 
  */ 
-template<typename tDataType = double>
-class DataTreeClusters : public DataTreeBase<std::list<Cluster<tDataType>>, DataTreeClusters, tDataType> {
+template<typename tDataType, typename _TransformDataType>
+class DataTreeClusters : public DataTreeBase<std::list<Cluster<tDataType,_TransformDataType>>, tDataType, _TransformDataType, DataTreeClusters> {
 
 public:
 
+typedef DataTreeBase<std::list<Cluster<tDataType,_TransformDataType>>, tDataType, _TransformDataType, DataTreeClusters> Base;
 typedef tDataType DataType;  /**< The scalar object for the data. Ex. float, double, etc. */
+typedef typename Base::TransformDataType TransformDataType;
+typedef typename Base::Measurement Measurement;
+typedef typename Base::TreeDataType TreeDataType;
 
 /**
  * \struct MeasurementLocationInfo
@@ -28,8 +32,8 @@ typedef tDataType DataType;  /**< The scalar object for the data. Ex. float, dou
  */ 
 struct MeasurementLocationInfo {
 
-    typename std::list<Cluster<DataType>>::iterator cluster_iter;  /**< An iterator to the cluster a measurement is in. */
-    typename Cluster<DataType>::IteratorPair iter_pair;            /**< The information needed to locate the measurement in the cluster specified by MeasurementLocationInfo::cluster_iter. */
+    typename TreeDataType::iterator cluster_iter;  /**< An iterator to the cluster a measurement is in. */
+    typename Cluster<DataType,TransformDataType>::IteratorPair iter_pair;            /**< The information needed to locate the measurement in the cluster specified by MeasurementLocationInfo::cluster_iter. */
 
 };
 
@@ -40,7 +44,7 @@ struct MeasurementLocationInfo {
  * @param[in] meas The measurement to be added.
  */
 template <typename tSystem>
-void DerivedAddMeasurement(const tSystem& sys, const Meas<DataType>& meas);
+void DerivedAddMeasurement(const tSystem& sys, const Measurement& meas);
 
 /**
  * Removes a measurement from the data tree using meas_info. If the measurement to be removed is the only measurement in the cluster, the cluster will
@@ -85,7 +89,7 @@ private:
  * @param[in] iter1 An iterator to a cluster;
  * @param[in] iter2 An iterator to a cluster
  */ 
-void MergeClusters(const typename std::list<Cluster<DataType>>::iterator iter1, const typename std::list<Cluster<DataType>>::iterator iter2);
+void MergeClusters(const typename TreeDataType::iterator iter1, const typename TreeDataType::iterator iter2);
 
 
 
@@ -95,11 +99,11 @@ void MergeClusters(const typename std::list<Cluster<DataType>>::iterator iter1, 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename tDataType>
+template<typename tDataType, typename _TransformDataType>
 template<typename tSystem>
-void DataTreeClusters<tDataType>::DerivedAddMeasurement(const tSystem& sys, const Meas<tDataType>& meas) {
+void DataTreeClusters<tDataType,_TransformDataType>::DerivedAddMeasurement(const tSystem& sys, const Measurement& meas) {
 
-    std::vector<typename std::list<Cluster<DataType>>::iterator> neighbor_clusters;
+    std::vector<typename TreeDataType::iterator> neighbor_clusters;
 
     // Search through all of the clusters and see which ones the measurement is a neighbor to
     for(auto iter = this->data_.begin(); iter != this->data_.end(); ++iter) {
@@ -128,8 +132,8 @@ void DataTreeClusters<tDataType>::DerivedAddMeasurement(const tSystem& sys, cons
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-template<typename tDataType>
-void DataTreeClusters<tDataType>::MergeClusters(const typename std::list<Cluster<tDataType>>::iterator iter1, const typename std::list<Cluster<tDataType>>::iterator iter2) {
+template<typename tDataType, typename _TransformDataType>
+void DataTreeClusters<tDataType,_TransformDataType>::MergeClusters(const typename TreeDataType::iterator iter1, const typename TreeDataType::iterator iter2) {
 
     for(auto outer_iter = iter2->data_.begin(); outer_iter != iter2->data_.end(); ++outer_iter ) {
         for (auto inner_iter = outer_iter->begin(); inner_iter != outer_iter->end(); ++inner_iter) {
@@ -142,8 +146,8 @@ void DataTreeClusters<tDataType>::MergeClusters(const typename std::list<Cluster
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-template<typename tDataType>
-void DataTreeClusters<tDataType>::DerivedRemoveMeasurement(const MeasurementLocationInfo& meas_info) {
+template<typename tDataType, typename _TransformDataType>
+void DataTreeClusters<tDataType,_TransformDataType>::DerivedRemoveMeasurement(const MeasurementLocationInfo& meas_info) {
 
     meas_info.cluster_iter->RemoveMeasurement(meas_info.iter_pair);
     if (meas_info.cluster_iter->Size() == 0)
@@ -153,10 +157,9 @@ void DataTreeClusters<tDataType>::DerivedRemoveMeasurement(const MeasurementLoca
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-
-template<typename tDataType>
+template<typename tDataType, typename _TransformDataType>
 template<typename tSystem>
-void DataTreeClusters<tDataType>::DerivedConstructClusters(tSystem& sys) {
+void DataTreeClusters<tDataType,_TransformDataType>::DerivedConstructClusters(tSystem& sys) {
 
     sys.clusters_.clear();
     for(auto cluster_iter = this->data_.begin(); cluster_iter != this->data_.end(); ++cluster_iter) {
@@ -173,9 +176,9 @@ void DataTreeClusters<tDataType>::DerivedConstructClusters(tSystem& sys) {
 
 //-----------------------------------------------------------------------------------------------------------------------
 
-template<typename tDataType>
+template<typename tDataType, typename _TransformDataType>
 template <typename tSystem>
-void DataTreeClusters<tDataType>::DerivedPruneDataTree(const tSystem sys, const double expiration_time) {
+void DataTreeClusters<tDataType,_TransformDataType>::DerivedPruneDataTree(const tSystem sys, const double expiration_time) {
     auto iter = this->data_.begin();
     while(iter != this->data_.end()) {
         double size_diff = iter->Size();

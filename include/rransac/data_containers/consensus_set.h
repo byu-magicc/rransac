@@ -17,30 +17,30 @@ namespace rransac
  * same time stamp. 
  */ 
 
-template <class tMeasurement>
+template <class _Measurement>
 class ConsensusSet
 {
 public:
 
-typedef tMeasurement Measurement; /**< The object type of the measurement. */
+typedef _Measurement Measurement; /**< The object type of the measurement. */
 
 /** 
  * Add a measurement to the consensus set. 
  * @param[in] meas The measurement to be added.
 */
-void AddMeasToConsensusSet(const tMeasurement& meas);
+void AddMeasToConsensusSet(const Measurement& meas);
 
 /** 
  * Add measurements to the consensus set. 
  * @param[in] measurements The measurements to be added.
 */
-void AddMeasurementsToConsensusSet(const std::vector<tMeasurement>& measurements);
+void AddMeasurementsToConsensusSet(const std::vector<Measurement>& measurements);
 
 /** 
  * Add a measurements to the consensus set. The measurements have the same time stamp.
  * @param[in] measurements The measurements to be added that have the same time stamp.
 */
-void AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<tMeasurement>& measurements);
+void AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<Measurement>& measurements);
 
 /** 
  * Removes all of the measurements from the consensus set with a time stamp that occurred before the expiration_time. 
@@ -73,7 +73,7 @@ unsigned int Size() { return consensus_set_.size();}
 static ConsensusSet MergeConsensusSets(const ConsensusSet& cs1, const ConsensusSet& cs2);
 
 
-std::list<std::vector<tMeasurement>> consensus_set_; /**< Contains the measurements associated with the model that have not expired. The list organizes the measurements in chronological order
+std::list<std::vector<Measurement>> consensus_set_; /**< Contains the measurements associated with the model that have not expired. The list organizes the measurements in chronological order
                                                            and the vector contains measurements with the same time stamp. This allows us to efficiently remove expired measurements by simply removing 
                                                            entire vectors. */
 
@@ -83,20 +83,20 @@ std::list<std::vector<tMeasurement>> consensus_set_; /**< Contains the measureme
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <class tMeasurement>
-void ConsensusSet<tMeasurement>::AddMeasToConsensusSet(const tMeasurement& meas) {
+template <class _Measurement>
+void ConsensusSet<_Measurement>::AddMeasToConsensusSet(const Measurement& meas) {
 
     // There are no measurements. Just add it.
     if (consensus_set_.size() == 0) {
-        consensus_set_.emplace_back(std::vector<tMeasurement>{meas});
+        consensus_set_.emplace_back(std::vector<Measurement>{meas});
     } 
     // All measurements occurred before the new one. So add it to the back.
     else if (consensus_set_.back().front().time_stamp < meas.time_stamp) {
-        consensus_set_.emplace_back(std::vector<tMeasurement>{meas});
+        consensus_set_.emplace_back(std::vector<Measurement>{meas});
     } 
     // The new measurement occurred before all the other measurements
     else if (consensus_set_.front().front().time_stamp > meas.time_stamp) {
-        consensus_set_.emplace_front(std::vector<tMeasurement>{meas});
+        consensus_set_.emplace_front(std::vector<Measurement>{meas});
     }
     else {
         // Search from the end to the beginning to find where to place it
@@ -106,7 +106,7 @@ void ConsensusSet<tMeasurement>::AddMeasToConsensusSet(const tMeasurement& meas)
                 (*iter).push_back(meas);
                 break;
             } else if ((*iter).front().time_stamp < meas.time_stamp) {
-                consensus_set_.insert(iter.base(),std::vector<tMeasurement>{meas});
+                consensus_set_.insert(iter.base(),std::vector<Measurement>{meas});
                 break;
             } 
         }
@@ -115,10 +115,10 @@ void ConsensusSet<tMeasurement>::AddMeasToConsensusSet(const tMeasurement& meas)
 
 //-----------------------------------------------------------------
 
-template <class tMeasurement>
-void ConsensusSet<tMeasurement>::AddMeasurementsToConsensusSet(const std::vector<tMeasurement>& meas) {
+template <class _Measurement>
+void ConsensusSet<_Measurement>::AddMeasurementsToConsensusSet(const std::vector<Measurement>& meas) {
 
-    for (tMeasurement m : meas) {
+    for (Measurement m : meas) {
         AddMeasToConsensusSet(m);
     }
 
@@ -126,8 +126,8 @@ void ConsensusSet<tMeasurement>::AddMeasurementsToConsensusSet(const std::vector
 
 //-----------------------------------------------------------------
 
-template <class tMeasurement>
-void ConsensusSet<tMeasurement>::AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<tMeasurement>& meas) {
+template <class _Measurement>
+void ConsensusSet<_Measurement>::AddMeasurementsToConsensusSetSameTimeStamp(const std::vector<Measurement>& meas) {
 
 
  // There are no measurements. Just add it.
@@ -161,8 +161,8 @@ void ConsensusSet<tMeasurement>::AddMeasurementsToConsensusSetSameTimeStamp(cons
 
 //-----------------------------------------------------------------
 
-template <class tMeasurement>
-void ConsensusSet<tMeasurement>::PruneConsensusSet(double expiration_time) {
+template <class _Measurement>
+void ConsensusSet<_Measurement>::PruneConsensusSet(double expiration_time) {
 
 // It is empty, nothing to remove
 if(consensus_set_.size() == 0)
@@ -190,9 +190,9 @@ for (auto iter = consensus_set_.begin(); iter != consensus_set_.end(); ++iter) {
 
 //-----------------------------------------------------------------
 
-template< class tMeasurement>
-template<typename tTransformation>
-void ConsensusSet<tMeasurement>::TransformConsensusSet(const tTransformation& T) {
+template< class _Measurement>
+template<typename _Transformation>
+void ConsensusSet<_Measurement>::TransformConsensusSet(const _Transformation& T) {
 
     for (auto iter = consensus_set_.begin(); iter != consensus_set_.end(); ++iter) {
         for (auto& m : (*iter) ) {
@@ -203,10 +203,10 @@ void ConsensusSet<tMeasurement>::TransformConsensusSet(const tTransformation& T)
 
 //-----------------------------------------------------------------
 
-template<class tMeasurement>
-ConsensusSet<tMeasurement> ConsensusSet<tMeasurement>::MergeConsensusSets(const ConsensusSet& cs1, const ConsensusSet& cs2) {
+template<class Measurement>
+ConsensusSet<Measurement> ConsensusSet<Measurement>::MergeConsensusSets(const ConsensusSet& cs1, const ConsensusSet& cs2) {
 
-    ConsensusSet<tMeasurement> merged_consensus_set = cs1;
+    ConsensusSet<Measurement> merged_consensus_set = cs1;
     
     for (auto iter = cs2.consensus_set_.begin(); iter != cs2.consensus_set_.end(); ++iter) {
         

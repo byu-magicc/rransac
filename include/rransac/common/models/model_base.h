@@ -90,55 +90,60 @@ void Reset() {
  * 
  */ 
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
 class ModelBase
 {
 public:
-    typedef typename tSourceContainer::State State;                             /**< The state of the target. @see State. */
+    typedef _Derived<_SourceContainer> DerivedModel;                            /**< The derived model. */
+    typedef typename _SourceContainer::State State;                             /**< The state of the target. @see State. */
     typedef typename State::DataType DataType;                                  /**< The scalar object for the data. Ex. float, double, etc. */
-    typedef tDerived<tSourceContainer> DerivedModel;                   /**< The derived model. */
-    typedef tSourceContainer SourceContainer;                                   /**< The object type of the source. @see SourceBase. */
-    typedef typename tSourceContainer::Transformation Transformation;           /**< The object type of the measurement and track transformation. */
+    typedef _SourceContainer SourceContainer;                                   /**< The object type of the source. @see SourceBase. */
+    typedef typename _SourceContainer::Transformation Transformation;           /**< The object type of the measurement and track transformation. */
     typedef Eigen::Matrix<DataType, Eigen::Dynamic, Eigen::Dynamic> MatXd;      
+    typedef typename Transformation::TransformDataType TransformDataType;
+    typedef typename SourceContainer::Measurement Measurement;
+    typedef Eigen::Matrix<DataType,_CovDim,_CovDim> MatModelCov;                /**< The object type of the error covariance, Jacobians, and others. */
+    typedef Eigen::Matrix<DataType,_CovDim,1> VecCov;                           /**< The object type of state update. */
+    typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatS;         /**< The object type of the innovation covariance. */
+    typedef typename SourceContainer::Source0::MatH MatH;                       /**< The object type of the Jacobian of the observation function w.r.t. to the state. */
+    typedef typename SourceContainer::Source0::MatV MatV;                       /**< The object type of the Jacobian of the observation function w.r.t. the measurement noise. */
 
-    static constexpr unsigned int g_dim_ = State::Group::dim_;                  /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */
-    static constexpr unsigned int cov_dim_ = tCovDim;                           /**< The dimension of the error covariance. */
-    static constexpr unsigned int num_sources_ = tSourceContainer::num_sources_;/**< The number of sources in the source container. */
-    typedef Eigen::Matrix<DataType,cov_dim_,cov_dim_> Mat;                      /**< The object type of the error covariance, Jacobians, and others. */
-    typedef Eigen::Matrix<DataType,cov_dim_,1> VecCov;                          /**< The object type of state update. */
+    static constexpr unsigned int g_dim_ = State::Group::dim_;                   /**< The dimension of the pose of the state, i.e. the dimension of the group portion of the state. */
+    static constexpr unsigned int cov_dim_ = _CovDim;                            /**< The dimension of the error covariance. */
+    static constexpr unsigned int num_sources_ = SourceContainer::num_sources_;  /**< The number of sources in the source container. */
 
 
     std::vector<ModelLikelihoodUpdateInfo> model_likelihood_update_info_; /**< Contains the information needed to update the model_likelihood */
-    std::vector<std::vector<Meas<DataType>>> new_assoc_meas_;             /**< Measurements recently associated with the track. These measurements have not been used to update 
+    std::vector<std::vector<Measurement>> new_assoc_meas_;                /**< Measurements recently associated with the track. These measurements have not been used to update 
                                                                                 the track. Once an associated measurement has been used to update the track, they are added to the 
                                                                                 consensus set and removed from this vector. These measurements should have weights assigned to them. 
                                                                                 Each vector of measurements corresponds to a unique source ID. */
 
-    State state_;                      /**< The estimated state of the target.*/
-    Mat err_cov_;                      /**< The error covariance. */
-    ConsensusSet<Meas<DataType>> cs_;  /**< The consensus set. */
-    double newest_measurement_time_stamp;  /**< The time stamp associated with the newest measurement. */
-    long int label_;                   /**< When the track becomes a good track, it receives a unique label. */   
-    double model_likelihood_;          /**< The likelihood that the track represents an actual phenomenon.  */
-    Mat F_;                            /**< The Jacobian of the state transition function w.r.t. the states */
-    Mat G_;                            /**< The Jacobian of the state transition function w.r.t. the noise  */
-    std::vector<MatXd> innovation_covariances_; /**< A vector of innovation covariances. The vector index corresponds to the measurement source index. It is used 
+    State state_;                               /**< The estimated state of the target.*/
+    MatModelCov err_cov_;                       /**< The error covariance. */
+    ConsensusSet<Measurement> cs_;              /**< The consensus set. */
+    double newest_measurement_time_stamp;       /**< The time stamp associated with the newest measurement. */
+    long int label_;                            /**< When the track becomes a good track, it receives a unique label. */   
+    double model_likelihood_;                   /**< The likelihood that the track represents an actual phenomenon.  */
+    MatModelCov F_;                             /**< The Jacobian of the state transition function w.r.t. the states */
+    MatModelCov G_;                             /**< The Jacobian of the state transition function w.r.t. the noise  */
+    std::vector<MatS> innovation_covariances_; /**< A vector of innovation covariances. The vector index corresponds to the measurement source index. It is used 
                                                     in order to mitigate how many times the innovation covariance is calculated. */
     std::vector<bool> innov_cov_set_;           /**< Indicates if the member variable innovation_covariances_ have been set and are valid since new measurements were received. This
                                                      variable is reset to false after the update step in UpdateModel and the propagation step in PropagateModel since
                                                      the innovation covariances are no longer valid. The index of the vector corresponds to the source index. */
-    Mat Q_;                            /**< Process noise covariance */
+    MatModelCov Q_;                            /**< Process noise covariance */
 
 
-    template<typename tDataType>
-    using ModelTemplate = tDerived<typename tSourceContainer::template SourceContainerTemplate<tDataType>>;
+    template<typename _DataType>
+    using ModelTemplate = _Derived<typename _SourceContainer::template SourceContainerTemplate<_DataType>>;
 
 #if RRANSAC_VIZ_HOOKS
     std::vector<Eigen::MatrixXd> S_validation_; /**< The innovation covariance used to compute the last validation region. */
 #endif
 
     // Default constructor
-    ModelBase() : err_cov_(Mat::Identity()) {}
+    ModelBase() : err_cov_(MatModelCov::Identity()) {}
 
     // Default destructor
     ~ModelBase()=default;
@@ -162,10 +167,8 @@ public:
      *                a positive value would indicate forward propagation and a negative value would indicate backward propagation.
      * @return Returns the propagated state.
      */ 
-    static State PropagateState(const State& state, const DataType dt) {
-        State tmp = state;
-        tmp.g_.OPlusEq(tmp.u_.data_*dt);
-        return tmp;
+    static void PropagateState(State& state, const DataType dt) {        
+        DerivedModel::DerivedPropagateState(state,dt);
     }
     
     /**
@@ -174,7 +177,7 @@ public:
      * @param[in] dt A time interval
      * @return The Jacobian \f$ F_k\f$. 
      */ 
-    static Mat GetLinTransFuncMatState(const State& state, const DataType dt) {
+    static MatModelCov GetLinTransFuncMatState(const State& state, const DataType dt) {
         return DerivedModel::DerivedGetLinTransFuncMatState(state, dt);        
     }
 
@@ -184,7 +187,7 @@ public:
      * @param[in] dt  A time interval
      * @return Returns the Jacobian \f$ G_k \f$
      */
-    static Mat GetLinTransFuncMatNoise(const State& state, const DataType dt){
+    static MatModelCov GetLinTransFuncMatNoise(const State& state, const DataType dt){
         return DerivedModel::DerivedGetLinTransFuncMatNoise(state, dt);
 
     }
@@ -208,38 +211,44 @@ public:
      * Performs the OPlus operation on the track's state using the state update provided.
      * @param[in] state_update The state update that will be added to the track's current state.
      */
-    void OPlusEQ(const VecCov& state_update){ static_cast<DerivedModel*>(this)->DerivedOPlusEq(state_update);}
-
-
-    /**
-     * Calculates the Jacobian of the observation matrix with respect to the state estimate
-     * evaluated at the current state estimate.
-     * The Jacobian  is dependent on the measurement source.
-     * @param[in] source_container The container of all of the sources
-     * @param[in] source_index The index to the source whose parameters are to be changed.
-     * @param[in] state A state of the target.
-     * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
-     * @param[in] transform_data The data needed to transform the state
-     * @return Returns the Jacobian \f$H_k\f$
-     */ 
-    static MatXd GetLinObsMatState(const SourceContainer& source_container,  const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data){
-        return source_container.GetLinObsMatState(source_index,state,transform_state,transform_data);
-    }
+    void OPlusEQ(const VecCov& state_update){ static_cast<DerivedModel*>(this)->DerivedOPlus(this->state_, state_update);}
 
     /**
-     * Calculates the Jacobian of the observation matrix with respect to the measurement noise
-     * evaluated at the current state estimate.
-     * The Jacobian  is dependent on the measurement source.
-     * @param[in] source_container The container of all of the sources
-     * @param[in] source_index The index to the source whose parameters are to be changed.
-     * @param[in] state A state of the target.
-     * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
-     * @param[in] transform_data The data needed to transform the state
-     * @return Returns the Jacobian \f$V_k\f$
-     */ 
-    static MatXd GetLinObsMatSensorNoise(const SourceContainer& source_container,  const unsigned int source_index, const State& state, const bool transform_state, const MatXd& transform_data){
-        return source_container.GetLinObsMatSensorNoise(source_index,state,transform_state,transform_data);
-    }
+     * Performs the OPlus operation on the state state using the state update provided.
+     * @param[in] state_update The state update that will be added to the track's current state.
+     */
+    static void OPlus(State& state, const VecCov& state_update){ DerivedModel::DerivedOPlus(state, state_update);}
+
+
+    // /**
+    //  * Calculates the Jacobian of the observation matrix with respect to the state estimate
+    //  * evaluated at the current state estimate.
+    //  * The Jacobian  is dependent on the measurement source.
+    //  * @param[in] source_container The container of all of the sources
+    //  * @param[in] source_index The index to the source whose parameters are to be changed.
+    //  * @param[in] state A state of the target.
+    //  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
+    //  * @param[in] transform_data The data needed to transform the state
+    //  * @return Returns the Jacobian \f$H_k\f$
+    //  */ 
+    // static typename MatH GetLinObsMatState(const SourceContainer& source_container,  const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data){
+    //     return source_container.GetLinObsMatState(source_index,state,transform_state,transform_data);
+    // }
+
+    // /**
+    //  * Calculates the Jacobian of the observation matrix with respect to the measurement noise
+    //  * evaluated at the current state estimate.
+    //  * The Jacobian  is dependent on the measurement source.
+    //  * @param[in] source_container The container of all of the sources
+    //  * @param[in] source_index The index to the source whose parameters are to be changed.
+    //  * @param[in] state A state of the target.
+    //  * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
+    //  * @param[in] transform_data The data needed to transform the state
+    //  * @return Returns the Jacobian \f$V_k\f$
+    //  */ 
+    // static typename MatV GetLinObsMatSensorNoise(const SourceContainer& source_container,  const unsigned int source_index, const State& state, const bool transform_state, const TransformDataType& transform_data){
+    //     return source_container.GetLinObsMatSensorNoise(source_index,state,transform_state,transform_data);
+    // }
 
     // /**
     //  * Calculates an estimated measurement given a state of the model and the source ID.
@@ -258,7 +267,7 @@ public:
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */ 
-    MatXd GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const MatXd& transform_data) const ;
+    MatS GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const TransformDataType& transform_data) const ;
 
     /**
      * Returns the innovation covariance associated with a source. If the innovation covariance has been set in innovation_covariances_
@@ -269,7 +278,7 @@ public:
      * @param[in] transform_state A flag used to indicate if the state needs to be transformed 
      * @param[in] transform_data The data needed to transform the state
      */ 
-    MatXd GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const MatXd& transform_data);
+    MatS GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const TransformDataType& transform_data);
 
     /**
      * Using the transformation data provided by the user, this function transforms the state estimate and error covariance
@@ -299,8 +308,8 @@ public:
     /**
      * Returns a Random State
      */ 
-    static State GetRandomState(){
-        return DerivedModel::DerivedGetRandomState();
+    static State GetRandomState(const DataType scalar = static_cast<DataType>(1.0)){
+        return DerivedModel::DerivedGetRandomState(scalar);
     }
 
     /**
@@ -316,7 +325,7 @@ public:
      * Adds a new measurement to the ModelBase::new_assoc_meas_ according to the source index.
      * @param[in] meas The measurement to be added. 
      */ 
-    void AddNewMeasurement( const Meas<DataType>& meas);
+    void AddNewMeasurement( const Measurement& meas);
 
 private:
 
@@ -328,7 +337,7 @@ private:
  * @param[out] state_update The calculated state update to be applied to the current state estimate.
  * @param[out] cov_update The calculated covariance update to be applied to the current error covariance.
  */ 
-void GetStateUpdateAndCovariance(const SourceContainer& source_container, const std::vector<Meas<DataType>>& meas, Eigen::Matrix<DataType,cov_dim_,1>& state_update, Mat& cov_update);
+void GetStateUpdateAndCovariance(const SourceContainer& source_container, const std::vector<Measurement>& meas, VecCov& state_update, MatModelCov& cov_update);
 
 /**
  * Since there can be multiple sources providing measurements, we fuse the measurements together using a centralized measurement fusion method discussed in Tracking and Data Fusion by Bar-Shalom 2011.
@@ -336,7 +345,7 @@ void GetStateUpdateAndCovariance(const SourceContainer& source_container, const 
  * @param[in] source_container The container of all of the sources
  * @return The state update. 
  */ 
-Eigen::Matrix<DataType,tCovDim,1> PerformCentralizedMeasurementFusion(const SourceContainer& source_container, const Parameters& params);
+VecCov PerformCentralizedMeasurementFusion(const SourceContainer& source_container, const Parameters& params);
 
 
 };
@@ -345,8 +354,8 @@ Eigen::Matrix<DataType,tCovDim,1> PerformCentralizedMeasurementFusion(const Sour
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
-void ModelBase<tSourceContainer, tCovDim, tDerived>::Init(const Parameters& params) {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
+void ModelBase<_SourceContainer, _CovDim, _Derived>::Init(const Parameters& params) {
 
     if (params.set_initial_error_covariance_to_id_) {
         err_cov_.setIdentity();
@@ -373,8 +382,8 @@ void ModelBase<tSourceContainer, tCovDim, tDerived>::Init(const Parameters& para
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
-void ModelBase<tSourceContainer, tCovDim, tDerived>::PropagateModel(const DataType dt) {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
+void ModelBase<_SourceContainer, _CovDim, _Derived>::PropagateModel(const DataType dt) {
 
     // Construct matrices to transform covariance.
     F_ = GetLinTransFuncMatState(state_,dt);
@@ -387,15 +396,15 @@ void ModelBase<tSourceContainer, tCovDim, tDerived>::PropagateModel(const DataTy
     err_cov_ = F_*err_cov_*F_.transpose() + G_*Q_*dt*G_.transpose();
 
     // Propagate state
-    state_.g_.OPlusEq(state_.u_.data_*dt);
+    PropagateState(state_,dt);
     std::fill(innov_cov_set_.begin(), innov_cov_set_.end(),false);
 
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
-void ModelBase<tSourceContainer, tCovDim, tDerived>::UpdateModel(const SourceContainer& source_container, const Parameters& params) {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
+void ModelBase<_SourceContainer, _CovDim, _Derived>::UpdateModel(const SourceContainer& source_container, const Parameters& params) {
 
     for(auto& source_meas : new_assoc_meas_) {
         if(source_meas.size() > 0) {
@@ -422,15 +431,15 @@ void ModelBase<tSourceContainer, tCovDim, tDerived>::UpdateModel(const SourceCon
 
 //-------------------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
-Eigen::Matrix<typename tSourceContainer::State::DataType, tCovDim,1> ModelBase<tSourceContainer, tCovDim, tDerived>::PerformCentralizedMeasurementFusion(const tSourceContainer& source_container, const Parameters& params) {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
+typename ModelBase<_SourceContainer, _CovDim, _Derived>::VecCov ModelBase<_SourceContainer, _CovDim, _Derived>::PerformCentralizedMeasurementFusion(const SourceContainer& source_container, const Parameters& params) {
 
-Eigen::Matrix<DataType,cov_dim_,1> state_update_sum;
-Eigen::Matrix<DataType,cov_dim_,1> state_update;
-Eigen::Matrix<DataType,cov_dim_,1> update;
-Mat cov;
-Mat cov_sum;
-Mat error_cov_inverse = err_cov_.inverse();
+VecCov state_update_sum;
+VecCov state_update;
+VecCov update;
+MatModelCov cov;
+MatModelCov cov_sum;
+MatModelCov error_cov_inverse = err_cov_.inverse();
 state_update_sum.setZero();
 cov_sum.setZero();
 
@@ -465,23 +474,23 @@ return update;
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived>   
-void ModelBase<tSourceContainer, tCovDim, tDerived>::GetStateUpdateAndCovariance(const tSourceContainer& source_container, const std::vector<Meas<DataType>>& meas, Eigen::Matrix<DataType,cov_dim_,1>& state_update, Mat& cov_update) {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived>   
+void ModelBase<_SourceContainer, _CovDim, _Derived>::GetStateUpdateAndCovariance(const SourceContainer& source_container, const std::vector<Measurement>& meas, VecCov& state_update, MatModelCov& cov_update) {
 
 state_update.setZero();
 
 
-Eigen::MatrixXd H = source_container.GetLinObsMatState(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m);      // Jacobian of observation function w.r.t. state
-Eigen::MatrixXd V = source_container.GetLinObsMatSensorNoise(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m);                             // Jacobian of observation function w.r.t. noise
+MatH H = source_container.GetLinObsMatState(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m);      // Jacobian of observation function w.r.t. state
+MatV V = source_container.GetLinObsMatSensorNoise(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m);                             // Jacobian of observation function w.r.t. noise
 Eigen::MatrixXd K;                                                                    // Kalman Gain
-Eigen::MatrixXd S_inverse;                                                            // Innovation covariance inverse
+MatS S_inverse;                                                            // Innovation covariance inverse
 Eigen::MatrixXd nu_i;                                                                 
 Eigen::MatrixXd nu(V.rows(),1);                                                       // Total innovation term
 nu.setZero();
 Eigen::MatrixXd covSum(V.rows(),V.rows());
 covSum.setZero();
 
-Meas<DataType> estimated_meas = source_container.GetEstMeas(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m); 
+Measurement estimated_meas = source_container.GetEstMeas(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m); 
 
 S_inverse = GetInnovationCovariance(source_container,meas.front().source_index, meas.front().transform_state, meas.front().transform_data_t_m).inverse();
 K = err_cov_*H.transpose()*S_inverse;
@@ -489,7 +498,7 @@ K = err_cov_*H.transpose()*S_inverse;
 DataType B0 = 1;
 
 // Get total weighted innovation and part of the cov_tilde
-for (Meas<DataType> m : meas) {
+for (Measurement m : meas) {
     nu_i = source_container.OMinus(m.source_index,m,estimated_meas);
     nu += m.weight*nu_i;
     covSum+= m.weight*nu_i*nu_i.transpose();
@@ -505,6 +514,9 @@ cov_update = err_cov_+ K*(covSum*K.transpose() -(1-B0)*H*err_cov_);
 
 state_update = K*nu;
 
+// std::cout << "H: " << std::endl << H << std::endl;
+// std::cout << "S: " << std::endl << S_inverse << std::endl;
+// std::cout << "K: " << std::endl << K << std::endl;
 
 
 }
@@ -512,16 +524,21 @@ state_update = K*nu;
 //---------------------------------------------------------------------------------------------------------
 
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived>  
-Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSourceContainer, tCovDim, tDerived>::GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const MatXd& transform_data) const {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived>  
+typename ModelBase<_SourceContainer, _CovDim, _Derived>::MatXd ModelBase<_SourceContainer, _CovDim, _Derived>::GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const TransformDataType& transform_data) const {
 
     // If the innovation covariance has been set this sensor scan return it. 
     if(innov_cov_set_[source_index]) {
        return innovation_covariances_[source_index]; 
     }
 
-    MatXd H = source_container.GetLinObsMatState(source_index, this->state_, transform_state, transform_data);         // Jacobian of observation function w.r.t. state
-    MatXd V = source_container.GetLinObsMatSensorNoise(source_index, this->state_, transform_state, transform_data);   // Jacobian of observation function w.r.t. noise
+    MatH H = source_container.GetLinObsMatState(source_index, this->state_, transform_state, transform_data);         // Jacobian of observation function w.r.t. state
+    MatV V = source_container.GetLinObsMatSensorNoise(source_index, this->state_, transform_state, transform_data);   // Jacobian of observation function w.r.t. noise
+
+    // std::cout << "H: " << std::endl << H << std::endl;
+    // std::cout << "V: " << std::endl << V << std::endl;
+    // std::cout << "VRV: " << std::endl << V*source_container.GetParams(source_index).meas_cov_*V.transpose() << std::endl;
+    // std::cout << "H*err_cov_*H.transpose(): " << std::endl << H*err_cov_*H.transpose() << std::endl;
 
     return H*err_cov_*H.transpose() + V*source_container.GetParams(source_index).meas_cov_*V.transpose();
 }
@@ -529,8 +546,8 @@ Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::D
 //---------------------------------------------------------------------------------------------------------
 
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived>  
-Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::Dynamic> ModelBase<tSourceContainer, tCovDim, tDerived>::GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const MatXd& transform_data) {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived>  
+typename ModelBase<_SourceContainer, _CovDim, _Derived>::MatXd ModelBase<_SourceContainer, _CovDim, _Derived>::GetInnovationCovariance(const SourceContainer& source_container, const unsigned int source_index, const bool transform_state, const TransformDataType& transform_data) {
 
 
     // If the innovation covariance has not been set this sensor scan, calculate it.
@@ -546,8 +563,8 @@ Eigen::Matrix<typename tSourceContainer::State::DataType,Eigen::Dynamic,Eigen::D
 
 //---------------------------------------------------------------------------------------------------------
 
-template <typename tSourceContainer, int tCovDim,  template< typename > typename tDerived> 
-void ModelBase<tSourceContainer, tCovDim, tDerived>::AddNewMeasurement( const Meas<DataType>& meas) {
+template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
+void ModelBase<_SourceContainer, _CovDim, _Derived>::AddNewMeasurement( const Measurement& meas) {
 
     
 

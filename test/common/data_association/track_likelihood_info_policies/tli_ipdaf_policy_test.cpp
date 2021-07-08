@@ -25,13 +25,14 @@ typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
 typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVel;
 typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
 typedef ModelRN<SourceContainerR2> Model;
-
+typedef typename SourceR2Pos::Measurement Measurement;
+typedef typename SourceR2Pos::TransformDataType TransformDataType;
 
 static bool StateInsideSurveillanceRegionFalseCallback(const R2_r2& state) {
     return false;
 }
 
-double CalculateMeasurementLikelihood(const System<Model>& sys, Model& track, const Meas<typename Model::DataType>& meas) {
+double CalculateMeasurementLikelihood(const System<Model>& sys, Model& track, const Measurement& meas) {
 
     Eigen::MatrixXd err = sys.source_container_.OMinus(meas.source_index, meas, sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m));
     Eigen::MatrixXd S = track.GetInnovationCovariance(sys.source_container_,meas.source_index, meas.transform_state, meas.transform_data_t_m);
@@ -42,6 +43,7 @@ double CalculateMeasurementLikelihood(const System<Model>& sys, Model& track, co
 }
 
 TEST(TargetLikelihoodUpdateTest, IPDAF) {
+
 
 
 
@@ -106,7 +108,7 @@ auto model_iter0 = sys.models_.begin();
 auto model_iter1 = std::next(model_iter0);
 
 // Setup measurements
-Meas<double> m0, m1;
+Measurement m0, m1;
 m0.type = source_params0.type_;
 m0.time_stamp = sys.current_time_;
 m0.source_index = 0;
@@ -115,8 +117,8 @@ m1.time_stamp = sys.current_time_;
 m1.source_index = 1;
 
 // Setup data association info
-DataAssociationInfo info;
-Eigen::MatrixXd EmptyMat;
+DataAssociationInfo<TransformDataType> info;
+TransformDataType EmptyMat;
 int num_sources = SourceContainerR2::num_sources_;
 for (int ii = 0; ii < num_sources; ++ii) {
     info.source_produced_measurements_.push_back(false);

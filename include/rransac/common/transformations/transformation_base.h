@@ -13,6 +13,17 @@
 namespace rransac
 {
 
+/**
+ * \class TransformDerivedTraits
+ * The traits of the derived class necessary for the base transform class.
+ */ 
+template<typename _State, typename _TransformDataType, typename _MatCov, bool _IsNullTransform>
+struct TransformDerivedTraits {
+    typedef _State State;                              /**< The state of the target. @see State.*/
+    typedef _TransformDataType TransformDataType;      /**< The object type of the data needed to transform the measurements and tracks. */
+    typedef _MatCov MatCov;                            /**< The object type of the tracks error covariance. */
+    static constexpr bool is_null_transform_ = _IsNullTransform;
+};
 
 /** \class TransformBase
  * When the target tracking frame changes, the measurements and tracks need to be transformed from the previous tracking frame to the current
@@ -21,24 +32,28 @@ namespace rransac
  * 
 */
 
-template <class tData, class tState, class tMatCov, bool tNullTransform, class tDerived>
+template <typename _TransformDerivedTraits, template <typename > typename _Derived>
 class TransformBase {
 
 public:
 
-typedef tData Data;                             /**< The object type of the data needed to transform the measurements and tracks. */
-typedef tState State;                           /**< The state of the target. @see State. */
-typedef tMatCov MatCov;                         /**< The object type of the tracks error covariance. */
-typedef tDerived Derived;                       /**< The child class that implements the specific member functions. */
-typedef typename tState::DataType DataType;     /**< The scalar object for the data. Ex. float, double, etc. */
-typedef Eigen::Matrix<DataType, Eigen::Dynamic,Eigen::Dynamic> MatXd; /**< Dynamic Eigen Matrix */
-static constexpr bool is_null_transform_ = tNullTransform; /**< Indicates if the derived transform call is the null transform */
+typedef typename _TransformDerivedTraits::TransformDataType TransformDataType;  /**< The object type of the data needed to transform the measurements and tracks. */
+typedef typename _TransformDerivedTraits::State State;      /**< The state of the target. @see State. */
+typedef typename _TransformDerivedTraits::MatCov MatCov;    /**< The object type of the tracks error covariance. */
+typedef _TransformDerivedTraits DerivedTraits;              /**< The traits from the derived class. */
+typedef _Derived<State> Derived;                            /**< The child class that implements the specific member functions. */
+typedef typename State::DataType DataType;                  /**< The scalar object for the data. Ex. float, double, etc. */
+typedef Meas<DataType,TransformDataType> Measurement;       /**< The measurement data type. */
+static constexpr bool is_null_transform_ = _TransformDerivedTraits::is_null_transform_; /**< Indicates if the derived transform call is the null transform */
+
+template<typename _State>
+using TransformTemplate = _Derived<_State>;
 
 /**
  * Used to initialize the transformation object.
  */ 
 void Init() {
-    static_cast<tDerived*>(this)->DerivedInit();
+    static_cast<Derived*>(this)->DerivedInit();
 }
 
 /** 
@@ -46,15 +61,15 @@ void Init() {
  * other stuff needs to be done. 
  * @param[in] data The data required to transform the measurements, states, and error covariance
  */ 
-void SetData(const Data& data) {
-    static_cast<tDerived*>(this)->DerivedSetData(data);
+void SetData(const TransformDataType& data) {
+    static_cast<Derived*>(this)->DerivedSetData(data);
 }
 
 
 /** 
  * Returns the transformation data member variable.
  */ 
-tData GetData() const {
+TransformDataType GetData() const {
     return data_;
 }
 
@@ -62,8 +77,16 @@ tData GetData() const {
  * Transforms the measurement from the previous tracking frame to the current one.
  * @param[in] meas The measurement to be transformed.
  */ 
-void TransformMeasurement(Meas<DataType>& meas) const {
-    static_cast<const tDerived*>(this)->DerivedTransformMeasurement(meas);
+void TransformMeasurement(Measurement& meas) const {
+    static_cast<const Derived*>(this)->DerivedTransformMeasurement(meas);
+}
+
+/** 
+ * Transforms the measurement from according to the transformation provided.
+ * @param[in] meas The measurement to be transformed.
+ */ 
+static Measurement TransformMeasurement(const Measurement& meas, const TransformDataType& data) {
+    return Derived::DerivedTransformMeasurement(meas,data);
 }
 
 /** 
@@ -73,7 +96,7 @@ void TransformMeasurement(Meas<DataType>& meas) const {
  * @param[in] cov   The track's error covariance to be transformed.
  */ 
 void TransformTrack(State& state, MatCov& cov) const {
-    static_cast<const tDerived*>(this)->DerivedTransformTrack(state,cov);
+    static_cast<const Derived*>(this)->DerivedTransformTrack(state,cov);
 }
 
 /** 
@@ -83,8 +106,8 @@ void TransformTrack(State& state, MatCov& cov) const {
  * @param[in] cov   The track's error covariance to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static void TransformTrack(State& state, MatCov& cov, const Data& transform_data) {
-   tDerived::DerivedTransformTrack(state,cov,transform_data);
+static void TransformTrack(State& state, MatCov& cov, const TransformDataType& transform_data) {
+   Derived::DerivedTransformTrack(state,cov,transform_data);
 }
 
 /** 
@@ -93,8 +116,8 @@ static void TransformTrack(State& state, MatCov& cov, const Data& transform_data
  * @param[in] state The track's state to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static State TransformState(const State& state, const Data& transform_data) {
-    return tDerived::DerivedTransformState(state,transform_data);
+static State TransformState(const State& state, const TransformDataType& transform_data) {
+    return Derived::DerivedTransformState(state,transform_data);
 }
 
 /** 
@@ -102,17 +125,26 @@ static State TransformState(const State& state, const Data& transform_data) {
  * @param[in] state The state of the target after it has been transformed using transform_data
  * @param[in] transform_data The data used in the transformation
  */ 
-static MatXd GetTransformationJacobian(const State& state, const Data& transform_data) {
-   return tDerived::DerivedGetTransformationJacobian(state,transform_data);
+static MatCov GetTransformationJacobian(const State& state, const TransformDataType& transform_data) {
+   return Derived::DerivedGetTransformationJacobian(state,transform_data);
 }
 
 /**
  * Verifies that the transform data provided by the user is in the requested from.
  * @param transform_data The tranformation data to be tested. 
  */
-static bool IsAcceptableTransformData(const MatXd& transform_data) {
-    return tDerived::DerivedIsAcceptableTransformData(transform_data);
+static bool IsAcceptableTransformData(const TransformDataType& transform_data) {
+    return Derived::DerivedIsAcceptableTransformData(transform_data);
 } 
+
+/**
+ * Generates random transform data. The function can use the parameter scalar in order to 
+ * generate a larger distribution of random transformations.
+ * @param scalar A scalar used to generate a larger distribution. 
+ */ 
+static TransformDataType GetRandomTransform(const DataType scalar = static_cast<DataType>(1.0)){
+    return Derived::DerivedGetRandomTransform(scalar);
+}
 
 
 private:
@@ -121,25 +153,28 @@ TransformBase()=default;
 friend Derived;
 // private:
 
-Data data_;
+TransformDataType data_;
 
 };
 
 
-template <class tData, class tState, class tMatCov, class tDerived>
-class TransformBase<tData,tState,tMatCov,true,tDerived> {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Template specialization for the null transform.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <typename _State, typename _TransformDataType, typename _MatCov, template<typename > typename _Derived>
+class TransformBase<TransformDerivedTraits<_State,_TransformDataType,_MatCov,true>,_Derived> {
 
 public:
+typedef TransformDerivedTraits<_State,_TransformDataType,_MatCov,true> DerivedTraits;
+typedef typename DerivedTraits::TransformDataType TransformDataType;           /**< The object type of the data needed to transform the measurements and tracks. */
+typedef typename DerivedTraits::State State;               /**< The state of the target. @see State. */
+typedef typename DerivedTraits::MatCov MatCov;             /**< The object type of the tracks error covariance. */
+typedef _Derived<State> Derived;                           /**< The child class that implements the specific member functions. */
+typedef typename State::DataType DataType;                 /**< The scalar object for the data. Ex. float, double, etc. */
+typedef Meas<DataType,TransformDataType> Measurement;      /**< The measurement data type. */
+static constexpr bool is_null_transform_ = true;           /**< Indicates if the derived transform call is the null transform */
 
-typedef typename tState::DataType DataType;                           /**< The scalar object for the data. Ex. float, double, etc. */
-typedef Eigen::Matrix<DataType, Eigen::Dynamic,Eigen::Dynamic> MatXd; /**< Dynamic Eigen Matrix */
-typedef MatXd Data;                                                   /**< The object type of the data needed to transform the measurements and tracks. */
-typedef tState State;                                                 /**< The state of the target. @see State. */
-typedef MatXd MatCov;                                                 /**< The object type of the tracks error covariance. */
-typedef tDerived Derived;                                             /**< The child class that implements the specific member functions. */
-
-
-static constexpr bool is_null_transform_ = true; /**< Indicates if the derived transform call is the null transform */
 
 
 /**
@@ -152,18 +187,25 @@ void Init() {}
  * other stuff needs to be done. 
  * @param[in] data The data required to transform the measurements, states, and error covariance
  */ 
-void SetData(const tData& data) {}
+void SetData(const TransformDataType& data) {}
 
 
 /** 
  * Returns the transformation data member variable.
  */ 
-tData GetData() const {return data_;}
+TransformDataType GetData() const {return data_;}
 /** 
  * Transforms the measurement from the previous tracking frame to the current one.
  * @param[in] meas The measurement to be transformed.
  */ 
-void TransformMeasurement(const Meas<typename tState::DataType>& meas) const {}
+void TransformMeasurement(const Measurement& meas) const {}
+
+/** 
+ * Transforms the measurement from according to the transformation provided.
+ * @param[in] meas The measurement to be transformed.
+ */ 
+static Measurement TransformMeasurement(const Measurement& meas, const TransformDataType& data) {return meas;};
+
 
 /** 
  * Transforms the track using the transform data. i.e. transform the estimated 
@@ -171,7 +213,7 @@ void TransformMeasurement(const Meas<typename tState::DataType>& meas) const {}
  * @param[in] state The track's state to be transformed.
  * @param[in] cov   The track's error covariance to be transformed.
  */ 
-void TransformTrack(const tState& state, const MatXd& cov) const {}
+void TransformTrack(const State& state, const MatCov& cov) const {}
 
 /** 
  * Transforms the state and error covariance using user provided transform data.
@@ -180,7 +222,7 @@ void TransformTrack(const tState& state, const MatXd& cov) const {}
  * @param[in] cov   The track's error covariance to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static void TransformTrack(const tState& state, const MatXd& cov, const MatXd& transform_data) {}
+static void TransformTrack(const State& state, const MatCov& cov, const TransformDataType& transform_data) {}
 
 /** 
  * Transforms the state using user provided transform data.
@@ -188,21 +230,32 @@ static void TransformTrack(const tState& state, const MatXd& cov, const MatXd& t
  * @param[in] state The track's state to be transformed.
  * @param[in] transform_data The data used to transform the state and error covariance
  */ 
-static tState TransformState(const tState& state, const MatXd& transform_data) {return state;}
+static State TransformState(const State& state, const TransformDataType& transform_data) {return state;}
 
 /** 
- * Returns the Jacobian of the transformation
+ * Returns the Jacobian of the transformation of the track
  * @param[in] state The state of the target after it has been transformed using transform_data
  * @param[in] transform_data The data used in the transformation
  */ 
-static MatXd GetTransformationJacobian(const tState& state, const MatXd& transform_data) {return transform_data;}
+static MatCov GetTransformationJacobian(const State& state, const TransformDataType& transform_data) {return transform_data;}
 /**
  * Verifies that the transform data provided by the user is in the requested from.
  * @param transform_data The tranformation data to be tested. 
  */
-static bool IsAcceptableTransformData(const MatXd& transform_data) {return true;}
+static bool IsAcceptableTransformData(const TransformDataType& transform_data) {return true;}
 
-Data data_;
+/**
+ * Generates random transform data. The function can use the parameter scalar in order to 
+ * generate a larger distribution of random transformations.
+ * @param scalar A scalar used to generate a larger distribution. 
+ */ 
+static TransformDataType GetRandomTransform(const DataType scalar = static_cast<DataType>(1.0)){
+    throw std::runtime_error("TransformBase::GetRandomTransform: This function shouldn't be called. ");
+    // return TransformDataType::Zero();
+}
+
+
+TransformDataType data_;
 
 
 };

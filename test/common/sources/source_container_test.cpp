@@ -126,6 +126,14 @@ public:
 TEST_F(SourceContainerTest, ADD_SOURCE) {
 
     SC source_container_full;
+    int source_index = source_params[0].source_index_;
+
+    source_params[0].source_index_ = SC::num_sources_; // invalid source index
+    ASSERT_ANY_THROW(source_container_full.AddSource(source_params[0]));
+
+    // reset it.
+    source_params[0].source_index_ = source_index;
+
 
     // Shouldn't have any issues adding these sources. Verify Parameters after adding them 
     for (int ii = 0; ii < source_params.size(); ++ii) {
@@ -156,14 +164,25 @@ TEST_F(SourceContainerTest, ADD_SOURCE) {
 
 TEST_F(SourceContainerTest, ADD_SOURCE_SURVEILLANCE_REGION) {
 
+
+
     SC source_container_full;
     bool transform_state = false;
-    Eigen::MatrixXd EmptyMat;
+    typename SC::TransformDataType null_transform_data;
     CallbackClass0<typename SourceR2Pos::State> call0;
     CallbackClass1<typename SourceR2Pos::State> call1;
     CallbackClass2<typename SourceR2Pos::State> call2;
     CallbackClass3<typename SourceR2PosVel::State> call3;
     CallbackClass4<typename SourceR2PosVel::State> call4;
+
+
+    int source_index = source_params[0].source_index_;
+
+    source_params[0].source_index_ = SC::num_sources_; // invalid source index
+    ASSERT_ANY_THROW(source_container_full.AddSource(source_params[0],std::bind(&CallbackClass0<typename SourceR2Pos::State>::func, call0, std::placeholders::_1)  ));
+
+    // reset it.
+    source_params[0].source_index_ = source_index;
 
     // Shouldn't have any issues adding these sources. Verify Parameters after adding them 
     ASSERT_TRUE(source_container_full.AddSource(source_params[0],std::bind(&CallbackClass0<typename SourceR2Pos::State>::func, call0, std::placeholders::_1)  ));
@@ -173,9 +192,9 @@ TEST_F(SourceContainerTest, ADD_SOURCE_SURVEILLANCE_REGION) {
     ASSERT_TRUE(source_container_full.AddSource(source_params[4],std::bind(&CallbackClass4<typename SourceR2PosVel::State>::func, call4, std::placeholders::_1)  ));
 
     for (int ii =0; ii < num_sources-1; ++ii) {
-        ASSERT_TRUE(source_container_full.StateInsideSurveillanceRegion(ii,states[ii],transform_state,EmptyMat));
+        ASSERT_TRUE(source_container_full.StateInsideSurveillanceRegion(ii,states[ii],transform_state,null_transform_data));
     }
-    ASSERT_FALSE(source_container_full.StateInsideSurveillanceRegion(num_sources-1,states[num_sources-1],transform_state,EmptyMat));
+    ASSERT_FALSE(source_container_full.StateInsideSurveillanceRegion(num_sources-1,states[num_sources-1],transform_state,null_transform_data));
 
 
     
@@ -188,7 +207,8 @@ TEST_F(SourceContainerTest, JacobiansMeasOMinusRandomMeasurement) {
 
     SC source_container_full;
     bool transform_state = false;
-    Eigen::MatrixXd EmptyMat;
+    Eigen::MatrixXd null_transform_data;
+    typedef typename SC::Source4::Measurement Measurement;
 
     // Construct the Estimated Measurements
     typename SC::Source4::State state;
@@ -196,17 +216,17 @@ TEST_F(SourceContainerTest, JacobiansMeasOMinusRandomMeasurement) {
     typename SC::Source4 source;
     source.Init(source_params[4]);
 
-    std::vector<Meas<double>> m1;
-    std::vector<Meas<double>> m2;
+    std::vector<Measurement> m1;
+    std::vector<Measurement> m2;
     m1.resize(num_sources);
     m2.resize(num_sources);
-    Eigen::Matrix<double,SC::Source4::meas_space_dim_*2,SC::Source4::meas_space_dim_*2> std;
+    typename SC::Source4::MatMeasCov std;
     std.setIdentity();
     std *=0.1;
 
     for (int ii = 0; ii < num_sources; ++ii) {
-        m1[ii] = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
-        m2[ii] = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
+        m1[ii] = source.GenerateRandomMeasurement(std,state,transform_state,null_transform_data);
+        m2[ii] = source.GenerateRandomMeasurement(std,state,transform_state,null_transform_data);
     }
     
     
@@ -217,23 +237,23 @@ TEST_F(SourceContainerTest, JacobiansMeasOMinusRandomMeasurement) {
         
     }
 
-    ASSERT_EQ(source_container_full.GetLinObsMatState(0,states[0],transform_state,EmptyMat), SC::Source0::GetLinObsMatState(states[0],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatState(1,states[1],transform_state,EmptyMat), SC::Source1::GetLinObsMatState(states[1],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatState(2,states[2],transform_state,EmptyMat), SC::Source2::GetLinObsMatState(states[2],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatState(3,states[3],transform_state,EmptyMat), SC::Source3::GetLinObsMatState(states[3],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatState(4,states[4],transform_state,EmptyMat), SC::Source4::GetLinObsMatState(states[4],transform_state, EmptyMat));
+    ASSERT_EQ(source_container_full.GetLinObsMatState(0,states[0],transform_state,null_transform_data), SC::Source0::GetLinObsMatState(states[0],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatState(1,states[1],transform_state,null_transform_data), SC::Source1::GetLinObsMatState(states[1],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatState(2,states[2],transform_state,null_transform_data), SC::Source2::GetLinObsMatState(states[2],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatState(3,states[3],transform_state,null_transform_data), SC::Source3::GetLinObsMatState(states[3],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatState(4,states[4],transform_state,null_transform_data), SC::Source4::GetLinObsMatState(states[4],transform_state, null_transform_data));
 
-    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(0,states[0],transform_state,EmptyMat), SC::Source0::GetLinObsMatSensorNoise(states[0],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(1,states[1],transform_state,EmptyMat), SC::Source1::GetLinObsMatSensorNoise(states[1],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(2,states[2],transform_state,EmptyMat), SC::Source2::GetLinObsMatSensorNoise(states[2],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(3,states[3],transform_state,EmptyMat), SC::Source3::GetLinObsMatSensorNoise(states[3],transform_state, EmptyMat));
-    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(4,states[4],transform_state,EmptyMat), SC::Source4::GetLinObsMatSensorNoise(states[4],transform_state, EmptyMat));
+    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(0,states[0],transform_state,null_transform_data), SC::Source0::GetLinObsMatSensorNoise(states[0],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(1,states[1],transform_state,null_transform_data), SC::Source1::GetLinObsMatSensorNoise(states[1],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(2,states[2],transform_state,null_transform_data), SC::Source2::GetLinObsMatSensorNoise(states[2],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(3,states[3],transform_state,null_transform_data), SC::Source3::GetLinObsMatSensorNoise(states[3],transform_state, null_transform_data));
+    ASSERT_EQ(source_container_full.GetLinObsMatSensorNoise(4,states[4],transform_state,null_transform_data), SC::Source4::GetLinObsMatSensorNoise(states[4],transform_state, null_transform_data));
     
-    ASSERT_EQ(source_container_full.GetEstMeas(0,states[0],transform_state,EmptyMat).pose, SC::Source0::GetEstMeas(states[0],transform_state, EmptyMat).pose);
-    ASSERT_EQ(source_container_full.GetEstMeas(1,states[1],transform_state,EmptyMat).pose, SC::Source1::GetEstMeas(states[1],transform_state, EmptyMat).pose);
-    ASSERT_EQ(source_container_full.GetEstMeas(2,states[2],transform_state,EmptyMat).pose, SC::Source2::GetEstMeas(states[2],transform_state, EmptyMat).pose);
-    ASSERT_EQ(source_container_full.GetEstMeas(3,states[3],transform_state,EmptyMat).pose, SC::Source3::GetEstMeas(states[3],transform_state, EmptyMat).pose);
-    ASSERT_EQ(source_container_full.GetEstMeas(4,states[4],transform_state,EmptyMat).pose, SC::Source4::GetEstMeas(states[4],transform_state, EmptyMat).pose);
+    ASSERT_EQ(source_container_full.GetEstMeas(0,states[0],transform_state,null_transform_data).pose, SC::Source0::GetEstMeas(states[0],transform_state, null_transform_data).pose);
+    ASSERT_EQ(source_container_full.GetEstMeas(1,states[1],transform_state,null_transform_data).pose, SC::Source1::GetEstMeas(states[1],transform_state, null_transform_data).pose);
+    ASSERT_EQ(source_container_full.GetEstMeas(2,states[2],transform_state,null_transform_data).pose, SC::Source2::GetEstMeas(states[2],transform_state, null_transform_data).pose);
+    ASSERT_EQ(source_container_full.GetEstMeas(3,states[3],transform_state,null_transform_data).pose, SC::Source3::GetEstMeas(states[3],transform_state, null_transform_data).pose);
+    ASSERT_EQ(source_container_full.GetEstMeas(4,states[4],transform_state,null_transform_data).pose, SC::Source4::GetEstMeas(states[4],transform_state, null_transform_data).pose);
 
     ASSERT_EQ(source_container_full.OMinus(0,m1[0],m2[0]), SC::Source0::OMinus(m1[0],m2[0]));
     ASSERT_EQ(source_container_full.OMinus(1,m1[1],m2[1]), SC::Source1::OMinus(m1[1],m2[1]));
@@ -252,7 +272,8 @@ TEST_F(SourceContainerTest, DistanceTests) {
 
     SC source_container_full;
     bool transform_state = false;
-    Eigen::MatrixXd EmptyMat;
+    Eigen::MatrixXd null_transform_data;
+    typedef typename SC::Measurement Measurement;
 
     source_container_full.AddSource(source_params[0]);
     source_container_full.AddSource(source_params[1]);
@@ -261,16 +282,16 @@ TEST_F(SourceContainerTest, DistanceTests) {
     source_container_full.AddSource(source_params[4]);
 
     // Construct the measurements
-    Meas<double> m1, m2;
+    Measurement m1, m2;
     typename SC::Source4::State state;
     state = SC::Source4::State::Random();
     typename SC::Source4 source;
     source.Init(source_params[4]);
-    Eigen::Matrix<double,SC::Source4::meas_space_dim_*2,SC::Source4::meas_space_dim_*2> std;
+    typename SC::Source4::MatMeasCov std;
     std.setIdentity();
     std *=0.1;
-    m1 = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
-    m2 = source.GenerateRandomMeasurement(std,state,transform_state,EmptyMat);
+    m1 = source.GenerateRandomMeasurement(std,state,transform_state,null_transform_data);
+    m2 = source.GenerateRandomMeasurement(std,state,transform_state,null_transform_data);
     m1.time_stamp = 0;
     m2.time_stamp = 1;
     m1.type = SC::Source4::measurement_type_;

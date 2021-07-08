@@ -8,9 +8,10 @@
 #include "rransac/common/sources/source_base.h"
 #include "rransac/common/utilities.h"
 #include "lie_groups/utilities.h"
+#include "lie_groups/state.h"
 
 namespace rransac {
-
+using namespace utilities;
 
 /**
  * \class SourceSENPosVel
@@ -19,28 +20,38 @@ namespace rransac {
  * function w.r.t. the state is identity. Compatible with 
  * MeasurementType::SEN_POS and MeasurementType::SEN_POS_VEL 
  */ 
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-class SourceSENPosVel: public SourceBase<tState,tMeasurementType, tTransformation, tState::Group::dim_pos_, SourceSENPosVel> {
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+class SourceSENPosVel: public SourceBase<SourceDerivedTraits<_State,MatXT<typename _State::DataType>,MatXT<typename _State::DataType>,_Transformation,_State::Group::dim_pos_,1,MeasHasVelocity<_MeasurementType>::value ? _State::Algebra::dim_t_vel_ : 0, MeasHasVelocity<_MeasurementType>::value ? 1: 0, _State::Group::dim_pos_, MeasHasVelocity<_MeasurementType>::value ? _State::Algebra::dim_t_vel_ : 0, MeasHasVelocity<_MeasurementType>::value, _MeasurementType, utilities::CompatibleWithModelSENPosVel>, SourceSENPosVel> {
 
 public:
 
+typedef SourceBase<SourceDerivedTraits<_State,MatXT<typename _State::DataType>,MatXT<typename _State::DataType>,_Transformation,_State::Group::dim_pos_,1,MeasHasVelocity<_MeasurementType>::value ? _State::Algebra::dim_t_vel_ : 0, MeasHasVelocity<_MeasurementType>::value ? 1: 0, _State::Group::dim_pos_, MeasHasVelocity<_MeasurementType>::value ? _State::Algebra::dim_t_vel_ : 0, MeasHasVelocity<_MeasurementType>::value, _MeasurementType, utilities::CompatibleWithModelSENPosVel>, SourceSENPosVel> Base;
 
-typedef tState State;                                                            /**< The state of the target. @see State. */
-typedef typename tState::DataType DataType;                                      /**< The scalar object for the data. Ex. float, double, etc. */
-typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;             /**< The object type of the Jacobians. */
-static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_pos_;         /**< The number of rows in the pose measurement. */
-static constexpr unsigned int meas_pose_cols_ = 1;                               /**< The number of columns in the pose measurement. */
-static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_pos_;        /**< The number of rows in the twist measurement. */
-static constexpr unsigned int meas_twist_cols_ = 1;                              /**< The number of columns in the twist measurement. */
-static constexpr MeasurementTypes measurement_type_ = tMeasurementType;          /**< The measurement type of the source. */
-typedef utilities::CompatibleWithModelSENPosVel ModelCompatibility;              /**< Indicates which model this source is compatible with. */
-typedef SourceBase<tState,tMeasurementType, tTransformation, tState::Group::dim_pos_, SourceSENPosVel> Base; /**< The Base source class */
+    typedef typename Base::State State;                                            /**< The state of the target. @see State. */
+    typedef typename Base::DataType DataType;                                      /**< The scalar object for the data. Ex. float, double, etc. */
+    typedef typename Base::MatH MatH;                                              /**< The object type of the Jacobian H. */
+    typedef typename Base::MatV MatV;                                              /**< The object type of the Jacobians V. */
+    typedef typename Base::Transformation Transformation;                          /**< The transformation used to transform the measurements and tracks. */
+    typedef typename Base::MatMeasCov MatMeasCov;                                  /**< The data type of the measurement covariance. */
+    typedef typename Base::VecMeas VecMeas;                                        /**< The data type of the measurement covariance. */
+    static constexpr unsigned int meas_pose_rows_  = Base::meas_pose_rows_;        /**< The number of rows in the pose measurement. */
+    static constexpr unsigned int meas_pose_cols_  = Base::meas_pose_cols_;        /**< The number of columns in the pose measurement. */
+    static constexpr unsigned int meas_twist_rows_ = Base::meas_twist_rows_;       /**< The number of rows in the twist measurement. */
+    static constexpr unsigned int meas_twist_cols_ = Base::meas_twist_cols_;       /**< The number of columns in the twist measurement. */
+    static constexpr unsigned int meas_pose_dim_   = Base::meas_pose_dim_;         /**< The measurement pose dimension. */
+    static constexpr unsigned int meas_twist_dim_  = Base::meas_twist_dim_;        /**< The measurement twist dimension. */
+    static constexpr unsigned int total_meas_dim_  = Base::total_meas_dim_;        /**< The total measurement dimension. */
+    static constexpr bool has_vel_ = Base::has_vel_;                               /**< Indicates if the measurement contains velocity.  */
+    static constexpr MeasurementTypes measurement_type_ = Base::measurement_type_; /**< The measurement type of the source. */
+    typedef typename Base::ModelCompatibility ModelCompatibility;                  /**< Indicates which model the source is compatible with. */
+    typedef typename Base::TransformDataType TransformDataType;                    /**< The error type of the difference between two measurements. */
+    typedef typename Base::Measurement Measurement;                                /**< The measurement data type. */
 
-static_assert(lie_groups::utilities::StateIsSEN_seN<tState>::value, "SourceSENPosVel: The state is not compatible with the model");
-static_assert( tMeasurementType == MeasurementTypes::SEN_POS || tMeasurementType==MeasurementTypes::SEN_POS_VEL, "SourceSENPosVel: The measurement type is not compatible with the source."    );
+static_assert(lie_groups::utilities::StateIsSEN_seN<_State>::value, "SourceSENPosVel: The state is not compatible with the model");
+static_assert( _MeasurementType == MeasurementTypes::SEN_POS || _MeasurementType==MeasurementTypes::SEN_POS_VEL, "SourceSENPosVel: The measurement type is not compatible with the source."    );
 
-static constexpr unsigned int l_dim_ =  tState::Algebra::dim_a_vel_ + 1;         /**< The dimension of the angular velocity of the target plus one. */
-static constexpr unsigned int cov_dim_ = tState::Group::dim_ + tState::Algebra::dim_ - tState::Algebra::dim_t_vel_ + 1; /**< The dimension of the state covariance. */
+static constexpr unsigned int l_dim_ =  _State::Algebra::dim_a_vel_ + 1;         /**< The dimension of the angular velocity of the target plus one. */
+static constexpr unsigned int state_dim_ = _State::Group::dim_ + _State::Algebra::dim_ - _State::Algebra::dim_t_vel_ + 1; /**< The dimension of the state. */
 
 
 /** 
@@ -58,14 +69,14 @@ void DerivedInit(const SourceParameters& params){}
  * Returns the jacobian of the observation function w.r.t. the states.
  * @param[in] state The state of a target at which the Jacobian is be evaluated.
  */
-static MatXd DerivedGetLinObsMatState(const State& state);
+static MatH DerivedGetLinObsMatState(const State& state);
                    
 
 /** 
  * Returns the jacobian of the observation function w.r.t. the sensor noise.
  * @param[in] state The state of a target at which the Jacobian is be evaluated.
  */
-static MatXd DerivedGetLinObsMatSensorNoise(const State& state);
+static MatV DerivedGetLinObsMatSensorNoise(const State& state);
 
 
 /**
@@ -73,7 +84,7 @@ static MatXd DerivedGetLinObsMatSensorNoise(const State& state);
  * Currently, the measurement is only given a pose, twist, and measurement type. 
  * @param[in] state A state of the target.
  */
-static Meas<DataType> DerivedGetEstMeas(const State& state);
+static Measurement DerivedGetEstMeas(const State& state);
 
 /**
  * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
@@ -81,7 +92,7 @@ static Meas<DataType> DerivedGetEstMeas(const State& state);
  * @param[in] m1 a measurement
  * @param[in] m2 a measurement
  */
-static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2);
+static VecMeas DerivedOMinus(const Measurement& m1, const Measurement& m2);
 
 
 /**
@@ -89,7 +100,7 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2);
  * @param[in] state The state that serves as the mean in the Gaussian distribution
  * @param[in] meas_std The measurement standard deviation
  */ 
-Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const;
+Measurement DerivedGenerateRandomMeasurement(const MatMeasCov& meas_std, const State& state) const;
 
 
 };
@@ -99,37 +110,30 @@ Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tSt
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-SourceSENPosVel<tState,tMeasurementType,tTransformation>::SourceSENPosVel() {
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+SourceSENPosVel<_State,_MeasurementType,_Transformation>::SourceSENPosVel() {
 
-
-    if (Base::has_vel_) {
-        Base::H_ = Eigen::Matrix<DataType,Base::meas_space_dim_+tState::Algebra::dim_t_vel_, cov_dim_>::Zero();
-        Base::V_ = Eigen::Matrix<DataType,Base::meas_space_dim_ + Base::meas_space_dim_,Base::meas_space_dim_+ tState::Algebra::dim_t_vel_>::Identity();
-    } else {
-        Base::H_ = Eigen::Matrix<DataType, Base::meas_space_dim_, cov_dim_>::Zero();
-        Base::V_ = Eigen::Matrix<DataType,Base::meas_space_dim_,Base::meas_space_dim_>::Identity();
-    }
-
+    Base::H_ = Eigen::Matrix<DataType,total_meas_dim_,state_dim_>::Zero();
+    Base::V_ = Eigen::Matrix<DataType,total_meas_dim_,total_meas_dim_>::Identity();
 
 }
 
 //-----------------------------------------------------------------
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState,tMeasurementType,tTransformation>::DerivedGetLinObsMatState(const tState& state)  {
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+typename SourceSENPosVel<_State,_MeasurementType,_Transformation>::MatH SourceSENPosVel<_State,_MeasurementType,_Transformation>::DerivedGetLinObsMatState(const State& state)  {
 
-    MatXd H = Base::H_;
+    MatH H = Base::H_;
 
-    if (Base::has_vel_) {
-        H.block(0,0,Base::meas_space_dim_, Base::meas_space_dim_) = state.g_.R_; //dt/dt
-        H.block(Base::meas_space_dim_, tState::Group::dim_, Base::meas_space_dim_,1) = state.g_.R_.block(0,0,tState::Algebra::dim_t_vel_,1); //dtd/rho_x
-        if ( Base::meas_space_dim_== 2) { 
-            H.block(Base::meas_space_dim_,Base::meas_space_dim_, Base::meas_space_dim_, tState::Group::RotAlgebra::dim_) = state.g_.R_ * tState::Group::RotAlgebra::Wedge(Eigen::Matrix<DataType,tState::Group::RotAlgebra::dim_,1>::Ones()) * state.u_.p_;
+    if (has_vel_) {
+        H.block(0,0,meas_pose_dim_, meas_pose_dim_) = state.g_.R_; //dt/dt
+        H.block(meas_pose_dim_, State::Group::dim_, meas_pose_dim_,1) = state.g_.R_.block(0,0,State::Algebra::dim_t_vel_,1); //dtd/rho_x
+        if ( meas_pose_dim_== 2) { 
+            H.block(meas_pose_dim_,meas_pose_dim_, meas_pose_dim_, State::Group::RotAlgebra::dim_) = state.g_.R_ * State::Group::RotAlgebra::Wedge(Eigen::Matrix<DataType,State::Group::RotAlgebra::dim_,1>::Ones()) * state.u_.p_;
         } else {
-            H.block(Base::meas_space_dim_,Base::meas_space_dim_, Base::meas_space_dim_, tState::Group::RotAlgebra::dim_) = -state.g_.R_ * tState::Group::RotAlgebra::Wedge(state.u_.p_.block(0,0,tState::Group::RotAlgebra::dim_,1));
+            H.block(meas_pose_dim_,meas_pose_dim_, meas_pose_dim_, State::Group::RotAlgebra::dim_) = -state.g_.R_ * State::Group::RotAlgebra::Wedge(state.u_.p_.block(0,0,State::Group::RotAlgebra::dim_,1));
         }
     } else {
-        H.block(0,0,Base::meas_space_dim_, Base::meas_space_dim_) = state.g_.R_;
+        H.block(0,0,meas_pose_dim_, meas_pose_dim_) = state.g_.R_;
     }
 
     return H;
@@ -138,8 +142,8 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
 
 //-----------------------------------------------------------------
 
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState,tMeasurementType,tTransformation>::DerivedGetLinObsMatSensorNoise(const tState& state) {
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+typename SourceSENPosVel<_State,_MeasurementType,_Transformation>::MatV SourceSENPosVel<_State,_MeasurementType,_Transformation>::DerivedGetLinObsMatSensorNoise(const State& state) {
 
   return Base::V_;
 
@@ -147,27 +151,27 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
 
 
 //-----------------------------------------------------------------
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-Meas<typename tState::DataType> SourceSENPosVel<tState,tMeasurementType,tTransformation>::DerivedGetEstMeas(const tState& state) {
-    Meas<DataType> m;
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+typename SourceSENPosVel<_State,_MeasurementType,_Transformation>::Measurement SourceSENPosVel<_State,_MeasurementType,_Transformation>::DerivedGetEstMeas(const State& state) {
+    Measurement m;
     m.pose = state.g_.t_;
-    m.type = tMeasurementType;
+    m.type = measurement_type_;
 
-    if(Base::has_vel_)
+    if(has_vel_)
         m.twist = state.g_.R_*state.u_.p_;
 
     return m;
 } 
 
 //-----------------------------------------------------------------
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSENPosVel<tState,tMeasurementType,tTransformation>::DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+typename SourceSENPosVel<_State,_MeasurementType,_Transformation>::VecMeas SourceSENPosVel<_State,_MeasurementType,_Transformation>::DerivedOMinus(const Measurement& m1, const Measurement& m2) {
 
-    Eigen::Matrix<DataType, Base::meas_space_dim_*Base::meas_space_dim_mult_,1> error;
+    VecMeas error;
 
-    if (Base::has_vel_) {
-        error.block(0,0,Base::meas_space_dim_,1) = m1.pose - m2.pose;
-        error.block(Base::meas_space_dim_,0,Base::meas_space_dim_,1) = m1.twist - m2.twist;
+    if (has_vel_) {
+        error.block(0,0,meas_pose_dim_,1) = m1.pose - m2.pose;
+        error.block(meas_pose_dim_,0,meas_twist_dim_,1) = m1.twist - m2.twist;
     } else {
         error = m1.pose - m2.pose;
     }
@@ -177,18 +181,18 @@ Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> SourceSEN
 }
 
 //----------------------------------------------------------------------------------------
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-Meas<typename tState::DataType> SourceSENPosVel<tState,tMeasurementType,tTransformation>::DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const {
-    Meas<DataType> m;
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+typename SourceSENPosVel<_State,_MeasurementType,_Transformation>::Measurement SourceSENPosVel<_State,_MeasurementType,_Transformation>::DerivedGenerateRandomMeasurement(const MatMeasCov& meas_std, const State& state) const {
+    Measurement m;
     m.source_index = this->params_.source_index_;
-    m.type = tMeasurementType;
+    m.type = measurement_type_;
 
-    MatXd deviation = meas_std*utilities::GaussianRandomGenerator(meas_std.rows());
+    VecMeas deviation = meas_std*utilities::GaussianRandomGenerator(meas_std.rows());
 
-    m.pose = state.g_.t_ + deviation.block(0,0,Base::meas_space_dim_,1); 
+    m.pose = state.g_.t_ + deviation.block(0,0,meas_pose_dim_,1); 
 
-    if (Base::has_vel_) {
-        m.twist = state.g_.R_*state.u_.p_ + deviation.block(Base::meas_space_dim_,0,Base::meas_space_dim_,1);
+    if (has_vel_) {
+        m.twist = state.g_.R_*state.u_.p_ + deviation.block(meas_pose_dim_,0,meas_pose_dim_,1);
     } 
 
     return m;

@@ -24,7 +24,7 @@ namespace rransac
  */ 
 
 
-template<typename tModel>
+template<typename _Model>
 class ValidationRegionFixedPosPolicy {
 
 
@@ -32,6 +32,9 @@ class ValidationRegionFixedPosPolicy {
 
 public:
 
+typedef _Model Model;
+typedef System<Model> Sys;
+typedef typename _Model::Base::Measurement Measurement;
 
 /**
 *  Determines if the measurement falls inside the validation region of the track. The validation region is the ellipse in the measurement space of radius SourceParameters::gate_threshold_.
@@ -39,9 +42,9 @@ public:
 * @param[in] meas The measurement
 * @param[in] track The track  
 */ 
-static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track)  {
+static bool PolicyInValidationRegion(const Sys& sys, const Measurement& meas, Model& track)  {
 
-    static_assert(utilities::AlwaysFalse<tModel>::value,"ValidationRegionFixedPosPolicy::InValidationRegion This function is not implemented for the specified model type.");
+    static_assert(utilities::AlwaysFalse<Model>::value,"ValidationRegionFixedPosPolicy::InValidationRegion This function is not implemented for the specified model type.");
 
     return false;
 }   
@@ -52,16 +55,19 @@ static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typen
 //  Class Specializations
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename tDataType, int tN, template <typename > typename tTransformation, MeasurementTypes tMeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename tS0, typename tS1, typename tS2, typename tS3, typename tS4>
-class ValidationRegionFixedPosPolicy<ModelRN<SourceContainer<tS0<lie_groups::State<lie_groups::Rn,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>>>{
+template<typename _DataType, int _N, template <typename > typename _Transformation, MeasurementTypes _MeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename _S0, typename _S1, typename _S2, typename _S3, typename _S4>
+class ValidationRegionFixedPosPolicy<ModelRN<SourceContainer<_S0<lie_groups::State<lie_groups::Rn,_DataType,_N>,_MeasurementType,_Transformation>,_S1,_S2,_S3,_S4>>>{
 
-    typedef ModelRN<SourceContainer<tS0<lie_groups::State<lie_groups::Rn,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>> Model;
+    typedef ModelRN<SourceContainer<_S0<lie_groups::State<lie_groups::Rn,_DataType,_N>,_MeasurementType,_Transformation>,_S1,_S2,_S3,_S4>> Model;
+    typedef typename Model::Base::Measurement Measurement;
+    typedef System<Model> Sys;
+
 public:
-    static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
+    static bool PolicyInValidationRegion(const Sys& sys, const Measurement& meas, Model& track)  {
 
-        Meas<tDataType> m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
+        Measurement m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
 
-        Eigen::Matrix<double,tN,1> err = m.pose - meas.pose;
+        Eigen::Matrix<double,_N,1> err = m.pose - meas.pose;
 
         if(err.norm() <= sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
             return true;
@@ -75,19 +81,22 @@ public:
 
 //-------------------------------------------------------------------------------------------------------------------------------------
 
-template<typename tDataType, int tN, template <typename > typename tTransformation, MeasurementTypes tMeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename tS0, typename tS1, typename tS2, typename tS3, typename tS4>
-class ValidationRegionFixedPosPolicy<ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE2,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>>>{
+template<typename _DataType, int _N, template <typename > typename _Transformation, MeasurementTypes _MeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename _S0, typename _S1, typename _S2, typename _S3, typename _S4>
+class ValidationRegionFixedPosPolicy<ModelSENPosVel<SourceContainer<_S0<lie_groups::State<lie_groups::SE2,_DataType,_N>,_MeasurementType,_Transformation>,_S1,_S2,_S3,_S4>>>{
 
-    typedef ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE2,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>> Model;
+    typedef ModelSENPosVel<SourceContainer<_S0<lie_groups::State<lie_groups::SE2,_DataType,_N>,_MeasurementType,_Transformation>,_S1,_S2,_S3,_S4>> Model;
+    typedef typename Model::Base::Measurement Measurement;
+    typedef System<Model> Sys;
+
 public:
-    static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
+    static bool PolicyInValidationRegion(const Sys& sys, const Measurement& meas, Model& track)  {
 
 #ifdef DEBUG_BUILD
        if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
         throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
 #endif
 
-        Meas<tDataType> m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
+        Measurement m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
         Eigen::MatrixXd err = m.pose - meas.pose;
 
         if(err.norm() <= sys.source_container_.GetParams(meas.source_index).gate_threshold_) {
@@ -101,20 +110,21 @@ public:
 };
 
 //-------------------------------------------------------------------------------------------------------------------------------------
+template<typename _DataType, int _N, template <typename > typename _Transformation, MeasurementTypes _MeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename _S0, typename _S1, typename _S2, typename _S3, typename _S4>
+class ValidationRegionFixedPosPolicy<ModelSENPosVel<SourceContainer<_S0<lie_groups::State<lie_groups::SE3,_DataType,_N>,_MeasurementType,_Transformation>,_S1,_S2,_S3,_S4>>>{
 
-template<typename tDataType, int tN, template <typename > typename tTransformation, MeasurementTypes tMeasurementType, template <typename, MeasurementTypes, template <typename > typename> typename tS0, typename tS1, typename tS2, typename tS3, typename tS4>
-class ValidationRegionFixedPosPolicy<ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE3,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>>>{
-
-     typedef ModelSENPosVel<SourceContainer<tS0<lie_groups::State<lie_groups::SE3,tDataType,tN>,tMeasurementType,tTransformation>,tS1,tS2,tS3,tS4>> Model;
+     typedef ModelSENPosVel<SourceContainer<_S0<lie_groups::State<lie_groups::SE3,_DataType,_N>,_MeasurementType,_Transformation>,_S1,_S2,_S3,_S4>> Model;
+     typedef typename Model::Base::Measurement Measurement;
+     typedef System<Model> Sys;
 public:
-    static bool PolicyInValidationRegion(const System<Model>& sys, const Meas<typename Model::DataType>& meas, Model& track)  {
+    static bool PolicyInValidationRegion(const Sys& sys, const Measurement& meas, Model& track)  {
 
 #ifdef DEBUG_BUILD
        if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
         throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
 #endif
 
-        Meas<tDataType> m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
+        Measurement m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
         Eigen::MatrixXd err = m.pose - meas.pose;
 
         if(err.norm() <= sys.source_container_.GetParams(meas.source_index).gate_threshold_) {

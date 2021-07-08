@@ -68,15 +68,22 @@ namespace rransac {
  * template parameters. 
  */
 
-template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
-class Ransac : public tLMLEPolicy<tModel,tSeed> , tValidationRegionPolicy<tModel>, tUpdateTrackLikelihoodPolicy<tModel>, tMeasurementWeightPolicy<tModel>{
+template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
+class Ransac : public _LMLEPolicy<_Model,_Seed> , _ValidationRegionPolicy<_Model>, _UpdateTrackLikelihoodPolicy<_Model>, _MeasurementWeightPolicy<_Model>{
 
 public: 
 
-typedef typename tModel::State State;                                       /**< The state of the target. @see State. */
-typedef typename tModel::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
-typedef typename tModel::SourceContainer SourceContainer;                   /**< The object type of the source. @see SourceBase. */
-typedef tModel Model;                                                       /**< The object type of the model. @see ModelBase. */
+typedef _Model Model;                                                       /**< The object type of the model. @see ModelBase. */
+typedef typename _Model::State State;                                       /**< The state of the target. @see State. */
+typedef typename _Model::DataType DataType;                                 /**< The scalar object for the data. Ex. float, double, etc. */
+typedef typename _Model::SourceContainer SourceContainer;                   /**< The object type of the source. @see SourceBase. */
+typedef System<Model> Sys;    
+typedef typename Sys::ClusterT ClusterT;     
+typedef typename Sys::Measurement Measurement; 
+typedef std::vector<typename ClusterT::IteratorPair> VecClusterIterPair;  
+typedef typename Sys::DataTreeClustersT DataTreeClustersT;   
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef DataAssociationInfo<TransformDataType> DataAssociationInfoT;                                    
 
 Ransac();
 
@@ -87,7 +94,7 @@ Ransac();
  * to initialize new tracks.
  * @param[in,out] system Contains all of the data used by R-RANSAC
  */ 
-static void Run(System<tModel>& sys);
+static void Run(Sys& sys);
 
 /**
  * Randomly selects a measurement from the latest time step and randomly selects 
@@ -96,7 +103,7 @@ static void Run(System<tModel>& sys);
  * @param[in] cluster The cluster from which to the measurements will be sampled. 
  * @return Returns the indicess of the randomply sampled measurements. They are not gauranteed to be in chronological order
  */ 
-static std::vector<typename Cluster<DataType>::IteratorPair> GenerateMinimumSubset(const unsigned int num_meas, Cluster<DataType>& cluster);
+static VecClusterIterPair GenerateMinimumSubset(const unsigned int num_meas, ClusterT& cluster);
 
 /**
  * Generates a hypothetical state at the current time step using the provided measurements in meas_subset.The method is determined by the log maximum likelihood estimation policy.
@@ -104,7 +111,7 @@ static std::vector<typename Cluster<DataType>::IteratorPair> GenerateMinimumSubs
  * @param[in] curr_time The current time.
  * @param[in] sources The vector of sources used. 
  */ 
-static State GenerateHypotheticalStateEstimate(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success){
+static State GenerateHypotheticalStateEstimate(const VecClusterIterPair& meas_subset, const Sys& sys, bool& success){
     return Ransac::GenerateHypotheticalStateEstimatePolicy(meas_subset, sys,success);
 }
 
@@ -121,7 +128,7 @@ static State GenerateHypotheticalStateEstimate(const std::vector<typename Cluste
  * @param[in] sys Contains the system information.
  * @param[in] inliers A vector of iterators from the measurements in cluster that are inliers to the hypothetical state estimate. The inliers are in chronological order.
  */ 
-static int ScoreHypotheticalStateEstimate(const State& xh, Cluster<DataType>& cluster, const System<tModel>& sys, std::vector<typename Cluster<DataType>::IteratorPair>& inliers);
+static int ScoreHypotheticalStateEstimate(const State& xh, ClusterT& cluster, const Sys& sys, VecClusterIterPair& inliers);
 
 
 /**
@@ -131,7 +138,7 @@ static int ScoreHypotheticalStateEstimate(const State& xh, Cluster<DataType>& cl
  * @param[in] inliers The measurements that support the hypothetical state estimate
  * 
  */ 
-static tModel GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<typename Cluster<DataType>::IteratorPair>& inliers);
+static Model GenerateTrack(const State&xh, const Sys& sys, const VecClusterIterPair& inliers);
 
 private:
 
@@ -141,7 +148,7 @@ private:
  * @param[in] meas The measurement
  * @param[in] track The track. It is not a constant reference so be careful!! 
  */ 
-static bool InValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track) {
+static bool InValidationRegion(const Sys& sys, const Measurement& meas, Model& track) {
     return Ransac::PolicyInValidationRegion(sys, meas,track);
 }
 
@@ -149,7 +156,7 @@ static bool InValidationRegion(const System<tModel>& sys, const Meas<typename tM
  * Uses the new associated measurements to update the track's likelihood. 
  * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
  */
-static void UpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info, const double dt  ) {
+static void UpdateTrackLikelihoodSingle(const Sys& sys, Model& track, DataAssociationInfoT& info, const double dt  ) {
     Ransac::PolicyUpdateTrackLikelihoodSingle(sys,track, info, dt);
 }
 
@@ -157,7 +164,7 @@ static void UpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track
  * Calculates the weights for each track associated measurement. 
  * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
  */
-static void CalculateMeasurementWeightSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info) {
+static void CalculateMeasurementWeightSingle(const Sys& sys, Model& track, DataAssociationInfoT& info) {
     Ransac::PolicyCalculateMeasurementWeightSingle(sys,track,info);
 }
 
@@ -167,7 +174,7 @@ static void CalculateMeasurementWeightSingle(const System<tModel>& sys, tModel& 
  * @param cluster_iter An iterator to a cluster on which RANSAC will be performed
  * @param sys An object containing all the R-RANSAC data
  */ 
-static  void RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys, std::mutex& mtx);
+static  void RunSingle(const typename std::list<ClusterT>::iterator& cluster_iter, Sys& sys, std::mutex& mtx);
 
 
 };
@@ -176,15 +183,15 @@ static  void RunSingle(const typename std::list<Cluster<DataType>>::iterator& cl
 //                                            Definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
-Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLikelihoodPolicy, tMeasurementWeightPolicy>::Ransac() {
+template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
+Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::Ransac() {
     srand(time(NULL));
 }
 
 //----------------------------------------------------------------------------------------------------------
 
-template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
-std::vector<typename Cluster<typename tModel::DataType>::IteratorPair > Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLikelihoodPolicy, tMeasurementWeightPolicy>::GenerateMinimumSubset(const unsigned int num_meas,  Cluster<DataType>& cluster) {
+template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
+typename Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::VecClusterIterPair Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::GenerateMinimumSubset(const unsigned int num_meas,  ClusterT& cluster) {
    
     if (num_meas > cluster.data_.size() || num_meas < 0) {
         std::cerr << "num_meas: " << num_meas << std::endl;
@@ -192,7 +199,7 @@ std::vector<typename Cluster<typename tModel::DataType>::IteratorPair > Ransac<t
         throw std::runtime_error("RANSAC: GenerateMinimumSubset: num_meas must be less than the number of different time steps of measurements in cluster and greater than zero.");
     }
 
-    std::vector<typename Cluster<DataType>::IteratorPair> meas_index(num_meas);
+    VecClusterIterPair meas_index(num_meas);
 
     // Get a random measurement from current time step
     meas_index.back().outer_it = std::prev(cluster.data_.end());
@@ -223,8 +230,8 @@ std::vector<typename Cluster<typename tModel::DataType>::IteratorPair > Ransac<t
 
 
 //----------------------------------------------------------------------------------------------------------
-template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
-int Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLikelihoodPolicy, tMeasurementWeightPolicy>::ScoreHypotheticalStateEstimate(const State& xh, Cluster<DataType>& cluster, const System<tModel>& sys, std::vector<typename Cluster<DataType>::IteratorPair>& inliers) {
+template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
+int Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::ScoreHypotheticalStateEstimate(const State& xh, ClusterT& cluster, const Sys& sys, VecClusterIterPair& inliers) {
 
     inliers.clear(); // Make sure it is empty
     int score = 0;
@@ -233,8 +240,8 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLike
     int src_index = 0;
     double d = 0;          // The distance
 
-    typename Cluster<DataType>::IteratorPair pair;
-    tModel track;
+    typename ClusterT::IteratorPair pair;
+    Model track;
     track.Init(sys.params_);
 
     std::vector<bool> innov_cov_set(sys.source_container_.num_sources_,false);
@@ -271,19 +278,20 @@ int Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLike
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
-template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
-tModel Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLikelihoodPolicy, tMeasurementWeightPolicy>::GenerateTrack(const State&xh, const System<tModel>& sys, const std::vector<typename Cluster<DataType>::IteratorPair>& inliers) {
+template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
+_Model Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::GenerateTrack(const State&xh, const Sys& sys, const VecClusterIterPair& inliers) {
 
-    Eigen::MatrixXd EmptyMat;
-    DataAssociationInfo data_association_info;
+    TransformDataType empty_transform;
+    DataAssociationInfoT data_association_info;
     data_association_info.source_produced_measurements_.resize(sys.source_container_.num_sources_,false);
     data_association_info.transform_state_.resize(sys.source_container_.num_sources_,false);
-    data_association_info.transform_data_t_m_.resize(sys.source_container_.num_sources_,EmptyMat);
+    data_association_info.transform_data_t_m_.resize(sys.source_container_.num_sources_,empty_transform);
     // Create new track with state estimate at the same time step as the oldest inlier measurement
-    tModel new_track;
+    Model new_track;
     new_track.Init(sys.params_);
     double dt = inliers.begin()->inner_it->time_stamp - sys.current_time_;
-    new_track.state_ = tModel::PropagateState(xh,dt); 
+    new_track.state_ = xh;
+    Model::PropagateState(new_track.state_,dt); 
     double curr_time = 0;
     double propagate_time = inliers.begin()->inner_it->time_stamp;
 
@@ -300,7 +308,7 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackL
         // Reset the data associaiton for each timestep
         std::fill(data_association_info.source_produced_measurements_.begin(),data_association_info.source_produced_measurements_.end(),false);
         std::fill(data_association_info.transform_state_.begin(),data_association_info.transform_state_.end(),false);
-        std::fill(data_association_info.transform_data_t_m_.begin(),data_association_info.transform_data_t_m_.end(),EmptyMat);
+        std::fill(data_association_info.transform_data_t_m_.begin(),data_association_info.transform_data_t_m_.end(),empty_transform);
 
 #ifdef DEBUG_BUILD
         if (isnan(new_track.state_.g_.data_(0.0))) {
@@ -322,7 +330,8 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackL
             iter++;
         }
         
-        
+        // std::cout << "det: " << new_track.err_cov_.determinant() << std::endl;
+        // std::cout << "norm: " << new_track.err_cov_.norm() << std::endl;
         UpdateTrackLikelihoodSingle(sys,new_track,data_association_info,dt);
         CalculateMeasurementWeightSingle(sys,new_track,data_association_info);
         new_track.UpdateModel(sys.source_container_,sys.params_);
@@ -335,19 +344,19 @@ tModel Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackL
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
 
-template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
-void Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLikelihoodPolicy, tMeasurementWeightPolicy>::RunSingle(const typename std::list<Cluster<DataType>>::iterator& cluster_iter, System<tModel>& sys, std::mutex& mtx) {
+template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
+void Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::RunSingle(const typename std::list<ClusterT>::iterator& cluster_iter, Sys& sys, std::mutex& mtx) {
 
     int best_score = 0;
     int score = 0;
     bool success = false;
     unsigned int iterations = 0;
     unsigned int iteration_stopping_criteria = 10; // If after this many iterations the best score is still zero, then it will terminate. 
-    std::vector<typename Cluster<DataType>::IteratorPair> meas_subset;
-    typename tModel::State hypothetical_state;
-    typename tModel::State best_hypothetical_state;
-    std::vector<typename Cluster<DataType>::IteratorPair> inliers;
-    std::vector<typename Cluster<DataType>::IteratorPair> best_inliers;
+    VecClusterIterPair meas_subset;
+    State hypothetical_state;
+    State best_hypothetical_state;
+    VecClusterIterPair inliers;
+    VecClusterIterPair best_inliers;
     while (best_score < sys.params_.RANSAC_score_stopping_criteria_ && iterations < sys.params_.RANSAC_max_iters_) {
         meas_subset = GenerateMinimumSubset(sys.params_.RANSAC_minimum_subset_, *cluster_iter);
         hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys,success);
@@ -374,8 +383,8 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLik
     }
 
     if (best_score > sys.params_.RANSAC_score_minimum_requirement_) {
-        tModel new_track =  GenerateTrack(best_hypothetical_state, sys, best_inliers);
-        typename DataTreeClusters<DataType>::MeasurementLocationInfo info;
+        Model new_track =  GenerateTrack(best_hypothetical_state, sys, best_inliers);
+        typename DataTreeClustersT::MeasurementLocationInfo info;
         info.cluster_iter = cluster_iter;
         
         
@@ -399,8 +408,8 @@ void Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLik
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
-template< typename tModel, template <typename > typename tSeed, template<typename , template <typename > typename > typename tLMLEPolicy, template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy, template<class> typename tMeasurementWeightPolicy>
-void Ransac<tModel, tSeed, tLMLEPolicy, tValidationRegionPolicy, tUpdateTrackLikelihoodPolicy, tMeasurementWeightPolicy>::Run(System<tModel>& sys) {
+template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
+void Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::Run(Sys& sys) {
 
 
 std::vector<std::thread> threads;
@@ -411,8 +420,10 @@ for (auto& cluster_iter : sys.clusters_) {
     if (cluster_iter->data_.size() > sys.params_.RANSAC_minimum_subset_ && cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_ && cluster_iter->data_.back().front().time_stamp == sys.current_time_) {
 
         threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys),std::ref(mtx)));
-    }
+        // RunSingle(cluster_iter,sys,mtx);
 }
+    }
+    
 
 for (int ii = 0; ii < threads.size(); ++ii) {
     threads.at(ii).join();

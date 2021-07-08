@@ -14,11 +14,15 @@ namespace rransac
  * the estimated measurement of radius SourceParameters::gate_threshold_. Thus, it is a fixed size validation region.
  * 
  */ 
-template<typename tModel>
+template<typename _Model>
 class ValidationRegionFixedPolicy {
 
 
 public:
+
+typedef _Model Model;
+typedef System<Model> Sys;
+typedef typename Model::Base::Measurement Measurement;
 
 /**
 *  Determines if the measurement falls inside the validation region of the track. The validation region is the ellipse in the measurement space of radius SourceParameters::gate_threshold_.
@@ -26,7 +30,7 @@ public:
 * @param[in] meas The measurement
 * @param[in] track The track  
 */ 
-static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track)  {
+static bool PolicyInValidationRegion(const Sys& sys, const Measurement& meas, Model& track)  {
 
     Eigen::MatrixXd err = sys.source_container_.OMinus(meas.source_index, meas, sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m));
 

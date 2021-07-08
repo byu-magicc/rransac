@@ -69,6 +69,12 @@ include_directories(../include
 # target_link_libraries(source_RNTest gtest_main )
 # add_test(NAME AllTestsInSourceRNTest COMMAND source_RNTest)
 
+# add_executable(source_R2_R3_radarTest
+# common/sources/source_R2_R3_radar_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_R2_R3_radarTest gtest_main )
+# add_test(NAME AllTestsInSourceRNRadarTest COMMAND source_R2_R3_radarTest)
+
 
 # add_executable(source_SEN_Pos_VelTest
 # common/sources/source_SEN_pos_vel_test.cpp
@@ -107,15 +113,20 @@ include_directories(../include
 # Transformations
 #---------------------------------------
 
-add_executable(trans_homographyTest
-common/transformations/transformation_homography_test.cpp
-../src/parameters.cpp)
-target_link_libraries(trans_homographyTest gtest_main )
+# add_executable(trans_homographyTest
+# common/transformations/transformation_homography_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(trans_homographyTest gtest_main )
 
-add_executable(trans_SE3_cam_depthTest
-common/transformations/trans_SE3_cam_depth_test.cpp
-../src/parameters.cpp)
-target_link_libraries(trans_SE3_cam_depthTest gtest_main )
+# add_executable(trans_radar_R2_R3_with_SE2_SE3Test
+# common/transformations/trans_radar_R2_R3_with_SE2_SE3_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(trans_radar_R2_R3_with_SE2_SE3Test gtest_main )
+
+# add_executable(trans_SE3_cam_depthTest
+# common/transformations/trans_SE3_cam_depth_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(trans_SE3_cam_depthTest gtest_main )
 
 #---------------------------------------
 # Model
@@ -130,6 +141,11 @@ target_link_libraries(trans_SE3_cam_depthTest gtest_main )
 # common/models/model_base_test2.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(model_baseTest2 gtest_main )
+
+# add_executable(model_rn_tangentTest
+# common/models/model_rn_tangent_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(model_rn_tangentTest gtest_main )
 
 # add_executable(model_managerTest 
 # common/models/model_manager_test.cpp
@@ -189,6 +205,12 @@ target_link_libraries(trans_SE3_cam_depthTest gtest_main )
 # track_initialization/seed_policies/SE2_pos_policy_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(SE2_pos_policyTest gtest_main
+# )
+
+# add_executable(radar_R2_R3_seed_policyTest 
+# track_initialization/seed_policies/radar_R2_R3_seed_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(radar_R2_R3_seed_policyTest gtest_main
 # )
 
 # add_executable(ransacTest 

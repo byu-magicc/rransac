@@ -28,7 +28,7 @@ homography.block(2,2,1,1)<< 1;
 
 trans_.Init();
 trans_.SetData(homography);
-Meas<double> m;
+Measurement m;
 
 Eigen::Matrix<double,1,1> time_;
 
@@ -49,9 +49,10 @@ cluster_.AddMeasurement(m);
 }
 
 typedef TransformHomography<R2_r2> Transform;
-
+typedef typename Transform::Measurement Measurement;
+typedef Cluster<double, typename Transform::TransformDataType> Cluster_;
 Transform trans_;
-Cluster<double> cluster_;
+Cluster_ cluster_;
 Parameters params_;
 
 unsigned int num_meas_ = 1000;
@@ -88,7 +89,7 @@ for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end()
 
 // Construct a vector of measurements to add.
 Eigen::Matrix<double,1,1> time;
-std::vector<Meas<double>> vec_meas(num_additional_meas);
+std::vector<Measurement> vec_meas(num_additional_meas);
 for (auto& m : vec_meas) {
     time.setRandom();
     m.time_stamp = std::round(time(0,0)*10);
@@ -101,8 +102,8 @@ cluster_.AddMeasurements(vec_meas);
 
 
 // Construct a list of measurements to add.
-std::list<Meas<double>> list_meas(num_additional_meas);
-Meas<double> list_m;
+std::list<Measurement> list_meas(num_additional_meas);
+Measurement list_m;
 for (auto iter = list_meas.begin(); iter != list_meas.end(); ++iter) {
     time.setRandom();
     list_m.time_stamp = std::round(time(0,0)*10);
@@ -139,9 +140,9 @@ ASSERT_EQ(cluster_.Size(), size);
 /////////////////////////////////
 
 // Remove random measurements
-typename Cluster<double>::IteratorPair iter_pair;
-std::vector<Cluster<double>::IteratorPair> iter_pairs;
-std::vector<Meas<double>> meas_to_remove;
+typename Cluster_::IteratorPair iter_pair;
+std::vector<Cluster_::IteratorPair> iter_pairs;
+std::vector<Measurement> meas_to_remove;
 for(auto outer_iter = cluster_.data_.begin(); outer_iter != cluster_.data_.end(); ++outer_iter) {
 
     time.setRandom();
@@ -234,14 +235,21 @@ ASSERT_NE(cluster_.data_.begin()->begin()->time_stamp, time_stamp_first);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 TEST(ClusterTest, IsNeighborTest) {
 
+typedef SourceRN<lie_groups::R2_r2,MeasurementTypes::RN_POS,TransformNULL> Source; // We need the source for calculating distances
+
+typedef typename Source::Measurement Measurement;
+typedef Cluster<double, typename Source::TransformDataType> Cluster;
+
+
+
 Parameters params;
 params.cluster_velocity_threshold_ = 1;
 params.cluster_position_threshold_ = 1;
 params.cluster_time_threshold_ = 2;
 
-Cluster<double> cluster;
+Cluster cluster;
 
-typedef SourceRN<lie_groups::R2_r2,MeasurementTypes::RN_POS,TransformNULL> Source; // We need the source for calculating distances
+
 SourceParameters source_params;
 source_params.spacial_density_of_false_meas_ = 0.1;
 source_params.gate_probability_ = 0.8;
@@ -253,7 +261,7 @@ SourceContainer<Source> source_container;
 source_container.AddSource(source_params);
 
 
-Meas<double> m, new_meas;
+Measurement m, new_meas;
 unsigned int num_meas = 10;
 m.type = MeasurementTypes::RN_POS;
 new_meas.type = MeasurementTypes::RN_POS;

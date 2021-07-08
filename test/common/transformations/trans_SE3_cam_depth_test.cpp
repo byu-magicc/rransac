@@ -5,6 +5,7 @@
 #include "rransac/common/transformations/trans_SE3_cam_depth.h"
 #include "rransac/common/measurement/measurement_base.h"
 #include "rransac/common/sources/source_SE3_cam_depth.h"
+#include "lie_groups/state.h"
 
 namespace rransac
 {
@@ -15,8 +16,10 @@ using namespace lie_groups;
 TEST(TransformationSE3CamDepthTest, AllFunctions) {
 
 // Setup source
-typedef typename lie_groups::SE3_se3 State;
+typedef SE3_se3 State;
 typedef SourceSE3CamDepth<State,MeasurementTypes::SE3_CAM_DEPTH,TransformSE3CamDepth> Source;
+typedef typename Source::Measurement Measurement;
+typedef typename TransformSE3CamDepth<State>::TransformDataType TransformDataType;
 
 SourceParameters params;
 params.type_ = MeasurementTypes::SE3_CAM_DEPTH;
@@ -38,7 +41,7 @@ transform_data = State::Random();
 target_c = target;
 
 // Construct measurements
-Meas<double> m1, m2, m3;
+Measurement m1, m2, m3;
 m1.source_index = 0;
 m2.source_index = 0;
 m1.transform_state = false;
@@ -46,7 +49,7 @@ m2.transform_state = false;
 m1.type = MeasurementTypes::SE3_CAM_DEPTH;
 m2.type = MeasurementTypes::SE3_CAM_DEPTH;
 
-Eigen::MatrixXd EmptyMat;
+TransformDataType EmptyMat;
 
 m1 = source.GetEstMeas(target,false,EmptyMat);
 target_transformed.g_.data_ = transform_data.g_.data_*target_transformed.g_.data_;
@@ -93,17 +96,13 @@ ASSERT_EQ(m1.transform_data_t_m, m3.transform_data_t_m);
 
 
 // Verify transformation data
-Eigen::MatrixXd transformation_data;
-transformation_data = Eigen::Matrix3d::Identity();
-
-ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Incorrect dimensions
-
-transformation_data = Eigen::Matrix4d::Identity();
+TransformDataType transformation_data;
+transformation_data = TransformDataType::Identity();
 
 ASSERT_TRUE(trans.IsAcceptableTransformData(transformation_data)); 
 
 transformation_data(3,1) = 1;
-ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data)); // Incorrect dimensions
+ASSERT_FALSE(trans.IsAcceptableTransformData(transformation_data));
 
 transformation_data(3,1) = 0;
 transformation_data(1,0) = 1;

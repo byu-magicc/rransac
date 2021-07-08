@@ -25,16 +25,21 @@ namespace rransac
  * calculates if these other policies are compatible with this policy. 
  */ 
 
-template<typename tModel>
+template<typename _Model>
 class MW_IPDAFPolicy {
 
 public:
+
+typedef _Model Model;
+typedef System<Model> Sys;
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef DataAssociationInfo<TransformDataType> DataAssociationInfoT;
 
     /** 
      * Calculates the weights for each track associated measurement. 
      * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
      */
-    static void PolicyCalculateMeasurementWeight(System<tModel>& sys, DataAssociationInfo& info) {
+    static void PolicyCalculateMeasurementWeight(Sys& sys, DataAssociationInfoT& info) {
 
         for (auto& track: sys.models_) {
             PolicyCalculateMeasurementWeightSingle(sys,track,info);
@@ -48,7 +53,7 @@ public:
      * @param[in] track the track whose new measurement weights are being calculated
      * @param[in,out] sys The object that contains all of the data of RRANSAC. This includes the new measurements, tracks, clusters and data tree. 
      */ 
-    static void PolicyCalculateMeasurementWeightSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info) {
+    static void PolicyCalculateMeasurementWeightSingle(const Sys& sys, Model& track, DataAssociationInfoT& info) {
 
         for (int source_index =0; source_index < sys.source_container_.num_sources_; ++source_index) {
             for(auto& meas : track.new_assoc_meas_[source_index]) {
@@ -59,9 +64,9 @@ public:
     }
 
 
-    template<template<class> typename tValidationRegionPolicy, template<class> typename tUpdateTrackLikelihoodPolicy>
+    template<template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy>
     struct CompatiblityCheck {
-        static constexpr bool value = std::is_same<tUpdateTrackLikelihoodPolicy<tModel>,TLI_IPDAFPolicy<tModel>>::value;
+        static constexpr bool value = std::is_same<_UpdateTrackLikelihoodPolicy<Model>,TLI_IPDAFPolicy<Model>>::value;
         
     }; 
 

@@ -21,6 +21,10 @@ public:
 
 typedef typename tModel::State State;
 typedef typename State::DataType DataType;
+typedef typename tModel::Base::TransformDataType TransformDataType;
+typedef Cluster<DataType,TransformDataType> ClusterT;
+
+
 
 /**
  * This function sets the initial guess of the state estimate to zero.
@@ -30,9 +34,11 @@ typedef typename State::DataType DataType;
  * @param size The size of the pointer x
  * 
  */ 
-    static void GenerateSeedPolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
+    static void GenerateSeedPolicy(const std::vector<typename ClusterT::IteratorPair>& meas_subset, const System<tModel>& sys, double x[tModel::cov_dim_], const int size) {
+        std::default_random_engine generator;
+        std::uniform_real_distribution<DataType> distribution(0.0,1.0);
         for (int ii = 0; ii < size; ++ii) {
-            x[ii]=0;
+            x[ii]=distribution(generator);
         }
     }
 

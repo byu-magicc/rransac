@@ -27,22 +27,22 @@ typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull> SourceContainerR2Nul
 
 template<typename tModel, template<typename > typename tSeed> 
 struct LMLEDummy : tSeed<tModel>{
-    static void GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<typename tModel::DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
+    static void GenerateHypotheticalStateEstimatePolicy(const std::vector<typename Cluster<typename tModel::DataType, typename tModel::Base::TransformDataType>::IteratorPair>& meas_subset, const System<tModel>& sys, bool& success);
 };
 
 template<typename tModel>
 struct ValidationRegionDummyPolicy{
-    static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType>& meas, tModel& track);
+    static bool PolicyInValidationRegion(const System<tModel>& sys, const Meas<typename tModel::DataType, typename tModel::Base::TransformDataType>& meas, tModel& track);
 };
 
 template<typename tModel>
 struct UpdateTrackLikelihoodDummyPolicy{
-    static void PolicyUpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo& info, const double dt);
+    static void PolicyUpdateTrackLikelihoodSingle(const System<tModel>& sys, tModel& track, DataAssociationInfo<typename tModel::TransformDataType>& info, const double dt);
 };
 
 template<typename tModel>
 struct CalculateMeasurementWeightsDummyPolicy{
-    static void PolicyCalculateMeasurementWeightSingle(System<tModel>& sys, tModel& track, DataAssociationInfo& info);
+    static void PolicyCalculateMeasurementWeightSingle(System<tModel>& sys, tModel& track, DataAssociationInfo<typename tModel::TransformDataType>& info);
 };
 
 template<typename tModel>
@@ -53,16 +53,19 @@ struct SeedDummy {
 TEST(RANSAC_TEST, GenerateMinimumSubsetTest) {
 
 typedef ModelRN<SourceContainerR2Null> Model;
+typedef typename Model::Base::Measurement Measurement;
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef typename Model::Base::DataType DataType;
+typedef Cluster<DataType,TransformDataType> ClusterT;
 
 
 
-
-Cluster<double> cluster;
+ClusterT cluster;
 Ransac<Model, SeedDummy, LMLEDummy, ValidationRegionDummyPolicy,UpdateTrackLikelihoodDummyPolicy,CalculateMeasurementWeightsDummyPolicy > ransac;
 
 srand(time(NULL));
 
-Meas<double> m;
+Measurement m;
 m.pose = Eigen::Matrix<double,2,1>::Random();
 m.type = MeasurementTypes::RN_POS;
 unsigned int max_times = 20;
@@ -100,7 +103,7 @@ while (num_min_subset < 1) {
 }
 
 
-std::vector<Cluster<double>::IteratorPair> meas_index = ransac.GenerateMinimumSubset(num_min_subset, cluster);
+std::vector<typename ClusterT::IteratorPair> meas_index = ransac.GenerateMinimumSubset(num_min_subset, cluster);
 
 // Make sure there is a measurement from the current time step and that they are all from different time steps
 int times[meas_index.size()];
@@ -138,6 +141,10 @@ TEST(RANSAC_TEST, ScoreHypotheticalStateEstimateTest) {
 
 typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull,SourceR2PosVelNull> SC;
 typedef ModelRN<SC> Model;
+typedef typename Model::Base::Measurement Measurement;
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef typename Model::Base::DataType DataType;
+typedef Cluster<DataType,TransformDataType> ClusterT;
 
 // Setup sources
 double noise = 1e-2;
@@ -169,7 +176,7 @@ sys.source_container_.AddSource(source_params3);
 sys.params_ = params;
 
 // Setup cluster 
-Cluster<double> cluster;
+ClusterT cluster;
 
 // Setup the model
 Model x;
@@ -178,7 +185,7 @@ x.state_.g_.data_.setRandom();
 x.state_.u_.data_.setRandom();
 
 // Setup Measurements
-Meas<double> m1, m2, m3, m4;
+Measurement m1, m2, m3, m4;
 m1.source_index = 0;
 m1.type = MeasurementTypes::RN_POS;
 
@@ -207,9 +214,9 @@ double start_time = 0;
 
 for (double ii = start_time; ii < steps*dt; ii += dt ) {
     x.PropagateModel(dt);
-    Meas<double> tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),x.state_,transform_state, EmptyMat);
-    Meas<double> tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),x.state_, transform_state, EmptyMat);
-    Meas<double> tmp4 = sys.source_container_.GenerateRandomMeasurement(m4.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),x.state_, transform_state, EmptyMat);
+    Measurement tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),x.state_,transform_state, EmptyMat);
+    Measurement tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),x.state_, transform_state, EmptyMat);
+    Measurement tmp4 = sys.source_container_.GenerateRandomMeasurement(m4.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),x.state_, transform_state, EmptyMat);
     m1.time_stamp = ii + dt;
     m1.pose = tmp1.pose;
 
@@ -237,7 +244,7 @@ for (double ii = start_time; ii < steps*dt; ii += dt ) {
 
 
 // Get score and inliers
-std::vector<Cluster<double>::IteratorPair> inliers;
+std::vector<typename ClusterT::IteratorPair> inliers;
 Ransac<Model, SeedDummy, LMLEDummy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> ransac;
 int score = ransac.ScoreHypotheticalStateEstimate(x.state_,cluster,sys,inliers);
 
@@ -279,6 +286,10 @@ TEST(RANSAC_TEST, RUN_TEST) {
 
 typedef SourceContainer<SourceR2PosNull,SourceR2PosVelNull,SourceR2PosVelNull> SC;
 typedef ModelRN<SC> Model;
+typedef typename Model::Base::Measurement Measurement;
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef typename Model::Base::DataType DataType;
+typedef Cluster<DataType,TransformDataType> ClusterT;
 
 // Setup sources
 double noise = 1e-2;
@@ -320,7 +331,7 @@ sys.source_container_.AddSource(source_params3);
 sys.params_ = params;
 
 // Setup Measurements
-Meas<double> m1, m2, m3, m4;
+Measurement m1, m2, m3, m4;
 m1.source_index = 0;
 m1.type = MeasurementTypes::RN_POS;
 
@@ -365,7 +376,7 @@ double dt = 0.1;
 double end_time = 5; // seconds;
 double start_time = 0; // seconds;
 double fov = 10;  // The surveillance region is a square centered at zero with side length 20
-Meas<double> tmp1, tmp2, tmp3, tmp4;
+Measurement tmp1, tmp2, tmp3, tmp4;
 
 for (double ii =start_time; ii < end_time; ii += dt) {
 
@@ -375,9 +386,9 @@ for (double ii =start_time; ii < end_time; ii += dt) {
             track.PropagateModel(dt);
         }
 
-        Meas<double> tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),track.state_,transform_state, EmptyMat);
-        Meas<double> tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),track.state_, transform_state, EmptyMat);
-        Meas<double> tmp4 = sys.source_container_.GenerateRandomMeasurement(m4.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),track.state_, transform_state, EmptyMat);
+        Measurement tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),track.state_,transform_state, EmptyMat);
+        Measurement tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index, Eigen::Matrix<double,4,4>::Identity()*sqrt(noise),track.state_, transform_state, EmptyMat);
+        Measurement tmp4 = sys.source_container_.GenerateRandomMeasurement(m4.source_index, Eigen::Matrix2d::Identity()*sqrt(noise),track.state_, transform_state, EmptyMat);
         tmp3.pose = Eigen::Matrix<double,2,1>::Random()*fov;
         tmp3.twist = Eigen::Matrix<double,2,1>::Random();
 

@@ -59,12 +59,13 @@ TEST(Source_RN, OTHER){
 
 // Test the functions using R2_r2
 SourceParameters params;
-params.meas_cov_ = Eigen::Matrix2d::Identity();
+params.meas_cov_ = SourceR2Pos::MatMeasCov::Identity();
 params.spacial_density_of_false_meas_ = 0.1;
 params.type_ = MeasurementTypes::RN_POS;
 params.gate_probability_ = 0.8;
 params.probability_of_detection_ = 0.9;
 lie_groups::R2_r2 state = lie_groups::R2_r2::Random();
+
 
 SourceR2Pos source1;
 source1.Init(params);
@@ -73,12 +74,14 @@ H1 << 1,0,0,0,0,1,0,0;
 Eigen::Matrix<double,2,2> V1;
 V1.setIdentity();
 
+typedef typename SourceR2Pos::Measurement Measurement;
+
 Eigen::MatrixXd EmptyMat;
 bool transform_state = false;
 
 ASSERT_EQ(source1.GetLinObsMatState(state, transform_state, EmptyMat),H1);
 ASSERT_EQ(source1.GetLinObsMatSensorNoise(state, transform_state, EmptyMat),V1);
-Meas<double> m = source1.GetEstMeas(state, transform_state, EmptyMat);
+Measurement m = source1.GetEstMeas(state, transform_state, EmptyMat);
 ASSERT_EQ(m.pose, state.g_.data_);
 m.pose.setZero(); 
 m.twist.setZero();
@@ -92,7 +95,7 @@ ASSERT_EQ(m.pose, state.g_.data_);
 ASSERT_EQ(m.twist, state.u_.data_);
 
 // Test OMinus
-Meas<double> m3, m4;
+Measurement m3, m4;
 m3.pose = Eigen::Matrix<double,2,1>::Random();
 m3.twist = Eigen::Matrix<double,2,1>::Random();
 m4.pose = Eigen::Matrix<double,2,1>::Random();
@@ -104,7 +107,7 @@ error2.block(2,0,2,1) = m3.twist - m4.twist;
 
 
 SourceParameters params2;
-params2.meas_cov_ = Eigen::Matrix<double,4,4>::Identity();
+params2.meas_cov_ = SourceR2PosVel::MatMeasCov::Identity();
 params2.spacial_density_of_false_meas_ = 0.1;
 params2.type_ = MeasurementTypes::RN_POS_VEL;
 params2.gate_probability_ = 0.8;
@@ -123,10 +126,10 @@ ASSERT_EQ( source2.OMinus(m3,m4), error2);
 // Test Random Measurements
 const int num_rand = 10000;
 double std_scalar = 0.1;
-Eigen::Matrix2d std1 = Eigen::Matrix2d::Identity()*std_scalar;
-Eigen::Matrix4d std2 = Eigen::Matrix4d::Identity()*std_scalar;
-std::vector<Meas<double>> rand_meas1(num_rand);
-std::vector<Meas<double>> rand_meas2(num_rand);
+typename SourceR2Pos::MatMeasCov std1 = SourceR2Pos::MatMeasCov::Identity()*std_scalar;
+typename SourceR2PosVel::MatMeasCov std2 = SourceR2PosVel::MatMeasCov::Identity()*std_scalar;
+std::vector<Measurement> rand_meas1(num_rand);
+std::vector<Measurement> rand_meas2(num_rand);
 std::vector<Eigen::Matrix<double,2,1>> error_1(num_rand);
 std::vector<Eigen::Matrix<double,4,1>> error_2(num_rand);
 Eigen::Matrix<double,2,1> error_mean1;
@@ -155,8 +158,8 @@ error_mean1 /=num_rand;
 error_mean2 /=num_rand;
 
 // Calculate the covariance
-Eigen::Matrix2d cov1;
-Eigen::Matrix4d cov2;
+typename SourceR2Pos::MatMeasCov cov1;
+typename SourceR2PosVel::MatMeasCov cov2;
 cov1.setZero();
 cov2.setZero();
 for (unsigned long int ii = 0; ii < num_rand; ++ii){

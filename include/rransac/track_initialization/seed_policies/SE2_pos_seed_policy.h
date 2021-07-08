@@ -20,13 +20,17 @@ namespace rransac
  * that the first component of the body velocity is positive and the second is zero. 
  */ 
 
-template<typename tModel>
+template<typename _Model>
 class SE2PosSeedPolicy {
 
 public:
 
-typedef typename tModel::State State;
+typedef _Model Model;
+typedef typename Model::State State;
 typedef typename State::DataType DataType;
+typedef typename Model::Base::TransformDataType TransformDataType;
+typedef Cluster<DataType,TransformDataType> ClusterT;
+typedef System<Model> Sys;
 
 /**
  * This function sets the initial guess of the state estimate. TODO:: This algorithm is detailed in the paper _____________
@@ -35,12 +39,12 @@ typedef typename State::DataType DataType;
  * @param[in] x The initial conditions of the optimization problem. The initial conditions will change according to the seed policy. 
  * @param[in] size The number parameters the optimization solver is optimizing over which is the size of the input x.
  */ 
-    static void GenerateSeedPolicy(const std::vector<typename Cluster<DataType>::IteratorPair>& meas_subset, const System<tModel>& sys, DataType x[tModel::cov_dim_], const int size) {
+    static void GenerateSeedPolicy(const std::vector<typename ClusterT::IteratorPair>& meas_subset, const Sys& sys, DataType x[Model::cov_dim_], const int size) {
         
         if (meas_subset.size() < 3)
             throw std::runtime_error("SE2PosSeedPolicy: Minimum subset must be at least 3");
 
-        std::vector<typename Cluster<DataType>::IteratorPair> meas_subset_ordered = meas_subset;
+        std::vector<typename ClusterT::IteratorPair> meas_subset_ordered = meas_subset;
         Eigen::Matrix<DataType,2,1> td1, td2, rho, z; // Position derivatives
         Eigen::Matrix<DataType,3,1> se2;
         Eigen::Matrix<DataType,2,2> R1, R2;
@@ -109,7 +113,7 @@ private:
      * @param[in] meas_iter1 An iterator to the first measurement.
      * @param[in] meas_iter2 An iterator to the seconde measurement.
      */ 
-    static bool SortChronological(typename Cluster<DataType>::IteratorPair& meas_iter1, typename Cluster<DataType>::IteratorPair& meas_iter2) {
+    static bool SortChronological(typename ClusterT::IteratorPair& meas_iter1, typename ClusterT::IteratorPair& meas_iter2) {
         return meas_iter1.inner_it->time_stamp < meas_iter2.inner_it->time_stamp;
     }
 

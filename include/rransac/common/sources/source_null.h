@@ -10,18 +10,32 @@
 
 namespace rransac {
 
+using namespace utilities;
 
-template<typename tState=lie_groups::R2_r2, MeasurementTypes tMeasurementType=MeasurementTypes::NUM_TYPES, template <typename > typename tTransformation = TransformNULL>
-class SourceNull : public SourceBase<tState,tMeasurementType,tTransformation,0,SourceNull> {
+template<typename _State=lie_groups::R2_r2, MeasurementTypes _MeasurementType=MeasurementTypes::NUM_TYPES, template <typename > typename _Transformation = TransformNULL>
+class SourceNull : public SourceBase<SourceDerivedTraits<_State,MatXT<typename _State::DataType>,MatXT<typename _State::DataType>,_Transformation,1,1,0,0,1,0,false,_MeasurementType,utilities::CompatibleWithModelNull>,SourceNull> {
 
 public:
 
-typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-typedef typename tState::DataType DataType;
-typedef utilities::CompatibleWithModelNull ModelCompatibility;              /**<Indicates which model this source is compatible with. */
-static constexpr MeasurementTypes measurement_type_ = tMeasurementType;     /**< The measurement type of the source. */
-static constexpr unsigned int meas_space_dim_ = 1;
-
+    typedef SourceBase<SourceDerivedTraits<_State,MatXT<typename _State::DataType>,MatXT<typename _State::DataType>,_Transformation,1,1,0,0,1,0,false,_MeasurementType,utilities::CompatibleWithModelNull>,SourceNull> Base;
+    typedef typename Base::State State;                                            /**< The state of the target. @see State. */
+    typedef typename Base::DataType DataType;                                      /**< The scalar object for the data. Ex. float, double, etc. */
+    typedef typename Base::MatH MatH;                                              /**< The object type of the Jacobian H. */
+    typedef typename Base::MatV MatV;                                              /**< The object type of the Jacobians V. */
+    typedef typename Base::Transformation Transformation;                          /**< The transformation used to transform the measurements and tracks. */
+    typedef typename Base::MatMeasCov MatMeasCov;                                  /**< The data type of the measurement covariance. */
+    typedef typename Base::VecMeas VecMeas;                                        /**< The data type of the measurement covariance. */
+    static constexpr unsigned int meas_pose_rows_  = Base::meas_pose_rows_;        /**< The number of rows in the pose measurement. */
+    static constexpr unsigned int meas_pose_cols_  = Base::meas_pose_cols_;        /**< The number of columns in the pose measurement. */
+    static constexpr unsigned int meas_twist_rows_ = Base::meas_twist_rows_;       /**< The number of rows in the twist measurement. */
+    static constexpr unsigned int meas_twist_cols_ = Base::meas_twist_cols_;       /**< The number of columns in the twist measurement. */
+    static constexpr unsigned int meas_pose_dim_   = Base::meas_pose_dim_;         /**< The measurement pose dimension. */
+    static constexpr unsigned int meas_twist_dim_  = Base::meas_twist_dim_;        /**< The measurement twist dimension. */
+    static constexpr unsigned int total_meas_dim_  = Base::total_meas_dim_;        /**< The total measurement dimension. */
+    static constexpr bool has_vel_ = Base::has_vel_;                               /**< Indicates if the measurement contains velocity.  */
+    static constexpr MeasurementTypes measurement_type_ = Base::measurement_type_; /**< The measurement type of the source. */
+    typedef typename Base::TransformDataType TransformDataType;                    /**< The error type of the difference between two measurements. */
+    typedef typename Base::Measurement Measurement;                                /**< The measurement data type. */
 
 /** 
  * Initializes the measurement source by setting the parameters using SetParameters, calculating the non user specified parameters,
@@ -38,7 +52,7 @@ void DerivedInit(const SourceParameters& params) {
  * Returns the jacobian of the observation function w.r.t. the states. 
  * @param[in] state A state of the target.
 */
-static MatXd DerivedGetLinObsMatState(const tState& state) {
+static MatH DerivedGetLinObsMatState(const State& state) {
     throw std::runtime_error("SourceNull::DerivedGetLinObsMatState Function Not Implemented, and shouldn't be called. "); 
 }   
 
@@ -46,7 +60,7 @@ static MatXd DerivedGetLinObsMatState(const tState& state) {
  * Returns the jacobian of the observation function w.r.t. the sensor noise.
  * @param[in] state A state of the target.
  */
-static MatXd DerivedGetLinObsMatSensorNoise(const tState& state)  {
+static MatV DerivedGetLinObsMatSensorNoise(const State& state)  {
     throw std::runtime_error("SourceNull::DerivedGetLinObsMatSensorNoise Function Not Implemented, and shouldn't be called. "); 
 
 } 
@@ -55,7 +69,7 @@ static MatXd DerivedGetLinObsMatSensorNoise(const tState& state)  {
  *  Implements the observation function and returns an estimated measurement based on the state. 
  * @param[in] state A state of the target.
  */
-static Meas<DataType> DerivedGetEstMeas(const tState& state)  {
+static Measurement DerivedGetEstMeas(const State& state)  {
     throw std::runtime_error("SourceNull::DerivedGetEstMeas Function Not Implemented, and shouldn't be called. "); 
 
 } 
@@ -66,7 +80,7 @@ static Meas<DataType> DerivedGetEstMeas(const tState& state)  {
  * @param[in] m1 a measurement
  * @param[in] m2 a measurement
  */
-static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
+static VecMeas DerivedOMinus(const Measurement& m1, const Measurement& m2) {
     throw std::runtime_error("SourceNull::DerivedOMinus Function Not Implemented, and shouldn't be called. "); 
 } 
 
@@ -77,7 +91,7 @@ static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
  * @param[in] state    The state that serves as the mean of the Gaussian distribution.
  * @param[in] meas_std The measurement standard deviation.
  */ 
-Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tState& state) const {
+Measurement DerivedGenerateRandomMeasurement(const MatMeasCov& meas_std, const State& state) const {
     throw std::runtime_error("SourceNull::DerivedGenerateRandomMeasurement Function Not Implemented, and shouldn't be called. "); 
 
 }
@@ -88,13 +102,13 @@ Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const tSt
 //-----------------------------------------------------------------------------------------------------------------------------
 
 
-template<typename tSource>
+template<typename _Source>
 struct IsSourceNull {
     static constexpr bool value = false;
 };
 
-template<typename tState, MeasurementTypes tMeasurementType, template<typename > typename tTransformation>
-struct IsSourceNull<SourceNull<tState,tMeasurementType,tTransformation>>{
+template<typename _State, MeasurementTypes _MeasurementType, template<typename > typename _Transformation>
+struct IsSourceNull<SourceNull<_State,_MeasurementType,_Transformation>>{
       static constexpr bool value = true; 
 };
 

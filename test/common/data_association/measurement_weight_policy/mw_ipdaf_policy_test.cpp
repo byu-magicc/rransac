@@ -25,6 +25,7 @@ using namespace rransac;
 
 typedef SourceRN<R2_r2,MeasurementTypes::RN_POS,TransformNULL> SourceR2Pos;
 typedef SourceRN<R2_r2,MeasurementTypes::RN_POS_VEL,TransformNULL> SourceR2PosVel;
+typedef typename SourceR2Pos::TransformDataType TransformDataType;
 
 
 typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
@@ -35,7 +36,7 @@ typedef ModelRN<SourceContainerR2> Model;
 
 TEST(TargetLikelihoodUpdateTest, IPDAF) {
 
-
+typedef typename SourceR2Pos::Measurement Measurement;
 
 // Setup sources
 double meas_noise0 = 0.013;
@@ -98,18 +99,18 @@ auto model_iter0 = sys.models_.begin();
 auto model_iter1 = std::next(model_iter0);
 
 // Setup measurements
-Meas<double> m0, m1;
+Measurement m0, m1;
 m0.type = source_params0.type_;
 m0.time_stamp = sys.current_time_;
 m0.source_index = 0;
 m1.type = source_params1.type_;
 m1.time_stamp = sys.current_time_;
 m1.source_index = 1;
-std::vector<Meas<double>> meas_base {m0,m1};
+std::vector<Measurement> meas_base {m0,m1};
 std::vector<std::list<Model>::iterator> model_iter = {model_iter0, model_iter1};
 
 // Setup data association info
-DataAssociationInfo info;
+DataAssociationInfo<TransformDataType> info;
 info.source_produced_measurements_.push_back(true);
 info.source_produced_measurements_.push_back(true);
 
@@ -131,7 +132,7 @@ model_iter1->model_likelihood_update_info_[1].delta = 0.1;
 
 // Add the measurements and calculate the weights.
 
-std::vector<std::vector<std::vector<Meas<double>>>> meas(2,std::vector<std::vector<Meas<double>>>(2, std::vector<Meas<double>>(4)));
+std::vector<std::vector<std::vector<Measurement>>> meas(2,std::vector<std::vector<Measurement>>(2, std::vector<Measurement>(4)));
 
 for (int model_index =0; model_index < 2; ++model_index) {
     for (int source_index =0; source_index <2; ++ source_index) {

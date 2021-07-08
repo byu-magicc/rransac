@@ -29,7 +29,10 @@ inline Eigen::MatrixXd GaussianRandomGenerator(const int size){
     return randn_nums;
 }
 
-   
+
+// Dynamic matrix
+template<typename _DataType>
+using MatXT = Eigen::Matrix<_DataType,Eigen::Dynamic,Eigen::Dynamic>;
 
 
 //  Structs to determine source compatibility
@@ -40,7 +43,24 @@ struct CompatibleWithModelSENPoseTwist{};
 struct CompatibleWithModelNull{};
 
 
+unsigned int factorial(unsigned int n)
+{
+    if (n == 0)
+        return 1;
+    return n * factorial(n - 1);
+}
 
+template<typename T>
+static void WrapAngle(T& angle) {
+    while (angle < -M_PI) {
+        angle += 2.0*M_PI;
+    }
+    while (angle > M_PI) {
+        angle -= 2.0*M_PI;
+    }
+
+
+}
 
 
 

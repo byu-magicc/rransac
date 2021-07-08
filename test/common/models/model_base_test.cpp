@@ -5,11 +5,11 @@
 
 
 #include "rransac/common/models/model_base.h"
-#include "rransac/common/models/model_RN.h"
+// #include "rransac/common/models/model_RN.h"
 #include "rransac/common/models/model_SEN_pos_vel.h"
 #include "rransac/common/models/model_SEN_pose_twist.h"
 #include "rransac/common/sources/source_base.h"
-#include "rransac/common/sources/source_RN.h"
+// #include "rransac/common/sources/source_RN.h"
 #include "rransac/common/sources/source_SEN_pos_vel.h"
 #include "rransac/common/sources/source_SEN_pose_twist.h"
 #include "rransac/parameters.h"
@@ -26,13 +26,13 @@ using namespace lie_groups;
 
 // Create types
 
-typedef SourceRN<R2_r2, MeasurementTypes::RN_POS, TransformNULL> SourceR2Pos;
-typedef SourceRN<R2_r2, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR2PosVel;
-typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
+// typedef SourceRN<R2_r2, MeasurementTypes::RN_POS, TransformNULL> SourceR2Pos;
+// typedef SourceRN<R2_r2, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR2PosVel;
+// typedef SourceContainer<SourceR2Pos,SourceR2PosVel> SourceContainerR2;
 
-typedef SourceRN<R3_r3, MeasurementTypes::RN_POS, TransformNULL> SourceR3Pos;
-typedef SourceRN<R3_r3, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR3PosVel;
-typedef SourceContainer<SourceR3Pos,SourceR3PosVel> SourceContainerR3;
+// typedef SourceRN<R3_r3, MeasurementTypes::RN_POS, TransformNULL> SourceR3Pos;
+// typedef SourceRN<R3_r3, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR3PosVel;
+// typedef SourceContainer<SourceR3Pos,SourceR3PosVel> SourceContainerR3;
 
 typedef SourceSENPosVel<SE2_se2, MeasurementTypes::SEN_POS, TransformNULL> SourceSE2Pos;
 typedef SourceSENPosVel<SE2_se2, MeasurementTypes::SEN_POS_VEL, TransformNULL> SourceSE2PosVel;
@@ -53,8 +53,8 @@ typedef SourceContainer<SourceSE3Pose,SourceSE3PoseTwist> SourceContainerSE3Pose
 
 
 
-typedef ModelRN<SourceContainerR2> Model1;
-typedef ModelRN<SourceContainerR3> Model2;
+// typedef ModelRN<SourceContainerR2> Model1;
+// typedef ModelRN<SourceContainerR3> Model2;
 typedef ModelSENPosVel<SourceContainerSE2Pos> Model3;
 typedef ModelSENPoseTwist<SourceContainerSE2Pose> Model4;
 typedef ModelSENPosVel<SourceContainerSE3Pos> Model5;
@@ -69,17 +69,17 @@ struct ModelHelper {
     static constexpr MeasurementTypes MeasType2 = MT2;
 };
 
-typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
-typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
+// typedef ModelHelper<Model1, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper1;
+// typedef ModelHelper<Model2, MeasurementTypes::RN_POS, MeasurementTypes::RN_POS_VEL> ModelHelper2;
 typedef ModelHelper<Model3, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper3;
 typedef ModelHelper<Model4, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper4;
 typedef ModelHelper<Model5, MeasurementTypes::SEN_POS, MeasurementTypes::SEN_POS_VEL> ModelHelper5;
 typedef ModelHelper<Model6, MeasurementTypes::SEN_POSE, MeasurementTypes::SEN_POSE_TWIST> ModelHelper6;
 
 
-using MyTypes = ::testing::Types<ModelHelper1, ModelHelper2, ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
+using MyTypes = ::testing::Types<ModelHelper3, ModelHelper4, ModelHelper5, ModelHelper6 >;
 // using MyTypes = ::testing::Types<ModelHelper3, ModelHelper5 >;
-// using MyTypes = ::testing::Types< ModelHelper2>;
+// using MyTypes = ::testing::Types< ModelHelper3>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -89,9 +89,10 @@ class ModelTest : public ::testing::Test {
 
 protected:
 
-typedef Meas<double> Measurement;
+typedef typename Model::Model::Base::Measurement Measurement;
+typedef typename Model::Model::Base::TransformDataType TransformDataType;
 
-static constexpr unsigned int meas_dim = Model::Model::SourceContainer::Source0::meas_space_dim_;
+static constexpr unsigned int meas_dim = Model::Model::SourceContainer::Source0::meas_pose_dim_;
 static constexpr unsigned int state_dim = Model::Model::State::g_type_::dim_*2;
 static constexpr unsigned int cov_dim = Model::Model::cov_dim_;
 static constexpr unsigned int a_vel_dim = Model::Model::cov_dim_ - Model::Model::State::g_type_::dim_-1;
@@ -159,7 +160,7 @@ std::vector<Measurement> meas2(num_meas);
 state = Model::Model::GetRandomState();
 
 bool transform_state = false;
-Eigen::MatrixXd EmptyMat;
+TransformDataType EmptyMat;
 
 state0 = state;                           // Initial state
 states.push_back(state);                
@@ -236,8 +237,8 @@ int num_iters = 10;
 double dt = 0.1;
 
 typename Model::Model track;
-typename Model::Model::Mat F;
-typename Model::Model::Mat G;
+typename Model::Model::MatModelCov F;
+typename Model::Model::MatModelCov G;
 static constexpr unsigned int g_dim_ = Model::Model::g_dim_;
 static constexpr unsigned int cov_dim_ = Model::Model::cov_dim_;
 Eigen::Matrix<double, cov_dim_, g_dim_*2> Filter;
@@ -252,11 +253,13 @@ TYPED_TEST_SUITE(ModelTest, MyTypes);
 
 
 TYPED_TEST(ModelTest, AllFunctions) {
+typedef typename TypeParam::Model::Base::TransformDataType TransformDataType;
+typedef typename TypeParam::Model::Base::Measurement Measurement;
 
 // Test init function and set parameters function
 this->track.Init(this->params);
 ASSERT_EQ(this->track.Q_, this->params.process_noise_covariance_);
-ASSERT_EQ(this->track.err_cov_, TypeParam::Model::Mat::Identity());
+ASSERT_EQ(this->track.err_cov_, TypeParam::Model::MatModelCov::Identity());
 ASSERT_EQ(this->track.newest_measurement_time_stamp, 0);
 ASSERT_EQ(this->track.model_likelihood_, 0.5);
 ASSERT_EQ(this->track.label_, -1);
@@ -270,7 +273,7 @@ ASSERT_EQ(this->track.model_likelihood_update_info_.size(), 2);
 
 // Test propagate state
 this->state = this->state0;
-this->state = this->track.PropagateState(this->state, this->dt*this->num_iters);
+this->track.PropagateState(this->state, this->dt*this->num_iters);
 ASSERT_LE( (this->state.g_.data_- this->states.back().g_.data_).norm(), 1e-12);
 ASSERT_EQ(this->state.u_.data_, this->states.back().u_.data_);
 
@@ -304,7 +307,7 @@ ASSERT_LE( (this->track.err_cov_ - this->F*this->F.transpose() - this->G*this->t
 // Test the innovation covariance function.
 ////////////////////////////////////////////////
 bool transform_state = false;
-Eigen::MatrixXd EmptyMat;
+TransformDataType EmptyMat;
 Eigen::MatrixXd H0, H1, V0, V1, S0, S1, S0_e, S1_e; // Observation function jacobians w.r.t. the state and noise for both sources and innovation covariances.
 H0 = this->source_container.GetLinObsMatState(0, this->track.state_, transform_state, EmptyMat);
 V0 = this->source_container.GetLinObsMatSensorNoise(0, this->track.state_, transform_state, EmptyMat);
@@ -398,10 +401,10 @@ if (TypeParam::MeasType1 == MeasurementTypes::SEN_POS|| TypeParam::MeasType1 == 
 // Verify the Consensus Set
 ASSERT_EQ(this->track.cs_.Size(), this->num_iters);
 
-ConsensusSet<Meas<double>> set;
+ConsensusSet<Measurement> set;
 set.consensus_set_.begin();
 
-for( std::list<std::vector<Meas<double>>>::iterator it = this->track.cs_.consensus_set_.begin(); it!= this->track.cs_.consensus_set_.end(); ++it) {
+for( auto it = this->track.cs_.consensus_set_.begin(); it!= this->track.cs_.consensus_set_.end(); ++it) {
     ASSERT_EQ( (*it).size(), 4);
 }
 

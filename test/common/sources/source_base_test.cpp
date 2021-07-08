@@ -6,6 +6,7 @@
 #include "rransac/common/sources/source_base.h"
 #include "rransac/common/transformations/transformation_base.h"
 #include "rransac/common/measurement/measurement_base.h"
+#include "lie_groups/state.h"
 
 namespace rransac {
 
@@ -25,16 +26,18 @@ bool func(const State& state) {
 // Dummy Source needed to initialize SourceBase
 /////////////////////////////////////////////////
 
-template<class tState>
-class TransformDummy : public TransformBase<Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic>, tState, Eigen::Matrix<typename tState::DataType,tState::dim_,tState::dim_>,false,TransformDummy<tState>> {
+
+template<class _State>
+class TransformDummy : public TransformBase<TransformDerivedTraits<_State,Eigen::Matrix<typename _State::DataType,Eigen::Dynamic, Eigen::Dynamic>, Eigen::Matrix<typename _State::DataType, _State::dim_, _State::dim_>,false>, TransformDummy> {
 public:
 
 
-typedef Eigen::Matrix<typename tState::DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;
+typedef Eigen::Matrix<typename _State::DataType,Eigen::Dynamic, Eigen::Dynamic> MatXd;
 typedef MatXd Data;
-typedef typename tState::DataType DataType;  /**< The scalar object for the data. Ex. float, double, etc. */
-typedef tState State;
-typedef Eigen::Matrix<typename tState::DataType, tState::dim_, tState::dim_> MatCov;
+typedef typename _State::DataType DataType;  /**< The scalar object for the data. Ex. float, double, etc. */
+typedef _State State;
+typedef Eigen::Matrix<typename _State::DataType, _State::dim_, _State::dim_> MatCov;
+typedef Meas<DataType,Data> Measurement;
 
 void DerivedInit(){}
 
@@ -42,7 +45,9 @@ void DerivedSetData(const Data& data){}
 
 void GetData() const {}
 
-void DerivedTransformMeasurement(Meas<DataType>& meas) const {}
+void DerivedTransformMeasurement(Measurement& meas) const {}
+
+static Measurement DerivedTransformMeasurement(const Measurement& meas,const Data& transform_data)  {return meas;}
 
 void DerivedTransformTrack(State& state, MatCov& cov) const {}
 
@@ -60,7 +65,7 @@ static State DerivedTransformState(const State& state, const Data& transform_dat
 }
 
 static MatXd DerivedGetTransformationJacobian(const State& state, const Data& transform_data) {
-   Eigen::Matrix<DataType, tState::dim_,tState::dim_> J;
+   Eigen::Matrix<DataType, _State::dim_,_State::dim_> J;
    J.setIdentity();
    J *= transform_data(0,0);
    return J;
@@ -78,39 +83,45 @@ static bool DerivedIsAcceptableTransformData(const Eigen::MatrixXd& transform_da
     }
 } 
 
+static Data DerivedGetRandomTransform(const DataType scalar = static_cast<DataType>(1.0)){
+    return Data::Zero();
+    }
+
 
 };
-
 
 
 //////////////////////////////////////////////////
 // Dummy Source needed to initialize SourceBase
 /////////////////////////////////////////////////
-template <typename tState, MeasurementTypes tMeasurementType, template <typename > typename tTransformation>
-class DummySource : public SourceBase<tState, tMeasurementType, tTransformation,tState::Group::dim_, DummySource> 
+
+template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
+class DummySource : public SourceBase<SourceDerivedTraits<_State,Eigen::Matrix<typename _State::DataType, Eigen::Dynamic, Eigen::Dynamic>,Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>,_Transformation,_State::Group::dim_, 1,MeasHasVelocity<_MeasurementType>::value ? _State::Group::dim_ : 0,1,_State::Group::dim_,MeasHasVelocity<_MeasurementType>::value?_State::Group::dim_ : 0,MeasHasVelocity<_MeasurementType>::value,_MeasurementType,utilities::CompatibleWithModelRN>, DummySource> 
 {
 public:
 
-    using State = tState;
-    typedef tTransformation<State> Transformation;
-    typedef typename tState::DataType DataType;
+    typedef _State State;
+    typedef _Transformation<State> Transformation;
+    typedef typename _State::DataType DataType;
     typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;
-    static constexpr unsigned int meas_space_dim_ = tState::Group::dim_;
-    static constexpr MeasurementTypes measurement_type_ = tMeasurementType;
-    typedef SourceBase<tState, tMeasurementType, tTransformation, tState::Group::dim_, DummySource> Base;
-    static constexpr unsigned int meas_pose_rows_ = tState::Group::dim_;        /**< The number of rows in the pose measurement. */
+    static constexpr unsigned int meas_space_dim_ = _State::Group::dim_;
+    static constexpr MeasurementTypes measurement_type_ = _MeasurementType;
+    static constexpr unsigned int meas_pose_rows_ = _State::Group::dim_;        /**< The number of rows in the pose measurement. */
     static constexpr unsigned int meas_pose_cols_ = 1;                          /**< The number of columns in the pose measurement. */
-    static constexpr unsigned int meas_twist_rows_ = tState::Group::dim_;       /**< The number of rows in the twist measurement. */
+    static constexpr unsigned int meas_twist_rows_ = _State::Group::dim_;       /**< The number of rows in the twist measurement. */
     static constexpr unsigned int meas_twist_cols_ = 1;                         /**< The number of columns in the twist measurement. */
 
-    static constexpr int dim_mult_ = MeasHasVelocity<tMeasurementType>::value ? 2 : 1;
+    typedef Meas<DataType,MatXd> Measurement;
+
+    static constexpr int dim_mult_ = MeasHasVelocity<_MeasurementType>::value ? 2 : 1;
+    typedef SourceBase<SourceDerivedTraits<_State,Eigen::Matrix<typename _State::DataType, Eigen::Dynamic, Eigen::Dynamic>,Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>,_Transformation,_State::Group::dim_, 1,MeasHasVelocity<_MeasurementType>::value ? _State::Group::dim_ : 0,1,_State::Group::dim_,MeasHasVelocity<_MeasurementType>::value?_State::Group::dim_ : 0,MeasHasVelocity<_MeasurementType>::value,_MeasurementType, utilities::CompatibleWithModelRN>, DummySource> Base;
 
     // static MatXd H_;
     // static MatXd V_;
 
     /** Initializes the measurement source. This function must set the parameters.  */
     void DerivedInit(const SourceParameters& params) { 
-        Base::H_ = Eigen::Matrix<double,dim_mult_*meas_space_dim_,tState::Group::dim_*2>::Identity();
+        Base::H_ = Eigen::Matrix<double,dim_mult_*meas_space_dim_,_State::Group::dim_*2>::Identity();
         Base::V_ = Eigen::Matrix<double,dim_mult_*meas_space_dim_,dim_mult_*meas_space_dim_>::Identity();
     }
 
@@ -126,8 +137,8 @@ public:
     }                         
 
     /** Computes the estimated measurement given a state */
-    static Meas<DataType> DerivedGetEstMeas(const State& state) {
-        Meas<DataType> tmp;
+    static Measurement DerivedGetEstMeas(const State& state) {
+        Measurement tmp;
         tmp.pose = state.g_.data_;
         return tmp;
     } /** Returns an estimated measurement according to the state. */
@@ -137,7 +148,7 @@ public:
      * Performs the OMinus operation between two measurement (m1 ominus m2) of the same type. In other words, this
      * method computes the geodesic distance between two measurements of the same type.
      */ 
-    static MatXd DerivedOMinus(const Meas<DataType>& m1, const Meas<DataType>& m2) {
+    static MatXd DerivedOMinus(const Measurement& m1, const Measurement& m2) {
         Eigen::Matrix<double,meas_space_dim_,1> err = m1.pose - m2.pose;
         return err;
     } 
@@ -146,9 +157,9 @@ public:
      * Generates a random measurement from a Gaussian distribution with mean defined by the state and standard deviation defined by meas_std. This
      * method is used primarily in simulations and tests.
      */ 
-    Meas<DataType> DerivedGenerateRandomMeasurement(const MatXd& meas_std, const State& state) const {
-        Meas<DataType> m;
-        m.type = tMeasurementType;
+    Measurement DerivedGenerateRandomMeasurement(const MatXd& meas_std, const State& state) const {
+        Measurement m;
+        m.type = _MeasurementType;
         m.source_index = this->params_.source_index_;
         m.pose = Eigen::Matrix<double,meas_space_dim_,1>::Ones()*state.g_.data_(0,0);
         return m;
@@ -173,6 +184,7 @@ SourceParameters source_params;
 DummySource1 source;
 CallbackClass<lie_groups::R2_r2> call;
 
+typedef typename DummySource1::Measurement Measurement;
 
 //
 // Invalid source parameters
@@ -237,8 +249,6 @@ ASSERT_NO_THROW(source.Init(source_params, std::bind(&CallbackClass<lie_groups::
 // Check that the dimesions were set.
 int meas_space_dim = DummySource1::meas_space_dim_;
 int meas_space_dim_mult = DummySource1::dim_mult_;
-ASSERT_EQ(source.GetParams().meas_space_dim_,meas_space_dim);
-ASSERT_EQ(source.GetParams().meas_space_dim_mult_,meas_space_dim_mult);
 
 // Check the gate threshold and unit hyptersphere.
 ASSERT_LE( fabs(1- source.GetParams().gate_threshold_), 1e-6);
@@ -257,8 +267,27 @@ ASSERT_LE( fabs(4.934802200544679- source2.GetParams().vol_unit_hypershpere_  ),
 
 meas_space_dim = DummySource2::meas_space_dim_;
 meas_space_dim_mult = DummySource2::dim_mult_;
-ASSERT_EQ(source2.GetParams().meas_space_dim_,meas_space_dim);
-ASSERT_EQ(source2.GetParams().meas_space_dim_mult_,meas_space_dim_mult);
+
+unsigned int meas_pose_rows  =DummySource2::Base::meas_pose_rows_;
+unsigned int meas_pose_cols  =DummySource2::Base::meas_pose_cols_;
+unsigned int meas_twist_rows =DummySource2::Base::meas_twist_rows_;
+unsigned int meas_twist_cols =DummySource2::Base::meas_twist_cols_;
+unsigned int meas_pose_dim   =DummySource2::Base::meas_pose_dim_;
+unsigned int meas_twist_dim  =DummySource2::Base::meas_twist_dim_;
+unsigned int total_meas_dim  =DummySource2::Base::total_meas_dim_;
+unsigned int has_vel         =DummySource2::Base::has_vel_;
+// DummySource2::SourceBase::
+ASSERT_EQ(source2.GetParams().meas_pose_rows_, meas_pose_rows);
+ASSERT_EQ(source2.GetParams().meas_pose_cols_, meas_pose_cols);
+ASSERT_EQ(source2.GetParams().meas_twist_rows_,meas_twist_rows);
+ASSERT_EQ(source2.GetParams().meas_twist_cols_,meas_twist_cols);
+ASSERT_EQ(source2.GetParams().meas_pose_dim_,  meas_pose_dim);
+ASSERT_EQ(source2.GetParams().meas_twist_dim_, meas_twist_dim);
+ASSERT_EQ(source2.GetParams().total_meas_dim_, total_meas_dim);
+ASSERT_EQ(source2.GetParams().has_vel_,        has_vel);
+
+
+
 
 // State is within surveillance region.
 Eigen::MatrixXd EmptyMat;
@@ -285,7 +314,7 @@ ASSERT_TRUE(source.StateInsideSurveillanceRegion(state, false, EmptyMat));
 
 // Verify Measurement
 
-Meas<double> m;
+Measurement m;
 source_params.type_ = MeasurementTypes::RN_POS;
 source_params.meas_cov_ = Eigen::Matrix2d::Identity();
 source_params.source_index_ = 0;
@@ -357,10 +386,12 @@ source_params_.probability_of_detection_ = 0.9;
 Parameters params_;
 DummySource1 source;
 
+typedef typename DummySource1::Measurement Measurement;
+
 lie_groups::R2_r2 state;
 state.g_.data_.setRandom();
 
-Meas<double> m1, m2;
+Measurement m1, m2;
 m1.time_stamp = rand() % 100 -50;
 m2.time_stamp = rand() % 100 -50;
 
@@ -392,9 +423,9 @@ m1.pose = state.g_.data_;
 m2.pose = state.g_.data_ *2;
 
 ASSERT_EQ(source.OMinus(m1,m2), m1.pose - m2.pose);
-
-ASSERT_EQ(source.GenerateRandomMeasurement(EmptyMat, state, false, EmptyMat).pose, (Eigen::Matrix<double,2,1>::Ones()*state.g_.data_(0,0))  );
-ASSERT_EQ(source.GenerateRandomMeasurement(EmptyMat, state, true, transform_data).pose, (Eigen::Matrix<double,2,1>::Ones()*state_transformed.g_.data_(0,0)));
+DummySource1::Base::MatMeasCov MeasNoiseCov = DummySource1::Base::MatMeasCov::Zero();
+ASSERT_EQ(source.GenerateRandomMeasurement(MeasNoiseCov, state, false, EmptyMat).pose, (Eigen::Matrix<double,2,1>::Ones()*state.g_.data_(0,0))  );
+ASSERT_EQ(source.GenerateRandomMeasurement(MeasNoiseCov, state, true, transform_data).pose, (Eigen::Matrix<double,2,1>::Ones()*state_transformed.g_.data_(0,0)));
 
 
 
@@ -443,13 +474,13 @@ ASSERT_EQ(source.GetTemporalDistance(m1,m2,params_),fabs(m1.time_stamp-m2.time_s
 ///////////////////////////////////////////////////////////////////////
 
 TEST(SOURCE_BASE, SpatialDistance_RN) {
-
+typedef typename DummySource2::Measurement Measurement;
 /* initialize random seed: */
 srand (time(NULL));
 Parameters params_;
 SourceParameters source_params;
 source_params.source_index_ = 0;
-source_params.type_ = MeasurementTypes::RN_POS;
+source_params.type_ = MeasurementTypes::RN_POS_VEL;
 source_params.meas_cov_ = Eigen::Matrix4d::Identity();
 
 constexpr unsigned int max_iter = 20;
@@ -457,7 +488,7 @@ for (unsigned int i; i <max_iter; ++i) {
 
 DummySource2 source1;
 source1.Init(source_params);
-Meas<double> m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
+Measurement m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
 m_R2_Pos_1.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_2.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_1.type = MeasurementTypes::RN_POS;
@@ -486,6 +517,7 @@ ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_R2_Pos_Vel_1, m_R2_Pos_1,params_)
 //             SPATIAL DISTANCE SEN POS with VEL
 ///////////////////////////////////////////////////////////////////////
 TEST(SOURCE_BASE, SpatialDistance_SEN_POS) {
+typedef typename DummySource2::Measurement Measurement;
 
 /* initialize random seed: */
 srand (time(NULL));
@@ -499,7 +531,7 @@ for (unsigned int i; i <max_iter; ++i) {
 
 DummySource2 source1;
 source1.Init(source_params);
-Meas<double> m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
+Measurement m_R2_Pos_1, m_R2_Pos_2, m_R2_Pos_Vel_1, m_R2_Pos_Vel_2;
 m_R2_Pos_1.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_2.pose = Eigen::Matrix<double,max_iter,1>::Random().block(0,0,i,1);
 m_R2_Pos_1.type = MeasurementTypes::SEN_POS;
@@ -529,6 +561,7 @@ ASSERT_DOUBLE_EQ(source1.GetSpatialDistance( m_R2_Pos_Vel_1, m_R2_Pos_1,params_)
 ///////////////////////////////////////////////////////////////////////
 
 TEST(SOURCE_BASE, SpatialDistance_SEN_POSE) {
+typedef typename DummySource2::Measurement Measurement;
 
 /* initialize random seed: */
 srand (time(NULL));
@@ -544,7 +577,7 @@ source_params.meas_cov_ = Eigen::Matrix3d::Identity();
 typedef lie_groups::SE2_se2 State_SE2;
 DummySource<lie_groups::SE2_se2, MeasurementTypes::SEN_POSE, TransformDummy> source1;
 source1.Init(source_params);
-Meas<double> m_SE2_Pose_1, m_SE2_Pose_2, m_SE2_Pose_Twist_1, m_SE2_Pose_Twist_2;
+Measurement m_SE2_Pose_1, m_SE2_Pose_2, m_SE2_Pose_Twist_1, m_SE2_Pose_Twist_2;
 m_SE2_Pose_1.pose  = State_SE2::Algebra::Exp(Eigen::Matrix<double,3,1>::Random());
 m_SE2_Pose_2.pose  = State_SE2::Algebra::Exp(Eigen::Matrix<double,3,1>::Random());
 m_SE2_Pose_1.type = MeasurementTypes::SEN_POSE;
@@ -571,7 +604,7 @@ source_params.meas_cov_ = Eigen::Matrix<double,6,6>::Identity();
 typedef lie_groups::SE3_se3 State_SE3;
 DummySource<lie_groups::SE3_se3, MeasurementTypes::SEN_POSE, TransformDummy> source2;
 source2.Init(source_params);
-Meas<double> m_SE3_Pose_1, m_SE3_Pose_2, m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2;
+Measurement m_SE3_Pose_1, m_SE3_Pose_2, m_SE3_Pose_Twist_1, m_SE3_Pose_Twist_2;
 m_SE3_Pose_1.pose  = State_SE3::Algebra::Exp(Eigen::Matrix<double,6,1>::Random());
 m_SE3_Pose_2.pose  = State_SE3::Algebra::Exp(Eigen::Matrix<double,6,1>::Random());
 m_SE3_Pose_1.type = MeasurementTypes::SEN_POSE;

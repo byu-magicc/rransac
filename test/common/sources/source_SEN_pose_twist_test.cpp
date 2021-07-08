@@ -25,8 +25,9 @@ typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
 typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE,TransformNULL> SourcePos;
 typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourcePosVel;
-typedef Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_> MatMeas1;
-typedef Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2> MatMeas2;
+typedef typename SourcePos::MatMeasCov MatMeas1;
+typedef typename SourcePosVel::MatMeasCov MatMeas2;
+typedef typename SourcePos::Measurement Measurement;
 
 SourceParameters params;
 params.spacial_density_of_false_meas_ = 0.1;
@@ -85,8 +86,9 @@ typedef Eigen::Matrix<double,6,6> Mat6d;
 typedef Eigen::Matrix<double,12,12> Mat12d;
 typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE,TransformNULL> SourcePos;
 typedef SourceSENPoseTwist<TypeParam,MeasurementTypes::SEN_POSE_TWIST,TransformNULL> SourcePosVel;
-typedef Eigen::Matrix<double,SourcePos::meas_space_dim_,SourcePos::meas_space_dim_> MatMeas1;
-typedef Eigen::Matrix<double,SourcePosVel::meas_space_dim_*2,SourcePosVel::meas_space_dim_*2> MatMeas2;
+typedef typename SourcePos::MatMeasCov MatMeas1;
+typedef typename SourcePosVel::MatMeasCov MatMeas2;
+typedef typename SourcePos::Measurement Measurement;
 
 typedef TypeParam S;
 typedef Eigen::Matrix<double,TypeParam::Group::dim_,1> Mat_p;
@@ -108,7 +110,7 @@ TypeParam state = TypeParam::Random();
 
 
 // Construct the expected measurement
-Meas<double> m;
+Measurement m;
 m.pose = state.g_.data_;
 m.twist = state.u_.data_;
 
@@ -173,7 +175,7 @@ source_pos_vel.Init(params2);
 
 TypeParam state_tmp = TypeParam::Random();
 
-Meas<double> m3, m4;
+Measurement m3, m4;
 m3.pose = state_tmp.g_.data_;
 m3.twist = Eigen::Matrix<double,TypeParam::Group::dim_,1>::Random();
 state_tmp = TypeParam::Random();
@@ -198,8 +200,8 @@ const int num_rand = 10000;
 double std_scalar = 0.1;
 Mat_p_c std1 = Mat_p_c::Identity()*std_scalar;
 Mat_pt_c std2 = Mat_pt_c::Identity()*std_scalar;
-std::vector<Meas<double>> rand_meas1(num_rand);
-std::vector<Meas<double>> rand_meas2(num_rand);
+std::vector<Measurement> rand_meas1(num_rand);
+std::vector<Measurement> rand_meas2(num_rand);
 std::vector<Mat_p> error_1(num_rand);
 std::vector<Mat_pt> error_2(num_rand);
 Mat_p error_mean1;

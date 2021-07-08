@@ -22,25 +22,41 @@ void Print(const ConsensusSet<M>& cs) {
 }
 
 // --------------------------------------------------------------------------------------------
-
-class TransformScalar : public TransformBase<double, lie_groups::R2_r2, Eigen::Matrix4d, false, TransformScalar> {
+template<typename _State= lie_groups::R2_r2>
+class TransformScalar : public TransformBase<TransformDerivedTraits<_State,double,Eigen::Matrix4d,false>, TransformScalar> {
 public:
-void DerivedSetData(double data){ data_ = data;}
 
-void DerivedTransformMeasurement(Meas<double>& meas) const{
-    meas.pose = meas.pose*data_;
-    meas.twist = meas.twist*data_;
+typedef TransformBase<TransformDerivedTraits<_State,double,Eigen::Matrix4d,false>, TransformScalar> Base;
+typedef typename Base::State State;                                      /**< The State type being used. */
+typedef typename Base::DataType DataType;                                /**< The scalar data type. */
+typedef typename Base::TransformDataType TransformDataType;              /**< The transform data type being used. It is either an element of SE2 for R2 or SE3 for R3. */
+typedef typename Base::MatCov MatCov;                                    /**< The covariance type of the track, and the transform jacobian type. */
+typedef typename Base::Measurement Measurement;                          /**< The measurement type. */
+
+void DerivedSetData(double data){ this->data_ = data;}
+
+void DerivedTransformMeasurement(Measurement& meas) const{
+    meas.pose = meas.pose*this->data_;
+    meas.twist = meas.twist*this->data_;
 }
 
 void TransformTrack(lie_groups::R2_r2& state, Eigen::Matrix4d&cov) const {}
 
+static TransformDataType DerivedGetRandomTransform(const DataType scalar = static_cast<DataType>(1.0)){
+    return TransformDataType::Zero();
+    }
+
 };
+
 
 // --------------------------------------------------------------------------------------------
 
 TEST(CONSENSUS_TEST, ADD_MEASUREMENT) {
 
-Meas<double> m1, m2,m3,m4,m5,m6;
+
+typedef Meas<double,Eigen::MatrixXd> Measurement;
+
+Measurement m1, m2,m3,m4,m5,m6;
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
 m3.time_stamp = 0.5;
@@ -49,7 +65,7 @@ m5.time_stamp = 0.2;
 m5.source_index = 1;
 m6.time_stamp = 0.2;
 m6.source_index = 2;
-ConsensusSet<Meas<double>> cs;
+ConsensusSet<Measurement> cs;
 
 cs.AddMeasToConsensusSet(m1);
 ASSERT_EQ(cs.consensus_set_.size(), 1);
@@ -66,7 +82,7 @@ ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 
 // m3 should come after m1 and m2
 cs.AddMeasToConsensusSet(m3);
-std::list<std::vector<Meas<double>>>::iterator iter = cs.consensus_set_.begin();
+std::list<std::vector<Measurement>>::iterator iter = cs.consensus_set_.begin();
 ASSERT_EQ(cs.consensus_set_.size(), 3);
 ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m1.time_stamp);
 ASSERT_EQ((*(++iter)).back().time_stamp, m2.time_stamp);
@@ -120,14 +136,15 @@ ASSERT_EQ(cs.consensus_set_.back().front().time_stamp, m3.time_stamp);
 
 TEST(CONSENSUS_TEST, ADD_MEASUREMENTS) {
 
+typedef Meas<double,Eigen::MatrixXd> Measurement;
 
 int num_meas = 1000;
-ConsensusSet<Meas<double>> cs;
+ConsensusSet<Measurement> cs;
 srand (time(NULL));
-std::vector<Meas<double>> measurements;
+std::vector<Measurement> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    Meas<double> m1;
+    Measurement m1;
     m1.time_stamp = rand() % 200 - 100;
     measurements.push_back(m1);
 }
@@ -163,10 +180,11 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 
 TEST(CONSENSUS_TEST, ADD_MEASUREMENTS_SAME_TIME_STAMP) {
 
+typedef Meas<double,Eigen::MatrixXd> Measurement;
 
-ConsensusSet<Meas<double>> cs;
-Meas<double> m1,m2,m3,m4,m5;
-std::vector<Meas<double>> mv1, mv2, mv3, mv4, mv5, mv6;
+ConsensusSet<Measurement> cs;
+Measurement m1,m2,m3,m4,m5;
+std::vector<Measurement> mv1, mv2, mv3, mv4, mv5, mv6;
 m1.time_stamp = 0.1;
 m2.time_stamp = -0.1;
 m3.time_stamp = 0.4;
@@ -198,10 +216,10 @@ ASSERT_EQ(iter->size(), 4);
 int num_meas = 1000;
 
 srand (time(NULL));
-std::vector<Meas<double>> measurements;
+std::vector<Measurement> measurements;
 
 for (int i = 0; i < num_meas; i++) {
-    Meas<double> m;
+    Measurement m;
     m.time_stamp = rand() % 200 - 100;
     measurements.clear();
     measurements.push_back(m);
@@ -238,7 +256,8 @@ for (auto iter = cs.consensus_set_.begin(); iter != cs.consensus_set_.end(); ++i
 
 TEST(CONSENSUS_TEST, PRUNE_CONSENSUS_SET) {
 
-Meas<double> m1, m2,m3,m4,m5,m6;
+typedef Meas<double,Eigen::MatrixXd> Measurement;
+Measurement m1, m2,m3,m4,m5,m6;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -246,9 +265,9 @@ m3.time_stamp = 0.5;
 m4.time_stamp = -0.1;
 m5.time_stamp = 0.2;
 m6.time_stamp = 0.2;
-std::vector<Meas<double>> meas {m1,m2,m3,m4,m5,m6};
+std::vector<Measurement> meas {m1,m2,m3,m4,m5,m6};
 
-ConsensusSet<Meas<double>> cs;
+ConsensusSet<Measurement> cs;
 cs.AddMeasurementsToConsensusSet(meas);
 
 // Remove all measurements
@@ -278,8 +297,8 @@ ASSERT_EQ(cs.consensus_set_.front().front().time_stamp, m5.time_stamp);
 // -----------------------------------------------------------------
 
 TEST(CONSENSUS_TEST, TRANSFORM_CONSENSUS_SET) {
-
-Meas<double> m1, m2,m3,m4,m5,m6;
+typedef Meas<double,TransformScalar<>::TransformDataType> Measurement;
+Measurement m1, m2,m3,m4,m5,m6;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -302,13 +321,13 @@ m4.twist = Eigen::Vector2d::Random();
 m5.twist = Eigen::Vector2d::Random();
 m6.twist = Eigen::Vector2d::Random();
 
-std::vector<Meas<double>> meas {m1,m2,m3,m4,m5,m6};
+std::vector<Measurement> meas {m1,m2,m3,m4,m5,m6};
 
-ConsensusSet<Meas<double>> cs, cs_copy;
+ConsensusSet<Measurement> cs, cs_copy;
 cs.AddMeasurementsToConsensusSet(meas);
 
 
-TransformScalar trans;
+TransformScalar<> trans;
 double data = 2.0;
 trans.SetData(data);
 
@@ -334,7 +353,8 @@ ASSERT_EQ( (*iter)[0].pose, m3.pose*data  );
 
 TEST(CONSENSUS_TEST, MERGE_CONSENSUS_SETS) {
 
-Meas<double> m1,m2,m3,m4,m5,m6,m7,m8,m9,m10;
+typedef Meas<double,Eigen::MatrixXd> Measurement;
+Measurement m1,m2,m3,m4,m5,m6,m7,m8,m9,m10;
 
 m1.time_stamp = 0;
 m2.time_stamp = 0.1;
@@ -348,17 +368,17 @@ m9.time_stamp = 0.3;
 m10.time_stamp = 0.6;
 
 
-std::vector<Meas<double>> meas1 {m1,m2,m3,m4,m5,m6};
-std::vector<Meas<double>> meas2 {m7,m8,m9,m10};
+std::vector<Measurement> meas1 {m1,m2,m3,m4,m5,m6};
+std::vector<Measurement> meas2 {m7,m8,m9,m10};
 
-ConsensusSet<Meas<double>> cs1;
-ConsensusSet<Meas<double>> cs2;
-ConsensusSet<Meas<double>> merged_cs;
+ConsensusSet<Measurement> cs1;
+ConsensusSet<Measurement> cs2;
+ConsensusSet<Measurement> merged_cs;
 
 cs1.AddMeasurementsToConsensusSet(meas1);
 cs2.AddMeasurementsToConsensusSet(meas2);
 
-merged_cs = ConsensusSet<Meas<double>>::MergeConsensusSets(cs1,cs2);
+merged_cs = ConsensusSet<Measurement>::MergeConsensusSets(cs1,cs2);
 
 ASSERT_EQ(merged_cs.consensus_set_.size(), 8);
 
