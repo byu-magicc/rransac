@@ -2,15 +2,17 @@
 #include "rransac/common/sources/source_SE3_cam_depth.h"
 #include "lie_groups/state.h"
 #include "rransac/common/transformations/transformation_null.h"
+#include "rransac/common/transformations/trans_SE3_cam_depth.h"
 
 namespace rransac {
 
 using namespace lie_groups;
 
 TEST(SOURCE_SE3_CAM_DEPTH, EstimatedMeasurementAndOMinus) {
-
+srand((unsigned int) time(0));
 using State = SE3_se3;
 using Source = SourceSE3CamDepth<State,MeasurementTypes::SE3_CAM_DEPTH,TransformNULL>;
+typedef Source::Measurement Measurement;
 
 
 SourceParameters params;
@@ -25,7 +27,7 @@ source.Init(params);
 State state;
 state = state.Random();
 
-Meas<double> m1,m2;
+Measurement m1,m2;
 bool transform_state = false;
 Eigen::MatrixXd EmptyMat;
 
@@ -123,65 +125,71 @@ ASSERT_LT( (Ha-Hn*Proj.transpose()).norm(),1e-6);
 
 
 TEST(SOURCE_SE3_CAM_DEPTH, SpatialDistanceTest) { 
+srand((unsigned int) time(0));
+typedef SE3_se3 State;
+typedef SourceSE3CamDepth<SE3_se3,MeasurementTypes::SE3_CAM_DEPTH,TransformSE3CamDepth> Source;
+typedef typename Source::Measurement Measurement;
+typedef typename Source::TransformDataType TransformDataType;
+typedef typename Source::Transformation Transformation;
 
 
-using State = SE3_se3;
-using Source = SourceSE3CamDepth<State,MeasurementTypes::SE3_CAM_DEPTH,TransformNULL>;
-bool transform_state = false;
-Eigen::MatrixXd EmptyMat;
 
 Parameters rransac_params;
 
 SourceParameters params;
-params.type_ = MeasurementTypes::SE3_CAM_DEPTH;
+params.type_ = Source::measurement_type_;
 double noise = 0.1;
-params.meas_cov_ = Eigen::Matrix<double,7,7>::Identity()*noise;
+params.meas_cov_ = Source::MatMeasCov::Identity()*noise;
 params.source_index_ = 0;
 
 Source source;
 source.Init(params);
 
-State state, transform1, transform2, state_t1, state_t2;
-state = state.Random();
-transform1 = State::Random();
-transform2 = State::Random();
-state_t1 = state;
-state_t1.g_.data_ = transform1.g_.data_*state_t1.g_.data_;
-state_t2 = state;
-state_t2.g_.data_ = transform2.g_.data_*state_t2.g_.data_;
-
-Meas<double> m1,m2;
+Measurement m1,m2, tmp1, tmp2;
 m1.source_index = 0;
 m1.type = MeasurementTypes::SE3_CAM_DEPTH;
+m1.transform_meas = false;
 m2.source_index= 0;
 m2.type = MeasurementTypes::SE3_CAM_DEPTH;
-m1 = source.GetEstMeas(state,transform_state, EmptyMat);
-m1.transform_state = false;
-m2 = source.GetEstMeas(state,transform_state, EmptyMat);
-m2.transform_state = false;
+m2.transform_meas = false;
 
-double d0, d1, d2, d3;
+// Test without transformation
+State state1_initial = State::Random(10);
+State state2_initial = State::Random(10);
+tmp1 = source.GetEstMeas(state1_initial,m1.transform_meas, m1.transform_data_m_t);
+tmp2 = source.GetEstMeas(state2_initial,m2.transform_meas, m2.transform_data_m_t);
+m1.pose = tmp1.pose;
+m1.twist = tmp1.twist;
+m2.pose = tmp2.pose;
+m2.twist = tmp2.twist;
 
-d0 = source.GetSpatialDistance(m1,m2,rransac_params);
 
-ASSERT_EQ(d0, 0);
+double d0 = source.GetSpatialDistance(m1,m2,rransac_params);
 
-m1.transform_state = true;
-m1.transform_data_m_t = transform1.g_.data_;
-m2 = source.GetEstMeas(state_t1,transform_state, EmptyMat);
-d1 = source.GetSpatialDistance(m1,m2,rransac_params);
+ASSERT_DOUBLE_EQ(d0, (state1_initial.g_.t_ - state2_initial.g_.t_).norm());
 
-ASSERT_LT(d1,1e-12);
+// Test with transformation
+m1.transform_meas = true;
+m1.transform_data_m_t = Transformation::GetRandomTransform(10);
+tmp1 = source.GetEstMeas(state1_initial,m1.transform_meas, m1.transform_data_m_t.inverse());
+m1.pose = tmp1.pose;
+m1.twist = tmp1.twist;
 
-d2 = source.GetSpatialDistance(m2,m1,rransac_params);
+double d1 = source.GetSpatialDistance(m1,m2,rransac_params);
+ASSERT_DOUBLE_EQ(d1,d0);
 
-ASSERT_LT(d2,1e-12);
+double d2 = source.GetSpatialDistance(m2,m1,rransac_params);
+ASSERT_DOUBLE_EQ(d2,d0);
 
-m2 = m1;
+m2.transform_meas = true;
+m2.transform_data_m_t = Transformation::GetRandomTransform(10);
+tmp2 = source.GetEstMeas(state2_initial,m2.transform_meas, m2.transform_data_m_t.inverse());
+m2.pose = tmp2.pose;
+m2.twist = tmp2.twist;
 
-d3 = source.GetSpatialDistance(m2,m1,rransac_params);
 
-ASSERT_LT(d3,1e-12);
+double d3 = source.GetSpatialDistance(m1,m2,rransac_params);
+ASSERT_DOUBLE_EQ(d3,d0);
 
 
 }

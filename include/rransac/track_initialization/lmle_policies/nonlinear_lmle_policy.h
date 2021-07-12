@@ -149,7 +149,10 @@ struct CostFunctor {
         // Propagate the state from the current time stamp to the time stamp of the measurement. 
         ModelT::PropagateState(state,dt);
 
-        // Compute the error    
+        // Compute the error   
+        // std::cout << "src index: " << src_index_ << std::endl; 
+        // std::cout << "tmp pose: " << std::endl << tmp.pose << std::endl; 
+        // std::cout << "tmp twist: " << std::endl << tmp.twist << std::endl; 
         Eigen::Matrix<T,Eigen::Dynamic,1> e = SourceContainerT::OMinus(src_index_,tmp, SourceContainerT::GetEstMeas(src_index_, state,m_.transform_state,tmp.transform_data_t_m));
 
         // Compute the inverse innovation covariance and normalize the error. 
