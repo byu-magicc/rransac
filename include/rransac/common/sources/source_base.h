@@ -671,25 +671,27 @@ bool SourceBase<_SourceDerivedTraits,_Derived>::IsAcceptableMeasurement(const Me
 
 template<typename _SourceDerivedTraits, template<typename , MeasurementTypes , template <typename > typename > typename _Derived>
 typename SourceBase<_SourceDerivedTraits,_Derived>::DataType SourceBase<_SourceDerivedTraits,_Derived>::GSD_SE3_CamDepth_SE3_CamDepth(const Measurement& meas1, const Measurement& meas2, const Parameters& params){
-    
+   
+    typedef Eigen::Matrix<DataType,meas_pose_dim_,1> VecPose;
     DataType d = 0;
+    VecPose pose1, pose2;
 
     if(meas1.transform_meas && meas2.transform_meas) {
         // Transform measurements into common frame
-        Measurement&& m1 = Transformation::TransformMeasurement(meas1,meas1.transform_data_m_t);
-        Measurement&& m2 = Transformation::TransformMeasurement(meas2,meas2.transform_data_m_t);
-        d = (m1.pose - m2.pose).norm();
-        
+        pose1 = Transformation::TransformMeasurement(meas1,meas1.transform_data_m_t).pose;
+        pose2 = Transformation::TransformMeasurement(meas2,meas2.transform_data_m_t).pose;
     } else if(meas1.transform_meas) {
-        Measurement&& m1 = Transformation::TransformMeasurement(meas1,meas1.transform_data_m_t);
-        d = (m1.pose - meas2.pose).norm();
+        pose1 = Transformation::TransformMeasurement(meas1,meas1.transform_data_m_t).pose;
+        pose2 = meas2.pose;
     } else if(meas2.transform_meas) {
-        Measurement&& m2 = Transformation::TransformMeasurement(meas2,meas2.transform_data_m_t);
-        d = (meas1.pose - m2.pose).norm();
+        pose1 = meas1.pose;
+        pose2 = Transformation::TransformMeasurement(meas2,meas2.transform_data_m_t).pose;
     } else {
-        d = (meas1.pose - meas2.pose).norm();
+        pose1 = meas1.pose;
+        pose2 = meas2.pose;
     }
 
+    d = (pose1.block(1,0,3,1)*pose1(0) - pose2.block(1,0,3,1)*pose2(0)).norm();
 
     return d;
 }

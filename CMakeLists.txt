@@ -160,10 +160,10 @@ install(FILES
 
 
 
-option(BUILD_TESTS "Build the Params GTests" OFF)
-if(BUILD_TESTS)
-  add_subdirectory(test)
-endif()
+# option(BUILD_TESTS "Build the Params GTests" OFF)
+# if(BUILD_TESTS)
+  # add_subdirectory(test)
+# endif()
 
 
 # option(BUILD_SIMS "Build the simulations" OFF)

@@ -14,11 +14,10 @@ namespace rransac
 
 
 /** \class TransformSE3CamDepth
- * This transformation is used when target tracking is done on SE3 and the target is observed by a camera that returns the target's location
- * on the normalized image sphere and the relative depth of the target to the camera. 
- * The transformation data is an element of SE3 and transforms objects from the previous frame to the current frame. 
- * We assume that the velocity is expressed in the
- * body frame, so when the tracking frame moves, we only need to transform the pose of the target and not the velocity.
+ * This transformation is used when target tracking is done on SE3 and the target is observed by a camera that measures the depth to the 
+ * target and the line of sight vector to the target. It should only be used with the source SourceSE3CamDepth, and the model ModelSENPosVel.
+ * If the tracking frame changes, the measurement is not transformed into the current tracking frame since it cannot be. Instead, the transformation
+ * from the tracking frame to the measurement frame is stored in the measurement. 
 */
 
 template<typename _State>
@@ -34,13 +33,15 @@ typedef typename Base::MatCov MatCov;                                    /**< Th
 typedef typename Base::Measurement Measurement;                          /**< The measurement type. */
 static_assert(std::is_same<_State,lie_groups::State< lie_groups::SE3,typename _State::DataType,_State::N>>::value, "TransformSE3CamDepth: The state is not supported");
 
+typedef Eigen::Matrix<DataType,3,1> VecPos;
+typedef Eigen::Matrix<DataType,4,1> VecMeas;
 /**
  * Used to initialize the object, but it doesn't need to initialize anyting.
  */ 
 void DerivedInit() {};
 
 /** 
- * Sets the data and the block components of the homography.
+ * Sets the data
  * @param data The data required to transform the measurements, states, and error covariance. This should be a transformation on SE(3) from the previous tracking
  * frame to the current tracking frame.
  */ 
@@ -64,10 +65,15 @@ void DerivedTransformMeasurement(Measurement& meas) const ;
  * @param[in] meas The measurement to be transformed.
  */ 
 static Measurement DerivedTransformMeasurement(const Measurement& meas, const TransformDataType& transform_data) {
+    VecPos pos;
+    VecMeas vec_meas;
     Measurement m;
     const Eigen::Matrix<DataType,3,3>& rotation = transform_data.block(0,0,3,3);
     const Eigen::Matrix<DataType,3,1>& position_offset = transform_data.block(0,3,3,1);
-    m.pose =rotation*meas.pose(0,0)*meas.pose.block(1,0,3,1) + position_offset;
+    pos =rotation*meas.pose(0,0)*meas.pose.block(1,0,3,1) + position_offset;
+    vec_meas(0) = pos.norm();
+    vec_meas.block(1,0,3,1) = pos.normalized();
+    m.pose = vec_meas;
     return m;
 }
 
@@ -131,6 +137,15 @@ static bool DerivedIsAcceptableTransformData(const TransformDataType& transform_
     return lie_groups::SE3<DataType>::isElement(transform_data);
 } 
 
+/**
+ * Generates random transform data. The function can use the parameter scalar in order to 
+ * generate a larger distribution of random transformations.
+ * @param scalar A scalar used to generate a larger distribution. 
+ */ 
+static TransformDataType GetRandomTransform(const DataType scalar = static_cast<DataType>(1.0)){
+    return lie_groups::SE3<DataType>::Random(scalar);
+}
+
 
 };
 
@@ -139,6 +154,7 @@ void TransformSE3CamDepth<_State>::DerivedTransformMeasurement(Measurement& meas
 
     if(!meas.transform_state) {
         meas.transform_state = true;
+        meas.transform_meas = true;
         meas.transform_data_m_t = this->data_;
         meas.transform_data_t_m = this->data_.inverse();
     } else {

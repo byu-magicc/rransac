@@ -20,6 +20,8 @@ using namespace utilities;
  * a radar sensor with measurements being in polar coordinates for R2 or spherical coordinates for R3.
  * If the measurement type is R2_R3_RADAR_DEPTH_DERIV, then the source includes the derivative of the range
  * in the measurement model. The measurement pose is given in a 3x1 vector in the order range, azimuth, zenith.
+ * \latexinclude radar_r2_r3.tex
+ *
  */ 
 
 template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>

@@ -211,7 +211,7 @@ typename Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrac
         return meas_index;
 
     // Get the time indices for the other randomly sampled measurements
-    std::vector<int> time_indices(num_meas-1);
+    std::vector<int> time_indices(cluster.data_.size()-2);
     std::iota(time_indices.begin(), time_indices.end(), 0);
     std::shuffle(time_indices.begin(), time_indices.end(), std::default_random_engine(time(NULL)) );
 
@@ -360,6 +360,10 @@ void Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLik
     while (best_score < sys.params_.RANSAC_score_stopping_criteria_ && iterations < sys.params_.RANSAC_max_iters_) {
         meas_subset = GenerateMinimumSubset(sys.params_.RANSAC_minimum_subset_, *cluster_iter);
         hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys,success);
+
+        // std::cout << "hypothetical state pose: " << std::endl << hypothetical_state.g_.data_ << std::endl;
+        // std::cout << "hypothetical state twist: " << std::endl << hypothetical_state.u_.data_ << std::endl;
+
         if (success) {
             score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);
         } else

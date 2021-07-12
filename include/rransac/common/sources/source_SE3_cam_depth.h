@@ -15,10 +15,9 @@ using namespace utilities;
 
 /**
  * \class SourceSE3CamDepth
- * This source is meant to be used for a target that evolves on SE3 and that is observed 
- * by a camera and another source that measures depth. Thus, the measurement space is 
- * (R2)x(R1). The camera measurement is expressed on the normalized image sphere. This
- * source is compatible with MeasurementType::CamDepth
+ * This source models a camera that observes the depth to the target and the line of sight vector to the target. 
+ * It assumes that the target is evolving on SE3, and that the velocity vector of the target is aligned with the heading
+ * in the inertial frame. 
  */ 
 template <typename _State, MeasurementTypes _MeasurementType, template <typename > typename _Transformation>
 class SourceSE3CamDepth: public SourceBase<SourceDerivedTraits<_State,MatXT<typename _State::DataType>, MatXT<typename _State::DataType>,_Transformation,4,1,3,1,4,3,true,_MeasurementType,CompatibleWithModelSENPosVel>, SourceSE3CamDepth> {
@@ -52,7 +51,7 @@ typedef typename Base::Measurement Measurement;                                /
 static constexpr unsigned int cov_dim_ = _State::Group::dim_ + _State::Algebra::dim_ - _State::Algebra::dim_t_vel_ + 1; /**< The dimension of the state covariance. */
 
 
-static_assert(std::is_same<_State,lie_groups::SE3_se3>::value, "SourceSE3CamDepth: The state is not compatible with the source model");
+static_assert(std::is_same<_State,lie_groups::SE3_se3::template StateTemplate<typename _State::DataType>>::value, "SourceSE3CamDepth: The state is not compatible with the source model");
 static_assert( measurement_type_ == MeasurementTypes::SE3_CAM_DEPTH, "SourceSE3CamDepth: The measurement type is not compatible with the source."    );
 
 
@@ -138,16 +137,16 @@ typename SourceSE3CamDepth<_State,_MeasurementType,_Transformation>::MatH Source
     const Eigen::Matrix<DataType,dim_pos,1>& t = state.g_.t_;
     const Eigen::Matrix<DataType,dim_t_vel,1>& p = state.u_.p_;
     const Eigen::Matrix<DataType,dim_rot,dim_rot>& R = state.g_.R_;
-    double d = t.norm();
-    double d3 = pow(d,3);
-    double d5 = pow(d,5);
+    DataType d = t.norm();
+    DataType d3 = pow(d,3);
+    DataType d5 = pow(d,5);
     Eigen::Matrix<DataType,3,3> ttR = t*t.transpose()*R;
     Eigen::Matrix<DataType,3,3> tmp = R/d - ttR/d3;
 
     H.block(0,0,1,3) = t.transpose()*R/d;
     H.block(1,0,3,3) = R/d - ttR/d3;
 
-    H.block(4,0,3,3) = 3*ttR*(p*t.transpose())*R/d5 - (R*(p*t.transpose())*R + t*p.transpose() + R*(t.transpose()*R*p))/d3;
+    H.block(4,0,3,3) = 3.0*ttR*(p*t.transpose())*R/d5 - (R*(p*t.transpose())*R + t*p.transpose() + R*(t.transpose()*R*p))/d3;
     H.block(4,3,3,3) = -tmp*lie_groups::se3<DataType>::SSM(p);
     H.block(4,6,3,1) = tmp.block(0,0,3,1);
 
@@ -180,11 +179,11 @@ typename SourceSE3CamDepth<_State,_MeasurementType,_Transformation>::Measurement
 
     Measurement m;
     m.type = measurement_type_;
-    m.pose = Eigen::Matrix<double,4,1>::Zero();
-    m.twist = Eigen::Matrix<double,3,1>::Zero();
-    double d = t.norm();
+    m.pose = Eigen::Matrix<DataType,4,1>::Zero();
+    m.twist = Eigen::Matrix<DataType,3,1>::Zero();
+    DataType d = t.norm();
     m.pose(0,0) = d;
-    if (d != 0) {
+    if (d != 0.0) {
         m.pose.block(1,0,3,1) = state.g_.t_/d;
         m.twist = R*p/d - t*t.transpose()*R*p/pow(d,3);
     }

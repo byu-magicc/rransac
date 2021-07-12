@@ -28,6 +28,7 @@ include(CTest)
 
 include_directories(../include
 					../liegroups/include
+					../test
 					${EIGEN3_INCLUDE_DIR}
 					${Boost_INCLUDE_DIRS}
 					${OpenCV_INCLUDE_DIRS})
@@ -89,11 +90,11 @@ include_directories(../include
 # target_link_libraries(source_SEN_Pose_TwistTest gtest_main )
 # add_test(NAME AllTestsInSourceSENPoseTwistTest COMMAND source_SEN_Pose_TwistTest)
 
-# add_executable(source_SE3_CamDepthTest
-# common/sources/source_SE3_cam_depth_test.cpp
-# ../src/parameters.cpp)
-# target_link_libraries(source_SE3_CamDepthTest gtest_main )
-# add_test(NAME AllTestsInSourceSE3CamDepthTest COMMAND source_SE3_CamDepthTest)
+add_executable(source_SE3_CamDepthTest
+common/sources/source_SE3_cam_depth_test.cpp
+../src/parameters.cpp)
+target_link_libraries(source_SE3_CamDepthTest gtest_main )
+add_test(NAME AllTestsInSourceSE3CamDepthTest COMMAND source_SE3_CamDepthTest)
 
 # add_executable(source_containerTest
 # common/sources/source_container_test.cpp
@@ -207,6 +208,12 @@ include_directories(../include
 # target_link_libraries(SE2_pos_policyTest gtest_main
 # )
 
+# add_executable(SE3_cam_depth_seed_policyTest 
+# track_initialization/seed_policies/SE3_cam_depth_seed_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(SE3_cam_depth_seed_policyTest gtest_main
+# )
+
 # add_executable(radar_R2_R3_seed_policyTest 
 # track_initialization/seed_policies/radar_R2_R3_seed_policy_test.cpp
 # ../src/parameters.cpp)
@@ -224,6 +231,11 @@ include_directories(../include
 # ../src/parameters.cpp)
 # target_link_libraries(ransacTest2 gtest_main Ceres::ceres)
 
+
+# add_executable(ransacTest3 
+# track_initialization/ransac_test3.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(ransacTest3 gtest_main Ceres::ceres)
 
 #---------------------------------------
 # RRANSAC
