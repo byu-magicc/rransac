@@ -43,7 +43,7 @@ struct CompatibleWithModelSENPoseTwist{};
 struct CompatibleWithModelNull{};
 
 
-unsigned int factorial(unsigned int n)
+inline unsigned int factorial(unsigned int n)
 {
     if (n == 0)
         return 1;
@@ -51,7 +51,7 @@ unsigned int factorial(unsigned int n)
 }
 
 template<typename T>
-static void WrapAngle(T& angle) {
+inline static void WrapAngle(T& angle) {
     while (angle < -M_PI) {
         angle += 2.0*M_PI;
     }
