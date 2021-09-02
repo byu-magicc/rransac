@@ -338,26 +338,23 @@ void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measur
     if (!system_parameters_set_)
         throw std::runtime_error("System parameters are not set. ");
 
-    if (new_measurements.size() >= 0) {
 
-        sys_.dt_ = current_time - sys_.current_time_;
-
-#ifdef DEBUG_BUILD
-        bool correct = VerifyMeasurements(new_measurements);
-        if (sys_.dt_ < 0)
-            throw std::runtime_error("Measurements must be provided in chronological order. The current time stamp is: " + std::to_string(sys_.current_time_)+ " The measurement time stamp is: " + std::to_string(new_measurements.begin()->time_stamp));
-
-#endif
-
-    
-        sys_.current_time_ = current_time; 
+    sys_.dt_ = current_time - sys_.current_time_;
+    sys_.current_time_ = current_time; 
+    if (sys_.dt_ > 0) {
         sys_.data_tree_.PruneDataTree(sys_,sys_.current_time_-sys_.params_.meas_time_window_);
+        _ModelManager::PropagateModels(sys_,sys_.dt_);
+    }
 
-        sys_.new_meas_ = new_measurements;
+    if (transform_data_) {
+        sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
+        _ModelManager::TransformModels(sys_);
+        transform_data_ = false;
+    }
 
-        if (sys_.dt_ > 0) {
-            _ModelManager::PropagateModels(sys_,sys_.dt_);
-        }
+    if (!sys_.time_set_) {
+        sys_.time_set_ = true;
+    }
 
 // Calculate the innovation covariances used to compute the validation region. This is only for visualization purposes. 
 #if RRANSAC_VIZ_HOOKS
@@ -368,12 +365,18 @@ void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measur
         }
 #endif
 
+    // If measurements are provided, associate them and update the models
+    if (new_measurements.size() >= 0) {
 
-        if (transform_data_) {
-            sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
-            _ModelManager::TransformModels(sys_);
-            transform_data_ = false;
-        }
+
+#ifdef DEBUG_BUILD
+        bool correct = VerifyMeasurements(new_measurements);
+        if (sys_.dt_ < 0)
+            throw std::runtime_error("Measurements must be provided in chronological order. The current time stamp is: " + std::to_string(sys_.current_time_)+ " The measurement time stamp is: " + std::to_string(new_measurements.begin()->time_stamp));
+
+#endif
+
+        sys_.new_meas_ = new_measurements;
 
         data_association_host_.AssociateNewMeasurements(sys_);
 
@@ -381,20 +384,7 @@ void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measur
 
         sys_.data_tree_.ConstructClusters(sys_);
 
-
-        if (!sys_.time_set_)
-            sys_.time_set_ = true;
-
-
-    } else {
-        if (transform_data_) {
-            sys_.data_tree_.TransformMeasurements(sys_.transformaion_);
-            _ModelManager::TransformModels(sys_);
-            transform_data_ = false;
-        }
-        sys_.current_time_ = current_time;
-    }
-
+    } 
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
