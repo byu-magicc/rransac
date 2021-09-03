@@ -146,7 +146,7 @@ install(FILES
 # include_directories(
 #   liegroups/include
 #   ${EIGEN3_INCLUDE_DIR}
-# )
+# )ls
 
 # add_executable(main src/main.cpp src/parameters.cpp)
 # target_include_directories(main PUBLIC
