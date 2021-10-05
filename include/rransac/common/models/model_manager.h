@@ -31,6 +31,7 @@ public:
 
 typedef _Model Model;
 typedef System<Model> Sys;
+typedef typename Sys::State State;
 
 /**
 * Add a new model. If the number of models is greater than the max number of models, then
@@ -294,10 +295,17 @@ bool ModelManager<_Model>::SimilarModels(const Sys& sys, const Model& model1, co
 
     bool similar = false;
 
-    Eigen::Matrix<double,Model::cov_dim_,1> err = Model::OMinus(model1, model2);
-
-    typename Model::MatModelCov T = model1.err_cov_ + model2.err_cov_;
-    double d = err.transpose()*T.inverse()*err;
+    Eigen::Matrix<double,Model::cov_dim_,1> err_21 = Model::OMinus(model1, model2);
+    typename State::Algebra err_21_group(err_21.block(0,0,State::Group::dim_,1));
+    typename Model::MatModelCov Jr_inv, Jl_inv, P_21;
+    Jr_inv.setIdentity();
+    Jl_inv.setIdentity();
+    Jr_inv.block(0,0,State::Group::dim_, State::Group::dim_) = err_21_group.JrInv();
+    Jl_inv.block(0,0,State::Group::dim_, State::Group::dim_) = err_21_group.JlInv();
+    P_21 = Jl_inv*model2.err_cov_*Jl_inv.transpose() + Jr_inv*model1.err_cov_*Jr_inv.transpose();
+    
+    
+    double d = err_21.transpose()*P_21.inverse()*err_21;
 
     if(sys.params_.track_similar_tracks_threshold_ > d) {
         similar = true;
@@ -318,48 +326,20 @@ void ModelManager<_Model>::FuseModels(Model& model1, const Model& model2) {
 //////////////////////
 typename Model::MatModelCov P1_inv = model1.err_cov_.inverse();
 typename Model::MatModelCov P2_inv = model2.err_cov_.inverse();
-typename Model::MatModelCov P_inv = P1_inv + P2_inv;
+Eigen::Matrix<double,Model::cov_dim_,1> err_21 = Model::OMinus(model1, model2);
+typename State::Algebra err_21_group(err_21.block(0,0,State::Group::dim_,1));
+
+typename Model::MatModelCov Jr_inv;
+Jr_inv.setIdentity();
+Jr_inv.block(0,0,State::Group::dim_, State::Group::dim_) = err_21_group.JrInv();
+
+typename Model::MatModelCov P_inv = P1_inv + Jr_inv.transpose()*P2_inv*Jr_inv;
 typename Model::MatModelCov P = P_inv.inverse();
-const typename Model::MatModelCov P_sqrt = P.sqrt();
 
 
-// The sample covariance intersection method needs 100 samples
-std::vector<Eigen::Matrix<double,Model::cov_dim_,1>> samples(100);
-for (auto& sample : samples) {
-    sample = P_sqrt*utilities::GaussianRandomGenerator(Model::cov_dim_);
-}
+Eigen::Matrix<double,Model::cov_dim_,1> mu = -P*P2_inv*err_21;
 
-double r_max = -1;
-double r_min = 1e10;
-double r_candidate;
-for (auto& sample : samples) {
-
-    if (sample.norm() != 0 ) {
-        double tmp1 = sample.transpose()*P_inv*sample;
-        double tmp2 = sample.transpose()*P1_inv*sample;
-        double tmp3 = sample.transpose()*P2_inv*sample;
-
-        if (tmp2 > tmp3) {
-            r_candidate = tmp1/tmp2;
-        }  else {
-            r_candidate = tmp1/tmp3;
-        }   
-
-        if (r_candidate > r_max)
-            r_max = r_candidate;
-        if (r_candidate < r_min) 
-            r_min = r_candidate;
-    }
-
-
-}
-
-// Scale the error covariance
-P = P/(0.5*(r_min + r_max));
-
-model1.OPlusEQ(P*P2_inv*Model::OMinus(model2, model1));
-
-
+model1.OPlusEQ(mu);
 model1.err_cov_ = P;
 
 // set the missed_detection_time to the lowest between the states
@@ -384,7 +364,6 @@ for (auto iter = model2.cs_.consensus_set_.begin(); iter != model2.cs_.consensus
 
 }
 }
-
 
 
 

@@ -73,7 +73,7 @@ void SetUp() override {
 TYPED_TEST_SUITE(LinearLmlePolicyTest, MyTypes);
 
 TYPED_TEST(LinearLmlePolicyTest, MainTest){
-
+srand(time(NULL));
 typedef LinearLmlePolicyTest<TypeParam> TestType;
 typedef typename TestType::Measurement Measurement;
 
@@ -171,5 +171,7 @@ LinearLMLEPolicy<typename TestType::Model, NULLSeedPolicy> policy;
 bool success = false;
 typename TestType::Model::State state = policy.GenerateHypotheticalStateEstimatePolicy(meas_subset,sys,success);
 ASSERT_LT( state.OMinus(x.state_).norm(), 1e-10 );
+// std::cout << "x " << x.state_.g_.data_ << std::endl;
+// std::cout << "state" << state.g_.data_ << std::endl;
 
 }

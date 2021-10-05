@@ -406,6 +406,18 @@ void ModelBase<_SourceContainer, _CovDim, _Derived>::PropagateModel(const DataTy
 template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
 void ModelBase<_SourceContainer, _CovDim, _Derived>::UpdateModel(const SourceContainer& source_container, const Parameters& params) {
 
+    // for(auto& source_meas: new_assoc_meas_) {
+    //     for(auto& meas: source_meas) {
+    //         std::cout << std::endl << "time: " << meas.time_stamp << std::endl;
+    //         std::cout << "source index: " << meas.source_index << std::endl;
+    //         std::cout << "type: " << meas.type << std::endl;
+    //         std::cout << "probability: " << meas.probability << std::endl;
+    //         std::cout << "weight: " << meas.weight << std::endl;
+    //         std::cout << "pose: " << std::endl << meas.pose << std::endl;
+    //     }
+    // }
+
+
     for(auto& source_meas : new_assoc_meas_) {
         if(source_meas.size() > 0) {
             newest_measurement_time_stamp = source_meas.front().time_stamp;
