@@ -8,6 +8,8 @@
 #include "rransac/common/models/model_RN.h"
 #include "rransac/common/sources/source_RN.h"
 #include "rransac/common/sources/source_container.h"
+#include "rransac/common/sources/source_SEN_pose_twist.h"
+#include "rransac/common/models/model_SEN_pose_twist.h"
 
 namespace rransac
 {
@@ -17,7 +19,7 @@ using namespace lie_groups;
 /**
  * Test the AddModel function. When a model is added and there are more models than the maximum number of models, the model with the 
  * lowest model likelihood is removed. We will verify that it can remove a model from the begining, middle, and end
- */ 
+//  */ 
 TEST(ModelManagerTest, AddModel ) {
 
 typedef lie_groups::R3_r3 State;
@@ -407,6 +409,69 @@ for (auto model_iter = sys.models_.begin(); model_iter != sys.models_.end(); ++m
     }
 
 }
+
+}
+
+//-------------------------------------------------------------------------------------
+
+TEST(ModelManagerTest, Track2TrackAssociationFusion) {
+
+typedef lie_groups::SE3_se3 State;
+typedef SourceSENPoseTwist<State, MeasurementTypes::SEN_POSE_TWIST, TransformNULL > Source;
+typedef SourceContainer<Source> SC;
+typedef ModelSENPoseTwist<SC> Model;
+
+System<Model> sys;
+ModelManager<Model> model_manager;
+
+sys.params_.track_max_num_tracks_ = 10;
+sys.params_.track_similar_tracks_threshold_ = 200;
+sys.current_time_ = 1;
+
+State true_state = State::Random(10);
+double dt = 0.1;
+
+typename Model::MatModelCov P1 = Model::MatModelCov::Identity()*0.05;
+typename Model::MatModelCov P2 = Model::MatModelCov::Identity()*0.01;
+typename Model::MatModelCov F = Model::GetLinTransFuncMatState(true_state,dt);
+P1 = F*(F*(F*P1*F.transpose() + P1)*F.transpose() + P1)*F.transpose();
+P2 = F*(F*(F*P2*F.transpose() + P2)*F.transpose() + P2)*F.transpose();
+
+State est_state1 = true_state;
+est_state1.OPlusEQ( P1.sqrt()* rransac::utilities::GaussianRandomGenerator(Model::cov_dim_).cwiseAbs() );
+State est_state2 = true_state;
+est_state2.OPlusEQ( -P2.sqrt()* rransac::utilities::GaussianRandomGenerator(Model::cov_dim_).cwiseAbs() );
+
+// std::cout << "true state: " << std::endl << true_state.g_.data_ << std::endl << true_state.u_.data_ << std::endl;
+// std::cout << "est_state1: " << std::endl << est_state1.g_.data_ << std::endl << est_state1.u_.data_ << std::endl << P1 << std::endl;
+// std::cout << "est_state2: " << std::endl << est_state2.g_.data_ << std::endl << est_state2.u_.data_ << std::endl << P2 << std::endl;
+
+Model model1, model2;
+model1.state_ = est_state1;
+model1.err_cov_ = P1;
+model1.newest_measurement_time_stamp = 1;
+model1.model_likelihood_ = 0.7;
+model2.state_ = est_state2;
+model2.err_cov_ = P2;
+model2.newest_measurement_time_stamp = 0.5;
+model2.model_likelihood_ = 0.9;
+model_manager.AddModel(sys,model1);
+model_manager.AddModel(sys,model2);
+model_manager.ManageModels(sys,10);
+
+ASSERT_EQ(sys.models_.size(),1);
+auto iter = sys.models_.begin();
+// std::cout << "merged state: " << std::endl << iter->state_.g_.data_ << std::endl << iter->state_.u_.data_ << std::endl << iter->err_cov_ << std::endl;
+
+double d1 = State::OMinus(true_state,est_state1).norm();
+double d2 = State::OMinus(true_state,est_state2).norm();
+double d3 = State::OMinus(true_state,iter->state_).norm();
+ASSERT_LT(d3,d1);
+EXPECT_LT(d3,d2) << "This might not always be true. Run again.";
+ASSERT_LT(iter->err_cov_.determinant(), P1.determinant());
+ASSERT_LT(iter->err_cov_.determinant(), P2.determinant());
+
+// std::cout << d1 << std::endl << d2 << std::endl << d3;
 
 }
 

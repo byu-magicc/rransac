@@ -329,18 +329,21 @@ typename Model::MatModelCov P2_inv = model2.err_cov_.inverse();
 Eigen::Matrix<double,Model::cov_dim_,1> err_21 = Model::OMinus(model1, model2);
 typename State::Algebra err_21_group(err_21.block(0,0,State::Group::dim_,1));
 
-typename Model::MatModelCov Jr_inv;
+typename Model::MatModelCov Jr_inv, Jr;
 Jr_inv.setIdentity();
 Jr_inv.block(0,0,State::Group::dim_, State::Group::dim_) = err_21_group.JrInv();
+Jr.setIdentity();
 
 typename Model::MatModelCov P_inv = P1_inv + Jr_inv.transpose()*P2_inv*Jr_inv;
 typename Model::MatModelCov P = P_inv.inverse();
 
 
-Eigen::Matrix<double,Model::cov_dim_,1> mu = -P*P2_inv*err_21;
+Eigen::Matrix<double,Model::cov_dim_,1> mu = -P*Jr_inv.transpose()*P2_inv*err_21;
+typename State::Algebra mu_group(mu.block(0,0,State::Group::dim_,1) );
+Jr.block(0,0,State::Group::dim_, State::Group::dim_) = mu_group.Jr();
 
 model1.OPlusEQ(mu);
-model1.err_cov_ = P;
+model1.err_cov_ = Jr*P*Jr.transpose();
 
 // set the missed_detection_time to the lowest between the states
 if (model1.newest_measurement_time_stamp < model2.newest_measurement_time_stamp)

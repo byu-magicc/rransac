@@ -3,7 +3,7 @@ project(rransac VERSION 2.0.0 LANGUAGES C CXX)
 
 # set(CMAKE_CXX_CLANG_TIDY clang-tidy; -header-filter=include/rransac/.; -checks=-*,google-*)
 set(CMAKE_CXX_STANDARD 14)
-# set(CMAKE_BUILD_TYPE RELEASE)
+set(CMAKE_BUILD_TYPE RELEASE)
 # set(CMAKE_BUILD_TYPE DEBUG)
 
 # IF(CMAKE_COMPILER_IS_GNUCC)
