@@ -281,6 +281,9 @@ int Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLike
 template< typename _Model, template <typename > typename _Seed, template<typename , template <typename > typename > typename _LMLEPolicy, template<class> typename _ValidationRegionPolicy, template<class> typename _UpdateTrackLikelihoodPolicy, template<class> typename _MeasurementWeightPolicy>
 _Model Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::GenerateTrack(const State&xh, const Sys& sys, const VecClusterIterPair& inliers) {
 
+
+    std::cout << "ransac state: " << std::endl << xh.g_.data_ << std::endl << xh.u_.data_ << std::endl;
+
     TransformDataType empty_transform;
     DataAssociationInfoT data_association_info;
     data_association_info.source_produced_measurements_.resize(sys.source_container_.num_sources_,false);
@@ -361,8 +364,8 @@ void Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLik
         meas_subset = GenerateMinimumSubset(sys.params_.RANSAC_minimum_subset_, *cluster_iter);
         hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys,success);
 
-        // std::cout << "hypothetical state pose: " << std::endl << hypothetical_state.g_.data_ << std::endl;
-        // std::cout << "hypothetical state twist: " << std::endl << hypothetical_state.u_.data_ << std::endl;
+        std::cout << "hypothetical state pose: " << std::endl << hypothetical_state.g_.data_ << std::endl;
+        std::cout << "hypothetical state twist: " << std::endl << hypothetical_state.u_.data_ << std::endl;
 
         if (success) {
             score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);
@@ -423,15 +426,15 @@ for (auto& cluster_iter : sys.clusters_) {
     
     if (cluster_iter->data_.size() > sys.params_.RANSAC_minimum_subset_ && cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_ && cluster_iter->data_.back().front().time_stamp == sys.current_time_) {
 
-        threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys),std::ref(mtx)));
-        // RunSingle(cluster_iter,sys,mtx);
+        // threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys),std::ref(mtx)));
+        RunSingle(cluster_iter,sys,mtx);
 }
     }
     
 
-for (int ii = 0; ii < threads.size(); ++ii) {
-    threads.at(ii).join();
-}
+// for (int ii = 0; ii < threads.size(); ++ii) {
+//     threads.at(ii).join();
+// }
 
 // Delete the pointers and wait for new ones to be given.
 sys.clusters_.clear();

@@ -141,17 +141,29 @@ sys.model_label_++;
 
 model_manager.AddModel(sys, model);
 
+// std::cout << "sys model size: " << sys.models_.size() << std::endl;
+
+
 // Get the models that will be merged together
 merge2 = model;
 auto iter = sys.models_.begin();
 iter = std::next(iter,8);
 merge1 = *iter;
 
+// std::cout << "merge2: " << std::endl << merge2.state_.g_.data_ << std::endl << merge2.state_.u_.data_ << std::endl << merge2.err_cov_ << std::endl;
+// std::cout << "merge1: " << std::endl << merge1.state_.g_.data_ << std::endl << merge1.state_.u_.data_ << std::endl << merge1.err_cov_ << std::endl;
+
 model_manager.ManageModels(sys,0.7);
 
 // Get the merged model
 iter = sys.models_.begin();
 iter = std::next(iter,5);
+
+// std::cout << "iter: " << std::endl << iter->state_.g_.data_ << std::endl << iter->state_.u_.data_ << std::endl << iter->err_cov_ << std::endl;
+
+
+// std::cout << "sys model size: " << sys.models_.size() << std::endl;
+
 
 // Check size of consensus set. One measurement from each model should have been removed.
 // This is to ensure that the function gets called and not to check the correctness of the function

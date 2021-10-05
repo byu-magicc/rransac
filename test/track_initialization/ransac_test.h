@@ -108,7 +108,7 @@ for (int ii = 0; ii < test_data.states.size(); ++ii) {
 
 // Create simulation data
 
-double dt = 0.1;
+double dt = 0.01;
 double end_time = 5; // seconds;
 double start_time = 0; // seconds;
 double fov = 50;  // The surveillance region is a square centered at zero with side length 20
@@ -119,15 +119,16 @@ for (double ii =start_time; ii < end_time; ii += dt) {
     for (auto& track: tracks) {
 
         if (ii !=start_time) {
+            Model::OPlus(track.state_, rransac::utilities::GaussianRandomGenerator(Model::cov_dim_)*dt*noise );
             track.PropagateModel(dt);
         }
 
         State rand_state = Model::GetRandomState(fov);
 
-        tmp0 = sys.source_container_.GenerateRandomMeasurement(m0.source_index,Source0::MatMeasCov::Identity()*sqrt(noise)*0, track.state_,test_data.transform_state0_, test_data.transform_data_t_m_0_);
-        tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index,Source1::MatMeasCov::Identity()*sqrt(noise)*0, track.state_,test_data.transform_state1_, test_data.transform_data_t_m_1_);
-        tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index,Source2::MatMeasCov::Identity()*sqrt(noise)*0, rand_state,  test_data.transform_state2_, test_data.transform_data_t_m_2_);
-        tmp3 = sys.source_container_.GenerateRandomMeasurement(m3.source_index,Source0::MatMeasCov::Identity()*sqrt(noise)*0, track.state_,test_data.transform_state0_, test_data.transform_data_t_m_0_);
+        tmp0 = sys.source_container_.GenerateRandomMeasurement(m0.source_index,Source0::MatMeasCov::Identity()*sqrt(noise), track.state_,test_data.transform_state0_, test_data.transform_data_t_m_0_);
+        tmp1 = sys.source_container_.GenerateRandomMeasurement(m1.source_index,Source1::MatMeasCov::Identity()*sqrt(noise), track.state_,test_data.transform_state1_, test_data.transform_data_t_m_1_);
+        tmp2 = sys.source_container_.GenerateRandomMeasurement(m2.source_index,Source2::MatMeasCov::Identity()*sqrt(noise), rand_state,  test_data.transform_state2_, test_data.transform_data_t_m_2_);
+        tmp3 = sys.source_container_.GenerateRandomMeasurement(m3.source_index,Source0::MatMeasCov::Identity()*sqrt(noise), track.state_,test_data.transform_state0_, test_data.transform_data_t_m_0_);
 
         m0.time_stamp = ii;
         m0.pose = tmp0.pose;
@@ -183,7 +184,7 @@ sys.dt_ = dt;
 
 }
 
-double noise = 1e-2;
+double noise = 1e-1;
 System<Model> sys;
 T test_data;
 std::vector<Model> tracks;

@@ -486,14 +486,72 @@ struct Test8 {
 };
 
 //--------------------------------------------------------------------------------------------------------
+
+
+struct Test9 {
+    public:
+    typedef lie_groups::State<Rn,double,3,3> StateR3_3;
+    typedef SourceRN<StateR3_3,MeasurementTypes::RN_POS,TransformNULL> SourceRnPos;
+    typedef SourceRN<StateR3_3,MeasurementTypes::RN_POS,TransformNULL> SourceRnPosVEL;
+    typedef SourceContainer<SourceRnPos,SourceRnPosVEL,SourceRnPosVEL> SC;
+
+    typedef ModelRN<SC> Model;
+    typedef typename Model::State State;
+    typedef typename State::Algebra Algebra;
+    typedef Ransac<Model, NULLSeedPolicy, LinearLMLEPolicy, ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RANSAC;
+
+    typedef typename Model::Base::Measurement Measurement;
+    typedef typename Model::Base::Transformation Transformation;
+    typedef typename Model::Base::TransformDataType TransformDataType;
+
+    bool transform_state0_ = false;
+    bool transform_state1_ = false;
+    bool transform_state2_ = false;
+    bool transform_measurement0_ = false;
+    bool transform_measurement1_ = false;
+    bool transform_measurement2_ = false;
+    TransformDataType transform_data_t_m_0_;
+    TransformDataType transform_data_t_m_1_;
+    TransformDataType transform_data_t_m_2_;
+    TransformDataType transform_data_m_t_0_;
+    TransformDataType transform_data_m_t_1_;
+    TransformDataType transform_data_m_t_2_;
+
+    std::vector<State> states;
+    std::string test_name = "R3 Test";
+
+
+
+
+
+    Test9() {
+        double pos = 10;
+        double vel = 0.5;
+        double accel = 0.1;
+        double jerk = -0.01;
+        states.resize(4);
+        states[0].g_.data_ << pos,pos, pos;
+        states[0].u_.data_ << 0, -vel, 0,accel,0,0,jerk,0,0;
+        states[1].g_.data_ << pos, -pos, -pos;
+        states[1].u_.data_ << -vel,0,-vel,0,accel,0,0,jerk,0;
+        states[2].g_.data_ << -pos, -pos, -pos;
+        states[2].u_.data_ << 0, vel, vel,0,0,accel,0,0,jerk;
+        states[3].g_.data_ << -pos, pos, pos;
+        states[3].u_.data_ << vel,0,0,-accel,0,0,-jerk,0,0;
+    }
+
+  
+};
+
+//--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
 
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5,Test7,Test8>;
-// using MyTypes = ::testing::Types<Test7,Test8>;
+// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5,Test7,Test8, Test9>;
+using MyTypes = ::testing::Types<Test9>;
 TYPED_TEST_SUITE(RANSACTest, MyTypes);
 
 TYPED_TEST(RANSACTest, FullTest) {
@@ -505,17 +563,17 @@ TYPED_TEST(RANSACTest, FullTest) {
     std::cout << "RANSAC test benchmark for " << this->test_data.test_name << " : " <<  elapsed << '\n';
 
 
-// for (auto& created_track: this->sys.models_) {
-//     std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
-//     std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& created_track: this->sys.models_) {
+    std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
+    std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
-// for (auto& sim_track: this->tracks) {
-//     std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
-//     std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& sim_track: this->tracks) {
+    std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
+    std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
 // make sure that the tracks were created
 ASSERT_GE(this->sys.models_.size(), 4 );

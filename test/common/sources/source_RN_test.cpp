@@ -9,6 +9,9 @@ namespace rransac
 {
 
 
+
+typedef lie_groups::State<lie_groups::Rn,double,3,3> StateR3_3;
+typedef SourceRN<StateR3_3,MeasurementTypes::RN_POS,TransformNULL> SourceR3_3_Pos;
 typedef SourceRN<lie_groups::R2_r2, MeasurementTypes::RN_POS, TransformNULL> SourceR2Pos;
 typedef SourceRN<lie_groups::R2_r2, MeasurementTypes::RN_POS_VEL, TransformNULL> SourceR2PosVel;
 
@@ -182,6 +185,55 @@ ASSERT_LE( (error_mean1 - Eigen::Matrix<double,2,1>::Zero()).norm(), 0.1);
 ASSERT_LE( (cov1 - std1*std1).norm(), 0.1);
 ASSERT_LE( (error_mean2 - Eigen::Matrix<double,4,1>::Zero()).norm(), 0.1);
 ASSERT_LE( (cov2 - std2*std2).norm(), 0.1);
+
+}
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+
+
+TEST(SourceR3_3_Pos, full_test) {
+
+Eigen::MatrixXd EmptyMat;
+bool transform_state = false;
+
+SourceParameters params;
+params.meas_cov_ = SourceR3_3_Pos::MatMeasCov::Identity();
+params.spacial_density_of_false_meas_ = 0.1;
+params.type_ = MeasurementTypes::RN_POS;
+params.gate_probability_ = 0.8;
+params.probability_of_detection_ = 0.9;
+
+
+SourceR3_3_Pos source;
+source.Init(params);
+
+Eigen::Matrix<double,3,12> H;
+H.setZero();
+H.block(0,0,3,3).setIdentity();
+
+Eigen::Matrix<double,3,3> V;
+V.setIdentity();
+
+typename SourceR3_3_Pos::State state = SourceR3_3_Pos::State::Random();
+typename SourceR3_3_Pos::State state2 = SourceR3_3_Pos::State::Random();
+
+typename SourceR3_3_Pos::Measurement m1, m2;
+m1.source_index = 0;
+m2.source_index = 0;
+m1.type = SourceR3_3_Pos::measurement_type_;
+m2.type = SourceR3_3_Pos::measurement_type_;
+m1.pose = state.g_.data_;
+m2.pose = state2.g_.data_;
+
+
+ASSERT_EQ(H,source.GetLinObsMatState(state,transform_state,EmptyMat));
+ASSERT_EQ(V,source.GetLinObsMatSensorNoise(state,transform_state,EmptyMat));
+ASSERT_EQ(state.g_.data_, source.GetEstMeas(state,transform_state,EmptyMat).pose);
+ASSERT_EQ(state.g_.data_ - state2.g_.data_, source.OMinus(m1,m2));
+
+
+
+
 
 }
 

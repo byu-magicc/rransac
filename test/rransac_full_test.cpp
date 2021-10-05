@@ -307,6 +307,58 @@ struct Test5 {
   
 };
 
+//--------------------------------------------------------------------------------------------------------
+
+
+struct Test6 {
+    public:
+
+    typedef lie_groups::State<Rn,double,3,3> StateR3_3;
+    typedef SourceRN<StateR3_3,MeasurementTypes::RN_POS,TransformNULL> SourceRnPos;
+    typedef SourceRN<StateR3_3,MeasurementTypes::RN_POS,TransformNULL> SourceRnPosVEL;
+    typedef SourceContainer<SourceRnPos,SourceRnPosVEL,SourceRnPosVEL> SC;
+
+    typedef ModelRN<SC> Model_;
+    typedef typename Model_::Transformation Transformation_;
+    typedef typename Model_::Transformation::TransformDataType TransformDataType;
+    typedef typename Model_::State State_;
+    typedef typename State_::Algebra Algebra_;
+    typedef RRANSACTemplateParameters<SC,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
+    typedef RRANSAC<RRANSACParameters> RRANSAC_;
+    typedef typename RRANSACParameters::_Ransac RANSAC_;
+    std::vector<State_> states_;
+    std::string test_name_ = "R3 Test";
+
+
+    bool transform_tracking_frame_ = false;
+    std::vector<bool> transform_state_;
+    std::vector<bool> transform_meas_;
+    TransformDataType transform_tracking_frame_data_;
+    std::vector<TransformDataType> transform_data_t_m_;
+    std::vector<TransformDataType> transform_data_m_t_;
+
+    Test6() : transform_state_(SC::num_sources_,false), transform_meas_(SC::num_sources_,false) {
+        double pos = 20;
+        double vel = 0.5;
+        double accel = 0.1*0;
+        double jerk = -0.01*0;
+        states_.resize(4);
+        states_[0].g_.data_ << pos,pos, pos;
+        states_[0].u_.data_ << 0, -vel, 0,accel,0,0,jerk,0,0;
+        states_[1].g_.data_ << pos, -pos, -pos;
+        states_[1].u_.data_ << -vel,0,-vel,0,accel,0,0,jerk,0;
+        states_[2].g_.data_ << -pos, -pos, -pos;
+        states_[2].u_.data_ << 0, vel, vel,0,0,accel,0,0,jerk;
+        states_[3].g_.data_ << -pos, pos, pos;
+        states_[3].u_.data_ << vel,0,0,-accel,0,0,-jerk,0,0;
+
+        transform_data_t_m_.resize(SC::num_sources_);
+        transform_data_m_t_.resize(SC::num_sources_);
+    }
+
+  
+};
+
 
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
@@ -367,13 +419,14 @@ void SetUp() override {
     Parameters params;
     params.process_noise_covariance_ = Model_::MatModelCov::Identity()*noise_;
     params.RANSAC_max_iters_ = 5;
-    params.RANSAC_minimum_subset_ = 3;
+    params.RANSAC_minimum_subset_ = 5; 
     params.RANSAC_score_stopping_criteria_ = 15;
     params.RANSAC_score_minimum_requirement_ = 13;
     params.meas_time_window_ = end_time_ - start_time_;                   // 5 seconds
-    params.cluster_time_threshold_ = 0.5;
+    params.cluster_time_threshold_ = 5;
     params.cluster_velocity_threshold_ = 1.2;
     params.cluster_position_threshold_ = 1.2;
+    params.cluster_min_size_requirement_ = 30;
     params.track_max_num_tracks_ = 5;
     params.track_similar_tracks_threshold_ = 1;
     params.track_good_model_threshold_ = 0.8;
@@ -431,7 +484,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
             // std::cerr << "propagate " << std::endl;
             if (ii !=this->start_time_) {
-                Model_::OPlus(track.state_, rransac::utilities::GaussianRandomGenerator(Model_::cov_dim_)*this->dt_*this->noise_ );
+                Model_::OPlus(track.state_, rransac::utilities::GaussianRandomGenerator(Model_::cov_dim_)*std::sqrt(this->dt_*this->noise_) );
                 track.PropagateModel(this->dt_);
             }
 
@@ -452,7 +505,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
                 // Generate true measurement
                 if (fabs(rand_num(0,0)) < this->sys_->source_container_.GetParams(jj).probability_of_detection_) {
 
-                    tmp = this->sys_->source_container_.GenerateRandomMeasurement(this->meas_[jj].source_index,this->sys_->source_container_.GetParams(jj).meas_cov_.sqrt()*0.1,track.state_,meas_[jj].transform_state,meas_[jj].transform_data_t_m);
+                    tmp = this->sys_->source_container_.GenerateRandomMeasurement(this->meas_[jj].source_index,this->sys_->source_container_.GetParams(jj).meas_cov_.sqrt(),track.state_,meas_[jj].transform_state,meas_[jj].transform_data_t_m);
 
                     meas_[jj].time_stamp= ii;
                     meas_[jj].pose= tmp.pose;
@@ -465,7 +518,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
                 rand_num.setRandom();
                 if (fabs(rand_num(0,0)) < prob_false_meas_) {
                     State_ rand_state = Model_::GetRandomState(this->fov_);
-                    tmp = this->sys_->source_container_.GenerateRandomMeasurement(this->meas_[jj].source_index,this->sys_->source_container_.GetParams(jj).meas_cov_.sqrt()*0.1,rand_state,meas_[jj].transform_state,meas_[jj].transform_data_t_m);
+                    tmp = this->sys_->source_container_.GenerateRandomMeasurement(this->meas_[jj].source_index,this->sys_->source_container_.GetParams(jj).meas_cov_.sqrt(),rand_state,meas_[jj].transform_state,meas_[jj].transform_data_t_m);
 
                     meas_[jj].time_stamp= ii;
                     meas_[jj].pose= tmp.pose;
@@ -500,7 +553,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 
 
 std::vector<Measurement_> meas_;
-double noise_ = 1e-2;
+double noise_ = 1e-1;
 T test_data_;
 std::vector<Model_> tracks_;
 RRANSAC_ rransac_;
@@ -521,9 +574,9 @@ double prob_false_meas_ = 0.1;
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5>;
+// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5, Test6>;
 // using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4>;
-// using MyTypes = ::testing::Types< Test1>;
+using MyTypes = ::testing::Types< Test6>;
 TYPED_TEST_SUITE(RRANSACTest, MyTypes);
 
 
@@ -537,17 +590,17 @@ for (auto& created_track: this->sys_->good_models_) {
     model_likelihood[created_track->label_] = created_track->model_likelihood_;
 }
 
-// for (auto& created_track: this->sys_->models_) {
-//     std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
-//     std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& created_track: this->sys_->models_) {
+    std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
+    std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
-// for (auto& sim_track: this->tracks_) {
-//     std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
-//     std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& sim_track: this->tracks_) {
+    std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
+    std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
 
 // make sure that the tracks were created
@@ -583,17 +636,17 @@ this->Propagate(this->end_time_+this->dt_,this->end_time_*2.0,track_indices);
 // std::cerr << "here6 " << std::endl;
 
 
-// for (auto& created_track: this->sys_->models_) {
-//     std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
-//     std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& created_track: this->sys_->models_) {
+    std::cout << "created_track g: " << std::endl << created_track.state_.g_.data_ << std::endl;
+    std::cout << "created_track u: " << std::endl << created_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
-// for (auto& sim_track: this->tracks_) {
-//     std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
-//     std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
+for (auto& sim_track: this->tracks_) {
+    std::cout << "sim_track g: " << std::endl << sim_track.state_.g_.data_ << std::endl;
+    std::cout << "sim_track u: " << std::endl << sim_track.state_.u_.data_ << std::endl << std::endl;
 
-// }
+}
 
 // make sure that the tracks were created
 int num_models = this->sys_->models_.size();
