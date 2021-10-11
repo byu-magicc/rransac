@@ -29,6 +29,8 @@ Parameters::Parameters() {
     nonlinear_LMLE_Ceres_max_num_iters_ = 50;
 
     set_initial_error_covariance_to_id_ = true;
+
+    sequential_else_parallel_fusion_ = true;
 }
 
 //------------------------------------------------------------------------------------

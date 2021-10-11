@@ -120,7 +120,7 @@ void TLI_IPDAFPolicy<_Model>::PolicyUpdateTrackLikelihoodSingle(const Sys& sys, 
 
 
             // Store the value of delta to be used in calculating the measurement weights
-            track.model_likelihood_update_info_[source_index].delta  = PD*PG - PD*prob_sum/lambda;
+            track.model_likelihood_update_info_[source_index].delta  = 1-PD*PG + PD*prob_sum/lambda;
 
 
 #ifdef DEBUG_BUILD
@@ -133,7 +133,7 @@ void TLI_IPDAFPolicy<_Model>::PolicyUpdateTrackLikelihoodSingle(const Sys& sys, 
         } else if (sys.source_container_.StateInsideSurveillanceRegion(source_index,track.state_,info.transform_state_[source_index],info.transform_data_t_m_[source_index]) && info.source_produced_measurements_[source_index]) {
             track.model_likelihood_update_info_[source_index].in_lsr_and_produced_meas = true;
             track.model_likelihood_update_info_[source_index].num_assoc_meas = 0;
-            track.model_likelihood_update_info_[source_index].delta = PD*PG;
+            track.model_likelihood_update_info_[source_index].delta = 1-PD*PG;
         } else {
             track.model_likelihood_update_info_[source_index].in_lsr_and_produced_meas = false;
             track.model_likelihood_update_info_[source_index].num_assoc_meas = 0;
@@ -143,10 +143,35 @@ void TLI_IPDAFPolicy<_Model>::PolicyUpdateTrackLikelihoodSingle(const Sys& sys, 
         // If the target is in the local surveillance region of the source and the source produced measurements this sensor scan, update the track likelihood. 
         if (track.model_likelihood_update_info_[source_index].in_lsr_and_produced_meas) {
 
-            track.model_likelihood_  = (1.0-track.model_likelihood_update_info_[source_index].delta)*track.model_likelihood_/(1.0 - track.model_likelihood_update_info_[source_index].delta*track.model_likelihood_);
+            track.model_likelihood_  = (track.model_likelihood_update_info_[source_index].delta)*track.model_likelihood_/(1.0 + (track.model_likelihood_update_info_[source_index].delta-1.0)*track.model_likelihood_);
 
         }
     }
+
+    // // Update the track likelihood
+    // double v = 1;
+    // for (size_t source_index = 0; source_index < sys.source_container_.num_sources_; ++ source_index) {
+
+
+    //     if(sys.params_.sequential_else_parallel_fusion_) {
+    //         if(track.model_likelihood_update_info_[source_index].in_lsr_and_produced_meas) {
+
+    //             track.model_likelihood_ = track.model_likelihood_update_info_[source_index].delta*track.model_likelihood_/(1.0 + (track.model_likelihood_update_info_[source_index].delta -1.0)*track.model_likelihood_);
+
+    //         }
+    //     } else {
+    //         if(track.model_likelihood_update_info_[source_index].in_lsr_and_produced_meas) {
+
+    //             v *=track.model_likelihood_update_info_[source_index].delta;
+
+    //         }
+    //     }
+
+    // }
+
+    // if(!sys.params_.sequential_else_parallel_fusion_) {
+    //             track.model_likelihood_ = v*track.model_likelihood_/(1.0 + (v -1.0)*track.model_likelihood_);
+    // }
     
 
 }

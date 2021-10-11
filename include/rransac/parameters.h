@@ -103,6 +103,8 @@ bool nonlinear_innov_cov_id_;                      /**< When set to true, the in
 unsigned int nonlinear_LMLE_Ceres_threads_;        /**< The number of threads the nonlinear track initializer will use. */
 unsigned int nonlinear_LMLE_Ceres_max_num_iters_;  /**< When solving the LMLE, this parameter indicates the maximum number of iterations Ceres will use
                                                          to estimate the current state estimate of a hypothetical track. */
+// Centralized measurement fusion
+bool sequential_else_parallel_fusion_;             /**< When set to true, sequential centralized fusion is performed; otherwise, parallel centralized fusion is performed **/
 
 };
 } // namespace rransac

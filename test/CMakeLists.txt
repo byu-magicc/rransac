@@ -133,6 +133,11 @@ include_directories(../include
 # Model
 #---------------------------------------
 
+# add_executable(centralized_measurement_fusionTest 
+# common/models/centralized_measurement_fusion_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(centralized_measurement_fusionTest gtest_main )
+
 # add_executable(model_baseTest
 # common/models/model_base_test.cpp
 # ../src/parameters.cpp)
@@ -152,6 +157,8 @@ include_directories(../include
 # common/models/model_manager_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(model_managerTest gtest_main )
+
+
 
 
 #---------------------------------------
