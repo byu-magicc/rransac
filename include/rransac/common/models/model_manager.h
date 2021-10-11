@@ -296,12 +296,9 @@ bool ModelManager<_Model>::SimilarModels(const Sys& sys, const Model& model1, co
     bool similar = false;
 
     Eigen::Matrix<double,Model::cov_dim_,1> err_21 = Model::OMinus(model1, model2);
-    typename State::Algebra err_21_group(err_21.block(0,0,State::Group::dim_,1));
-    typename Model::MatModelCov Jr_inv, Jl_inv, P_21;
-    Jr_inv.setIdentity();
-    Jl_inv.setIdentity();
-    Jr_inv.block(0,0,State::Group::dim_, State::Group::dim_) = err_21_group.JrInv();
-    Jl_inv.block(0,0,State::Group::dim_, State::Group::dim_) = err_21_group.JlInv();
+    typename Model::MatModelCov Jr_inv = Model::JrInv(err_21);
+    typename Model::MatModelCov Jl_inv = Model::JlInv(err_21);
+    typename Model::MatModelCov P_21;
     P_21 = Jl_inv*model2.err_cov_*Jl_inv.transpose() + Jr_inv*model1.err_cov_*Jr_inv.transpose();
     
     
@@ -324,23 +321,23 @@ void ModelManager<_Model>::FuseModels(Model& model1, const Model& model2) {
 //////////////////////
 // Error covariance
 //////////////////////
+
+
 typename Model::MatModelCov P1_inv = model1.err_cov_.inverse();
 typename Model::MatModelCov P2_inv = model2.err_cov_.inverse();
 Eigen::Matrix<double,Model::cov_dim_,1> err_21 = Model::OMinus(model1, model2);
-typename State::Algebra err_21_group(err_21.block(0,0,State::Group::dim_,1));
 
-typename Model::MatModelCov Jr_inv, Jr;
-Jr_inv.setIdentity();
-Jr_inv.block(0,0,State::Group::dim_, State::Group::dim_) = err_21_group.JrInv();
-Jr.setIdentity();
+typename Model::MatModelCov Jr_inv = Model::JrInv(err_21);
+
 
 typename Model::MatModelCov P_inv = P1_inv + Jr_inv.transpose()*P2_inv*Jr_inv;
 typename Model::MatModelCov P = P_inv.inverse();
 
 
 Eigen::Matrix<double,Model::cov_dim_,1> mu = -P*Jr_inv.transpose()*P2_inv*err_21;
-typename State::Algebra mu_group(mu.block(0,0,State::Group::dim_,1) );
-Jr.block(0,0,State::Group::dim_, State::Group::dim_) = mu_group.Jr();
+
+typename Model::MatModelCov Jr = Model::Jr(mu);
+
 
 model1.OPlusEQ(mu);
 model1.err_cov_ = Jr*P*Jr.transpose();

@@ -169,10 +169,10 @@ ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_, track1_init_model_likelihood);
 
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,PG0*PD0);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,1.0-PG0*PD0);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,PG0*PD0);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,1.0-PG0*PD0);
 ASSERT_FALSE(model_iter0->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].num_assoc_meas,0);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,0);
@@ -196,10 +196,10 @@ ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_, track1_init_model_likelihood);
 
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,PG0*PD0);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,1.0-PG0*PD0);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,PG0*PD0);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,1.0-PG0*PD0);
 ASSERT_FALSE(model_iter0->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].num_assoc_meas,0);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,0);
@@ -225,16 +225,16 @@ ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_, track1_init_model_likelihood);
 
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,PG0*PD0);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,1.0-PG0*PD0);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,PG0*PD0);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,1.0-PG0*PD0);
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,PG1*PD1);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,1.0-PG1*PD1);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,PG1*PD1);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,1.0-PG1*PD1);
 
 // Reset the track likelihoods
 track0_init_model_likelihood = 0.51;
@@ -275,10 +275,10 @@ ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_, track1_init_model_likelihood);
 
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].num_assoc_meas,1);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,delta00);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,1.0-delta00);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].num_assoc_meas,1);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,delta10);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,1.0-delta10);
 ASSERT_FALSE(model_iter0->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].num_assoc_meas,0);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,0);
@@ -303,16 +303,16 @@ ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_, track1_init_model_likelihood);
 
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].num_assoc_meas,1);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,delta00);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,1.0-delta00);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].num_assoc_meas,1);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,delta10);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,1.0-delta10);
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,PD1*PG1);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,1.0-PD1*PG1);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].num_assoc_meas,0);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,PD1*PG1);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,1.0-PD1*PG1);
 
 // Let both produce associated measurements with dt=0 and Reset the track likelihoods
 
@@ -375,15 +375,15 @@ track1_init_model_likelihood = (1.0-delta11)*track1_init_model_likelihood/(1.0-d
 
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].num_assoc_meas,2);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,delta00);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[0].delta,1.0-delta00);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[0].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].num_assoc_meas,2);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,delta10);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[0].delta,1.0-delta10);
 ASSERT_TRUE(model_iter0->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].num_assoc_meas,2);
-ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,delta01);
+ASSERT_DOUBLE_EQ(model_iter0->model_likelihood_update_info_[1].delta,1.0-delta01);
 ASSERT_TRUE(model_iter1->model_likelihood_update_info_[1].in_lsr_and_produced_meas);
 ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].num_assoc_meas,2);
-ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,delta11);
+ASSERT_DOUBLE_EQ(model_iter1->model_likelihood_update_info_[1].delta,1.0-delta11);
 
 }

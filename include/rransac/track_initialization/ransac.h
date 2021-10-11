@@ -282,7 +282,7 @@ template< typename _Model, template <typename > typename _Seed, template<typenam
 _Model Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLikelihoodPolicy, _MeasurementWeightPolicy>::GenerateTrack(const State&xh, const Sys& sys, const VecClusterIterPair& inliers) {
 
 
-    std::cout << "ransac state: " << std::endl << xh.g_.data_ << std::endl << xh.u_.data_ << std::endl;
+    // std::cout << "ransac state: " << std::endl << xh.g_.data_ << std::endl << xh.u_.data_ << std::endl;
 
     TransformDataType empty_transform;
     DataAssociationInfoT data_association_info;
@@ -364,8 +364,8 @@ void Ransac<_Model, _Seed, _LMLEPolicy, _ValidationRegionPolicy, _UpdateTrackLik
         meas_subset = GenerateMinimumSubset(sys.params_.RANSAC_minimum_subset_, *cluster_iter);
         hypothetical_state = GenerateHypotheticalStateEstimate(meas_subset, sys,success);
 
-        std::cout << "hypothetical state pose: " << std::endl << hypothetical_state.g_.data_ << std::endl;
-        std::cout << "hypothetical state twist: " << std::endl << hypothetical_state.u_.data_ << std::endl;
+        // std::cout << "hypothetical state pose: " << std::endl << hypothetical_state.g_.data_ << std::endl;
+        // std::cout << "hypothetical state twist: " << std::endl << hypothetical_state.u_.data_ << std::endl;
 
         if (success) {
             score = ScoreHypotheticalStateEstimate(hypothetical_state, *cluster_iter, sys, inliers);

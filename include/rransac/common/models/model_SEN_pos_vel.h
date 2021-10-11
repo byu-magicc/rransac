@@ -104,6 +104,76 @@ static VecCov DerivedOMinus(const ModelSENPosVel& model1, const ModelSENPosVel& 
     return tmp;
 }
 
+/**
+ * Computes the right Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJr(const VecCov& u) {
+    // typename State::Vec_SC c;
+    // c.setZero();
+    // c.block(0,0,g_dim_+1,1) = u.block(0,0,g_dim_+1,1);
+    // c.block(g_dim_ + State::Group::dim_pos_,0, State::Group::dim_rot_,1) = u.block(g_dim_+1,0, State::Group::dim_rot_,1);
+
+    typename State::Algebra v(u.block(0,0,g_dim_,1));
+
+    MatModelCov jacobian;
+    jacobian.setIdentity();
+    jacobian.block(0,0,g_dim_,g_dim_) = v.Jr();
+
+
+    // typename State::Mat_SC jacobian_c = State::Jr(c);
+
+    // jacobian.block(0,0,g_dim_+1,g_dim_+1) = jacobian_c.block(0,0,g_dim_+1,g_dim_+1);
+    // jacobian.block(g_dim_+1,g_dim_+1,State::Group::dim_rot_,State::Group::dim_rot_) =
+
+
+    return jacobian;
+}
+
+/**
+ * Computes the left Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJl(const VecCov& u) {
+    
+    typename State::Algebra v(u.block(0,0,g_dim_,1));
+    MatModelCov jacobian;
+    jacobian.setIdentity();
+    jacobian.block(0,0,g_dim_,g_dim_) = v.Jl();
+    return jacobian;
+
+}
+
+/**
+ * Computes the inverse of the right Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJrInv(const VecCov& u) {
+
+    typename State::Algebra v(u.block(0,0,g_dim_,1));
+    MatModelCov jacobian;
+    jacobian.setIdentity();
+    jacobian.block(0,0,g_dim_,g_dim_) = v.JrInv();
+    return jacobian;
+}
+
+/**
+ * Computes the inverse of the left Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJlInv(const VecCov& u) {
+    
+    typename State::Algebra v(u.block(0,0,g_dim_,1));
+    MatModelCov jacobian;
+    jacobian.setIdentity();
+    jacobian.block(0,0,g_dim_,g_dim_) = v.JlInv();
+    return jacobian;
+}
+
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

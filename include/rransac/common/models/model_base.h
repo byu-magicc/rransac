@@ -17,6 +17,7 @@
 #include "rransac/common/sources/source_SEN_pose_twist.h"
 #include "rransac/common/transformations/transformation_null.h"
 #include "rransac/common/sources/source_container.h"
+#include "rransac/common/models/centralized_measurement_fusion.h"
 
 namespace rransac {
 
@@ -134,6 +135,7 @@ public:
                                                      the innovation covariances are no longer valid. The index of the vector corresponds to the source index. */
     MatModelCov Q_;                            /**< Process noise covariance */
 
+    CentralizedMeasurementFusion<ModelBase> centralized_measurement_fusion_; /**< The centralized measurement fusion */
 
     template<typename _DataType>
     using ModelTemplate = _Derived<typename _SourceContainer::template SourceContainerTemplate<_DataType>>;
@@ -327,25 +329,47 @@ public:
      */ 
     void AddNewMeasurement( const Measurement& meas);
 
+    /**
+     * Computes the right Jacobian of the state's Lie group using an element of the 
+     * Cartesian algebraic space. 
+     * @param u An element of the Cartesian algebraic space.
+     */ 
+    static MatModelCov Jr(const VecCov& u) {
+        return DerivedModel::DerivedJr(u);
+    }
+
+    /**
+     * Computes the left Jacobian of the state's Lie group using an element of the 
+     * Cartesian algebraic space. 
+     * @param u An element of the Cartesian algebraic space.
+     */ 
+    static MatModelCov Jl(const VecCov& u) {
+        return DerivedModel::DerivedJl(u);
+    }
+
+    /**
+     * Computes the inverse of the right Jacobian of the state's Lie group using an element of the 
+     * Cartesian algebraic space. 
+     * @param u An element of the Cartesian algebraic space.
+     */ 
+    static MatModelCov JrInv(const VecCov& u) {
+        return DerivedModel::DerivedJrInv(u);
+    }
+
+    /**
+     * Computes the inverse of the left Jacobian of the state's Lie group using an element of the 
+     * Cartesian algebraic space. 
+     * @param u An element of the Cartesian algebraic space.
+     */ 
+    static MatModelCov JlInv(const VecCov& u) {
+        return DerivedModel::DerivedJlInv(u);
+    }
+
+
+
+
+
 private:
-
-/**
- * Calculates the state update and covariance update for a single source. The state update and covariance update are given to PerformCentralizedMeasurementFusion in order
- * to perform centralized measurement fusion.
- * @param[in] source_container The container of all of the sources
- * @param[in] meas          All of the new measurements produced by a single source.
- * @param[out] state_update The calculated state update to be applied to the current state estimate.
- * @param[out] cov_update The calculated covariance update to be applied to the current error covariance.
- */ 
-void GetStateUpdateAndCovariance(const SourceContainer& source_container, const std::vector<Measurement>& meas, VecCov& state_update, MatModelCov& cov_update);
-
-/**
- * Since there can be multiple sources providing measurements, we fuse the measurements together using a centralized measurement fusion method discussed in Tracking and Data Fusion by Bar-Shalom 2011.
- * @param[in] params  The system parameters.
- * @param[in] source_container The container of all of the sources
- * @return The state update. 
- */ 
-VecCov PerformCentralizedMeasurementFusion(const SourceContainer& source_container, const Parameters& params);
 
 
 };
@@ -425,7 +449,10 @@ void ModelBase<_SourceContainer, _CovDim, _Derived>::UpdateModel(const SourceCon
         }
     }
 
-    OPlusEQ(PerformCentralizedMeasurementFusion(source_container, params));
+    centralized_measurement_fusion_.PerformCentralizedMeasurementFusion(source_container,params.sequential_else_parallel_fusion_, *static_cast<DerivedModel*>(this));
+
+
+
     for (auto& new_measurements: new_assoc_meas_) {
         cs_.AddMeasurementsToConsensusSet(new_measurements);
     }
@@ -441,97 +468,10 @@ void ModelBase<_SourceContainer, _CovDim, _Derived>::UpdateModel(const SourceCon
 
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-
-template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived> 
-typename ModelBase<_SourceContainer, _CovDim, _Derived>::VecCov ModelBase<_SourceContainer, _CovDim, _Derived>::PerformCentralizedMeasurementFusion(const SourceContainer& source_container, const Parameters& params) {
-
-VecCov state_update_sum;
-VecCov state_update;
-VecCov update;
-MatModelCov cov;
-MatModelCov cov_sum;
-MatModelCov error_cov_inverse = err_cov_.inverse();
-state_update_sum.setZero();
-cov_sum.setZero();
-
-// loop through the measurements per source
-for (auto& meas : new_assoc_meas_) {
-    if(meas.size()>0) {
-        GetStateUpdateAndCovariance(source_container, meas, state_update, cov);
-
-        state_update_sum+= state_update;
-        cov_sum += (cov.inverse() - error_cov_inverse);
-    }
-}
 
 
 
-// Update the error covariance
-error_cov_inverse += cov_sum;
-err_cov_ = error_cov_inverse.inverse();
 
-#ifdef DEBUG_BUILD
-     if (err_cov_.determinant() <=0 )
-        throw std::runtime_error("ModelBase::GetStateUpdate The determinant of the error covariance is <=0. It must be positive since it is a positive definite matrix. ") ;
-#endif
-
-// Update the state
-update = state_update_sum;
-
-
-return update;
-
-}
-
-//---------------------------------------------------------------------------------------------------------
-
-template <typename _SourceContainer, int _CovDim,  template< typename > typename _Derived>   
-void ModelBase<_SourceContainer, _CovDim, _Derived>::GetStateUpdateAndCovariance(const SourceContainer& source_container, const std::vector<Measurement>& meas, VecCov& state_update, MatModelCov& cov_update) {
-
-state_update.setZero();
-
-
-MatH H = source_container.GetLinObsMatState(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m);      // Jacobian of observation function w.r.t. state
-MatV V = source_container.GetLinObsMatSensorNoise(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m);                             // Jacobian of observation function w.r.t. noise
-Eigen::MatrixXd K;                                                                    // Kalman Gain
-MatS S_inverse;                                                            // Innovation covariance inverse
-Eigen::MatrixXd nu_i;                                                                 
-Eigen::MatrixXd nu(V.rows(),1);                                                       // Total innovation term
-nu.setZero();
-Eigen::MatrixXd covSum(V.rows(),V.rows());
-covSum.setZero();
-
-Measurement estimated_meas = source_container.GetEstMeas(meas.front().source_index, state_, meas.front().transform_state, meas.front().transform_data_t_m); 
-
-S_inverse = GetInnovationCovariance(source_container,meas.front().source_index, meas.front().transform_state, meas.front().transform_data_t_m).inverse();
-K = err_cov_*H.transpose()*S_inverse;
-
-DataType B0 = 1;
-
-// Get total weighted innovation and part of the cov_tilde
-for (Measurement m : meas) {
-    nu_i = source_container.OMinus(m.source_index,m,estimated_meas);
-    nu += m.weight*nu_i;
-    covSum+= m.weight*nu_i*nu_i.transpose();
-    B0 -= m.weight;
-}
-
-// Finish constructing cov_sum
-covSum -= nu*nu.transpose();
-
-
-// construct covariance. It has been verified
-cov_update = err_cov_+ K*(covSum*K.transpose() -(1-B0)*H*err_cov_); 
-
-state_update = K*nu;
-
-// std::cout << "H: " << std::endl << H << std::endl;
-// std::cout << "S: " << std::endl << S_inverse << std::endl;
-// std::cout << "K: " << std::endl << K << std::endl;
-
-
-}
 
 //---------------------------------------------------------------------------------------------------------
 

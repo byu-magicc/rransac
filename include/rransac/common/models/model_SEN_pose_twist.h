@@ -89,6 +89,42 @@ static VecCov DerivedOMinus(const ModelSENPoseTwist& model1, const ModelSENPoseT
      return model1.state_.OMinus(model2.state_);
 }
 
+/**
+ * Computes the right Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJr(const VecCov& u) {
+    return State::Jr(u);
+}
+
+/**
+ * Computes the left Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJl(const VecCov& u) {
+    return State::Jl(u);
+}
+
+/**
+ * Computes the inverse of the right Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJrInv(const VecCov& u) {
+    return State::JrInv(u);
+}
+
+/**
+ * Computes the inverse of the left Jacobian of the state's Lie group using an element of the 
+ * Cartesian algebraic space. 
+ * @param u An element of the Cartesian algebraic space.
+ */ 
+static MatModelCov DerivedJlInv(const VecCov& u) {
+    return State::JlInv(u);
+}
+
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
