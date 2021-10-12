@@ -383,6 +383,7 @@ private:
     static DataType GSD_NotImplemented(const Measurement& meas1, const Measurement& meas2, const Parameters& params){throw std::runtime_error("SourceBase::SpatialDistance Distance not implemented.");}
     static DataType GSD_SE3_CamDepth_SE3_CamDepth(const Measurement& meas1, const Measurement& meas2, const Parameters& params);
     static DataType GSD_R2_R3_Radar(const Measurement& meas1, const Measurement& meas2, const Parameters& params);
+    static DataType GSD_SE2_SE3_Radar(const Measurement& meas1, const Measurement& meas2, const Parameters& params);
     
 
 };
@@ -446,6 +447,7 @@ void SourceBase<_SourceDerivedTraits,_Derived>::Init(const SourceParameters& par
         gsd_ptr_[MeasurementTypes::R2_R3_RADAR][MeasurementTypes::R2_R3_RADAR_DEPTH_DERIV]               = &GSD_R2_R3_Radar;
         gsd_ptr_[MeasurementTypes::R2_R3_RADAR_DEPTH_DERIV][MeasurementTypes::R2_R3_RADAR]               = &GSD_R2_R3_Radar;
         gsd_ptr_[MeasurementTypes::R2_R3_RADAR_DEPTH_DERIV][MeasurementTypes::R2_R3_RADAR_DEPTH_DERIV]   = &GSD_R2_R3_Radar;
+        gsd_ptr_[MeasurementTypes::SE2_SE3_RADAR][MeasurementTypes::SE2_SE3_RADAR]   = &GSD_SE2_SE3_Radar;
 
 
 
@@ -743,6 +745,60 @@ typename SourceBase<_SourceDerivedTraits,_Derived>::DataType SourceBase<_SourceD
         d = sqrt( r1*r1 + r2*r2 - 2.0*r1*r2*( cos(zenith1)*cos(zenith2) + sin(zenith1)*sin(zenith2)*cos(azimuth1-azimuth2)));
     } else {
         throw std::runtime_error("SourceBase::GSD_R2_R3_Radar, measurement dimension isn't correct.");
+    }
+
+
+
+    return d;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<typename _SourceDerivedTraits, template<typename , MeasurementTypes , template <typename > typename > typename _Derived>
+typename SourceBase<_SourceDerivedTraits,_Derived>::DataType SourceBase<_SourceDerivedTraits,_Derived>::GSD_SE2_SE3_Radar(const Measurement& meas1, const Measurement& meas2, const Parameters& params){ 
+
+
+    typedef Eigen::Matrix<DataType,meas_pose_dim_,1> VecPose;
+
+    DataType d = 0;
+    VecPose err, pose1, pose2;
+
+   
+
+
+    // The radar sensors are assumed to be stationary, so if they are from the same sensor,
+    // we can compare them directly; otherwise, we must transform them into a common frame.
+    if(meas1.transform_meas && meas2.transform_meas) {
+        // Transform measurements into common frame
+        pose1 = Transformation::TransformMeasurement(meas1,meas1.transform_data_m_t).pose;
+        pose2 = Transformation::TransformMeasurement(meas2,meas2.transform_data_m_t).pose;
+        
+    } else if(meas1.transform_meas) {
+        pose1 = Transformation::TransformMeasurement(meas1,meas1.transform_data_m_t).pose;
+        pose2 = meas2.pose;
+    } else if(meas2.transform_meas) {
+        pose1 = meas1.pose;
+        pose2 = Transformation::TransformMeasurement(meas2,meas2.transform_data_m_t).pose;
+    } else {
+        pose1 = meas1.pose;
+        pose2 = meas2.pose;
+    }
+
+    // Transform pose to cartesian coordinates
+    const DataType& r1 = pose1(0);
+    const DataType& r2 = pose2(0);
+    const DataType& azimuth1 = pose1(1);
+    const DataType& azimuth2 = pose2(1);
+    if (meas_pose_dim_ == 2) {
+       d = sqrt(r1*r1 + r2*r2 - 2.0*r1*r2*cos(azimuth1-azimuth2));
+
+    } else if(meas_pose_dim_ == 3) {
+        const DataType& zenith1 = pose1(2);
+        const DataType& zenith2 = pose2(2);
+
+        d = sqrt( r1*r1 + r2*r2 - 2.0*r1*r2*( cos(zenith1)*cos(zenith2) + sin(zenith1)*sin(zenith2)*cos(azimuth1-azimuth2)));
+    } else {
+        throw std::runtime_error("SourceBase::GSD_SE2_SE3_Radar, measurement dimension isn't correct.");
     }
 
 

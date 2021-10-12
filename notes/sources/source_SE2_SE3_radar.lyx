@@ -1,0 +1,188 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass IEEEtran
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 2
+\use_package amssymb 2
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+For 
+\begin_inset Formula $SE\left(2\right)$
+\end_inset
+
+ the measurement is in polar coordinates and for 
+\begin_inset Formula $SE\left(3\right)$
+\end_inset
+
+ the measurement is in spherical coordinates.
+ 
+\end_layout
+
+\begin_layout Section
+State
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+SE\left(2\right) & =\left(\begin{bmatrix}R & P\\
+0 & 1
+\end{bmatrix},\begin{bmatrix}\rho\\
+\omega
+\end{bmatrix}\right)\\
+P & =\left[P_{x},P_{y}\right]^{\top}\\
+\rho & =\left[\rho_{x},\rho_{y}\right]^{\top}\\
+SE\left(3\right) & =\left(\begin{bmatrix}R & P\\
+0 & 1
+\end{bmatrix},\begin{bmatrix}\rho\\
+\omega
+\end{bmatrix}\right)\\
+P & =\left[P_{x},P_{y},P_{z}\right]^{\top}\\
+R & =\begin{bmatrix}r_{1} & r_{2} & r_{3}\end{bmatrix}\\
+\rho & =\left[\rho_{x},\rho_{y},\rho_{z}\right]^{\top}\\
+\omega & =\left[\omega_{x},\omega_{y},\omega_{z}\right]^{\top}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+SE
+\begin_inset Formula $\left(2\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+h\left(x,r\right) & =\left(d\left(x\right),\varphi\left(x\right)\right)\\
+d\left(x\right) & =\sqrt{P^{\top}P}\\
+\varphi\left(x\right) & =\arctan\left(P_{y},P_{x}\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+H\left(x,r\right)=\begin{bmatrix}P^{\top}R/d\left(x\right) & 0_{1\times4}\\
+P^{\top}R\left[-1\right]_{\times}/d\left(x\right)^{2} & 0_{1\times4}
+\end{bmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+SE
+\begin_inset Formula $\left(3\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+h\left(x,r\right) & =\left(d\left(x\right),\varphi\left(x\right),\psi\left(x\right)\right)\\
+d\left(x\right) & =\sqrt{P^{\top}P}\\
+\varphi\left(x\right) & =\arctan\left(P_{y},P_{x}\right)\\
+\psi\left(x\right) & =\arctan\left(\sqrt{P_{x}^{2}+P_{y}^{2}},P_{z}\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+H\left(x,r\right)=\begin{bmatrix}P^{\top}R/d\left(x\right) & 0_{1\times9}\\
+\frac{\left(P_{x}r_{2}-P_{y}r_{1}\right)}{d\left(x\right)^{2}} & 0_{1\times9}\\
+\frac{\frac{P_{z}\left(P_{x}r_{1}+P_{y}r_{2}\right)}{d\left(x\right)}-d\left(x\right)r_{3}}{d\left(x\right)^{2}} & 0_{1\times9}
+\end{bmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

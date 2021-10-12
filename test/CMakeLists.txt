@@ -96,6 +96,12 @@ include_directories(../include
 # target_link_libraries(source_SE3_CamDepthTest gtest_main )
 # add_test(NAME AllTestsInSourceSE3CamDepthTest COMMAND source_SE3_CamDepthTest)
 
+# add_executable(source_SE2_SE3_RadarTest
+# common/sources/source_SE2_SE3_radar_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(source_SE2_SE3_RadarTest gtest_main )
+# add_test(NAME AllTestsInSourceSE2SE3RAdarTest COMMAND source_SE2_SE3_RadarTest)
+
 # add_executable(source_containerTest
 # common/sources/source_container_test.cpp
 # ../src/parameters.cpp)
@@ -123,6 +129,11 @@ include_directories(../include
 # common/transformations/trans_radar_R2_R3_with_SE2_SE3_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(trans_radar_R2_R3_with_SE2_SE3Test gtest_main )
+
+# add_executable(trans_radar_SE2_SE3_with_SE2_SE3Test
+# common/transformations/trans_radar_SE2_SE3_with_SE2_SE3_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(trans_radar_SE2_SE3_with_SE2_SE3Test gtest_main )
 
 # add_executable(trans_SE3_cam_depthTest
 # common/transformations/trans_SE3_cam_depth_test.cpp
@@ -225,6 +236,12 @@ include_directories(../include
 # track_initialization/seed_policies/radar_R2_R3_seed_policy_test.cpp
 # ../src/parameters.cpp)
 # target_link_libraries(radar_R2_R3_seed_policyTest gtest_main
+# )
+
+# add_executable(radar_SE2_SE3_seed_policyTest 
+# track_initialization/seed_policies/radar_SE2_SE3_seed_policy_test.cpp
+# ../src/parameters.cpp)
+# target_link_libraries(radar_SE2_SE3_seed_policyTest gtest_main
 # )
 
 # add_executable(ransacTest 

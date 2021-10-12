@@ -30,6 +30,7 @@ enum MeasurementTypes {
     SE3_CAM_DEPTH,            // The target space is SE3 and the targets location on the normalized image sphere and its depth to the camera are observed.
     R2_R3_RADAR,              // The target space is either R2 or R3 and the measurements are in polar coordianants for R2 or spherical coordinates for R3.
     R2_R3_RADAR_DEPTH_DERIV,  // Similar to the measurement type R2_R3_RADAR with the addition of modeling the derivative of the depth.
+    SE2_SE3_RADAR,            // The target model is either SE2 pos vel or SE3 pos vel. The measurement is in polar coordinates for R2 or spherical coordinates for R3.
     NUM_TYPES
 };
 
