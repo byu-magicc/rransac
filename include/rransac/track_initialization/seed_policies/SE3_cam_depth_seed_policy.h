@@ -138,7 +138,7 @@ static_assert(std::is_same<State,lie_groups::SE3_se3::template StateTemplate<typ
         // Get angular velocities
         std::vector<VecPos> angular_velocities;
         for(int ii=0; ii < rotations.size()-1; ++ii) {
-            VecPos omega = lie_groups::SO3<DataType>::OMinus(rotations[ii+1],rotations[ii]);
+            VecPos omega = lie_groups::SO3<DataType>::OMinus(rotations[ii+1],rotations[ii])/time_intervals[ii];
             angular_velocities.push_back(omega);
         }
 

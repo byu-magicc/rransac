@@ -11,7 +11,6 @@ namespace rransac
 /**
  * \class RadarR2R3SeedPolicy
  * The seed policies are used to seed the LMLE algorithm that finds a current hypothetical state estimate using a minimum subset.
- * This policy is a null policy and sets the inital guess to identity.. 
  */ 
 
 template<typename _Model>
@@ -31,7 +30,7 @@ typedef typename Model::Transformation Transformation;
 
 
 /**
- * This function sets the initial guess of the state estimate to zero.
+ * This function sets the initial guess of the state estimate.
  * @param meas_subset The subset used to generate the seed for the LMLE algorithm
  * @param sys The object that contains the R-RANASAC data
  * @param x The initial state for the LMLE algorithm
