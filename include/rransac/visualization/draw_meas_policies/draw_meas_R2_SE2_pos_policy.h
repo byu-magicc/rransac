@@ -21,7 +21,9 @@ class DrawMeasR2SE2PosPolicy {
 
 public: 
 
-static void DrawMeasPolicy(cv::Mat& img, const Meas<double>& meas, const System<tModel>* sys,  const DrawInfo& draw_info);
+typedef typename tModel::Base::Measurement Measurement;
+
+static void DrawMeasPolicy(cv::Mat& img, const Measurement& meas, const System<tModel>* sys,  const DrawInfo& draw_info);
 
 };
 
@@ -30,7 +32,7 @@ static void DrawMeasPolicy(cv::Mat& img, const Meas<double>& meas, const System<
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename tModel>    
-void DrawMeasR2SE2PosPolicy<tModel>::DrawMeasPolicy(cv::Mat& img, const Meas<double>& meas, const System<tModel>* sys,  const DrawInfo& draw_info)
+void DrawMeasR2SE2PosPolicy<tModel>::DrawMeasPolicy(cv::Mat& img, const Measurement& meas, const System<tModel>* sys,  const DrawInfo& draw_info)
 {
 
 // Draw the position and velocity

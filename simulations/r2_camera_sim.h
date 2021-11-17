@@ -107,17 +107,18 @@ typedef typename TargetState_::Algebra TargetAlgebra_;
 
 typedef ModelRN<SourceContainerR2PosVelNull> TrackingModel_;
 typedef typename TrackingModel_::Transformation Transformation_;
-typedef typename TrackingModel_::Transformation::MatData TransformMatData_;
+typedef typename TrackingModel_::Transformation::TransformDataType TransformMatData_;
 typedef typename TrackingModel_::State TrackingState_;
 typedef typename TrackingState_::Algebra TrackingAlgebra_;
 typedef SourceSE2PosVelNull TargetSource_;
 typedef RRANSACTemplateParameters<SourceContainerR2PosVelNull,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
 typedef RRANSAC<RRANSACParameters> RRANSAC_;
-typedef typename RRANSACParameters::TRansac RANSAC_;
+typedef typename RRANSACParameters::_Ransac RANSAC_;
 typedef Eigen::Matrix<double,4,4> MatR_;
 static constexpr MeasurementTypes MeasurementType= MeasurementTypes::RN_POS_VEL;
 typedef Eigen::Matrix<double,4,4> ProcessNoiseCov_;
 typedef Eigen::Matrix<double,2,1> VecU_;
+typedef typename TargetModel_::Base::Measurement Measurement;
 
 
 
@@ -134,7 +135,7 @@ static constexpr bool transform_data_ = false;
 RRANSAC_ rransac_;
 const System<TrackingModel_>* sys_;
 std::vector<TargetSource_> sources_;
-Meas<double> m_;
+Measurement m_;
 Eigen::Matrix<double,TargetAlgebra_::dim_,TargetAlgebra_::dim_> noise_mat_;
 double process_noise_;
 double meas_noise_;

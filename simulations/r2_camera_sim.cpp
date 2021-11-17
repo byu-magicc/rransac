@@ -141,8 +141,8 @@ bool CameraSimR2::InsurveillanceRegion(const TargetState_& state) {
 void CameraSimR2::Propagate(double start_time, double end_time, Stats<TrackingModel_>& stats) {
 
 
-    Meas<double> tmp1, tmp2;
-    std::list<Meas<double>> new_measurements;
+    Measurement tmp1, tmp2;
+    std::list<Measurement> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
     bool transform_state = false;
     Eigen::MatrixXd EmptyMat;

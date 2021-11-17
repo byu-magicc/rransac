@@ -55,14 +55,16 @@ struct Scenario1 {
 
     typedef ModelRN<SourceContainerR2PosVelNull> TrackingModel_;
     typedef typename TrackingModel_::Transformation Transformation_;
-    typedef typename TrackingModel_::Transformation::MatData TransformMatData_;
+    typedef typename TrackingModel_::Transformation::TransformDataType TransformMatData_;
     typedef typename TrackingModel_::State TrackingState_;
     typedef typename TrackingState_::Algebra TrackingAlgebra_;
     typedef SourceR2PosNull TrackingSource1_;
     typedef SourceR2PosVelNull TrackingSource2_;
     typedef RRANSACTemplateParameters<SourceContainerR2PosVelNull,ModelRN,NULLSeedPolicy,LinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
     typedef RRANSAC<RRANSACParameters> RRANSAC_;
-    typedef typename RRANSAC_::TRansac RANSAC_;
+    typedef typename RRANSACParameters::_Ransac RANSAC_;
+    typedef typename TrackingModel_::Base::Measurement Measurement;
+
     TransformMatData_ transform_data;
     // static constexpr bool transform_data_ = true;
     static constexpr bool transform_data_ = false;
@@ -221,8 +223,8 @@ void SetUp() {
 void Propagate(double start_time, double end_time, std::vector<int>& track_indices) {
 
 
-    Meas<double> tmp1, tmp2;
-    std::list<Meas<double>> new_measurements;
+    Measurement tmp1, tmp2;
+    std::list<Measurement> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
     bool transform_data = false;
     Eigen::MatrixXd EmptyMat;
@@ -338,7 +340,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 //---------------------------------------------------------------------------------------------
 
 
-Meas<double> m1_, m2_, m3_, m4_;
+Measurement m1_, m2_, m3_, m4_;
 double noise_ = 0.5;
 T test_data_;
 std::vector<TargetModel_> tracks_;
