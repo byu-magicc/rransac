@@ -92,8 +92,9 @@ public:
     static bool PolicyInValidationRegion(const Sys& sys, const Measurement& meas, Model& track)  {
 
 #ifdef DEBUG_BUILD
-       if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
-        throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
+       if (meas.type != SEN_POS || meas.type != SEN_POS_VEL) {
+        throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL");
+       }
 #endif
 
         Measurement m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);
@@ -120,8 +121,9 @@ public:
     static bool PolicyInValidationRegion(const Sys& sys, const Measurement& meas, Model& track)  {
 
 #ifdef DEBUG_BUILD
-       if (meas.type != SEN_POS || meas.type != SEN_POS_VEL)
-        throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL")
+       if (meas.type != SEN_POS || meas.type != SEN_POS_VEL) {
+        throw std::runtime_error("ValidationRegionFixedPosPolicy::PolicyInValidationRegion Measurement type is invalid. It must be SEN_POS or SEN_POS_VEL");
+    }
 #endif
 
         Measurement m = sys.source_container_.GetEstMeas(meas.source_index,track.state_,meas.transform_state,meas.transform_data_t_m);

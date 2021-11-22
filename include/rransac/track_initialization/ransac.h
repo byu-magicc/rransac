@@ -426,15 +426,15 @@ for (auto& cluster_iter : sys.clusters_) {
     
     if (cluster_iter->data_.size() > sys.params_.RANSAC_minimum_subset_ && cluster_iter->Size() > sys.params_.RANSAC_score_minimum_requirement_ && cluster_iter->data_.back().front().time_stamp == sys.current_time_) {
 
-        // threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys),std::ref(mtx)));
-        RunSingle(cluster_iter,sys,mtx);
-}
+        threads.push_back(std::thread(RunSingle,cluster_iter,std::ref(sys),std::ref(mtx)));
+        // RunSingle(cluster_iter,sys,mtx);
     }
+}
     
 
-// for (int ii = 0; ii < threads.size(); ++ii) {
-//     threads.at(ii).join();
-// }
+for (int ii = 0; ii < threads.size(); ++ii) {
+    threads.at(ii).join();
+}
 
 // Delete the pointers and wait for new ones to be given.
 sys.clusters_.clear();

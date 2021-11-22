@@ -22,6 +22,8 @@ namespace rransac
 template<typename tModel, template<typename > typename tDrawMeasurementPolicy, template<typename> typename tDrawTrackPolicy>
 class VisualizationHost : tDrawMeasurementPolicy<tModel>, tDrawTrackPolicy<tModel> {
 
+    typedef typename tModel::Base::Measurement Measurement;
+
 public:
 
 /**
@@ -96,7 +98,7 @@ void Setup(const std::vector<int>& img_dimensions, const DrawInfo& draw_info, co
  * @param sys A pointer to the system information of R-RANSAC.
  * @param clear_img If set to true, the image will be cleared.
  */ 
-void DrawNewMeasurements(const std::list<Meas<double>>& new_measurements, const System<tModel>* sys, bool clear_img);
+void DrawNewMeasurements(const std::list<Measurement>& new_measurements, const System<tModel>* sys, bool clear_img);
 
 /**
  * Draws new measurements on the image using the color DrawInfo::color_new_meas_pos
@@ -163,7 +165,7 @@ double fps_;
 
 void ClearImage();
 
-static void DrawMeas(cv::Mat& img, const Meas<double>& meas, const System<tModel>* sys,  const DrawInfo& draw_info) {
+static void DrawMeas(cv::Mat& img, const Measurement& meas, const System<tModel>* sys,  const DrawInfo& draw_info) {
     VisualizationHost::DrawMeasPolicy(img,meas,sys,draw_info);
 }
 
@@ -265,7 +267,7 @@ void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::Setup(co
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename tModel, template<typename > typename tDrawMeasurementPolicy, template<typename> typename tDrawTrackPolicy>
-void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawNewMeasurements(const std::list<Meas<double>>& new_measurements, const System<tModel>* sys, bool clear_img) {
+void VisualizationHost<tModel,tDrawMeasurementPolicy,tDrawTrackPolicy>::DrawNewMeasurements(const std::list<Measurement>& new_measurements, const System<tModel>* sys, bool clear_img) {
 
     if (clear_img)
         ClearImage();

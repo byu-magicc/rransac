@@ -550,8 +550,8 @@ struct Test9 {
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-// using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5,Test7,Test8, Test9>;
-using MyTypes = ::testing::Types<Test9>;
+using MyTypes = ::testing::Types<Test1,Test2,Test3,Test4,Test5,Test7,Test8, Test9>;
+// using MyTypes = ::testing::Types<Test9>;
 TYPED_TEST_SUITE(RANSACTest, MyTypes);
 
 TYPED_TEST(RANSACTest, FullTest) {

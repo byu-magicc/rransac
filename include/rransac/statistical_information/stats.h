@@ -26,6 +26,8 @@ class Stats {
 
 public:
 
+typedef typename tModel::Base::Measurement Measurement;
+
 // Track cardinality measures
 std::vector<double> nvt_;             /**< The number of valid tracks. A track is valid if it is assigned to only one target and also, the assigned target is not associated with any other track.*/
 std::vector<double> nft_;             /**< The number of false tracks. A track is detected as a false one if it isn't assigned to any target. */
@@ -279,7 +281,7 @@ void Stats<tModel>::CalculatePerformanceMeasures(const System<tModel>* sys, cons
     }
 
     Eigen::MatrixXd err;
-    Meas<double> meas;
+    Measurement meas;
     meas.type = sys->source_container_.GetParams(source_index).type_;
     meas.source_index = source_index;
     bool transform_state = false;
@@ -334,7 +336,7 @@ Eigen::MatrixXd Stats<tModel>::ComputeAssociationMatrix(const System<tModel>* sy
     Eigen::MatrixXd S; // Innovation covariance
     double distance = 0; 
     double det_S = 0;
-    Meas<double> meas;
+    Measurement meas;
     meas.type = sys->source_container_.GetParams(source_index).type_;
     meas.source_index = source_index;
     bool transform_state = false;

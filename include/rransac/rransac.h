@@ -320,7 +320,7 @@ bool RRANSAC<_RRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
         if (meas_iter->time_stamp != time_stamp) {
             throw std::runtime_error("RANSAC::VerifyMeasurements All of the measurements must have the same time stamp.");
             success = false;
-        } else if (!sys_.source_container_.IsMeasurementAcceptable(*meas_iter)) {
+        } else if (!sys_.source_container_.IsAcceptableMeasurement(*meas_iter)) {
             success = false;
         }
     }
@@ -335,8 +335,20 @@ bool RRANSAC<_RRANSACTemplateParameters>::VerifyMeasurements(const std::list<Mea
 template<typename _RRANSACTemplateParameters>
 void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measurement>& new_measurements, const double current_time) {
 
+#ifdef DEBUG_BUILD
+        if(sys_.source_container_.sources_initialized_ != sys_.source_container_.num_sources_) {
+            throw std::runtime_error("RRANSAC::AddMeasurements not all of the sources have been initialized. Only" +std::to_string(sys_.source_container_.sources_initialized_ ) + " of " + std::to_string(sys_.source_container_.num_sources_ ) + " source have been initialized.");
+        }
+#endif
+
+
     if (!system_parameters_set_)
         throw std::runtime_error("System parameters are not set. ");
+
+    if (!sys_.time_set_) {
+        sys_.current_time_ = current_time;
+        sys_.time_set_ = true;
+    }
 
 
     sys_.dt_ = current_time - sys_.current_time_;
@@ -352,9 +364,7 @@ void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measur
         transform_data_ = false;
     }
 
-    if (!sys_.time_set_) {
-        sys_.time_set_ = true;
-    }
+
 
 // Calculate the innovation covariances used to compute the validation region. This is only for visualization purposes. 
 #if RRANSAC_VIZ_HOOKS
@@ -391,6 +401,12 @@ void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measur
 
 template<typename _RRANSACTemplateParameters>
 void RRANSAC<_RRANSACTemplateParameters>::AddMeasurements(const std::list<Measurement>& new_measurements, const double current_time, const TransformDataType& transformation_data) {
+
+#ifdef DEBUG_BUILD
+        if(sys_.source_container_.sources_initialized_ != sys_.source_container_.num_sources_) {
+            throw std::runtime_error("RRANSAC::AddMeasurements not all of the sources have been initialized. Only" +std::to_string(sys_.source_container_.sources_initialized_ ) + " of " + std::to_string(sys_.source_container_.num_sources_ ) + " source have been initialized.");
+        }
+#endif
 
     sys_.transformaion_.SetData(transformation_data);
     transform_data_ = true;
