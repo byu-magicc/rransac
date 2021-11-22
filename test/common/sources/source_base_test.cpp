@@ -393,7 +393,9 @@ state.g_.data_.setRandom();
 
 Measurement m1, m2;
 m1.time_stamp = rand() % 100 -50;
+m1.type = source_params_.type_;
 m2.time_stamp = rand() % 100 -50;
+m2.type = source_params_.type_;
 
 // Test init function
 source.Init(source_params_);
