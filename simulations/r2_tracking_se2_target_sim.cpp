@@ -141,6 +141,7 @@ typedef typename T::TargetSource_ TargetSource_;
 typedef typename T::RANSAC_ RANSAC_;
 typedef typename T::RRANSAC_ RRANSAC_;
 typedef typename T::Transformation_ Transformation_;
+typedef typename TargetModel_::Measurement Measurement_;
 static constexpr bool transform_data_ = T::transform_data_;
 
 
@@ -223,8 +224,8 @@ void SetUp() {
 void Propagate(double start_time, double end_time, std::vector<int>& track_indices) {
 
 
-    Measurement tmp1, tmp2;
-    std::list<Measurement> new_measurements;
+    Measurement_ tmp1, tmp2;
+    std::list<Measurement_> new_measurements;
     Eigen::Matrix<double,1,1> rand_num;
     bool transform_data = false;
     Eigen::MatrixXd EmptyMat;
@@ -340,7 +341,7 @@ void Propagate(double start_time, double end_time, std::vector<int>& track_indic
 //---------------------------------------------------------------------------------------------
 
 
-Measurement m1_, m2_, m3_, m4_;
+Measurement_ m1_, m2_, m3_, m4_;
 double noise_ = 0.5;
 T test_data_;
 std::vector<TargetModel_> tracks_;

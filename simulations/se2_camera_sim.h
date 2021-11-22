@@ -96,14 +96,15 @@ typedef SourceSENPosVel<SE2_se2,MeasurementTypes::SEN_POS_VEL,TransformNULL> Sou
 typedef SourceContainer<SourceSE2PosVelNull> SourceContainerSE2PosVelNull;
 
 typedef ModelSENPosVel<SourceContainerSE2PosVelNull> Model_;
+typedef typename Model_::Measurement Measurement;
 typedef typename Model_::Transformation Transformation_;
-typedef typename Model_::Transformation::MatData TransformMatData_;
+typedef typename Model_::Transformation::TransformDataType TransformMatData_;
 typedef typename Model_::State State_;
 typedef typename State_::Algebra Algebra_;
 typedef SourceSE2PosVelNull Source_;
 typedef RRANSACTemplateParameters<SourceContainerSE2PosVelNull,ModelSENPosVel,SE2PosSeedPolicy,NonLinearLMLEPolicy,ValidationRegionInnovPolicy, TLI_IPDAFPolicy, MW_IPDAFPolicy> RRANSACParameters;
 typedef RRANSAC<RRANSACParameters> RRANSAC_;
-typedef typename RRANSACParameters::TRansac RANSAC_;
+typedef typename RRANSACParameters::_Ransac RANSAC_;
 typedef Eigen::Matrix<double,4,4> MatR_;
 // typedef Eigen::Matrix<double,2,2> MatR_;
 // static constexpr MeasurementTypes MeasurementType= MeasurementTypes::SEN_POS;
@@ -126,7 +127,7 @@ static constexpr bool transform_data_ = false;
 RRANSAC_ rransac_;
 const System<Model_>* sys_;
 std::vector<SourceSE2PosVelNull> sources_;
-Meas<double> m_;
+Measurement m_;
 Eigen::Matrix<double,Algebra_::dim_,Algebra_::dim_> noise_mat_;
 double process_noise_;
 double meas_noise_;

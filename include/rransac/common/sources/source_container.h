@@ -46,7 +46,8 @@ static constexpr int num_sources_ = CountSources<S0,S1,S2,S3,S4>::value;    /**<
 typedef typename S0::ModelCompatibility ModelCompatibility;                 /**< Indicates which model this source is compatible with. */
 typedef typename S0::TransformDataType TransformDataType;                   /**< The transform data type. */
 typedef typename S0::Measurement Measurement;                               /**< The object type of the measurement. */
-typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;         
+typedef Eigen::Matrix<DataType,Eigen::Dynamic,Eigen::Dynamic> MatXd;  
+int sources_initialized_ = 0;       
 
 
 // Ensure that all sources have the same model compatibility
@@ -223,6 +224,7 @@ bool SourceContainer<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_p
     } else {
 
         source_initialized_[source_params.source_index_] = true;
+        sources_initialized_++;
 
         switch (source_params.source_index_)
         {
@@ -270,6 +272,7 @@ bool SourceContainer<S0,S1,S2,S3,S4>::AddSource(const SourceParameters& source_p
     } else {
 
         source_initialized_[source_params.source_index_] = true;
+        sources_initialized_++;
 
         switch (source_params.source_index_)
         {
