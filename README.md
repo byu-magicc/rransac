@@ -83,7 +83,30 @@ Any cluster that had measurements removed from it, is checked to see if it is st
 With the generation of new models or additional information gathered from the new measurements, existing models can begin to coalesce. The coalescing models are merged together. Models that are no longer probable models (usually the models that haven't received new measurements for a while), are pruned from the list of models. The model's probability is then checked to see if it should be escalated to a good model or demoted to a regular model. Any model that is promoted to the status of a good model receives a unique ID number to identify it. 
 
 
-## Setup
+## Installing and Adding to a CMake Project
+
+To intall the library and header files, download the repository, navigate to the root directory and run the following commands. 
+```
+mkdir build
+cd build
+cmake ..
+sudo make install
+```
+RRANSAC should now be installed on your computer. 
+
+To include the library and header files in another package, add the following line to your CMakeLists.txt
+```
+find_package(rransac)
+```
+link and include the library and header files to the target 
+```
+target_link_libraries(${PROJECT_NAME}
+  ${RRANSAC_LIBS})
+target_include_directories(${PROJECT_NAME} ${RRANSAC_INCLUDE_DIRS})
+```
+
+
+
 
 ## Documentation
 
